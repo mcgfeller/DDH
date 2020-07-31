@@ -19,10 +19,10 @@ class NoCopyBaseModel(pydantic.BaseModel):
 
 class Principal(NoCopyBaseModel):
 
-    id : int
+    id : str
 
 
-AllPrincipal = Principal(id=0)
+AllPrincipal = Principal(id='_all_')
 
 
 
@@ -52,7 +52,7 @@ class User(Principal):
        
     name : str 
     email : pydantic.EmailStr = None
-    created_at : datetime.datetime = None
+    created_at : datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow) # defaults to now
 
 class DAppId(Principal):
     """ The identification of a DApp. We use a Principal for now. """
@@ -75,12 +75,13 @@ class DDHkey(NoCopyBaseModel):
     key = str
     owner: Principal
     consent : Consent = None
+    node: 'Node' = None
 
     @classmethod
-    def get_key(cls,path : str) -> typing.Optional['DDHkey']:
+    def get_key(cls,path : str, user: Principal) -> typing.Optional['DDHkey']:
         """ get key from path string """
-        user = User(id=1,name='martin',email='martin.gfeller@swisscom.com')
-        ddhkey = DDHkey(key='unknown',owner=user)
+        owner = User(id=1,name='martin',email='martin.gfeller@swisscom.com')
+        ddhkey = DDHkey(key='unknown',owner=owner)
         return ddhkey
 
     def get_schema_parent(self) -> 'DDHkey':
@@ -90,6 +91,19 @@ class DDHkey(NoCopyBaseModel):
     def get_consent_parent(self) -> 'DDHkey':
         """ get key up the tree where we have a consent """
         return self
+
+    def get_node_parent(self) -> 'Node':
+        """ get execution Node """
+        return self
+
+    def execute(self,  user: Principal, q : str):
+        np = self.get_node_parent()
+        return np.execute(user,q)
+
+   
+
+
+
 
 class Access(NoCopyBaseModel):
     """ This is a loggable Access Request, which may or may not get fulfilled.
@@ -134,3 +148,19 @@ class _SchemaRegistry(NoCopyBaseModel):
 
 
 SchemaRegistry = _SchemaRegistry() 
+
+class Node(NoCopyBaseModel):
+    """ node at DDHkey """
+    def execute(self,  user: Principal, q : str):
+        return {}
+
+class DAppNode(Node):
+    """ node managed by a DApp """
+    ...
+
+class StorageNode(Node):
+    """ node with storage on DDH """
+    ...
+
+
+DDHkey.update_forward_refs() # Now Node is known
