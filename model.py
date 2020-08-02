@@ -72,7 +72,7 @@ class Consent(NoCopyBaseModel):
 
 class DDHkey(NoCopyBaseModel):
     
-    key = str
+    key : str
     owner: Principal
     consent : Consent = None
     node: 'Node' = None
