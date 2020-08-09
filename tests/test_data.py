@@ -1,8 +1,8 @@
 """ Set up some Test data """
-import model
+import core
 
-owner = model.User(id='mgf',name='Martin')
-k1 = model.DDHkey(key="ddh/shopping/stores/migros/receipts/mgf",owner=owner)
+owner = core.User(id='mgf',name='Martin')
+k1 = core.DDHkey(key="ddh/shopping/stores/migros/receipts/mgf",owner=owner)
 
 print(k1)
 

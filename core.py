@@ -51,7 +51,7 @@ class User(Principal):
 
        
     name : str 
-    email : pydantic.EmailStr = None
+    email : typing.Optional[pydantic.EmailStr] = None
     created_at : datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow) # defaults to now
 
 class DAppId(Principal):
@@ -74,8 +74,8 @@ class DDHkey(NoCopyBaseModel):
     
     key : str
     owner: Principal
-    consent : Consent = None
-    node: 'Node' = None
+    consent : typing.Optional[Consent] = None
+    node: typing.Optional['Node'] = None
 
     @classmethod
     def get_key(cls,path : str, user: Principal) -> typing.Optional['DDHkey']:
@@ -94,7 +94,7 @@ class DDHkey(NoCopyBaseModel):
 
     def get_node_parent(self) -> 'Node':
         """ get execution Node """
-        return self
+        return None
 
     def execute(self,  user: Principal, q : str):
         np = self.get_node_parent()
@@ -120,6 +120,7 @@ class Access(NoCopyBaseModel):
             return True
         elif self.ddhkey.consent:
             ok,msg = self.ddhkey.consent.check(self)
+            return ok
         else:
             return False
     
@@ -154,6 +155,9 @@ class Node(NoCopyBaseModel):
     def execute(self,  user: Principal, q : str):
         return {}
 
+    def defineKey(self,ddhkey: DDHkey):
+        return
+
 class DAppNode(Node):
     """ node managed by a DApp """
     ...
@@ -164,3 +168,11 @@ class StorageNode(Node):
 
 
 DDHkey.update_forward_refs() # Now Node is known
+
+class Executor(NoCopyBaseModel):
+    ...
+
+class ClearingHouse(NoCopyBaseModel):
+    ...
+
+
