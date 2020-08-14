@@ -30,7 +30,7 @@ async def get_data(
     q: str = fastapi.Query(None, alias="item-query"),
     ):
     user = core.User(id='mgf',name='martin',email='martin.gfeller@swisscom.com')
-    ddhkey = core.DDHkey.get_key(docpath, user)
+    ddhkey = core.DDHkey(docpath)
     d = ddhkey.execute(user, q)
     return {"ddhkey": ddhkey, "res": d}
 
@@ -40,5 +40,5 @@ async def get_schema(
     q: str = fastapi.Query(None, alias="item-query"),
     ):
     user = core.User(id=1,name='martin',email='martin.gfeller@swisscom.com')
-    ddhkey = core.DDHkey.get_key(docpath)
+    ddhkey = core.DDHkey.get_key(docpath,user)
     return {"ddhkey": ddhkey}

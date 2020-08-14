@@ -1,5 +1,5 @@
 """ DDH Core Models """
-
+from __future__ import annotations
 import pydantic 
 import datetime
 import typing
@@ -23,6 +23,7 @@ class Principal(NoCopyBaseModel):
 
 
 AllPrincipal = Principal(id='_all_')
+RootPrincipal = Principal(id='DDH')
 
 
 
@@ -70,35 +71,45 @@ class Consent(NoCopyBaseModel):
     def check(self,access : 'Access') -> typing.Tuple[bool,str]:
         return False,'not checked'
 
+class _RootType:
+    """ Singleton root marker """
+    def __repr__(self):
+        return '<Root>'
+
 class DDHkey(NoCopyBaseModel):
     
-    key : str
-    owner: Principal
-    consent : typing.Optional[Consent] = None
-    node: typing.Optional['Node'] = None
+    key : tuple
 
-    @classmethod
-    def get_key(cls,path : str, user: Principal) -> typing.Optional['DDHkey']:
-        """ get key from path string """
-        owner = User(id=1,name='martin',email='martin.gfeller@swisscom.com')
-        ddhkey = DDHkey(key='unknown',owner=owner)
-        return ddhkey
+    node: typing.Optional[Node] = None
 
-    def get_schema_parent(self) -> 'DDHkey':
-        """ get key up the tree where we have a schema """
-        return self
+    Delimiter : typing.ClassVar[str] = '/'
+    Root : typing.ClassVar[_RootType] = _RootType()
 
-    def get_consent_parent(self) -> 'DDHkey':
-        """ get key up the tree where we have a consent """
-        return self
+    def __init__(self,key : typing.Union[tuple,list,str], node :  typing.Optional['Node'] = None):
+        """ Convert key string into tuple, eliminate empty segments, and set root to self.Root """
+        if isinstance(key,str):
+            key = key.split(self.Delimiter)
+        if len(key) == 0:
+            raise ValueError('Key may not be empty')
+        elif not key[0]: # replace root with key indicator
+            key = (self.Root,)+tuple(filter(None,key[1:]))
+        else:
+            key = tuple(filter(None,key))
+        super().__init__(key=key,node=node)
+        return 
 
-    def get_node_parent(self) -> 'Node':
-        """ get execution Node """
-        return None
 
-    def execute(self,  user: Principal, q : str):
-        np = self.get_node_parent()
-        return np.execute(user,q)
+    def up(self) -> typing.Optional['DDHkey']:
+        """ return key up one level, or None if at top """
+        upkey = self.key[:-1]
+        if upkey:
+            return self.__class__(upkey)
+        else: 
+            return None
+
+    # def execute(self,  user: Principal, q : str):
+    #     np = self.get_node_parent()
+    #     return np.execute(user,q)
 
    
 
@@ -134,23 +145,13 @@ class Schema(NoCopyBaseModel): ...
 
 
 
-class _SchemaRegistry(NoCopyBaseModel):
-    """ Singleton SchemaRegistry """
-
-
-    def __init__(self,**kw):
-        super().__init__(**kw)
-
-    def get_schema_for(self,ddhkey: DDHkey) -> typing.Optional[Schema]:
-        return None
-
-    def put_schema_for(self,ddhkey: DDHkey,schema: Schema):
-        return
-
-
-SchemaRegistry = _SchemaRegistry() 
 
 class Node(NoCopyBaseModel):
+
+    owner: Principal
+    consent : typing.Optional[Consent] = None
+    nschema : typing.Optional[Schema] = pydantic.Field(alias='schema')
+
     """ node at DDHkey """
     def execute(self,  user: Principal, q : str):
         return {}
@@ -166,13 +167,39 @@ class StorageNode(Node):
     """ node with storage on DDH """
     ...
 
-
 DDHkey.update_forward_refs() # Now Node is known
 
-class Executor(NoCopyBaseModel):
-    ...
+class _NodeRegistry:
+    """ Preliminary holder of nodes """
 
-class ClearingHouse(NoCopyBaseModel):
-    ...
+    nodes_by_key : typing.Dict[tuple,Node]
 
+    def __init__(self):
+        self.nodes_by_key = {}
 
+    def __setitem__(self,key : DDHkey, node: Node):
+        self.nodes_by_key[key.key] = node
+
+    def __getitem__(self,key : DDHkey) -> typing.Optional[Node]:
+        return self.nodes_by_key.get(key.key,None) 
+
+    def get_next_node(self,key : DDHkey) -> typing.Iterator[Node]:
+        """ Generating getting next node walking up the tree from key.
+            """
+        while key:
+            node =  self[key]
+            key = key.up() 
+            if node:
+                yield node
+        else:
+            return
+
+    def get_node(self,key : DDHkey,has) -> typing.Optional[Node]:
+        """ get closest (upward-bound) node which has nonzero attribute """
+        node = next(n for n in self.get_next_node(key) if getattr(n,has,None))
+        return node
+    
+
+NodeRegistry = _NodeRegistry()
+
+NodeRegistry[DDHkey((DDHkey.Root,))] = Node(owner=RootPrincipal)
