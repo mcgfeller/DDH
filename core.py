@@ -128,14 +128,24 @@ class Access(NoCopyBaseModel):
     #mode:      AccessModeF  = AccessModeF.read
     time:      datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow) # defaults to now
     
-    def permitted(self) -> bool:
-        if self.ddhkey.owner == self.principal:
-            return True
-        elif self.ddhkey.consent:
-            ok,msg = self.ddhkey.consent.check(self)
-            return ok
+    def permitted(self) -> typing.Tuple[bool,str]:
+        onode = NodeRegistry.get_node(self.ddhkey,NodeType.owner)
+        if not onode:
+            return False,f'No owner node found for key {self.ddhkey}'
+        elif onode.owner == self.principal:
+            return True,'Node owned by principal'
         else:
-            return False
+            if onode.consent: # onode has consent, use it
+                consent : Consent = onode.consent
+            else: # obtain from consent node
+                cnode = NodeRegistry.get_node(self.ddhkey,NodeType.consent) 
+                if cnode:
+                    consent = cnode.consent # type: ignore # consent is not None by get_node
+                else:
+                    return False,f'Owner is not accessor, and no consent node found for key {self.ddhkey}'
+            ok,msg = consent.check(self) # check consent
+            return ok,msg
+
     
     def audit_record(self) -> dict:
         return {}
@@ -150,6 +160,7 @@ class Schema(NoCopyBaseModel): ...
 class NodeType(str,enum.Enum):
     """ Types of Nodes, marked by presence of attribute corresponding with enum value """
 
+    owner = 'owner'
     nschema = 'nschema'
     consent = 'consent'
     data = 'data'
@@ -205,7 +216,7 @@ class _NodeRegistry:
 
     def get_node(self,key : DDHkey,node_type : NodeType) -> typing.Optional[Node]:
         """ get closest (upward-bound) node which has nonzero attribute """
-        node = next(n for n in self.get_next_node(key) if getattr(n,node_type.value,None))
+        node = next((n for n in self.get_next_node(key) if getattr(n,node_type.value,None)),None)
         return node
     
 

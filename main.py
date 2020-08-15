@@ -7,7 +7,7 @@ app = fastapi.FastAPI()
 class Dhp(str ): 
     def get_key(self) -> typing.Optional[core.DDHkey]:
         user = core.User(id=1,name='martin',email='martin.gfeller@swisscom.com')
-        ddhkey = core.DDHkey(key='unknown',owner=user)
+        ddhkey = core.DDHkey(key='unknown')
         return ddhkey
 
 oauth2_scheme = fastapi.security.OAuth2PasswordBearer(tokenUrl="token")
@@ -40,5 +40,6 @@ async def get_schema(
     q: str = fastapi.Query(None, alias="item-query"),
     ):
     user = core.User(id=1,name='martin',email='martin.gfeller@swisscom.com')
-    ddhkey = core.DDHkey.get_key(docpath,user)
-    return {"ddhkey": ddhkey}
+    ddhkey = core.DDHkey(docpath)
+    schema = core.NodeRegistry.get_node(ddhkey,core.NodeType.nschema)
+    return {"ddhkey": ddhkey, 'schema': schema}
