@@ -19,6 +19,7 @@ class NoCopyBaseModel(pydantic.BaseModel):
 
 
 class Principal(NoCopyBaseModel):
+    """ Abstract identification of a party """
 
     id : str
 
@@ -31,7 +32,9 @@ RootPrincipal = Principal(id='DDH')
 
 @enum.unique
 class AccessMode(str,enum.Enum):
-    """ Access modes, can be added """
+    """ Access modes, can be added. 
+        We cannot use enum.Flag, as pydantic doesn't support exporting / importing it as strings
+    """
     read = 'read'
     read_for_write = 'read_for_write' # read with the intention to write data back   
     write = 'write'
@@ -39,18 +42,8 @@ class AccessMode(str,enum.Enum):
     pseudonym = 'pseudonym'
 
 
-@enum.unique
-class AccessModeF(enum.Flag):
-    """ Access modes as enum.intflag - pydantic doesn't support export / import as strings """
-    read = enum.auto()
-    write = enum.auto()
-    read_for_write = enum.auto()
-    anonymous = enum.auto()
-    pseudonym = enum.auto()
-
-
 class User(Principal):
-
+    """ Concrete user """
        
     name : str 
     email : typing.Optional[pydantic.EmailStr] = None
@@ -79,10 +72,10 @@ class _RootType:
         return '<Root>'
 
 class DDHkey(NoCopyBaseModel):
+    """ A key identifying a DDH ressource. DDHkey is decoupled from any access, storage, etc.,
+    """
     
     key : tuple
-
-    node: typing.Optional[Node] = None
 
     Delimiter : typing.ClassVar[str] = '/'
     Root : typing.ClassVar[_RootType] = _RootType()
@@ -109,9 +102,7 @@ class DDHkey(NoCopyBaseModel):
         else: 
             return None
 
-    # def execute(self,  user: Principal, q : str):
-    #     np = self.get_node_parent()
-    #     return np.execute(user,q)
+
 
    
 
@@ -125,7 +116,6 @@ class Access(NoCopyBaseModel):
     ddhkey:    DDHkey
     principal: Principal
     mode:      typing.List[AccessMode]  = [AccessMode.read]
-    #mode:      AccessModeF  = AccessModeF.read
     time:      datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow) # defaults to now
     
     def permitted(self) -> typing.Tuple[bool,str]:
@@ -164,6 +154,7 @@ class NodeType(str,enum.Enum):
     nschema = 'nschema'
     consent = 'consent'
     data = 'data'
+    execute = 'execute'
 
 
 class Node(NoCopyBaseModel):
@@ -172,18 +163,18 @@ class Node(NoCopyBaseModel):
     consent : typing.Optional[Consent] = None
     nschema : typing.Optional[Schema] = pydantic.Field(alias='schema')
 
-    """ node at DDHkey """
+
+
+
+class ExecutableNode(Node):
     def execute(self,  user: Principal, q : str):
         return {}
 
-    def defineKey(self,ddhkey: DDHkey):
-        return
-
-class DAppNode(Node):
+class DAppNode(ExecutableNode):
     """ node managed by a DApp """
     ...
 
-class StorageNode(Node):
+class StorageNode(ExecutableNode):
     """ node with storage on DDH """
     ...
 
