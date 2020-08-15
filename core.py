@@ -15,7 +15,8 @@ class NoCopyBaseModel(pydantic.BaseModel):
         if isinstance(value, cls):
             return value # don't copy!
         else:
-            return pydantic.BaseModel.validate(cls, value)
+            return pydantic.BaseModel.validate(cls, value) # type: ignore
+
 
 class Principal(NoCopyBaseModel):
 
@@ -59,6 +60,7 @@ class DAppId(Principal):
     """ The identification of a DApp. We use a Principal for now. """
 
     name : str
+
 
 
 class Consent(NoCopyBaseModel):
@@ -144,6 +146,13 @@ class Access(NoCopyBaseModel):
 class Schema(NoCopyBaseModel): ...
 
 
+@enum.unique
+class NodeType(str,enum.Enum):
+    """ Types of Nodes, marked by presence of attribute corresponding with enum value """
+
+    nschema = 'nschema'
+    consent = 'consent'
+    data = 'data'
 
 
 class Node(NoCopyBaseModel):
@@ -183,7 +192,7 @@ class _NodeRegistry:
     def __getitem__(self,key : DDHkey) -> typing.Optional[Node]:
         return self.nodes_by_key.get(key.key,None) 
 
-    def get_next_node(self,key : DDHkey) -> typing.Iterator[Node]:
+    def get_next_node(self,key : typing.Optional[DDHkey]) -> typing.Iterator[Node]:
         """ Generating getting next node walking up the tree from key.
             """
         while key:
@@ -194,9 +203,9 @@ class _NodeRegistry:
         else:
             return
 
-    def get_node(self,key : DDHkey,has) -> typing.Optional[Node]:
+    def get_node(self,key : DDHkey,node_type : NodeType) -> typing.Optional[Node]:
         """ get closest (upward-bound) node which has nonzero attribute """
-        node = next(n for n in self.get_next_node(key) if getattr(n,has,None))
+        node = next(n for n in self.get_next_node(key) if getattr(n,node_type.value,None))
         return node
     
 

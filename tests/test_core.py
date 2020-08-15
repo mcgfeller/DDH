@@ -26,7 +26,7 @@ def test_nodes():
     core.NodeRegistry[core.DDHkey(key='/ddh/health/mgf')] = node_c    
     ddhkey = core.DDHkey(key='/ddh/health/mgf/bmi/weight')
     assert next(core.NodeRegistry.get_next_node(ddhkey)) is node_c
-    assert core.NodeRegistry.get_node(ddhkey,'nschema').nschema is schema 
+    assert core.NodeRegistry.get_node(ddhkey,core.NodeType.nschema).nschema is schema 
     return
 
 
