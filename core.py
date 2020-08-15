@@ -15,7 +15,7 @@ class NoCopyBaseModel(pydantic.BaseModel):
         if isinstance(value, cls):
             return value # don't copy!
         else:
-            return pydantic.BaseModel.validate(cls, value) # type: ignore
+            return super().validate(value) 
 
 
 class Principal(NoCopyBaseModel):
@@ -140,7 +140,7 @@ class Access(NoCopyBaseModel):
             else: # obtain from consent node
                 cnode = NodeRegistry.get_node(self.ddhkey,NodeType.consent) 
                 if cnode:
-                    consent = cnode.consent # type: ignore # consent is not None by get_node
+                    consent = typing.cast(Consent,cnode.consent)  # consent is not None by get_node
                 else:
                     return False,f'Owner is not accessor, and no consent node found for key {self.ddhkey}'
             ok,msg = consent.check(self) # check consent
