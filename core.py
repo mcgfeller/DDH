@@ -166,7 +166,7 @@ class Node(NoCopyBaseModel):
 
     def get_schema(self, ddhkey: DDHkey,split: int) -> Schema:
         """ return schema based on ddhkey and split """
-        return Schema()
+        return typing.cast(Schema,self.nschema)
 
 
 class ExecutableNode(Node):

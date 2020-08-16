@@ -29,6 +29,17 @@ def test_nodes():
     assert core.NodeRegistry.get_node(ddhkey,core.NodeType.nschema)[0].nschema is schema 
     return
 
+def test_schema_node():
+    """ Retrieval of schema and application of get_schema() 
+    """
+    schema = core.Schema()
+    user = core.User(id='1',name='martin',email='martin.gfeller@swisscom.com')
+    node_s = core.Node(schema=schema,owner=user)
+    core.NodeRegistry[core.DDHkey(key='/ddh/health')] = node_s
+    ddhkey = core.DDHkey(key='/ddh/health/mgf/bmi/weight')
+    node_s,split = core.NodeRegistry.get_node(ddhkey,core.NodeType.nschema)
+    assert node_s.nschema is schema
+    assert node_s.get_schema(ddhkey,split) is schema
 
 def test_basic_access():
 
