@@ -31,7 +31,7 @@ async def get_data(
     ):
     user = core.User(id='mgf',name='martin',email='martin.gfeller@swisscom.com')
     ddhkey = core.DDHkey(docpath)
-    enode = core.NodeRegistry.get_node(ddhkey,core.NodeType.execute)
+    enode,split = core.NodeRegistry.get_node(ddhkey,core.NodeType.execute)
     enode = typing.cast(core.ExecutableNode,enode)
     d = enode.execute(user, q)
     return {"ddhkey": ddhkey, "res": d}
@@ -43,5 +43,6 @@ async def get_schema(
     ):
     user = core.User(id=1,name='martin',email='martin.gfeller@swisscom.com')
     ddhkey = core.DDHkey(docpath)
-    snode = core.NodeRegistry.get_node(ddhkey,core.NodeType.nschema)
-    return {"ddhkey": ddhkey, 'schema': snode.nschema}
+    snode,split = core.NodeRegistry.get_node(ddhkey,core.NodeType.nschema)
+    schema = snode.get_schema(ddhkey,split)
+    return {"ddhkey": ddhkey, 'schema': schema}

@@ -119,7 +119,7 @@ class Access(NoCopyBaseModel):
     time:      datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow) # defaults to now
     
     def permitted(self) -> typing.Tuple[bool,str]:
-        onode = NodeRegistry.get_node(self.ddhkey,NodeType.owner)
+        onode,split = NodeRegistry.get_node(self.ddhkey,NodeType.owner)
         if not onode:
             return False,f'No owner node found for key {self.ddhkey}'
         elif onode.owner == self.principal:
@@ -128,7 +128,7 @@ class Access(NoCopyBaseModel):
             if onode.consent: # onode has consent, use it
                 consent : Consent = onode.consent
             else: # obtain from consent node
-                cnode = NodeRegistry.get_node(self.ddhkey,NodeType.consent) 
+                cnode,split = NodeRegistry.get_node(self.ddhkey,NodeType.consent) 
                 if cnode:
                     consent = typing.cast(Consent,cnode.consent)  # consent is not None by get_node
                 else:
@@ -164,11 +164,15 @@ class Node(NoCopyBaseModel):
     nschema : typing.Optional[Schema] = pydantic.Field(alias='schema')
 
 
+    def get_schema(self, ddhkey: DDHkey,split: int) -> Schema:
+        """ return schema based on ddhkey and split """
+        return Schema()
 
 
 class ExecutableNode(Node):
     def execute(self,  user: Principal, q : str):
         return {}
+
 
 class DAppNode(ExecutableNode):
     """ node managed by a DApp """
@@ -194,21 +198,23 @@ class _NodeRegistry:
     def __getitem__(self,key : DDHkey) -> typing.Optional[Node]:
         return self.nodes_by_key.get(key.key,None) 
 
-    def get_next_node(self,key : typing.Optional[DDHkey]) -> typing.Iterator[Node]:
+    def get_next_node(self,key : typing.Optional[DDHkey]) -> typing.Iterator[typing.Tuple[Node,int]]:
         """ Generating getting next node walking up the tree from key.
             """
+        split = len(key.key)
         while key:
             node =  self[key]
             key = key.up() 
+            split += 1
             if node:
-                yield node
+                yield node,split
         else:
             return
 
-    def get_node(self,key : DDHkey,node_type : NodeType) -> typing.Optional[Node]:
+    def get_node(self,key : DDHkey,node_type : NodeType) -> typing.Tuple[typing.Optional[Node],int]:
         """ get closest (upward-bound) node which has nonzero attribute """
-        node = next((n for n in self.get_next_node(key) if getattr(n,node_type.value,None)),None)
-        return node
+        node,split = next(( (node,split) for node,split in self.get_next_node(key) if getattr(node,node_type.value,None)),(None,-1))
+        return node,split
     
 
 NodeRegistry = _NodeRegistry()
