@@ -71,6 +71,9 @@ class _RootType:
     def __repr__(self):
         return '<Root>'
 
+    def __str__(self):
+        return DDHkey.Delimiter
+
 class DDHkey(NoCopyBaseModel):
     """ A key identifying a DDH ressource. DDHkey is decoupled from any access, storage, etc.,
     """
@@ -94,10 +97,10 @@ class DDHkey(NoCopyBaseModel):
         return 
 
     def __str__(self) -> str:
-        return self.Delimiter.join(self.key)
+        return self.Delimiter.join(map(str,self.key))
 
     def __repr__(self) -> str:
-        return f'DDHkey{self.Delimiter.join(self.key)})'
+        return f'DDHkey{self.Delimiter.join(map(repr,self.key))})'
 
 
     def up(self) -> typing.Optional['DDHkey']:
