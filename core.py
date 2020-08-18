@@ -93,6 +93,12 @@ class DDHkey(NoCopyBaseModel):
         super().__init__(key=key,node=node)
         return 
 
+    def __str__(self) -> str:
+        return self.Delimiter.join(self.key)
+
+    def __repr__(self) -> str:
+        return f'DDHkey{self.Delimiter.join(self.key)})'
+
 
     def up(self) -> typing.Optional['DDHkey']:
         """ return key up one level, or None if at top """
@@ -154,7 +160,7 @@ class Schema(NoCopyBaseModel):
         return self
 
 class JsonSchema(Schema):
-    ...
+    json_schema : pydantic.Json
 
 
 @enum.unique

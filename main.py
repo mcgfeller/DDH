@@ -6,7 +6,6 @@ app = fastapi.FastAPI()
 
 class Dhp(str ): 
     def get_key(self) -> typing.Optional[core.DDHkey]:
-        user = core.User(id=1,name='martin',email='martin.gfeller@swisscom.com')
         ddhkey = core.DDHkey(key='unknown')
         return ddhkey
 
@@ -44,5 +43,8 @@ async def get_schema(
     user = core.User(id=1,name='martin',email='martin.gfeller@swisscom.com')
     ddhkey = core.DDHkey(docpath)
     snode,split = core.NodeRegistry.get_node(ddhkey,core.NodeType.nschema)
-    schema = snode.get_schema(ddhkey,split)
-    return {"ddhkey": ddhkey, 'schema': schema}
+    if snode:
+        schema = snode.get_schema(ddhkey,split)
+        return {"ddhkey": ddhkey, 'schema': schema}
+    else:
+        raise fastapi.HTTPException(status_code=404, detail=f"No schema not found at {ddhkey}.")
