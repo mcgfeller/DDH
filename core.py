@@ -102,9 +102,10 @@ class DDHkey(NoCopyBaseModel):
         else: 
             return None
 
+    def split_at(self,split : int) -> typing.Tuple[DDHkey,DDHkey]:
+        """ split the key into 2 at split """
+        return self.__class__(self.key[:split]),self.__class__(self.key[split:])
 
-
-   
 
 
 
@@ -143,7 +144,17 @@ class Access(NoCopyBaseModel):
 
 
 
-class Schema(NoCopyBaseModel): ...
+class Schema(NoCopyBaseModel): 
+
+    def obtain(self,ddhkey: DDHkey,split: int) -> Schema:
+        """ obtain a schema for the ddhkey, which is split into the key holding the schema and
+            the remaining path. 
+        """
+        khere,kremainder = ddhkey.split_at(split)
+        return self
+
+class JsonSchema(Schema):
+    ...
 
 
 @enum.unique
@@ -166,7 +177,9 @@ class Node(NoCopyBaseModel):
 
     def get_schema(self, ddhkey: DDHkey,split: int) -> Schema:
         """ return schema based on ddhkey and split """
-        return typing.cast(Schema,self.nschema)
+        schema = typing.cast(Schema,self.nschema)
+        schema = schema.obtain(ddhkey,split)
+        return schema
 
 
 class ExecutableNode(Node):
@@ -200,14 +213,16 @@ class _NodeRegistry:
 
     def get_next_node(self,key : typing.Optional[DDHkey]) -> typing.Iterator[typing.Tuple[Node,int]]:
         """ Generating getting next node walking up the tree from key.
+            Also indicates at which point the DDHkey is to be split so the first part is the
+            path leading to the Node, the 2nd the rest. 
             """
-        split = len(key.key)
+        split = len(key.key) # where to split: counting backwards from the end. 
         while key:
             node =  self[key]
             key = key.up() 
-            split += 1
+            split -= 1
             if node:
-                yield node,split
+                yield node,split+1
         else:
             return
 
