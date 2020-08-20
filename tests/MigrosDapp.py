@@ -5,12 +5,9 @@ from .. import core
 from .. import dapp
 
 class MigrosDApp(dapp.DApp):
-    pass
-
-    def registerSchema(self):
-        return
-
-    def obtainSchema(self) -> core.Schema:
+    
+ 
+    def get_schema(self) -> core.Schema:
         jschema = core.JsonSchema(json_schema=MigrosSchema.schema_json())
         return jschema
 
