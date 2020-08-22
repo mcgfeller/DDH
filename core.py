@@ -182,6 +182,11 @@ class Node(NoCopyBaseModel):
     owner: Principal
     consent : typing.Optional[Consent] = None
     nschema : typing.Optional[Schema] = pydantic.Field(alias='schema')
+    key : typing.Optional[DDHkey] = None
+
+    def __str__(self):
+        """ short representation """
+        return f'Node(key={self.key!s},owner={self.owner.id})'
 
 
     def get_schema(self, ddhkey: DDHkey,split: int) -> Schema:
@@ -216,6 +221,7 @@ class _NodeRegistry:
 
     def __setitem__(self,key : DDHkey, node: Node):
         self.nodes_by_key[key.key] = node
+        node.key = key
 
     def __getitem__(self,key : DDHkey) -> typing.Optional[Node]:
         return self.nodes_by_key.get(key.key,None) 

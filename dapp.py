@@ -1,33 +1,34 @@
 """ Support for DApps """
-
+from __future__ import annotations
 import core
 import typing
+
 
 class DApp(core.NoCopyBaseModel):
     
 
-    owner : core.Principal
-    schemakey : core.DDHkey
+    owner : typing.ClassVar[core.Principal] 
+    schemakey : typing.ClassVar[core.DDHkey] 
 
-    def startup(self):
-        self.check_registry()
+    @classmethod
+    def bootstrap(cls) -> DApp:
+        return cls()
 
-    def check_registry(self):
-        snode = core.NodeRegistry.get_node(self.schemakey,core.NodeType.nschema)
-        if not snode:
+    def startup(self)  -> core.Node:
+        dnode = self.check_registry()
+        return dnode
+
+    def check_registry(self) -> core.Node:
+        dnode,split = core.NodeRegistry.get_node(self.schemakey,core.NodeType.nschema)
+        if not dnode:
             s = self.get_schema()
-            snode = core.DAppNode(owner=self.owner,nschema=s)
-            core.NodeRegistry[self.schemakey] = snode
-        return
+            dnode = core.DAppNode(owner=self.owner,schema=s)
+            core.NodeRegistry[self.schemakey] = dnode
+        return dnode 
     
     def get_schema(self) -> core.Schema:
         raise NotImplementedError()
+    
 
 
-
-
-
-class DAppStore(core.NoCopyBaseModel):
-
-    apps : typing.Dict[str,DApp] = {}
     

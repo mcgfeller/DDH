@@ -1,11 +1,14 @@
 """ Example DApp - fake Migros Cumulus data """
-
+from __future__ import annotations
 import datetime
-from .. import core
-from .. import dapp
+import core
+import dapp
+import typing
 
 class MigrosDApp(dapp.DApp):
-    
+
+    owner : typing.ClassVar[core.Principal] =  core.User(id='mgf',name='Martin')
+    schemakey : typing.ClassVar[core.DDHkey] = core.DDHkey(key="/ddh/shopping/stores/migros")
  
     def get_schema(self) -> core.Schema:
         jschema = core.JsonSchema(json_schema=MigrosSchema.schema_json())
