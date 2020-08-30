@@ -88,8 +88,8 @@ class DDHkey(NoCopyBaseModel):
         if isinstance(key,str):
             key = key.split(self.Delimiter)
         if len(key) == 0:
-            raise ValueError('Key may not be empty')
-        elif not key[0]: # replace root with key indicator
+            key = () # ensure tuple
+        elif not key[0]: # replace root delimiter with root object
             key = (self.Root,)+tuple(filter(None,key[1:]))
         else:
             key = tuple(filter(None,key))
@@ -100,7 +100,7 @@ class DDHkey(NoCopyBaseModel):
         return self.Delimiter.join(map(str,self.key))
 
     def __repr__(self) -> str:
-        return f'DDHkey{self.Delimiter.join(map(repr,self.key))})'
+        return f'DDHkey({self.Delimiter.join(map(repr,self.key))})'
 
 
     def up(self) -> typing.Optional['DDHkey']:
@@ -114,6 +114,13 @@ class DDHkey(NoCopyBaseModel):
     def split_at(self,split : int) -> typing.Tuple[DDHkey,DDHkey]:
         """ split the key into 2 at split """
         return self.__class__(self.key[:split]),self.__class__(self.key[split:])
+
+    def ensure_rooted(self) -> DDHkey:
+        """ return a DHHkey that is rooted """
+        if not self.key[0] == self.Root:
+            return self.__class__((self.Root,)+self.key)
+        else:
+            return self
 
 
 
