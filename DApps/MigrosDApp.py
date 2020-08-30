@@ -14,10 +14,7 @@ class MigrosDApp(dapp.DApp):
         jschema = core.JsonSchema(json_schema=MigrosSchema.schema_json())
         return jschema
 
-    
-
-class MigrosSchema(core.NoCopyBaseModel):
-
+class Receipt(core.NoCopyBaseModel):
 
     Datum:      datetime.date 
     Zeit:       datetime.time 
@@ -28,4 +25,16 @@ class MigrosSchema(core.NoCopyBaseModel):
     Menge:      float = 1
     Aktion:     int = 0
     Umsatz:     float = 0
+
+class MigrosClient(core.NoCopyBaseModel):
+
+    id = core.Principal
+    cumulus : typing.Optional[int] = None
+    receipts: typing.List[Receipt] = []
+    
+
+class MigrosSchema(core.NoCopyBaseModel):
+
+    clients : typing.List[MigrosClient] = []
+
 
