@@ -11,8 +11,7 @@ def test_paths():
     ddhkey4 = core.DDHkey(key='/rooted/subkey')
     assert ddhkey3 == ddhkey4.up()
     assert ddhkey3.up().up() is None
-    with pytest.raises(ValueError):
-        ddhkey = core.DDHkey(key=())
+    ddhkey = core.DDHkey(key=())
 
     return
 
