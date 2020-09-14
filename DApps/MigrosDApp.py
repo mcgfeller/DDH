@@ -11,10 +11,10 @@ class MigrosDApp(dapp.DApp):
     schemakey : typing.ClassVar[core.DDHkey] = core.DDHkey(key="/ddh/shopping/stores/migros")
  
     def get_schema(self) -> core.Schema:
-        jschema = core.JsonSchema(json_schema=MigrosSchema.schema_json())
-        return jschema
 
-class Receipt(core.NoCopyBaseModel):
+        return core.PySchema(schema_element=MigrosSchema)
+
+class Receipt(core.SchemaElement):
 
     Datum:      datetime.date 
     Zeit:       datetime.time 
@@ -26,14 +26,14 @@ class Receipt(core.NoCopyBaseModel):
     Aktion:     int = 0
     Umsatz:     float = 0
 
-class MigrosClient(core.NoCopyBaseModel):
+class MigrosClient(core.SchemaElement):
 
     id = core.Principal
     cumulus : typing.Optional[int] = None
     receipts: typing.List[Receipt] = []
     
 
-class MigrosSchema(core.NoCopyBaseModel):
+class MigrosSchema(core.SchemaElement):
 
     clients : typing.List[MigrosClient] = []
 

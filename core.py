@@ -63,16 +63,16 @@ class Consent(NoCopyBaseModel):
     withApps : typing.List[DAppId] = []
     withMode : typing.List[AccessMode]  = [AccessMode.read]
 
-    def check(self,access : 'Access') -> typing.Tuple[bool,str]:
+    def check(self,access : Access) -> typing.Tuple[bool,str]:
         return False,'not checked'
 
-class _RootType:
+class _RootType(str):
     """ Singleton root marker """
     def __repr__(self):
         return '<Root>'
 
     def __str__(self):
-        return DDHkey.Delimiter
+        return ''
 
 class DDHkey(NoCopyBaseModel):
     """ A key identifying a DDH ressource. DDHkey is decoupled from any access, storage, etc.,
@@ -81,7 +81,7 @@ class DDHkey(NoCopyBaseModel):
     key : tuple
 
     Delimiter : typing.ClassVar[str] = '/'
-    Root : typing.ClassVar[_RootType] = _RootType()
+    Root : typing.ClassVar[_RootType] = _RootType(Delimiter)
 
     def __init__(self,key : typing.Union[tuple,list,str], node :  typing.Optional['Node'] = None):
         """ Convert key string into tuple, eliminate empty segments, and set root to self.Root """
@@ -157,20 +157,40 @@ class Access(NoCopyBaseModel):
     def audit_record(self) -> dict:
         return {}
 
+class SchemaElement(NoCopyBaseModel): 
+    """ A Pydantic Schema class """
 
+    @classmethod 
+    def get_path(cls,path: DDHkey) -> typing.Type[SchemaElement]:
+        # TODO: Travel down SchemaElement along path using cls.__annotations__
+        return cls
 
 
 class Schema(NoCopyBaseModel): 
+    ...
+
+
+class PySchema(Schema):
+    """ A Schema in Pydantic Python, containing a SchemaElement """ 
+    schema_element : typing.Type[SchemaElement]
 
     def obtain(self,ddhkey: DDHkey,split: int) -> Schema:
         """ obtain a schema for the ddhkey, which is split into the key holding the schema and
             the remaining path. 
         """
         khere,kremainder = ddhkey.split_at(split)
-        return self
+        if kremainder:
+            s = PySchema(schema_element=self.schema_element.get_path(kremainder))
+        else:
+            s = self
+        return s
 
 class JsonSchema(Schema):
     json_schema : pydantic.Json
+
+    @classmethod
+    def from_schema(cls,schema) -> JsonSchema:
+        return cls(json_schema=schema.schema_element.schema_json())
 
 
 @enum.unique
@@ -188,7 +208,7 @@ class Node(NoCopyBaseModel):
 
     owner: Principal
     consent : typing.Optional[Consent] = None
-    nschema : typing.Optional[Schema] = pydantic.Field(alias='schema')
+    nschema : typing.Optional[Schema] =  pydantic.Field(alias='schema')
     key : typing.Optional[DDHkey] = None
 
     def __str__(self):
@@ -196,10 +216,11 @@ class Node(NoCopyBaseModel):
         return f'Node(key={self.key!s},owner={self.owner.id})'
 
 
-    def get_schema(self, ddhkey: DDHkey,split: int) -> Schema:
+    def get_schema(self, ddhkey: DDHkey,split: int, schema_type : str = 'json') -> Schema:
         """ return schema based on ddhkey and split """
         schema = typing.cast(Schema,self.nschema)
         schema = schema.obtain(ddhkey,split)
+        schema = JsonSchema.from_schema(schema)
         return schema
 
 
