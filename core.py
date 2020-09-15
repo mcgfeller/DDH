@@ -100,7 +100,14 @@ class DDHkey(NoCopyBaseModel):
         return self.Delimiter.join(map(str,self.key))
 
     def __repr__(self) -> str:
-        return f'DDHkey({self.Delimiter.join(map(repr,self.key))})'
+        return f'DDHkey({self.Delimiter.join(map(str,self.key))})'
+
+    def __iter__(self) -> typing.Iterator:
+        """ Iterate over key """
+        return iter(self.key)
+
+    def __getitem__(self,ix : int):
+        return self.key.__getitem__(ix)
 
 
     def up(self) -> typing.Optional['DDHkey']:
@@ -112,7 +119,7 @@ class DDHkey(NoCopyBaseModel):
             return None
 
     def split_at(self,split : int) -> typing.Tuple[DDHkey,DDHkey]:
-        """ split the key into 2 at split """
+        """ split the key into two DDHkeys at split """
         return self.__class__(self.key[:split]),self.__class__(self.key[split:])
 
     def ensure_rooted(self) -> DDHkey:
@@ -161,26 +168,48 @@ class SchemaElement(NoCopyBaseModel):
     """ A Pydantic Schema class """
 
     @classmethod 
-    def get_path(cls,path: DDHkey) -> typing.Type[SchemaElement]:
-        # TODO: Travel down SchemaElement along path using cls.__annotations__
-        return cls
+    def descend_path(cls,path: DDHkey) -> typing.Optional[typing.Type[SchemaElement]]:
+        """ Travel down SchemaElement along path using some Pydantic implementation details.
+            If a path segment is not found, return None.
+            If a path ends with a simple datatype, we return its parent.  
+        """ 
+        current = cls # before we descend path, this cls is at the current level 
+        pathit = iter(path) # so we can peek whether we're at end
+        for segment in pathit:
+            mf = current.__fields__.get(segment,None) # look up one segment of path, returning ModelField
+            if mf is None:
+                return None
+            else: 
+                assert isinstance(mf,pydantic.fields.ModelField)
+                if issubclass(mf.type_,SchemaElement):
+                    current = mf.type_ # this is the next Pydantic class
+                else: # we're at a leaf, return
+                    if next(pathit,None) is None: # path ends here
+                        break 
+                    else: # path continues beyond this point, so this is not found
+                        return None 
+        return current
 
 
 class Schema(NoCopyBaseModel): 
-    ...
+    def obtain(self,ddhkey: DDHkey,split: int) -> typing.Optional[Schema]:
+        return None
 
 
 class PySchema(Schema):
     """ A Schema in Pydantic Python, containing a SchemaElement """ 
     schema_element : typing.Type[SchemaElement]
 
-    def obtain(self,ddhkey: DDHkey,split: int) -> Schema:
+    def obtain(self,ddhkey: DDHkey,split: int) -> typing.Optional[Schema]:
         """ obtain a schema for the ddhkey, which is split into the key holding the schema and
             the remaining path. 
         """
         khere,kremainder = ddhkey.split_at(split)
         if kremainder:
-            s = PySchema(schema_element=self.schema_element.get_path(kremainder))
+            schema_element = self.schema_element.descend_path(kremainder)
+            if schema_element:
+                s = PySchema(schema_element=schema_element)
+            else: s = None # not found
         else:
             s = self
         return s
@@ -216,11 +245,12 @@ class Node(NoCopyBaseModel):
         return f'Node(key={self.key!s},owner={self.owner.id})'
 
 
-    def get_schema(self, ddhkey: DDHkey,split: int, schema_type : str = 'json') -> Schema:
+    def get_sub_schema(self, ddhkey: DDHkey,split: int, schema_type : str = 'json') -> typing.Optional[Schema]:
         """ return schema based on ddhkey and split """
         schema = typing.cast(Schema,self.nschema)
         schema = schema.obtain(ddhkey,split)
-        schema = JsonSchema.from_schema(schema)
+        if schema:
+            schema = JsonSchema.from_schema(schema)
         return schema
 
 

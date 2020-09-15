@@ -29,7 +29,7 @@ def test_nodes():
     return
 
 def test_schema_node():
-    """ Retrieval of schema and application of get_schema() 
+    """ Retrieval of schema and application of get_sub_schema() 
     """
     schema = core.Schema()
     user = core.User(id='1',name='martin',email='martin.gfeller@swisscom.com')
@@ -38,7 +38,7 @@ def test_schema_node():
     ddhkey = core.DDHkey(key='/ddh/health/mgf/bmi/weight')
     node_s,split = core.NodeRegistry.get_node(ddhkey,core.NodeType.nschema)
     assert node_s.nschema is schema
-    assert node_s.get_schema(ddhkey,split) is schema
+    assert node_s.get_sub_schema(ddhkey,split) is None
 
 def test_basic_access():
 

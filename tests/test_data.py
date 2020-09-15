@@ -5,10 +5,12 @@ import pillars
 
 
 def test_dapp():
-    ddhkey = core.DDHkey(key="/ddh/shopping/stores/migros/receipts/mgf")
+    """ test retrieval of key of test MigrosDApp, and get_sub_schema() """
+    ddhkey = core.DDHkey(key="/ddh/shopping/stores/migros/clients/receipts")
     snode,split = core.NodeRegistry.get_node(ddhkey,core.NodeType.nschema)
-    schema = snode.get_schema(ddhkey,split)
+    schema = snode.get_sub_schema(ddhkey,split)
+    assert isinstance(schema,core.JsonSchema)
+    assert schema.json_schema['title'] == 'Receipt'
     return
 
 
-test_dapp()

@@ -31,15 +31,19 @@ async def get_data(
     return {"ddhkey": ddhkey, "res": d}
 
 @app.get("/schema/{docpath:path}")
-async def get_schema(
+async def get_sub_schema(
     docpath: str = fastapi.Path(..., title="The ddh key of the schema to get"),
     user: core.User = fastapi.Depends(user_auth.get_current_active_user),
     q: str = fastapi.Query(None, alias="item-query"),
     ):
     ddhkey = core.DDHkey(docpath).ensure_rooted()
     snode,split = core.NodeRegistry.get_node(ddhkey,core.NodeType.nschema)
-    if snode:
-        schema = snode.get_schema(ddhkey,split)
-        return {"ddhkey": ddhkey, 'schema': schema}
+    if not snode:
+        raise fastapi.HTTPException(status_code=404, detail=f"No schema node found for {ddhkey}.")
     else:
-        raise fastapi.HTTPException(status_code=404, detail=f"No schema not found at {ddhkey}.")
+        schema = snode.get_sub_schema(ddhkey,split)
+        if not schema:
+            raise fastapi.HTTPException(status_code=404, detail=f"No sub-schema found at {ddhkey}.")
+        else:
+            return {"ddhkey": ddhkey, 'schema': schema}
+   

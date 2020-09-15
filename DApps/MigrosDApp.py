@@ -11,7 +11,7 @@ class MigrosDApp(dapp.DApp):
     schemakey : typing.ClassVar[core.DDHkey] = core.DDHkey(key="/ddh/shopping/stores/migros")
  
     def get_schema(self) -> core.Schema:
-
+        """ Obtain initial schema for DApp """
         return core.PySchema(schema_element=MigrosSchema)
 
 class Receipt(core.SchemaElement):
