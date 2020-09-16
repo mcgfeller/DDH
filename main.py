@@ -4,6 +4,7 @@ import pydantic
 import datetime
 import core
 import pillars
+import enum
 
 app = fastapi.FastAPI()
 
@@ -31,9 +32,10 @@ async def get_data(
     return {"ddhkey": ddhkey, "res": d}
 
 @app.get("/schema/{docpath:path}")
-async def get_sub_schema(
+async def get_schema(
     docpath: str = fastapi.Path(..., title="The ddh key of the schema to get"),
     user: core.User = fastapi.Depends(user_auth.get_current_active_user),
+    schemaformat: core.SchemaFormat = core.SchemaFormat.json,
     q: str = fastapi.Query(None, alias="item-query"),
     ):
     ddhkey = core.DDHkey(docpath).ensure_rooted()
@@ -45,5 +47,5 @@ async def get_sub_schema(
         if not schema:
             raise fastapi.HTTPException(status_code=404, detail=f"No sub-schema found at {ddhkey}.")
         else:
-            return {"ddhkey": ddhkey, 'schema': schema}
+            return {"ddhkey": ddhkey, 'schema': schema.format(schemaformat)}
    

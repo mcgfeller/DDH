@@ -4,6 +4,7 @@ import pydantic
 import datetime
 import typing
 import enum
+import abc
 
 class NoCopyBaseModel(pydantic.BaseModel):
     """ https://github.com/samuelcolvin/pydantic/issues/1246
@@ -191,9 +192,29 @@ class SchemaElement(NoCopyBaseModel):
         return current
 
 
-class Schema(NoCopyBaseModel): 
+class Schema(NoCopyBaseModel,abc.ABC):
+
+    @abc.abstractmethod
+    def to_py_schema(self) -> PySchema:
+        """ return an equivalent Schema as PySchema """
+
+    @classmethod
+    @abc.abstractmethod   
+    def from_schema(cls,schema: Schema) -> Schema:
+        """ return schema in this class """
+        ...
+
+
     def obtain(self,ddhkey: DDHkey,split: int) -> typing.Optional[Schema]:
         return None
+
+    def format(self,format : SchemaFormat):
+        dschema = SchemaFormats[format.value].from_schema(self)
+        return dschema.to_output()
+
+    def to_output(self):
+        return self
+
 
 
 class PySchema(Schema):
@@ -214,13 +235,44 @@ class PySchema(Schema):
             s = self
         return s
 
+    def to_py_schema(self) -> PySchema:
+        """ we're a PySchema, so return self """
+        return self
+
+    @classmethod
+    def from_schema(cls,schema: Schema) -> PySchema:
+        return schema.to_py_schema()
+
+    def to_output(self):
+        """ dict representation of internal schema """
+        return  self.schema_element.schema()
+
 class JsonSchema(Schema):
     json_schema : pydantic.Json
 
     @classmethod
-    def from_schema(cls,schema) -> JsonSchema:
-        return cls(json_schema=schema.schema_element.schema_json())
+    def from_schema(cls,schema: Schema) -> JsonSchema:
+        """ Make a JSON Schema from any Schema """
+        if isinstance(schema,cls):
+            return typing.cast(JsonSchema,schema)
+        else:
+            pyschema = schema.to_py_schema()
+            return cls(json_schema=pyschema.schema_element.schema_json())
 
+    def to_py_schema(self) -> PySchema:
+        """ create Python Schema """
+        raise NotImplementedError('not supported')
+
+    def to_output(self):
+        """ return naked json schema """
+        return  self.json_schema
+
+SchemaFormats = {
+    'json': JsonSchema,
+    'internal' : PySchema,
+}
+# corresponding enum: 
+SchemaFormat = enum.Enum('SchemaFormat',[(k,k) for k in SchemaFormats]) # notype
 
 @enum.unique
 class NodeType(str,enum.Enum):
@@ -249,8 +301,6 @@ class Node(NoCopyBaseModel):
         """ return schema based on ddhkey and split """
         schema = typing.cast(Schema,self.nschema)
         schema = schema.obtain(ddhkey,split)
-        if schema:
-            schema = JsonSchema.from_schema(schema)
         return schema
 
 

@@ -15,8 +15,10 @@ def test_paths():
 
     return
 
+class DummyElement(core.SchemaElement): ...
+
 def test_nodes():
-    schema = core.Schema()
+    schema = core.PySchema(schema_element=DummyElement)
     user = core.User(id='1',name='martin',email='martin.gfeller@swisscom.com')
     user2 = core.User(id='2',name='roman',email='roman.stoessel@swisscom.com')
     node_s = core.Node(schema=schema,owner=user)
@@ -31,7 +33,7 @@ def test_nodes():
 def test_schema_node():
     """ Retrieval of schema and application of get_sub_schema() 
     """
-    schema = core.Schema()
+    schema = core.PySchema(schema_element=DummyElement)
     user = core.User(id='1',name='martin',email='martin.gfeller@swisscom.com')
     node_s = core.Node(schema=schema,owner=user)
     core.NodeRegistry[core.DDHkey(key='/ddh/health')] = node_s

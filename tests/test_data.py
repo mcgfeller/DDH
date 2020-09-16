@@ -9,8 +9,10 @@ def test_dapp():
     ddhkey = core.DDHkey(key="/ddh/shopping/stores/migros/clients/receipts")
     snode,split = core.NodeRegistry.get_node(ddhkey,core.NodeType.nschema)
     schema = snode.get_sub_schema(ddhkey,split)
-    assert isinstance(schema,core.JsonSchema)
-    assert schema.json_schema['title'] == 'Receipt'
+    assert schema is not None
+    jschema = core.JsonSchema.from_schema(schema)
+    assert isinstance(jschema,core.JsonSchema)
+    assert jschema.json_schema['title'] == 'Receipt'
     return
 
 
