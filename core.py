@@ -272,7 +272,7 @@ SchemaFormats = {
     'internal' : PySchema,
 }
 # corresponding enum: 
-SchemaFormat = enum.Enum('SchemaFormat',[(k,k) for k in SchemaFormats]) # notype
+SchemaFormat = enum.Enum('SchemaFormat',[(k,k) for k in SchemaFormats])  # type: ignore # 2nd argument with list form not understood
 
 @enum.unique
 class NodeType(str,enum.Enum):

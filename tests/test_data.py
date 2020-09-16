@@ -12,7 +12,7 @@ def test_dapp():
     assert schema is not None
     jschema = core.JsonSchema.from_schema(schema)
     assert isinstance(jschema,core.JsonSchema)
-    assert jschema.json_schema['title'] == 'Receipt'
+    assert jschema.json_schema['title'] == 'Receipt' # type: ignore
     return
 
 

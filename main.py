@@ -35,7 +35,7 @@ async def get_data(
 async def get_schema(
     docpath: str = fastapi.Path(..., title="The ddh key of the schema to get"),
     user: core.User = fastapi.Depends(user_auth.get_current_active_user),
-    schemaformat: core.SchemaFormat = core.SchemaFormat.json,
+    schemaformat: core.SchemaFormat = core.SchemaFormat.json, # type: ignore # dynamic
     q: str = fastapi.Query(None, alias="item-query"),
     ):
     ddhkey = core.DDHkey(docpath).ensure_rooted()
