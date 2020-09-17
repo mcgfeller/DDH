@@ -19,7 +19,7 @@ class DApp(core.NoCopyBaseModel):
         return dnode
 
     def check_registry(self) -> core.Node:
-        dnode,split = core.NodeRegistry.get_node(self.schemakey,core.NodeType.nschema)
+        dnode = core.NodeRegistry[self.schemakey]
         if not dnode:
             s = self.get_schema() # obtain static schema
             dnode = core.DAppNode(owner=self.owner,schema=s)
