@@ -107,7 +107,7 @@ class DDHkey(NoCopyBaseModel):
         """ Iterate over key """
         return iter(self.key)
 
-    def __getitem__(self,ix : int):
+    def __getitem__(self,ix):
         return self.key.__getitem__(ix)
 
 
