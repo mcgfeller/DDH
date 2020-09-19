@@ -6,6 +6,8 @@ import typing
 import enum
 import abc
 
+from pydantic.errors import PydanticErrorMixin
+
 class NoCopyBaseModel(pydantic.BaseModel):
     """ https://github.com/samuelcolvin/pydantic/issues/1246
         https://github.com/samuelcolvin/pydantic/blob/52af9162068a06eed5b84176e987a534f6d9126a/pydantic/main.py#L574-L575
@@ -215,6 +217,9 @@ class Schema(NoCopyBaseModel,abc.ABC):
     def to_output(self):
         return self
 
+    def add_fields(self,fields : dict):
+        raise NotImplementedError('Field adding not supported in this schema')
+
 
 
 class PySchema(Schema):
@@ -246,6 +251,16 @@ class PySchema(Schema):
     def to_output(self):
         """ dict representation of internal schema """
         return  self.schema_element.schema()
+
+    def add_fields(self,fields : dict):
+        """ Would want this in Pydantic - https://github.com/samuelcolvin/pydantic/issues/1937 """
+        s = self.schema_element
+        for name,field in fields.items():
+            mf = pydantic.fields.ModelField(name=name,type_=typing.Optional[field[0]],required=False,default=field[1],class_validators=None,model_config=pydantic.BaseConfig)
+            s.__fields__[name] = mf
+        s.__schema_cache__.clear()
+        return
+
 
 class JsonSchema(Schema):
     json_schema : pydantic.Json

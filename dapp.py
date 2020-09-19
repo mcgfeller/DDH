@@ -21,9 +21,19 @@ class DApp(core.NoCopyBaseModel):
     def check_registry(self) -> core.Node:
         dnode = core.NodeRegistry[self.schemakey]
         if not dnode:
+            # get a parent scheme to hook into
+            upnode,split = core.NodeRegistry.get_node(self.schemakey,core.NodeType.nschema)
+            pkey = self.schemakey.up()
+            if not pkey:
+                raise ValueError(f'{self.schemakey} key is too high {self!r}')
+            parent = upnode.get_sub_schema(pkey,split)
+            if not parent:
+                raise ValueError(f'No parent schema found for {self!r} with {self.schemakey} at upnode {upnode}')
             s = self.get_schema() # obtain static schema
             dnode = core.DAppNode(owner=self.owner,schema=s)
             core.NodeRegistry[self.schemakey] = dnode
+            # now insert our schema into the parent's:
+            parent.add_fields({self.schemakey[-1] : (s.schema_element,None)})
         return dnode 
     
     def get_schema(self) -> core.Schema:

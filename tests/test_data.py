@@ -16,3 +16,8 @@ def test_dapp():
     return
 
 
+def test_complete_schema():
+    ddhkey = core.DDHkey(key="/ddh/shopping")
+    snode,split = core.NodeRegistry.get_node(ddhkey,core.NodeType.nschema)
+    schema = snode.get_sub_schema(ddhkey,split)
+    schema.format(core.SchemaFormat.json) # type: ignore # dynamic member

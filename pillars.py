@@ -32,9 +32,16 @@ class _DAppManager(core.NoCopyBaseModel):
             if not cls:
                 logger.error(f'DApp module {module.__name__} has no DApp class named {classname}.')
             else:
-                dapp = cls.bootstrap()
-                dnode = dapp.startup()
-                logger.error(f'DApp {dapp!r} initialized at {dnode!s}.')
+                try:
+                    dapp = cls.bootstrap()
+                except Exception as e:
+                    logger.error(f'DApp {cls.__name__} bootstrap error: {e}')
+                else:
+                    try:
+                        dnode = dapp.startup()
+                        logger.info(f'DApp {dapp!r} initialized at {dnode!s}.')
+                    except Exception as e:
+                        logger.error(f'DApp {dapp!r} startup error: {e}')
         return
 
 DAppManager = _DAppManager()
