@@ -20,6 +20,35 @@ class NoCopyBaseModel(pydantic.BaseModel):
         else:
             return super().validate(value) 
 
+    @classmethod
+    def add_fields(cls, **field_definitions: typing.Any):
+        """ Add fields in-place https://github.com/samuelcolvin/pydantic/issues/1937 """
+        new_fields: typing.Dict[str, pydantic.fields.ModelField] = {}
+        new_annotations: typing.Dict[str, typing.Optional[type]] = {}
+
+        for f_name, f_def in field_definitions.items():
+            if isinstance(f_def, tuple):
+                try:
+                    f_annotation, f_value = f_def
+                except ValueError as e:
+                    raise Exception(
+                        'field definitions should either be a tuple of (<type>, <default>) or just a '
+                        'default value, unfortunately this means tuples as '
+                        'default values are not allowed'
+                    ) from e
+            else:
+                f_annotation, f_value = None, f_def
+
+            if f_annotation:
+                new_annotations[f_name] = f_annotation
+
+            new_fields[f_name] = pydantic.fields.ModelField.infer(name=f_name, value=f_value, annotation=f_annotation, class_validators=None, config=cls.__config__)
+
+        cls.__fields__.update(new_fields)
+        cls.__annotations__.update(new_annotations)
+        cls.__schema_cache__.clear()
+        return
+
 
 class Principal(NoCopyBaseModel):
     """ Abstract identification of a party """
@@ -252,14 +281,9 @@ class PySchema(Schema):
         """ dict representation of internal schema """
         return  self.schema_element.schema()
 
-    def add_fields(self,fields : dict):
-        """ Would want this in Pydantic - https://github.com/samuelcolvin/pydantic/issues/1937 """
-        s = self.schema_element
-        for name,field in fields.items():
-            mf = pydantic.fields.ModelField(name=name,type_=typing.Optional[field[0]],required=False,default=field[1],class_validators=None,model_config=pydantic.BaseConfig)
-            s.__fields__[name] = mf
-        s.__schema_cache__.clear()
-        return
+    def add_fields(self,fields : typing.Dict[str,tuple]):
+        """ Add the field in dict """
+        self.schema_element.add_fields(**fields)
 
 
 class JsonSchema(Schema):
