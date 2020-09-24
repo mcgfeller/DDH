@@ -37,10 +37,11 @@ def test_schema_node():
     user = core.User(id='1',name='martin',email='martin.gfeller@swisscom.com')
     node_s = core.Node(schema=schema,owner=user)
     core.NodeRegistry[core.DDHkey(key='/ddh/health')] = node_s
-    ddhkey = core.DDHkey(key='/ddh/health/mgf/bmi/weight')
+    ddhkey = core.DDHkey(key='/ddh/health/mgf/bmi/weight') # does not exist
     node_s,split = core.NodeRegistry.get_node(ddhkey,core.NodeType.nschema)
     assert node_s.nschema is schema
     assert node_s.get_sub_schema(ddhkey,split) is None
+    assert core.get_schema(ddhkey) is None # this should be same in one go.
 
 def test_basic_access():
 

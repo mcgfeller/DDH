@@ -313,6 +313,21 @@ SchemaFormats = {
 # corresponding enum: 
 SchemaFormat = enum.Enum('SchemaFormat',[(k,k) for k in SchemaFormats])  # type: ignore # 2nd argument with list form not understood
 
+
+def get_schema(ddhkey : DDHkey, schemaformat: SchemaFormat = SchemaFormat.json) -> typing.Optional[typing.Any]:
+    """ Utility to retrieve a Schema a return it in the desired format.
+        Returns None if no schema found.
+    """
+    formatted_schema = None # in case of not found. 
+    ddhkey = ddhkey.ensure_rooted()
+    snode,split = NodeRegistry.get_node(ddhkey,NodeType.nschema) # get applicable schema node
+    
+    if snode:
+        schema = snode.get_sub_schema(ddhkey,split)
+        if schema:
+            formatted_schema = schema.format(schemaformat)
+    return formatted_schema
+
 @enum.unique
 class NodeType(str,enum.Enum):
     """ Types of Nodes, marked by presence of attribute corresponding with enum value """
