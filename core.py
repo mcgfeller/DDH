@@ -75,7 +75,7 @@ class AccessMode(str,enum.Enum):
 
 
 class User(Principal):
-    """ Concrete user """
+    """ Concrete user, may login """
        
     name : str 
     email : typing.Optional[pydantic.EmailStr] = None
@@ -138,7 +138,8 @@ class DDHkey(NoCopyBaseModel):
         """ Iterate over key """
         return iter(self.key)
 
-    def __getitem__(self,ix):
+    def __getitem__(self,ix) -> typing.Union[tuple,str]:
+        """ get part of key, str if ix is integer, tuple if slice """
         return self.key.__getitem__(ix)
 
 
@@ -171,6 +172,7 @@ class Access(NoCopyBaseModel):
     """
     ddhkey:    DDHkey
     principal: Principal
+    byDApp:    typing.Optional[DAppId] = None
     mode:      typing.List[AccessMode]  = [AccessMode.read]
     time:      datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow) # defaults to now
     
@@ -221,6 +223,35 @@ class SchemaElement(NoCopyBaseModel):
                     else: # path continues beyond this point, so this is not found
                         return None 
         return current
+
+
+class SchemaReference(SchemaElement):
+
+    ddhkey : DDHkey = DDHkey(DDHkey.Root)
+
+    class Config:
+        @staticmethod
+        def schema_extra(schema: typing.Dict[str, typing.Any], model: typing.Type[SchemaReference]) -> None:
+            schema['properties']['dep'] =  {'$ref': model.getURI()}
+            return
+
+    # @classmethod
+    # def __modify_schema__(cls, field_schema):
+    #     print(field_schema)
+    #     field_schema['@ref'] = cls.getURI()
+    #     return 
+
+    @classmethod
+    def getURI(cls) -> pydantic.AnyUrl:
+        return typing.cast(pydantic.AnyUrl,str(cls.ddhkey))
+
+    @classmethod
+    def create_from_key(cls,name: str, ddhkey : DDHkey) -> typing.Type[SchemaReference]:
+        m = pydantic.create_model(name,__base__ = cls,ddhkey = (ddhkey,ddhkey))
+        return m
+
+
+
 
 
 class Schema(NoCopyBaseModel,abc.ABC):

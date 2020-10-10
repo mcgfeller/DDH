@@ -33,7 +33,8 @@ class DApp(core.NoCopyBaseModel):
             dnode = core.DAppNode(owner=self.owner,schema=s)
             core.NodeRegistry[self.schemakey] = dnode
             # now insert our schema into the parent's:
-            parent.add_fields({self.schemakey[-1] : (s.schema_element,None)})
+            schemaref = core.SchemaReference.create_from_key(self.__class__.__name__,ddhkey=self.schemakey)
+            parent.add_fields({self.schemakey[-1] : (schemaref,None)})
         return dnode 
     
     def get_schema(self) -> core.Schema:
