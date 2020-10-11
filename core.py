@@ -96,7 +96,36 @@ class Consent(NoCopyBaseModel):
     withMode : typing.List[AccessMode]  = [AccessMode.read]
 
     def check(self,access : Access) -> typing.Tuple[bool,str]:
-        return False,'not checked'
+        """ check access and return boolean and text explaining why it's not ok """
+        if self.grantedTo != AllPrincipal and access.principal not in self.grantedTo:
+            return False,f'Consent not granted to {access.principal}'
+        if self.withApps:
+            if access.byDApp:
+                if access.byDApp not in self.withApps:
+                    return False,f'Consent not granted to DApp {access.byDApp}'
+            else:
+                return False,f'Consent granted to DApps; need an DApp id to access'
+        
+        if access.mode not in self.withMode:
+            return False,f'Consent not sufficient for mode {access.mode}'
+
+
+        return True,'granted by Consent'
+
+class Consents(NoCopyBaseModel):
+    """ Multiple Consents
+        TODO: Should organize by grantedTo for lookup
+    """
+    consents : typing.List[Consent] = []
+
+    def check(self,access : Access) -> typing.Tuple[bool,str]:
+        text = 'no consent'
+        for consent in self.consents:
+            ok,text = consent.check(access)
+            if ok:
+                return ok,text
+        else:
+            return False,text  
 
 class _RootType(str):
     """ Singleton root marker """
@@ -183,15 +212,15 @@ class Access(NoCopyBaseModel):
         elif onode.owner == self.principal:
             return True,'Node owned by principal'
         else:
-            if onode.consent: # onode has consent, use it
-                consent : Consent = onode.consent
-            else: # obtain from consent node
-                cnode,split = NodeRegistry.get_node(self.ddhkey,NodeType.consent) 
+            if onode.consents: # onode has consents, use it
+                consents : Consents = onode.consents
+            else: # obtain from consents node
+                cnode,split = NodeRegistry.get_node(self.ddhkey,NodeType.consents) 
                 if cnode:
-                    consent = typing.cast(Consent,cnode.consent)  # consent is not None by get_node
+                    consents = typing.cast(Consents,cnode.consents)  # consent is not None by get_node
                 else:
                     return False,f'Owner is not accessor, and no consent node found for key {self.ddhkey}'
-            ok,msg = consent.check(self) # check consent
+            ok,msg = consents.check(self) # check consents
             return ok,msg
 
     
@@ -227,7 +256,7 @@ class SchemaElement(NoCopyBaseModel):
 
 class SchemaReference(SchemaElement):
 
-    ddhkey : DDHkey = DDHkey(DDHkey.Root)
+    ddhkey : typing.ClassVar[str] 
 
     class Config:
         @staticmethod
@@ -243,12 +272,12 @@ class SchemaReference(SchemaElement):
 
     @classmethod
     def getURI(cls) -> pydantic.AnyUrl:
-        return typing.cast(pydantic.AnyUrl,str(cls.ddhkey))
+        return typing.cast(pydantic.AnyUrl,str(cls.__fields__['ddhkey'].default))
 
     @classmethod
-    def create_from_key(cls,name: str, ddhkey : DDHkey) -> typing.Type[SchemaReference]:
-        m = pydantic.create_model(name,__base__ = cls,ddhkey = (ddhkey,ddhkey))
-        return m
+    def create_from_key(cls,name: str, ddhkey : str) -> typing.Type[SchemaReference]:
+        m = pydantic.create_model(name,__base__ = cls,ddhkey = (DDHkey,ddhkey))
+        return typing.cast(typing.Type[SchemaReference],m)
 
 
 
@@ -365,7 +394,7 @@ class NodeType(str,enum.Enum):
 
     owner = 'owner'
     nschema = 'nschema'
-    consent = 'consent'
+    consents = 'consents'
     data = 'data'
     execute = 'execute'
 
@@ -373,7 +402,7 @@ class NodeType(str,enum.Enum):
 class Node(NoCopyBaseModel):
 
     owner: Principal
-    consent : typing.Optional[Consent] = None
+    consents : typing.Optional[Consents] = None
     nschema : typing.Optional[Schema] =  pydantic.Field(alias='schema')
     key : typing.Optional[DDHkey] = None
 

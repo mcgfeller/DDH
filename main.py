@@ -23,6 +23,8 @@ app.post("/token", response_model=user_auth.Token)(user_auth.login_for_access_to
 async def get_data(
     docpath: str = fastapi.Path(..., title="The ddh key of the data to get"),
     user: core.User = fastapi.Depends(user_auth.get_current_active_user),
+    dapp : typing.Optional[core.DAppId] = None,
+    mode: core.AccessMode = core.AccessMode.read,
     q: str = fastapi.Query(None, alias="item-query"),
     ):
     ddhkey = core.DDHkey(docpath).ensure_rooted()
