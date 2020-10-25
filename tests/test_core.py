@@ -42,7 +42,7 @@ def test_schema_node():
     assert node_s.nschema is schema
     assert node_s.get_sub_schema(ddhkey,split) is None
     access = core.Access(ddhkey=ddhkey,principal=user,mode=[core.AccessMode.schema_read])
-    assert core.get_schema(ddhkey,access) is None # this should be same in one go.
+    assert core.get_schema(access) is None # this should be same in one go.
 
 
 if __name__ == '__main__':

@@ -473,12 +473,12 @@ NodeRegistry = _NodeRegistry()
 NodeRegistry[DDHkey((DDHkey.Root,))] = Node(owner=RootPrincipal)
 
 
-def get_schema(ddhkey : DDHkey, access : Access, schemaformat: SchemaFormat = SchemaFormat.json) -> typing.Optional[typing.Any]:
+def get_schema(access : Access, schemaformat: SchemaFormat = SchemaFormat.json) -> typing.Optional[typing.Any]:
     """ Service utility to retrieve a Schema and return it in the desired format.
         Returns None if no schema found.
     """
     formatted_schema = None # in case of not found. 
-    ddhkey = ddhkey.ensure_rooted()
+    ddhkey = access.ddhkey.ensure_rooted()
     snode,split = NodeRegistry.get_node(ddhkey,NodeType.nschema) # get applicable schema node
     ok,text = access.permitted()
     
@@ -489,12 +489,12 @@ def get_schema(ddhkey : DDHkey, access : Access, schemaformat: SchemaFormat = Sc
     return formatted_schema
 
 
-def get_data(ddhkey : DDHkey, access : Access) -> typing.Any:
+def get_data(access : Access) -> typing.Any:
     """ Service utility to retrieve data and return it in the desired format.
         Returns None if no schema found.
     """
     data = None # in case of not found. 
-    ddhkey = ddhkey.ensure_rooted()
+    ddhkey = access.ddhkey.ensure_rooted()
     dnode,split = NodeRegistry.get_node(ddhkey,NodeType.data) # get applicable data node
     cnode,split = NodeRegistry.get_node(ddhkey,NodeType.consents) # get applicable consents node
     
