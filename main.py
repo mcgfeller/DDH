@@ -37,11 +37,13 @@ async def get_data(
 async def get_schema(
     docpath: str = fastapi.Path(..., title="The ddh key of the schema to get"),
     user: core.User = fastapi.Depends(user_auth.get_current_active_user),
+    dapp : typing.Optional[core.DAppId] = None,
     schemaformat: core.SchemaFormat = core.SchemaFormat.json, # type: ignore # dynamic
     q: str = fastapi.Query(None, alias="item-query"),
     ):
     ddhkey = core.DDHkey(docpath)
-    fschema = core.get_schema(ddhkey,schemaformat)
+    access = core.Access(ddhkey=ddhkey,principal=user, mode = core.AccessMode.schema_read,byDApp=dapp)
+    fschema = core.get_schema(ddhkey,access,schemaformat)
     if not fschema:
         raise fastapi.HTTPException(status_code=404, detail=f"No schema found at {ddhkey}.")
     else:

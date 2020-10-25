@@ -72,6 +72,17 @@ class AccessMode(str,enum.Enum):
     write = 'write'
     anonymous = 'anonymous'
     pseudonym = 'pseudonym'
+    schema_read = 'schema_read'
+    schema_write = 'schema_write'    
+    consent_read = 'consent_read'
+    consent_write = 'consent_write'
+
+    @classmethod
+    def check(cls,requested :typing.List[AccessMode], consented : typing.List[AccessMode]) -> typing.Tuple[bool,str]:
+        for req in requested:
+            if req not in consented:
+                return False,f'requested mode {req} not in consented modes {consented}.'
+        return True,'ok'
 
 
 class User(Principal):
@@ -106,9 +117,9 @@ class Consent(NoCopyBaseModel):
             else:
                 return False,f'Consent granted to DApps; need an DApp id to access'
         
-        if access.mode not in self.withMode:
-            return False,f'Consent not sufficient for mode {access.mode}'
-
+        ok,txt = AccessMode.check(access.mode,self.withMode)
+        if not ok:
+            return False,txt
 
         return True,'granted by Consent'
 
@@ -374,19 +385,7 @@ SchemaFormats = {
 SchemaFormat = enum.Enum('SchemaFormat',[(k,k) for k in SchemaFormats])  # type: ignore # 2nd argument with list form not understood
 
 
-def get_schema(ddhkey : DDHkey, schemaformat: SchemaFormat = SchemaFormat.json) -> typing.Optional[typing.Any]:
-    """ Utility to retrieve a Schema a return it in the desired format.
-        Returns None if no schema found.
-    """
-    formatted_schema = None # in case of not found. 
-    ddhkey = ddhkey.ensure_rooted()
-    snode,split = NodeRegistry.get_node(ddhkey,NodeType.nschema) # get applicable schema node
-    
-    if snode:
-        schema = snode.get_sub_schema(ddhkey,split)
-        if schema:
-            formatted_schema = schema.format(schemaformat)
-    return formatted_schema
+
 
 @enum.unique
 class NodeType(str,enum.Enum):
@@ -472,3 +471,35 @@ class _NodeRegistry:
 NodeRegistry = _NodeRegistry()
 
 NodeRegistry[DDHkey((DDHkey.Root,))] = Node(owner=RootPrincipal)
+
+
+def get_schema(ddhkey : DDHkey, access : Access, schemaformat: SchemaFormat = SchemaFormat.json) -> typing.Optional[typing.Any]:
+    """ Service utility to retrieve a Schema and return it in the desired format.
+        Returns None if no schema found.
+    """
+    formatted_schema = None # in case of not found. 
+    ddhkey = ddhkey.ensure_rooted()
+    snode,split = NodeRegistry.get_node(ddhkey,NodeType.nschema) # get applicable schema node
+    ok,text = access.permitted()
+    
+    if snode:
+        schema = snode.get_sub_schema(ddhkey,split)
+        if schema:
+            formatted_schema = schema.format(schemaformat)
+    return formatted_schema
+
+
+def get_data(ddhkey : DDHkey, access : Access) -> typing.Any:
+    """ Service utility to retrieve data and return it in the desired format.
+        Returns None if no schema found.
+    """
+    data = None # in case of not found. 
+    ddhkey = ddhkey.ensure_rooted()
+    dnode,split = NodeRegistry.get_node(ddhkey,NodeType.data) # get applicable data node
+    cnode,split = NodeRegistry.get_node(ddhkey,NodeType.consents) # get applicable consents node
+    
+    if dnode:
+        schema = snode.get_sub_schema(ddhkey,split)
+        if schema:
+            formatted_schema = schema.format(schemaformat)
+    return data
