@@ -1,1 +1,1 @@
-"C:\Program Files\Python38\scripts\uvicorn" main:app --reload
+"C:\Program Files\Python38\scripts\uvicorn" main:app --reload --no-use-colors
