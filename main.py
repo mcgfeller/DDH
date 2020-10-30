@@ -45,7 +45,7 @@ async def get_schema(
     access = core.Access(ddhkey=core.DDHkey(docpath),principal=user, mode = [core.AccessMode.schema_read],byDApp=dapp)
     fschema = core.get_schema(access,schemaformat)
     if not fschema:
-        raise fastapi.HTTPException(status_code=404, detail=f"No schema found at {ddhkey}.")
+        raise fastapi.HTTPException(status_code=404, detail=f"No schema found at {access.ddhkey}.")
     else:
         return {"ddhkey": access.ddhkey, 'schema': fschema}
    
