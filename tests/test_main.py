@@ -17,8 +17,14 @@ def test_get_data(httpx_client):
     assert d['res'],'res is empty'
     return
 
-def test_get_schema(httpx_client):
+def test_get_schema_server(httpx_client):
     r = httpx_client.get('/schema/ddh/shopping?schemaformat=json')
+    r.raise_for_status()
+    r.json()
+    return
+
+def test_get_schema_wsgi(wsgi_client):
+    r = wsgi_client.get('/schema/ddh/shopping?schemaformat=json')
     r.raise_for_status()
     r.json()
     return
@@ -44,5 +50,25 @@ def httpx_client():
 
 
 def start_server(exe : str,port : int = 8080, app : str = 'main:app',cwd=pathlib.Path(__file__).parent.parent) -> subprocess.Popen:
+    """ Start the uvicorn process """
     p = subprocess.Popen([exe,app,f'--port={port}','--reload' ],bufsize=-1,cwd=cwd)
     return p
+
+
+@pytest.fixture(scope="module")
+def wsgi_client():
+    """ Use the WSGI client of httpx, so we run the app in the test process.
+
+    """
+    url = 'http://localhost:'+str(PORT)
+    from main  import app
+    with httpx.Client(app=app, base_url=url) as client:
+        r = client.post(url+'/token',data=USERPWD)
+        r.raise_for_status()
+    token = r.json()['access_token']
+    headers = httpx.Headers({'Authorization': 'Bearer '+token})
+    client = httpx.Client(app=app,base_url=url,headers=headers)
+    yield client
+    # Finalizer:
+    client.close()
+    return 
