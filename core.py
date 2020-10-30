@@ -418,7 +418,7 @@ class Node(NoCopyBaseModel):
 
 
 class ExecutableNode(Node):
-    def execute(self,  user: Principal, q : str):
+    def execute(self,  user: Principal, q : typing.Optional[str] = None):
         return {}
 
 
@@ -489,17 +489,12 @@ def get_schema(access : Access, schemaformat: SchemaFormat = SchemaFormat.json) 
     return formatted_schema
 
 
-def get_data(access : Access) -> typing.Any:
+def get_data(access : Access, q : typing.Optional[str] = None) -> typing.Any:
     """ Service utility to retrieve data and return it in the desired format.
-        Returns None if no schema found.
+        Returns None if no data found.
     """
-    data = None # in case of not found. 
     ddhkey = access.ddhkey.ensure_rooted()
-    dnode,split = NodeRegistry.get_node(ddhkey,NodeType.data) # get applicable data node
-    cnode,split = NodeRegistry.get_node(ddhkey,NodeType.consents) # get applicable consents node
-    
-    if dnode:
-        schema = snode.get_sub_schema(ddhkey,split)
-        if schema:
-            formatted_schema = schema.format(schemaformat)
+    enode,split = NodeRegistry.get_node(ddhkey,NodeType.execute)
+    enode = typing.cast(ExecutableNode,enode)
+    data = enode.execute(access.principal, q)
     return data
