@@ -23,8 +23,9 @@ def test_get_schema_server(httpx_client):
     r.json()
     return
 
-def test_get_schema_wsgi(wsgi_client):
-    r = wsgi_client.get('/schema/ddh/shopping?schemaformat=json')
+@pytest.mark.skip
+async def  test_get_schema_asgi(asgi_client):
+    r = await asgi_client.get('/schema/ddh/shopping?schemaformat=json')
     r.raise_for_status()
     r.json()
     return
@@ -56,19 +57,21 @@ def start_server(exe : str,port : int = 8080, app : str = 'main:app',cwd=pathlib
 
 
 @pytest.fixture(scope="module")
-def wsgi_client():
-    """ Use the WSGI client of httpx, so we run the app in the test process.
+async def asgi_client():
+    """ Use the asgi client of httpx, so we run the app in the test process.
+        This is currently not running, as it would require an async plugin an loop:
+        https://pypi.org/project/pytest-httpx/
 
     """
     url = 'http://localhost:'+str(PORT)
     from main  import app
-    with httpx.Client(app=app, base_url=url) as client:
-        r = client.post(url+'/token',data=USERPWD)
+    async with httpx.AsyncClient(app=app, base_url=url) as client:
+        r = await client.post(url+'/token',data=USERPWD)
         r.raise_for_status()
     token = r.json()['access_token']
     headers = httpx.Headers({'Authorization': 'Bearer '+token})
-    client = httpx.Client(app=app,base_url=url,headers=headers)
+    client = httpx.AsyncClient(app=app,base_url=url,headers=headers)
     yield client
     # Finalizer:
-    client.close()
+    #client.close()
     return 
