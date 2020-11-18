@@ -52,28 +52,29 @@ def test_access_modes():
     core.NodeRegistry[ddhkey] = node_c
 
 
-    for ok,user,modes in (
-      (True,0,[AM.read,AM.write]),
-      (True,0,[AM.read,AM.anonymous]),
-      (True,1,[AM.read]),
-      (False,1,[AM.write]),
-    #   (True,1,[AM.anonymous]),
-      (False,1,[AM.write,AM.anonymous]),
-      (True,2,[AM.read]),
-      (False,2,[AM.write]),      
-      (False,3,[AM.read]),
-      (True,3,[AM.write]),   
-      (True,4,[AM.read]), # read_for_write implies read
-      (True,4,[AM.read_for_write]), 
-      (False,4,[AM.write]), # read_for_write does not imply write
-      (False,5,[AM.read_for_write]), # must specify anonymous     
-      (True,5,[AM.read_for_write,AM.anonymous]),        
-    ):
+    for i,(ok,user,modes,comment) in enumerate((
+      (True,0,[AM.read,AM.write],''),
+      (True,0,[AM.read,AM.anonymous],''),
+      (True,1,[AM.read],''),
+      (False,1,[AM.write],''),
+      (True,1,[AM.anonymous],'read includes anonymous read'), 
+      (False,1,[AM.write,AM.anonymous],'no write permission'), 
+      (True,2,[AM.read],''),
+      (False,2,[AM.write],''),      
+      (False,3,[AM.read],'write doesn\'t imply read'), 
+      (True,3,[AM.write],''),   
+      (True,4,[AM.read],'read_for_write implies read'), 
+      (True,4,[AM.read_for_write],''), 
+      (False,4,[AM.write],'read_for_write does not imply write'), 
+      (False,5,[AM.read_for_write],'must specify anonymous'), 
+      (True,5,[AM.read_for_write,AM.anonymous],''),        
+    )):
         access = core.Access(ddhkey=ddhkey,principal=users[user],mode=modes)
         rok,p = access.permitted()
-        if True: # rok != ok:
-            print(f'Result {rok} expected {ok}: {p}, for {user=}, {modes=}')
-        assert rok == ok,f'Result {rok} expected {ok}: {p}, for {user=}, {modes=}'
+        diagnose = f'Test {i} result {rok} expected {ok} because {comment or "it is obvious"}: {p}, for {user=}, {modes=}'
+        if  rok != ok: 
+            print(diagnose)
+        assert rok == ok,diagnose
     return
 
 if __name__ == '__main__':
