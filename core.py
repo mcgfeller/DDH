@@ -64,8 +64,8 @@ RootPrincipal = Principal(id='DDH')
 
 @enum.unique
 class AccessMode(str,enum.Enum):
-    """ Access modes, can be added. 
-        We cannot use enum.Flag, as pydantic doesn't support exporting / importing it as strings
+    """ Access modes, can be used as list. 
+        We cannot use enum.Flag (which could be added), as pydantic doesn't support exporting / importing it as strings
     """
     read = 'read'
     read_for_write = 'read_for_write' # read with the intention to write data back   
@@ -129,14 +129,15 @@ class Consents(NoCopyBaseModel):
     """
     consents : typing.List[Consent] = []
 
-    def check(self,access : Access) -> typing.Tuple[bool,str]:
+    def check(self,access : Access) -> typing.Tuple[bool,str,typing.Optional[Consent]]:
         text = 'no consent'
+        consent = None
         for consent in self.consents:
             ok,text = consent.check(access)
             if ok:
-                return ok,text
+                return ok,text,consent
         else:
-            return False,text  
+            return False,text,consent  
 
 class _RootType(str):
     """ Singleton root marker """
@@ -216,12 +217,14 @@ class Access(NoCopyBaseModel):
     mode:      typing.List[AccessMode]  = [AccessMode.read]
     time:      datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow) # defaults to now
     
-    def permitted(self) -> typing.Tuple[bool,str]:
+    def permitted(self) -> typing.Tuple[bool,str,typing.Optional[Consent]]:
+        """ checks whether access is permitted, returning (boll,explanation text,applicable consent)
+        """
         onode,split = NodeRegistry.get_node(self.ddhkey,NodeType.owner)
         if not onode:
-            return False,f'No owner node found for key {self.ddhkey}'
+            return False,f'No owner node found for key {self.ddhkey}',None
         elif onode.owner == self.principal:
-            return True,'Node owned by principal'
+            return True,'Node owned by principal',None
         else:
             if onode.consents: # onode has consents, use it
                 consents : Consents = onode.consents
@@ -230,9 +233,9 @@ class Access(NoCopyBaseModel):
                 if cnode:
                     consents = typing.cast(Consents,cnode.consents)  # consent is not None by get_node
                 else:
-                    return False,f'Owner is not accessor, and no consent node found for key {self.ddhkey}'
-            ok,msg = consents.check(self) # check consents
-            return ok,msg
+                    return False,f'Owner is not accessor, and no consent node found for key {self.ddhkey}',None
+            ok,msg,consent = consents.check(self) # check consents
+            return ok,msg,consent
 
     
     def audit_record(self) -> dict:
@@ -480,7 +483,7 @@ def get_schema(access : Access, schemaformat: SchemaFormat = SchemaFormat.json) 
     formatted_schema = None # in case of not found. 
     ddhkey = access.ddhkey.ensure_rooted()
     snode,split = NodeRegistry.get_node(ddhkey,NodeType.nschema) # get applicable schema node
-    ok,text = access.permitted()
+    ok,text,consent = access.permitted()
     
     if snode:
         schema = snode.get_sub_schema(ddhkey,split)
