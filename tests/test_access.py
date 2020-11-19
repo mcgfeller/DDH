@@ -43,10 +43,10 @@ def test_access_modes():
     AM = core.AccessMode
     node_c = core.Node(consents=core.Consents(consents=[
         core.Consent(grantedTo=[users[1]]),
-        core.Consent(grantedTo=[users[2]],mode=[AM.read]),
-        core.Consent(grantedTo=[users[3]],mode=[AM.write]),    
-        core.Consent(grantedTo=[users[4]],mode=[AM.read_for_write]),
-        core.Consent(grantedTo=[users[5]],mode=[AM.read_for_write,core.AccessMode.anonymous]),        
+        core.Consent(grantedTo=[users[2]],withMode=[AM.read]),
+        core.Consent(grantedTo=[users[3]],withMode=[AM.write]),    
+        core.Consent(grantedTo=[users[4]],withMode=[AM.read_for_write]),
+        core.Consent(grantedTo=[users[5]],withMode=[AM.read_for_write,core.AccessMode.anonymous]),        
         ]),owner=users[0])    
     ddhkey = core.DDHkey(key='root')
     core.NodeRegistry[ddhkey] = node_c

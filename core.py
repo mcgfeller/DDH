@@ -79,10 +79,18 @@ class AccessMode(str,enum.Enum):
 
     @classmethod
     def check(cls,requested :typing.List[AccessMode], consented : typing.List[AccessMode]) -> typing.Tuple[bool,str]:
+        effective_consented = [[c]+cls.ImpliedConsent.get(c,[]) for c in consented]
+        effective_consented = [item for sublist in effective_consented for item in sublist] # flatten it
         for req in requested:
-            if req not in consented:
-                return False,f'requested mode {req} not in consented modes {consented}.'
+            if req not in effective_consented:
+                return False,f'requested mode {req} not in consented modes {effective_consented}.'
+        required_modes = {c for c in consented if c in AccessMode.RequiredModes} 
+        if  miss:= required_modes - set(requested):
+            return False,f'Consent requires ", ".join(miss) mode'
         return True,'ok'
+
+AccessMode.ImpliedConsent = {AccessMode.read_for_write: [AccessMode.read], AccessMode.read: [AccessMode.anonymous,AccessMode.pseudonym], }
+AccessMode.RequiredModes = {AccessMode.anonymous, AccessMode.pseudonym} # modes that need to be specified explicity in requested when consented.
 
 
 class User(Principal):
