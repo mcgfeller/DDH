@@ -70,8 +70,8 @@ def test_access_modes():
       (True,5,[AM.read_for_write,AM.anonymous],''),        
     )):
         access = core.Access(ddhkey=ddhkey,principal=users[user],mode=modes)
-        rok,p = access.permitted()
-        diagnose = f'Test {i} result {rok} expected {ok} because {comment or "it is obvious"}: {p}, for {user=}, {modes=}'
+        rok,explanation,consent = access.permitted()
+        diagnose = f'Test {i} result {rok} expected {ok} because {comment or "it is obvious"}: {explanation}, for {user=}, {modes=}, {consent=}'
         if  rok != ok: 
             print(diagnose)
         assert rok == ok,diagnose

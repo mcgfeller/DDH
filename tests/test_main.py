@@ -6,7 +6,7 @@ import subprocess
 import pathlib
 
 
-UVICORN_EXE = "C:\\Program Files\\Python38\\scripts\\uvicorn.exe"
+UVICORN_EXE = "C:\\Program Files\\Python39\\scripts\\uvicorn.exe"
 PORT = 8048 
 USERPWD = {'username':'mgf','password':'secret'}
 
