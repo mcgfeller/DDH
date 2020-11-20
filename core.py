@@ -92,7 +92,7 @@ class AccessMode(str,enum.Enum):
                 return False,f'requested mode {req} not in consented modes {effective_consented}.'
         required_modes = {c for c in consented if c in AccessMode.RequiredModes} 
         if  miss:= required_modes - set(requested):
-            return False,f'Consent requires ", ".join(miss) mode'
+            return False,f'Consent requires ", ".join(miss) modes'
         return True,'ok'
 
 AccessMode.ImpliedConsent = {AccessMode.read_for_write: [AccessMode.read], AccessMode.read: [AccessMode.anonymous,AccessMode.pseudonym], }
@@ -134,7 +134,7 @@ class Consent(NoCopyBaseModel):
             else:
                 return False,f'Consent granted to DApps; need an DApp id to access'
         
-        ok,txt = AccessMode.check(access.mode,self.withMode)
+        ok,txt = AccessMode.check(access.modes,self.withMode)
         if not ok:
             return False,txt
 
@@ -246,7 +246,7 @@ class Access(NoCopyBaseModel):
     ddhkey:    DDHkey
     principal: Principal
     byDApp:    typing.Optional[DAppId] = None
-    mode:      list[AccessMode]  = [AccessMode.read]
+    modes:      list[AccessMode]  = [AccessMode.read]
     time:      datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow) # defaults to now
     
     def permitted(self) -> typing.Tuple[bool,str,typing.Optional[Consent]]:

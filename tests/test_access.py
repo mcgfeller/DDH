@@ -28,7 +28,7 @@ def test_basic_access():
         access = core.Access(ddhkey=ddhkey,principal=user2) # read granted to user2
         assert access.permitted()[0] 
 
-        access = core.Access(ddhkey=ddhkey,principal=user2,mode=[core.AccessMode.write])
+        access = core.Access(ddhkey=ddhkey,principal=user2,modes=[core.AccessMode.write])
         assert not access.permitted()[0] # write not granted to user2
 
         access = core.Access(ddhkey=ddhkey,principal=user3) # read granted to user2
@@ -69,7 +69,7 @@ def test_access_modes():
       (False,5,[AM.read_for_write],'must specify anonymous'), 
       (True,5,[AM.read_for_write,AM.anonymous],''),        
     )):
-        access = core.Access(ddhkey=ddhkey,principal=users[user],mode=modes)
+        access = core.Access(ddhkey=ddhkey,principal=users[user],modes=modes)
         rok,explanation,consent = access.permitted()
         diagnose = f'Test {i} result {rok} expected {ok} because {comment or "it is obvious"}: {explanation}, for {user=}, {modes=}, {consent=}'
         if  rok != ok: 
