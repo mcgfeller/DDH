@@ -519,6 +519,12 @@ NodeRegistry = _NodeRegistry()
 
 NodeRegistry[DDHkey((DDHkey.Root,))] = Node(owner=RootPrincipal)
 
+class AccessError(Exception):
+    def __init__(self,text,consent=None):
+        self.text = text
+
+    def __str__(self):
+        return self.text 
 
 def get_schema(access : Access, schemaformat: SchemaFormat = SchemaFormat.json) -> typing.Optional[typing.Any]:
     """ Service utility to retrieve a Schema and return it in the desired format.
@@ -528,6 +534,8 @@ def get_schema(access : Access, schemaformat: SchemaFormat = SchemaFormat.json) 
     ddhkey = access.ddhkey.ensure_rooted()
     snode,split = NodeRegistry.get_node(ddhkey,NodeType.nschema) # get applicable schema node
     ok,consent,text = access.permitted()
+    if not ok:
+       return None
     
     if snode:
         schema = snode.get_sub_schema(ddhkey,split)
