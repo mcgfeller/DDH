@@ -84,7 +84,7 @@ class AccessMode(str,enum.Enum):
     consent_write = 'consent_write'
 
     @classmethod
-    def check(cls,requested :set[AccessMode], consented : set[AccessMode]) -> typing.Tuple[bool,str]:
+    def check(cls,requested :set[AccessMode], consented : set[AccessMode]) -> tuple[bool,str]:
         """ Check wether requsted modes are permitted by consented modes.
             There are two conditions:
             1.  All requested modes must be in consented modes; .RequiredModes do not count as
@@ -98,14 +98,13 @@ class AccessMode(str,enum.Enum):
                 return False,f'requested mode {req} not in consented modes {", ".join(consented)}.'
 
         # 2:
-        assert isinstance(consented,set)
         required_modes = consented.intersection(AccessMode.RequiredModes) # all modes required by our consent
         for miss in required_modes - requested: # but not requested
             if m:= AccessMode.RequiredModes[miss]: # specific for a requested mode only?
                 if m.isdisjoint(requested): # yes, but this mode is not requested, so check next miss
                     continue
             return False,f'Consent requires {miss} mode in request, but only {", ".join(requested)} requested.' 
-        return True,f'{", ".join(required_modes)} required' if required_modes else 'ok' 
+        return True,'ok, with required modes' if required_modes else 'ok, no restrictions'
 
 # modes that need to be specified explicity in requested when consented. If value is a set, the requirement only applies to the value modes:
 AccessMode.RequiredModes = {AccessMode.anonymous : None, AccessMode.pseudonym : None, AccessMode.protected : {AccessMode.write}} 
@@ -133,7 +132,7 @@ class Consent(NoCopyBaseModel):
     withModes : set[AccessMode]  = {AccessMode.read}
 
 
-    def check(self,access : Access, _principal_checked=False) -> typing.Tuple[bool,str]:
+    def check(self,access : Access, _principal_checked=False) -> tuple[bool,str]:
         """ check access and return boolean and text explaining why it's not ok.
             If _principal_checked is True, applicable consents with correct principals 
             are checked, hence we don't need to double-check.
@@ -173,15 +172,15 @@ class Consents(NoCopyBaseModel):
         return self._byPrincipal.get(principal.id,[]) + self._byPrincipal.get(AllPrincipal.id,[])
 
 
-    def check(self,access : Access) -> typing.Tuple[bool,str,typing.Optional[Consent]]:
-        text = 'no consent'
+    def check(self,access : Access) -> tuple[bool,typing.Optional[Consent],str]:
+        msg = 'no consent'
         consent = None
         for consent in self.applicable_consents(access.principal):
-            ok,text = consent.check(access,_principal_checked=True)
+            ok,msg = consent.check(access,_principal_checked=True)
             if ok:
-                return ok,text,consent
+                return ok,consent,msg
         else:
-            return False,text,consent  
+            return False,consent,msg
 
 class _RootType(str):
     """ Singleton root marker """
@@ -262,14 +261,14 @@ class Access(NoCopyBaseModel):
     modes:      set[AccessMode]  = {AccessMode.read}
     time:      datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow) # defaults to now
     
-    def permitted(self) -> typing.Tuple[bool,str,typing.Optional[Consent]]:
-        """ checks whether access is permitted, returning (boll,explanation text,applicable consent)
+    def permitted(self) -> tuple[bool,typing.Optional[Consent],str]:
+        """ checks whether access is permitted, returning (bool,required flags,applicable consent,explanation text)
         """
         onode,split = NodeRegistry.get_node(self.ddhkey,NodeType.owner)
         if not onode:
-            return False,f'No owner node found for key {self.ddhkey}',None
+            return False,None,f'No owner node found for key {self.ddhkey}'
         elif onode.owner == self.principal:
-            return True,'Node owned by principal',None
+            return True,None,'Node owned by principal'
         else:
             if onode.consents: # onode has consents, use it
                 consents : Consents = onode.consents
@@ -278,9 +277,9 @@ class Access(NoCopyBaseModel):
                 if cnode:
                     consents = typing.cast(Consents,cnode.consents)  # consent is not None by get_node
                 else:
-                    return False,f'Owner is not accessor, and no consent node found for key {self.ddhkey}',None
-            ok,msg,consent = consents.check(self) # check consents
-            return ok,msg,consent
+                    return False,None,f'Owner is not accessor, and no consent node found for key {self.ddhkey}'
+            ok,consent,msg = consents.check(self) # check consents
+            return  ok,consent,msg
 
     
     def audit_record(self) -> dict:
@@ -528,7 +527,7 @@ def get_schema(access : Access, schemaformat: SchemaFormat = SchemaFormat.json) 
     formatted_schema = None # in case of not found. 
     ddhkey = access.ddhkey.ensure_rooted()
     snode,split = NodeRegistry.get_node(ddhkey,NodeType.nschema) # get applicable schema node
-    ok,text,consent = access.permitted()
+    ok,consent,text = access.permitted()
     
     if snode:
         schema = snode.get_sub_schema(ddhkey,split)

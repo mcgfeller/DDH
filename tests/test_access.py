@@ -77,7 +77,7 @@ def test_access_modes():
       (True,6,{AM.write,AM.protected,AM.pseudonym},'protected is required for write'),       
     )):
         access = core.Access(ddhkey=ddhkey,principal=users[user],modes=modes)
-        rok,explanation,consent = access.permitted()
+        rok,consent,explanation = access.permitted()
         diagnose = f'Test {i} result {rok} expected {ok} because {comment or "it is obvious"}: {explanation}, for {user=}, {modes=}, {consent=}'
         if  rok != ok: 
             print(diagnose)
