@@ -17,6 +17,7 @@ class NoCopyBaseModel(pydantic.BaseModel):
             attributes are not set.
         """
         extra = 'forbid'
+        underscore_attrs_are_private = True
 
     @classmethod
     def validate(cls: typing.Type[pydantic.BaseModel], value: typing.Any) -> pydantic.BaseModel:
@@ -119,9 +120,12 @@ class Consent(NoCopyBaseModel):
     withApps : typing.Set[DAppId] = []
     withMode : typing.Set[AccessMode]  = [AccessMode.read]
 
-    def check(self,access : Access) -> typing.Tuple[bool,str]:
-        """ check access and return boolean and text explaining why it's not ok """
-        if self.grantedTo != AllPrincipal and access.principal not in self.grantedTo:
+    def check(self,access : Access, _principal_checked=False) -> typing.Tuple[bool,str]:
+        """ check access and return boolean and text explaining why it's not ok.
+            If _principal_checked is True, applicable consents with correct principals 
+            are checked, hence we don't need to double-check.
+        """
+        if (not _principal_checked) and self.grantedTo != AllPrincipal and access.principal not in self.grantedTo:
             return False,f'Consent not granted to {access.principal}'
         if self.withApps:
             if access.byDApp:
@@ -138,15 +142,29 @@ class Consent(NoCopyBaseModel):
 
 class Consents(NoCopyBaseModel):
     """ Multiple Consents
-        TODO: Should organize by grantedTo for lookup
     """
     consents : typing.List[Consent] = []
+    _byPrincipal : dict[str,list[Consent]] = {}
+
+    def __init__(self,*a,**kw):
+        super().__init__(*a,**kw)
+        self._byPrincipal = {} # for easier lookup
+        for consent in self.consents:
+            for principal in consent.grantedTo:
+                cl = self._byPrincipal.setdefault(principal.id,[])
+                cl.append(consent)
+        return
+
+    def applicable_consents(self,principal : Principal ) -> list[Consents]:
+        """ return list of Consents for this principal """
+        return self._byPrincipal.get(principal.id,[]) + self._byPrincipal.get(AllPrincipal.id,[])
+
 
     def check(self,access : Access) -> typing.Tuple[bool,str,typing.Optional[Consent]]:
         text = 'no consent'
         consent = None
-        for consent in self.consents:
-            ok,text = consent.check(access)
+        for consent in self.applicable_consents(access.principal):
+            ok,text = consent.check(access,_principal_checked=True)
             if ok:
                 return ok,text,consent
         else:

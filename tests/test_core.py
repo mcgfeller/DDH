@@ -22,7 +22,7 @@ def test_nodes():
     user = core.User(id='1',name='martin',email='martin.gfeller@swisscom.com')
     user2 = core.User(id='2',name='roman',email='roman.stoessel@swisscom.com')
     node_s = core.Node(schema=schema,owner=user)
-    node_c = core.Node(consent=core.Consent(grantedTo=[user2]),owner=user)    
+    node_c = core.Node(consents=core.Consents(consents=[core.Consent(grantedTo=[user2])]),owner=user)    
     core.NodeRegistry[core.DDHkey(key='/ddh/health')] = node_s
     core.NodeRegistry[core.DDHkey(key='/ddh/health/mgf')] = node_c    
     ddhkey = core.DDHkey(key='/ddh/health/mgf/bmi/weight')
