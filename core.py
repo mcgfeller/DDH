@@ -12,6 +12,11 @@ class NoCopyBaseModel(pydantic.BaseModel):
     """ https://github.com/samuelcolvin/pydantic/issues/1246
         https://github.com/samuelcolvin/pydantic/blob/52af9162068a06eed5b84176e987a534f6d9126a/pydantic/main.py#L574-L575
     """
+    class Config:
+        """ This forbids wrong keywords, preventing silly mistakes when defaulted
+            attributes are not set.
+        """
+        extra = 'forbid'
 
     @classmethod
     def validate(cls: typing.Type[pydantic.BaseModel], value: typing.Any) -> pydantic.BaseModel:
@@ -111,8 +116,8 @@ class Consent(NoCopyBaseModel):
     """ Consent to access a ressource denoted by DDHkey.
     """
     grantedTo : typing.List[Principal]
-    withApps : typing.List[DAppId] = []
-    withMode : typing.List[AccessMode]  = [AccessMode.read]
+    withApps : typing.Set[DAppId] = []
+    withMode : typing.Set[AccessMode]  = [AccessMode.read]
 
     def check(self,access : Access) -> typing.Tuple[bool,str]:
         """ check access and return boolean and text explaining why it's not ok """
@@ -160,6 +165,7 @@ class DDHkey(NoCopyBaseModel):
     """
     
     key : tuple
+    node: Node = None
 
     Delimiter : typing.ClassVar[str] = '/'
     Root : typing.ClassVar[_RootType] = _RootType(Delimiter)
