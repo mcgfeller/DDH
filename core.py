@@ -118,7 +118,7 @@ class Consent(NoCopyBaseModel):
     """
     grantedTo : list[Principal]
     withApps : set[DAppId] = []
-    withMode : set[AccessMode]  = [AccessMode.read]
+    withModes : set[AccessMode]  = [AccessMode.read]
 
     def check(self,access : Access, _principal_checked=False) -> typing.Tuple[bool,str]:
         """ check access and return boolean and text explaining why it's not ok.
@@ -134,7 +134,7 @@ class Consent(NoCopyBaseModel):
             else:
                 return False,f'Consent granted to DApps; need an DApp id to access'
         
-        ok,txt = AccessMode.check(access.modes,self.withMode)
+        ok,txt = AccessMode.check(access.modes,self.withModes)
         if not ok:
             return False,txt
 
