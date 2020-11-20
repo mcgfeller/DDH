@@ -29,8 +29,8 @@ class NoCopyBaseModel(pydantic.BaseModel):
     @classmethod
     def add_fields(cls, **field_definitions: typing.Any):
         """ Add fields in-place https://github.com/samuelcolvin/pydantic/issues/1937 """
-        new_fields: typing.Dict[str, pydantic.fields.ModelField] = {}
-        new_annotations: typing.Dict[str, typing.Optional[type]] = {}
+        new_fields: dict[str, pydantic.fields.ModelField] = {}
+        new_annotations: dict[str, typing.Optional[type]] = {}
 
         for f_name, f_def in field_definitions.items():
             if isinstance(f_def, tuple):
@@ -84,7 +84,7 @@ class AccessMode(str,enum.Enum):
     consent_write = 'consent_write'
 
     @classmethod
-    def check(cls,requested :typing.List[AccessMode], consented : typing.List[AccessMode]) -> typing.Tuple[bool,str]:
+    def check(cls,requested :list[AccessMode], consented : list[AccessMode]) -> typing.Tuple[bool,str]:
         effective_consented = [[c]+cls.ImpliedConsent.get(c,[]) for c in consented]
         effective_consented = [item for sublist in effective_consented for item in sublist] # flatten it
         for req in requested:
@@ -116,9 +116,9 @@ class DAppId(Principal):
 class Consent(NoCopyBaseModel):
     """ Consent to access a ressource denoted by DDHkey.
     """
-    grantedTo : typing.List[Principal]
-    withApps : typing.Set[DAppId] = []
-    withMode : typing.Set[AccessMode]  = [AccessMode.read]
+    grantedTo : list[Principal]
+    withApps : set[DAppId] = []
+    withMode : set[AccessMode]  = [AccessMode.read]
 
     def check(self,access : Access, _principal_checked=False) -> typing.Tuple[bool,str]:
         """ check access and return boolean and text explaining why it's not ok.
@@ -143,7 +143,7 @@ class Consent(NoCopyBaseModel):
 class Consents(NoCopyBaseModel):
     """ Multiple Consents
     """
-    consents : typing.List[Consent] = []
+    consents : list[Consent] = []
     _byPrincipal : dict[str,list[Consent]] = {}
 
     def __init__(self,*a,**kw):
@@ -246,7 +246,7 @@ class Access(NoCopyBaseModel):
     ddhkey:    DDHkey
     principal: Principal
     byDApp:    typing.Optional[DAppId] = None
-    mode:      typing.List[AccessMode]  = [AccessMode.read]
+    mode:      list[AccessMode]  = [AccessMode.read]
     time:      datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow) # defaults to now
     
     def permitted(self) -> typing.Tuple[bool,str,typing.Optional[Consent]]:
@@ -306,7 +306,7 @@ class SchemaReference(SchemaElement):
 
     class Config:
         @staticmethod
-        def schema_extra(schema: typing.Dict[str, typing.Any], model: typing.Type[SchemaReference]) -> None:
+        def schema_extra(schema: dict[str, typing.Any], model: typing.Type[SchemaReference]) -> None:
             schema['properties']['dep'] =  {'$ref': model.getURI()}
             return
 
@@ -387,7 +387,7 @@ class PySchema(Schema):
         """ dict representation of internal schema """
         return  self.schema_element.schema()
 
-    def add_fields(self,fields : typing.Dict[str,tuple]):
+    def add_fields(self,fields : dict[str,tuple]):
         """ Add the field in dict """
         self.schema_element.add_fields(**fields)
 
@@ -470,7 +470,7 @@ DDHkey.update_forward_refs() # Now Node is known
 class _NodeRegistry:
     """ Preliminary holder of nodes """
 
-    nodes_by_key : typing.Dict[tuple,Node]
+    nodes_by_key : dict[tuple,Node]
 
     def __init__(self):
         self.nodes_by_key = {}

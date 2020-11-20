@@ -25,6 +25,6 @@ class CoopClient(core.SchemaElement):
 
 class CoopSchema(core.SchemaElement):
 
-    clients : typing.List[CoopClient] = []
+    clients : list[CoopClient] = []
 
 

@@ -30,11 +30,11 @@ class MigrosClient(core.SchemaElement):
 
     id = core.Principal
     cumulus : typing.Optional[int] = None
-    receipts: typing.List[Receipt] = []
+    receipts: list[Receipt] = []
     
 
 class MigrosSchema(core.SchemaElement):
 
-    clients : typing.List[MigrosClient] = []
+    clients : list[MigrosClient] = []
 
 

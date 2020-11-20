@@ -24,7 +24,7 @@ async def get_data(
     docpath: str = fastapi.Path(..., title="The ddh key of the data to get"),
     user: core.User = fastapi.Depends(user_auth.get_current_active_user),
     dapp : typing.Optional[core.DAppId] = None,
-    mode: typing.List[core.AccessMode] = [core.AccessMode.read],
+    mode: list[core.AccessMode] = [core.AccessMode.read],
     q: str = fastapi.Query(None, alias="item-query"),
     ):
     if core.AccessMode.read not in mode: # get_data requires read-access
