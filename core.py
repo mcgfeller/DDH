@@ -74,7 +74,7 @@ class AccessMode(str,enum.Enum):
         We cannot use enum.Flag (which could be added), as pydantic doesn't support exporting / importing it as strings
     """
     read = 'read'
-    read_for_write = 'read_for_write' # read with the intention to write data back   
+    protected = 'protected' # flag with read and write, mandatory if consented for write
     write = 'write'
     anonymous = 'anonymous'
     pseudonym = 'pseudonym'
@@ -84,19 +84,31 @@ class AccessMode(str,enum.Enum):
     consent_write = 'consent_write'
 
     @classmethod
-    def check(cls,requested :list[AccessMode], consented : list[AccessMode]) -> typing.Tuple[bool,str]:
-        effective_consented = [[c]+cls.ImpliedConsent.get(c,[]) for c in consented]
-        effective_consented = [item for sublist in effective_consented for item in sublist] # flatten it
-        for req in requested:
-            if req not in effective_consented:
-                return False,f'requested mode {req} not in consented modes {effective_consented}.'
-        required_modes = {c for c in consented if c in AccessMode.RequiredModes} 
-        if  miss:= required_modes - set(requested):
-            return False,f'Consent requires ", ".join(miss) modes'
-        return True,'ok'
+    def check(cls,requested :set[AccessMode], consented : set[AccessMode]) -> typing.Tuple[bool,str]:
+        """ Check wether requsted modes are permitted by consented modes.
+            There are two conditions:
+            1.  All requested modes must be in consented modes; .RequiredModes do not count as
+                consented.
+            2.  If a mode in .RequiredModes is consented, it must be present in requested. 
 
-AccessMode.ImpliedConsent = {AccessMode.read_for_write: [AccessMode.read], AccessMode.read: [AccessMode.anonymous,AccessMode.pseudonym], }
-AccessMode.RequiredModes = {AccessMode.anonymous, AccessMode.pseudonym} # modes that need to be specified explicity in requested when consented.
+        """
+        # 1:
+        for req in requested:
+            if req not in consented and req not in AccessMode.RequiredModes :
+                return False,f'requested mode {req} not in consented modes {", ".join(consented)}.'
+
+        # 2:
+        assert isinstance(consented,set)
+        required_modes = consented.intersection(AccessMode.RequiredModes) # all modes required by our consent
+        for miss in required_modes - requested: # but not requested
+            if m:= AccessMode.RequiredModes[miss]: # specific for a requested mode only?
+                if m.isdisjoint(requested): # yes, but this mode is not requested, so check next miss
+                    continue
+            return False,f'Consent requires {miss} mode in request, but only {", ".join(requested)} requested.' 
+        return True,f'{", ".join(required_modes)} required' if required_modes else 'ok' 
+
+# modes that need to be specified explicity in requested when consented. If value is a set, the requirement only applies to the value modes:
+AccessMode.RequiredModes = {AccessMode.anonymous : None, AccessMode.pseudonym : None, AccessMode.protected : {AccessMode.write}} 
 
 
 class User(Principal):
@@ -117,8 +129,9 @@ class Consent(NoCopyBaseModel):
     """ Consent to access a ressource denoted by DDHkey.
     """
     grantedTo : list[Principal]
-    withApps : set[DAppId] = []
-    withModes : set[AccessMode]  = [AccessMode.read]
+    withApps : set[DAppId] = set()
+    withModes : set[AccessMode]  = {AccessMode.read}
+
 
     def check(self,access : Access, _principal_checked=False) -> typing.Tuple[bool,str]:
         """ check access and return boolean and text explaining why it's not ok.
@@ -138,7 +151,7 @@ class Consent(NoCopyBaseModel):
         if not ok:
             return False,txt
 
-        return True,'granted by Consent'
+        return True,'Granted by Consent; '+txt
 
 class Consents(NoCopyBaseModel):
     """ Multiple Consents
@@ -246,7 +259,7 @@ class Access(NoCopyBaseModel):
     ddhkey:    DDHkey
     principal: Principal
     byDApp:    typing.Optional[DAppId] = None
-    modes:      list[AccessMode]  = [AccessMode.read]
+    modes:      set[AccessMode]  = {AccessMode.read}
     time:      datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow) # defaults to now
     
     def permitted(self) -> typing.Tuple[bool,str,typing.Optional[Consent]]:

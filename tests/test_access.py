@@ -39,35 +39,42 @@ def test_basic_access():
 
 def test_access_modes():
 
-    users = [core.User(id=str(id),name='user'+str(id),email='user'+str(id)+'@dummy.com') for id in range(6)]
+    users = [core.User(id=str(id),name='user'+str(id),email='user'+str(id)+'@dummy.com') for id in range(7)]
     AM = core.AccessMode
     node_c = core.Node(consents=core.Consents(consents=[
         core.Consent(grantedTo=[users[1]]),
-        core.Consent(grantedTo=[users[2]],withModes=[AM.read]),
-        core.Consent(grantedTo=[users[3]],withModes=[AM.write]),    
-        core.Consent(grantedTo=[users[4]],withModes=[AM.read_for_write]),
-        core.Consent(grantedTo=[users[5]],withModes=[AM.read_for_write,core.AccessMode.anonymous]),        
+        core.Consent(grantedTo=[users[2]],withModes={AM.read}),
+        core.Consent(grantedTo=[users[3]],withModes={AM.write}),    
+        core.Consent(grantedTo=[users[4]],withModes={AM.read, AM.write, AM.protected}),
+        core.Consent(grantedTo=[users[5]],withModes={AM.read, AM.write, core.AccessMode.anonymous}),  
+        core.Consent(grantedTo=[users[6]],withModes={AM.read, AM.write, AM.protected,core.AccessMode.pseudonym}),           
         ]),owner=users[0])    
     ddhkey = core.DDHkey(key='root')
     core.NodeRegistry[ddhkey] = node_c
 
 
     for i,(ok,user,modes,comment) in enumerate((
-      (True,0,[AM.read,AM.write],''),
-      (True,0,[AM.read,AM.anonymous],''),
-      (True,1,[AM.read],''),
-      (False,1,[AM.write],''),
-      (True,1,[AM.anonymous],'read includes anonymous read'), 
-      (False,1,[AM.write,AM.anonymous],'no write permission'), 
-      (True,2,[AM.read],''),
-      (False,2,[AM.write],''),      
-      (False,3,[AM.read],'write doesn\'t imply read'), 
-      (True,3,[AM.write],''),   
-      (True,4,[AM.read],'read_for_write implies read'), 
-      (True,4,[AM.read_for_write],''), 
-      (False,4,[AM.write],'read_for_write does not imply write'), 
-      (False,5,[AM.read_for_write],'must specify anonymous'), 
-      (True,5,[AM.read_for_write,AM.anonymous],''),        
+      (True,0,{AM.read,AM.write},''),
+      (True,0,{AM.read,AM.anonymous},''),
+      (True,1,{AM.read},''),
+      (False,1,{AM.write},''),
+      (True,1,{AM.read,AM.anonymous},'read includes anonymous read'), 
+      (True,1,{AM.read,AM.pseudonym},'read includes pseudonymous read'), 
+      (False,1,{AM.write,AM.anonymous},'no write permission'), 
+      (True,2,{AM.read},''),
+      (False,2,{AM.write},''),      
+      (False,3,{AM.read},'write doesn\'t imply read'), 
+      (True,3,{AM.write},''),   
+      (True,4,{AM.read},'protected not required for read'), 
+      (True,4,{AM.read,AM.protected},'protected is optional'), 
+      (False,4,{AM.write},'protected is required for write'), 
+      (True,4,{AM.write,AM.protected},'protected is required for write'), 
+      (False,5,{AM.read},'must specify anonymous'), 
+      (True,5,{AM.read,AM.anonymous},''),   
+      (True,6,{AM.read,AM.pseudonym},'pseudonym sufficient in read'), 
+      (False,6,{AM.read,AM.protected},'must specify pseudonym'), 
+      (False,6,{AM.write,AM.pseudonym},'protected is required for write'),       
+      (True,6,{AM.write,AM.protected,AM.pseudonym},'protected is required for write'),       
     )):
         access = core.Access(ddhkey=ddhkey,principal=users[user],modes=modes)
         rok,explanation,consent = access.permitted()
