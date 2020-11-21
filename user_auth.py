@@ -6,12 +6,13 @@ import fastapi
 import typing
 import pydantic
 import datetime
-import core
 
 import fastapi.security
 import jose
 import jose.jwt
 import passlib.context
+
+from core import core
 
 oauth2_scheme = fastapi.security.OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = passlib.context.CryptContext(schemes=["bcrypt"], deprecated="auto")

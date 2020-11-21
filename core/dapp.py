@@ -1,8 +1,8 @@
 """ Support for DApps """
 from __future__ import annotations
-import core
 import typing
 
+from core import core
 
 class DApp(core.NoCopyBaseModel):
     

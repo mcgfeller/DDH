@@ -1,6 +1,6 @@
 """ Set up some Test data """
-import core
-import pillars
+from core import core
+from core import pillars
 
 
 

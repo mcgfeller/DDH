@@ -1,14 +1,13 @@
 """ Root of DDH Schemas, defines top levels down to where DApps link in """
 
 from __future__ import annotations
-import core
 import pydantic 
 import datetime
 import typing
+import logging
 
-
-
-
+from core import core
+logger = logging.getLogger(__name__)
 
 def check_registry() -> core.Node:
     root = core.DDHkey(core.DDHkey.Root)
@@ -19,6 +18,7 @@ def check_registry() -> core.Node:
         consents = core.Consents(consents=[core.Consent(grantedTo=[core.AllPrincipal],withModes={core.AccessMode.schema_read})]) 
         dnode = core.DAppNode(owner=core.RootPrincipal,schema=s,consents=consents)
         core.NodeRegistry[root] = dnode
+    logger.info('Schema Registry built')
     return dnode 
 
 def build_schema(key : core.DDHkey):

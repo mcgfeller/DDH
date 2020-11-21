@@ -322,12 +322,6 @@ class SchemaReference(SchemaElement):
             schema['properties']['dep'] =  {'$ref': model.getURI()}
             return
 
-    # @classmethod
-    # def __modify_schema__(cls, field_schema):
-    #     print(field_schema)
-    #     field_schema['@ref'] = cls.getURI()
-    #     return 
-
     @classmethod
     def getURI(cls) -> pydantic.AnyUrl:
         return typing.cast(pydantic.AnyUrl,str(cls.__fields__['ddhkey'].default))
@@ -336,8 +330,6 @@ class SchemaReference(SchemaElement):
     def create_from_key(cls,name: str, ddhkey : str) -> typing.Type[SchemaReference]:
         m = pydantic.create_model(name,__base__ = cls,ddhkey = (DDHkey,ddhkey))
         return typing.cast(typing.Type[SchemaReference],m)
-
-
 
 
 

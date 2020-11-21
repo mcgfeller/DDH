@@ -23,6 +23,12 @@ def test_get_schema_server(httpx_client):
     r.json()
     return
 
+def test_get_schema_server2(httpx_client):
+    r = httpx_client.get('/schema/ddh/shopping/stores/migros')
+    r.raise_for_status()
+    r.json()
+    return
+
 @pytest.mark.skip
 async def  test_get_schema_asgi(asgi_client):
     r = await asgi_client.get('/schema/ddh/shopping?schemaformat=json')

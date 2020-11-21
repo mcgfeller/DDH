@@ -1,14 +1,15 @@
 """ Pillars upon which DDH is built """
 from __future__ import annotations
-import core
 import typing
-import utils
+
 import logging
 
 logger = logging.getLogger(__name__)
 
-import schema_root
-import import_modules
+from utils import utils
+from core import core
+from core import schema_root
+from utils import import_modules 
 import DApps
 
 class Executor(core.NoCopyBaseModel):

@@ -1,9 +1,10 @@
 """ Example DApp - fake Migros Cumulus data """
 from __future__ import annotations
 import datetime
-import core
-import dapp
 import typing
+
+from core import core
+from core import dapp
 
 class MigrosDApp(dapp.DApp):
 

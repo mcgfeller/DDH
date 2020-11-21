@@ -1,5 +1,5 @@
-from .. import core
-from . import test_data
+from core import core
+from . import  test_data
 import pytest
 
 def test_paths():

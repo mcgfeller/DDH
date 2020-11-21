@@ -2,9 +2,11 @@ import fastapi
 import typing
 import pydantic
 import datetime
-import core
-import pillars
 import enum
+
+
+from core import pillars
+from core import core
 
 app = fastapi.FastAPI()
 

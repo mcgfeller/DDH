@@ -1,4 +1,4 @@
-from .. import core
+from core import core
 from . import test_data
 import pytest
 
