@@ -13,11 +13,11 @@ def test_basic_access():
     user3 = core.User(id='3',name='patrick',email='patrick.keller@swisscom.com')
 
     node_c = core.Node(consents=core.Consents(consents=[core.Consent(grantedTo=[user2])]),owner=user1)    
-    ddhkey1 = core.DDHkey(key='root')
+    ddhkey1 = core.DDHkey(key='/root')
     core.NodeRegistry[ddhkey1] = node_c
 
     node_o = core.Node(owner=user1)
-    ddhkey2 = core.DDHkey(key='root/unknown')
+    ddhkey2 = core.DDHkey(key='/root/unknown')
     core.NodeRegistry[ddhkey2] = node_o 
 
     for ddhkey in (ddhkey1,ddhkey2):
@@ -49,7 +49,7 @@ def test_access_modes():
         core.Consent(grantedTo=[users[5]],withModes={AM.read, AM.write, core.AccessMode.anonymous}),  
         core.Consent(grantedTo=[users[6]],withModes={AM.read, AM.write, AM.protected,core.AccessMode.pseudonym}),           
         ]),owner=users[0])    
-    ddhkey = core.DDHkey(key='root')
+    ddhkey = core.DDHkey(key='/root')
     core.NodeRegistry[ddhkey] = node_c
 
 

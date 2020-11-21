@@ -260,6 +260,10 @@ class Access(NoCopyBaseModel):
     byDApp:    typing.Optional[DAppId] = None
     modes:      set[AccessMode]  = {AccessMode.read}
     time:      datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow) # defaults to now
+
+    def __init__(self,*a,**kw):
+        super().__init__(*a,**kw)
+        self.ddhkey = self.ddhkey.ensure_rooted()
     
     def permitted(self) -> tuple[bool,typing.Optional[Consent],str]:
         """ checks whether access is permitted, returning (bool,required flags,applicable consent,explanation text)
@@ -523,14 +527,13 @@ def get_schema(access : Access, schemaformat: SchemaFormat = SchemaFormat.json) 
         Returns None if no schema found.
     """
     formatted_schema = None # in case of not found. 
-    ddhkey = access.ddhkey.ensure_rooted()
-    snode,split = NodeRegistry.get_node(ddhkey,NodeType.nschema) # get applicable schema node
+    snode,split = NodeRegistry.get_node(access.ddhkey,NodeType.nschema) # get applicable schema node
     ok,consent,text = access.permitted()
     if not ok:
        return None
     
     if snode:
-        schema = snode.get_sub_schema(ddhkey,split)
+        schema = snode.get_sub_schema(access.ddhkey,split)
         if schema:
             formatted_schema = schema.format(schemaformat)
     return formatted_schema
@@ -540,8 +543,7 @@ def get_data(access : Access, q : typing.Optional[str] = None) -> typing.Any:
     """ Service utility to retrieve data and return it in the desired format.
         Returns None if no data found.
     """
-    ddhkey = access.ddhkey.ensure_rooted()
-    enode,split = NodeRegistry.get_node(ddhkey,NodeType.execute)
+    enode,split = NodeRegistry.get_node(access.ddhkey,NodeType.execute)
     enode = typing.cast(ExecutableNode,enode)
     data = enode.execute(access.principal, q)
     return data

@@ -13,10 +13,10 @@ def check_registry() -> core.Node:
     root = core.DDHkey(core.DDHkey.Root)
     dnode,split = core.NodeRegistry.get_node(root,core.NodeType.nschema)
     if not dnode:
-        s = build_schema(core.DDHkey(key="/ddh/shopping/stores")) # obtain static schema
+        schema = build_schema(core.DDHkey(key="/ddh/shopping/stores")) # obtain static schema
         # for now, give schema read access to everybody
         consents = core.Consents(consents=[core.Consent(grantedTo=[core.AllPrincipal],withModes={core.AccessMode.schema_read})]) 
-        dnode = core.DAppNode(owner=core.RootPrincipal,schema=s,consents=consents)
+        dnode = core.DAppNode(owner=core.RootPrincipal,schema=schema,consents=consents)
         core.NodeRegistry[root] = dnode
     logger.info('Schema Registry built')
     return dnode 
