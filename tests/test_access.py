@@ -1,37 +1,37 @@
-from core import core
+from core import keys,nodes,permissions,schemas
 from . import test_data
 import pytest
 
 
-class DummyElement(core.SchemaElement): ...
+class DummyElement(schemas.SchemaElement): ...
 
 def test_basic_access():
-    """ Test access of two nodes, with basic grant to another user """
+    """ Test permissions of two nodes, with basic grant to another user """
 
-    user1 = core.User(id='1',name='martin',email='martin.gfeller@swisscom.com')
-    user2 = core.User(id='2',name='roman',email='roman.stoessel@swisscom.com')
-    user3 = core.User(id='3',name='patrick',email='patrick.keller@swisscom.com')
+    user1 = permissions.User(id='1',name='martin',email='martin.gfeller@swisscom.com')
+    user2 = permissions.User(id='2',name='roman',email='roman.stoessel@swisscom.com')
+    user3 = permissions.User(id='3',name='patrick',email='patrick.keller@swisscom.com')
 
-    node_c = core.Node(consents=core.Consents(consents=[core.Consent(grantedTo=[user2])]),owner=user1)    
-    ddhkey1 = core.DDHkey(key='/root')
-    core.NodeRegistry[ddhkey1] = node_c
+    node_c = nodes.Node(consents=permissions.Consents(consents=[permissions.Consent(grantedTo=[user2])]),owner=user1)    
+    ddhkey1 = keys.DDHkey(key='/root')
+    nodes.NodeRegistry[ddhkey1] = node_c
 
-    node_o = core.Node(owner=user1)
-    ddhkey2 = core.DDHkey(key='/root/unknown')
-    core.NodeRegistry[ddhkey2] = node_o 
+    node_o = nodes.Node(owner=user1)
+    ddhkey2 = keys.DDHkey(key='/root/unknown')
+    nodes.NodeRegistry[ddhkey2] = node_o 
 
     for ddhkey in (ddhkey1,ddhkey2):
 
-        access = core.Access(ddhkey=ddhkey,principal=user1) # node owned by user1
+        access = permissions.Access(ddhkey=ddhkey,principal=user1) # node owned by user1
         assert access.permitted()[0]
 
-        access = core.Access(ddhkey=ddhkey,principal=user2) # read granted to user2
+        access = permissions.Access(ddhkey=ddhkey,principal=user2) # read granted to user2
         assert access.permitted()[0] 
 
-        access = core.Access(ddhkey=ddhkey,principal=user2,modes=[core.AccessMode.write])
+        access = permissions.Access(ddhkey=ddhkey,principal=user2,modes=[permissions.AccessMode.write])
         assert not access.permitted()[0] # write not granted to user2
 
-        access = core.Access(ddhkey=ddhkey,principal=user3) # read granted to user2
+        access = permissions.Access(ddhkey=ddhkey,principal=user3) # read granted to user2
         assert not access.permitted()[0] 
 
     return
@@ -39,18 +39,18 @@ def test_basic_access():
 
 def test_access_modes():
 
-    users = [core.User(id=str(id),name='user'+str(id),email='user'+str(id)+'@dummy.com') for id in range(7)]
-    AM = core.AccessMode
-    node_c = core.Node(consents=core.Consents(consents=[
-        core.Consent(grantedTo=[users[1]]),
-        core.Consent(grantedTo=[users[2]],withModes={AM.read}),
-        core.Consent(grantedTo=[users[3]],withModes={AM.write}),    
-        core.Consent(grantedTo=[users[4]],withModes={AM.read, AM.write, AM.protected}),
-        core.Consent(grantedTo=[users[5]],withModes={AM.read, AM.write, core.AccessMode.anonymous}),  
-        core.Consent(grantedTo=[users[6]],withModes={AM.read, AM.write, AM.protected,core.AccessMode.pseudonym}),           
+    users = [permissions.User(id=str(id),name='user'+str(id),email='user'+str(id)+'@dummy.com') for id in range(7)]
+    AM = permissions.AccessMode
+    node_c = nodes.Node(consents=permissions.Consents(consents=[
+        permissions.Consent(grantedTo=[users[1]]),
+        permissions.Consent(grantedTo=[users[2]],withModes={AM.read}),
+        permissions.Consent(grantedTo=[users[3]],withModes={AM.write}),    
+        permissions.Consent(grantedTo=[users[4]],withModes={AM.read, AM.write, AM.protected}),
+        permissions.Consent(grantedTo=[users[5]],withModes={AM.read, AM.write, permissions.AccessMode.anonymous}),  
+        permissions.Consent(grantedTo=[users[6]],withModes={AM.read, AM.write, AM.protected,permissions.AccessMode.pseudonym}),           
         ]),owner=users[0])    
-    ddhkey = core.DDHkey(key='/root')
-    core.NodeRegistry[ddhkey] = node_c
+    ddhkey = keys.DDHkey(key='/root')
+    nodes.NodeRegistry[ddhkey] = node_c
 
 
     for i,(ok,user,modes,comment) in enumerate((
@@ -76,7 +76,7 @@ def test_access_modes():
       (False,6,{AM.write,AM.pseudonym},'protected is required for write'),       
       (True,6,{AM.write,AM.protected,AM.pseudonym},'protected is required for write'),       
     )):
-        access = core.Access(ddhkey=ddhkey,principal=users[user],modes=modes)
+        access = permissions.Access(ddhkey=ddhkey,principal=users[user],modes=modes)
         rok,consent,explanation = access.permitted()
         diagnose = f'Test {i} result {rok} expected {ok} because {comment or "it is obvious"}: {explanation}, for {user=}, {modes=}, {consent=}'
         if  rok != ok: 

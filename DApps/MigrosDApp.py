@@ -3,19 +3,19 @@ from __future__ import annotations
 import datetime
 import typing
 
-from core import core
+from core import keys,permissions,schemas
 from core import dapp
 
 class MigrosDApp(dapp.DApp):
 
-    owner : typing.ClassVar[core.Principal] =  core.User(id='mgf',name='Martin')
-    schemakey : typing.ClassVar[core.DDHkey] = core.DDHkey(key="/ddh/shopping/stores/migros")
+    owner : typing.ClassVar[permissions.Principal] =  permissions.User(id='mgf',name='Martin')
+    schemakey : typing.ClassVar[keys.DDHkey] = keys.DDHkey(key="/ddh/shopping/stores/migros")
  
-    def get_schema(self) -> core.Schema:
+    def get_schema(self) -> schemas.Schema:
         """ Obtain initial schema for DApp """
-        return core.PySchema(schema_element=MigrosSchema)
+        return schemas.PySchema(schema_element=MigrosSchema)
 
-class Receipt(core.SchemaElement):
+class Receipt(schemas.SchemaElement):
 
     Datum:      datetime.date 
     Zeit:       datetime.time 
@@ -27,14 +27,14 @@ class Receipt(core.SchemaElement):
     Aktion:     int = 0
     Umsatz:     float = 0
 
-class MigrosClient(core.SchemaElement):
+class MigrosClient(schemas.SchemaElement):
 
-    id = core.Principal
+    id = permissions.Principal
     cumulus : typing.Optional[int] = None
     receipts: list[Receipt] = []
     
 
-class MigrosSchema(core.SchemaElement):
+class MigrosSchema(schemas.SchemaElement):
 
     clients : list[MigrosClient] = []
 

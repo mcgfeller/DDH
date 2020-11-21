@@ -12,7 +12,7 @@ import jose
 import jose.jwt
 import passlib.context
 
-from core import core
+from core import permissions
 
 oauth2_scheme = fastapi.security.OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = passlib.context.CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -52,7 +52,7 @@ class TokenData(pydantic.BaseModel):
     id: str
 
 
-class UserInDB(core.User):
+class UserInDB(permissions.User):
     hashed_password: str
 
 
@@ -106,7 +106,7 @@ async def get_current_user(token: str = fastapi.Depends(oauth2_scheme)):
     return user
 
 
-async def get_current_active_user(current_user: core.User = fastapi.Depends(get_current_user)):
+async def get_current_active_user(current_user: permissions.User = fastapi.Depends(get_current_user)):
     return current_user
 
 

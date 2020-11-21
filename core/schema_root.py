@@ -6,28 +6,28 @@ import datetime
 import typing
 import logging
 
-from core import core
+from core import keys,permissions,schemas,nodes,dapp
 logger = logging.getLogger(__name__)
 
-def check_registry() -> core.Node:
-    root = core.DDHkey(core.DDHkey.Root)
-    dnode,split = core.NodeRegistry.get_node(root,core.NodeType.nschema)
+def check_registry() -> nodes.Node:
+    root = keys.DDHkey(keys.DDHkey.Root)
+    dnode,split = nodes.NodeRegistry.get_node(root,nodes.NodeType.nschema)
     if not dnode:
-        schema = build_schema(core.DDHkey(key="/ddh/shopping/stores")) # obtain static schema
+        schema = build_schema(keys.DDHkey(key="/ddh/shopping/stores")) # obtain static schema
         # for now, give schema read access to everybody
-        consents = core.Consents(consents=[core.Consent(grantedTo=[core.AllPrincipal],withModes={core.AccessMode.schema_read})]) 
-        dnode = core.DAppNode(owner=core.RootPrincipal,schema=schema,consents=consents)
-        core.NodeRegistry[root] = dnode
+        consents = permissions.Consents(consents=[permissions.Consent(grantedTo=[permissions.AllPrincipal],withModes={permissions.AccessMode.schema_read})]) 
+        dnode = nodes.DAppNode(owner=permissions.RootPrincipal,schema=schema,consents=consents)
+        nodes.NodeRegistry[root] = dnode
     logger.info('Schema Registry built')
     return dnode 
 
-def build_schema(key : core.DDHkey):
+def build_schema(ddhkey : keys.DDHkey):
     elements = {}
     s = None
-    for k in key[::-1]: # loop backwards
-        if k is core.DDHkey.Root: k = '__root__'
-        s = pydantic.create_model(k, __base__=core.SchemaElement, **elements)
+    for k in ddhkey[::-1]: # loop backwards
+        if k is keys.DDHkey.Root: k = '__root__'
+        s = pydantic.create_model(k, __base__=schemas.SchemaElement, **elements)
         elements = {k:(s,None)}
-    return core.PySchema(schema_element=s)
+    return schemas.PySchema(schema_element=s)
 
 check_registry()

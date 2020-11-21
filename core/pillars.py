@@ -7,19 +7,20 @@ import logging
 logger = logging.getLogger(__name__)
 
 from utils import utils
-from core import core
 from core import schema_root
 from utils import import_modules 
 import DApps
+from utils.pydantic_utils import NoCopyBaseModel
 
-class Executor(core.NoCopyBaseModel):
+
+class Executor(NoCopyBaseModel):
     ...
 
-class ClearingHouse(core.NoCopyBaseModel):
+class ClearingHouse(NoCopyBaseModel):
     ...
 
 
-class _DAppManager(core.NoCopyBaseModel):
+class _DAppManager(NoCopyBaseModel):
     """ Provisional DAppManager, loads modules and instantiates DApps.
         Real Manager would orchestrate DApps in their own container.
 
