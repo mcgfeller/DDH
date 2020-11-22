@@ -1,1 +1,1 @@
-"C:\Program Files\Python39\scripts\uvicorn" main:app --reload --no-use-colors
+"C:\Program Files\Python39\scripts\uvicorn" frontend.main:app --reload --no-use-colors

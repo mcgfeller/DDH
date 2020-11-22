@@ -10,7 +10,7 @@ from core import keys,permissions,schemas,dapp,facade
 
 app = fastapi.FastAPI()
 
-import user_auth # provisional user management
+from frontend import user_auth # provisional user management
 
 @app.get("/users/me/", response_model=permissions.User)
 async def read_users_me(current_user: permissions.User = fastapi.Depends(user_auth.get_current_user)):

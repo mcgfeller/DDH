@@ -56,7 +56,7 @@ def httpx_client():
     return 
 
 
-def start_server(exe : str,port : int = 8080, app : str = 'main:app',cwd=pathlib.Path(__file__).parent.parent) -> subprocess.Popen:
+def start_server(exe : str,port : int = 8080, app : str = 'frontend.main:app',cwd=pathlib.Path(__file__).parent.parent) -> subprocess.Popen:
     """ Start the uvicorn process """
     p = subprocess.Popen([exe,app,f'--port={port}','--reload' ],bufsize=-1,cwd=cwd)
     return p
