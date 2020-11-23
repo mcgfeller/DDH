@@ -24,7 +24,7 @@ RootPrincipal = Principal(id='DDH')
 
 @enum.unique
 class AccessMode(str,enum.Enum):
-    """ Access modes, can be used as list. 
+    """ Access modes, can be used in a set. 
         We cannot use enum.Flag (which could be added), as pydantic doesn't support exporting / importing it as strings
     """
     read = 'read'
@@ -36,6 +36,10 @@ class AccessMode(str,enum.Enum):
     schema_write = 'schema_write'    
     consent_read = 'consent_read'
     consent_write = 'consent_write'
+
+    def __repr__(self) -> str:
+        """ more compact representation in messages and logs """
+        return str.__str__(self)
 
     @classmethod
     def check(cls,requested :set[AccessMode], consented : set[AccessMode]) -> tuple[bool,str]:
