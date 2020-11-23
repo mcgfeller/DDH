@@ -1,4 +1,4 @@
-""" Core accessor cover functions """
+""" rovides a Facade from Core to Frontend """
 
 from __future__ import annotations
 import pydantic 
@@ -15,7 +15,7 @@ from . import keys
 from . import schemas
 from . import nodes
 
-class AccessError(Exception):
+class AccessError(PermissionError):
     def __init__(self,text,consent=None):
         self.text = text
 
