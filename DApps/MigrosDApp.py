@@ -8,12 +8,15 @@ from core import dapp
 
 class MigrosDApp(dapp.DApp):
 
-    owner : typing.ClassVar[permissions.Principal] =  permissions.User(id='mgf',name='Martin')
+    owner : typing.ClassVar[permissions.Principal] =  permissions.User(id='migros',name='Migros (fake account)')
     schemakey : typing.ClassVar[keys.DDHkey] = keys.DDHkey(key="/ddh/shopping/stores/migros")
  
     def get_schema(self) -> schemas.Schema:
         """ Obtain initial schema for DApp """
         return schemas.PySchema(schema_element=MigrosSchema)
+
+    def execute(self, access : permissions.Access, q : typing.Optional[str] = None):
+        return  {}
 
 class Receipt(schemas.SchemaElement):
 

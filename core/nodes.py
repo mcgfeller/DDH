@@ -1,6 +1,7 @@
 
 """ DDH Core Node Models """
 from __future__ import annotations
+from abc import abstractmethod
 import pydantic 
 import datetime
 import typing
@@ -11,7 +12,6 @@ from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import NoCopyBaseModel
 
 from . import permissions
-# 
 from . import schemas
 
 
@@ -50,13 +50,14 @@ from . import keys # avoid circle
 Node.update_forward_refs() # Now Node is known, update before it's derived
 
 class ExecutableNode(Node):
-    def execute(self,  user: permissions.Principal, q : typing.Optional[str] = None):
+    """ A node that provides for execution capabilities """
+    
+    @abstractmethod
+    def execute(self, access : permissions.Access, q : typing.Optional[str] = None):
         return {}
 
 
-class DAppNode(ExecutableNode):
-    """ node managed by a DApp """
-    ...
+
 
 class StorageNode(ExecutableNode):
     """ node with storage on DDH """

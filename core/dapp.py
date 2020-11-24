@@ -1,5 +1,6 @@
 """ Support for DApps """
 from __future__ import annotations
+from abc import abstractmethod
 import typing
 
 from core import keys,permissions,schemas,nodes
@@ -31,7 +32,7 @@ class DApp(NoCopyBaseModel):
             if not parent:
                 raise ValueError(f'No parent schema found for {self!r} with {self.schemakey} at upnode {upnode}')
             schema = self.get_schema() # obtain static schema
-            dnode = nodes.DAppNode(owner=self.owner,schema=schema)
+            dnode = DAppNode(owner=self.owner,schema=schema,dapp=self)
             nodes.NodeRegistry[self.schemakey] = dnode
             # now insert our schema into the parent's:
             schemaref = schemas.SchemaReference.create_from_key(self.__class__.__name__,ddhkey=self.schemakey)
@@ -41,7 +42,19 @@ class DApp(NoCopyBaseModel):
     def get_schema(self) -> schemas.Schema:
         """ Obtain initial schema for DApp - this is stored in the Node and must be static. """
         raise NotImplementedError()
+
+    @abstractmethod
+    def execute(self, access : permissions.Access, q : typing.Optional[str] = None):
+        return  {}
     
 
 
-    
+class DAppNode(nodes.ExecutableNode):
+    """ node managed by a DApp """
+    dapp : DApp
+
+
+    def execute(self, access : permissions.Access, q : typing.Optional[str] = None):
+        r = self.dapp.execute(access,q)
+        return r
+ 

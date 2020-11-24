@@ -45,5 +45,8 @@ def get_data(access : permissions.Access, q : typing.Optional[str] = None) -> ty
     """
     enode,split = nodes.NodeRegistry.get_node(access.ddhkey,nodes.NodeType.execute)
     enode = typing.cast(nodes.ExecutableNode,enode)
-    data = enode.execute(access.principal, q)
+    if enode:
+        data = enode.execute(access, q)
+    else:
+        data = {}
     return data

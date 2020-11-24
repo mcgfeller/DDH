@@ -10,16 +10,19 @@ from core import keys,permissions,schemas,nodes,dapp
 logger = logging.getLogger(__name__)
 
 def check_registry() -> nodes.Node:
+    """ Register root schema at root node. 
+        This is preliminary, as the schema is hard-coded.
+    """
     root = keys.DDHkey(keys.DDHkey.Root)
-    dnode,split = nodes.NodeRegistry.get_node(root,nodes.NodeType.nschema)
-    if not dnode:
+    root_node,split = nodes.NodeRegistry.get_node(root,nodes.NodeType.nschema)
+    if not root_node:
         schema = build_schema(keys.DDHkey(key="/ddh/shopping/stores")) # obtain static schema
         # for now, give schema read access to everybody
         consents = permissions.Consents(consents=[permissions.Consent(grantedTo=[permissions.AllPrincipal],withModes={permissions.AccessMode.schema_read})]) 
-        dnode = nodes.DAppNode(owner=permissions.RootPrincipal,schema=schema,consents=consents)
-        nodes.NodeRegistry[root] = dnode
-    logger.info('Schema Registry built')
-    return dnode 
+        root_node = nodes.Node(owner=permissions.RootPrincipal,schema=schema,consents=consents)
+        nodes.NodeRegistry[root] = root_node
+    logger.info('Schema Root built')
+    return root_node 
 
 def build_schema(ddhkey : keys.DDHkey):
     elements = {}
