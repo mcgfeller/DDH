@@ -51,18 +51,10 @@ Node.update_forward_refs() # Now Node is known, update before it's derived
 
 class ExecutableNode(Node):
     """ A node that provides for execution capabilities """
-    
+
     @abstractmethod
     def execute(self, access : permissions.Access, q : typing.Optional[str] = None):
         return {}
-
-
-
-
-class StorageNode(ExecutableNode):
-    """ node with storage on DDH """
-    ...
-
 
 
 class _NodeRegistry:

@@ -1,10 +1,13 @@
 """ DDH abstract storage
 """
 from __future__ import annotations
-import pydantic 
-import datetime
+from abc import abstractmethod
 import typing
-import enum
-import abc
 
-from . import core
+from core import keys,permissions,nodes
+from utils.pydantic_utils import NoCopyBaseModel
+
+
+class StorageNode(nodes.ExecutableNode):
+    """ node with storage on DDH """
+    ...
