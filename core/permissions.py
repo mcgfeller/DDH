@@ -17,6 +17,14 @@ class Principal(NoCopyBaseModel):
 
     id : str
 
+    @classmethod
+    def check_ids(cls, selection: str) -> list[Principal]:
+        """ check string containling one or more Principals, separated by comma,
+            return them as Principal.
+        """
+        return [Principal(id=selection)]
+
+
 
 AllPrincipal = Principal(id='_all_')
 RootPrincipal = Principal(id='DDH')
