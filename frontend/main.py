@@ -6,7 +6,7 @@ import enum
 
 
 from core import pillars
-from core import keys,permissions,schemas,dapp,facade
+from core import keys,permissions,schemas,dapp,facade,errors
 
 app = fastapi.FastAPI()
 
@@ -32,7 +32,11 @@ async def get_data(
     if permissions.AccessMode.read not in modes: # get_data requires read-access
         modes.add(permissions.AccessMode.read)
     access = permissions.Access(ddhkey = keys.DDHkey(docpath),principal=user, modes = modes,byDApp=dapp)
-    d = facade.get_data(access,q)
+    try:
+        d = facade.get_data(access,q)
+    except errors.DDHerror as e:
+        raise e.to_http()
+
     return {"ddhkey": access.ddhkey, "res": d}
 
 @app.get("/schema/{docpath:path}")
@@ -46,10 +50,10 @@ async def get_schema(
     
     access = permissions.Access(ddhkey=keys.DDHkey(docpath),principal=user, modes = {permissions.AccessMode.schema_read},byDApp=dapp)
     ok,consent,text = access.permitted()
-    if not ok:
+    if not ok: # TODO: Should be errors
         raise fastapi.HTTPException(status_code=403, detail=f"No access to schema at {access.ddhkey}: {text}")
     fschema = facade.get_schema(access,schemaformat)
-    if not fschema:
+    if not fschema: # TODO: Should be errors
         raise fastapi.HTTPException(status_code=404, detail=f"No schema found at {access.ddhkey}.")
     else:
         return {"ddhkey": access.ddhkey, 'schema': fschema}

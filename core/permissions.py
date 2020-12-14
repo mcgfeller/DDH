@@ -8,7 +8,7 @@ import abc
 
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import NoCopyBaseModel
-
+from . import errors
 
 
 
@@ -25,6 +25,7 @@ class Principal(NoCopyBaseModel):
         """
         ids = selection.split(cls.Delim)
         return [Principal(id=i) for i in ids]
+        # raise errors.AccessError(f"No access to schema at {access.ddhkey}: {text}"))
 
 
 

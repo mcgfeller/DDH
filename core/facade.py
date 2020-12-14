@@ -15,13 +15,6 @@ from . import keys
 from . import schemas
 from . import nodes
 
-class AccessError(PermissionError):
-    def __init__(self,text,consent=None):
-        self.text = text
-
-    def __str__(self):
-        return self.text 
-
 def get_schema(access : permissions.Access, schemaformat: schemas.SchemaFormat = schemas.SchemaFormat.json) -> typing.Optional[typing.Any]:
     """ Service utility to retrieve a Schema and return it in the desired format.
         Returns None if no schema found.

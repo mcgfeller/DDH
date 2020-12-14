@@ -9,7 +9,7 @@ import abc
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import NoCopyBaseModel
 
-from . import keys,permissions
+from . import keys,permissions,errors
 
 class SchemaElement(NoCopyBaseModel): 
     """ A Pydantic Schema class """
@@ -69,7 +69,7 @@ class SchemaElement(NoCopyBaseModel):
             else:
                 return (innerclass,sub.__origin__,None)
         else:
-            raise ValueError(f'Cannot understand element {subname}={sub} in {cls}')
+            raise errors.DAppError(f'Cannot understand element {subname}={sub} in {cls}')
 
     def get_resolver(self,  selection: keys.DDHkey,access: permissions.Access, q):
         ids : typing.Dict[type,typing.Dict[str,list]] = {} # {class : {idattr : [id,...]}}
@@ -79,7 +79,7 @@ class SchemaElement(NoCopyBaseModel):
             next_key,remainder = selection.split_at(1) # next level
             schema,container,idattr = schema.get_subschema_class(next_key)
             if not schema:
-                raise KeyError(f'Invalid key {next_key} in {entire_selection}') 
+                raise errors.NotFound(f'Invalid key {next_key} in {entire_selection}') 
             if container:
                 sel,remainder = remainder.split_at(1) # next level is ids
                 if idattr:
@@ -91,7 +91,7 @@ class SchemaElement(NoCopyBaseModel):
                 return res
             selection = remainder
         else:
-            raise ValueError(f'No resolver found for {entire_selection}')
+            raise errors.NotFound(f'No resolver found for {entire_selection}')
 
 
 class SchemaReference(SchemaElement):
