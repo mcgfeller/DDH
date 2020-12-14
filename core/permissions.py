@@ -16,13 +16,15 @@ class Principal(NoCopyBaseModel):
     """ Abstract identification of a party """
 
     id : str
+    Delim : typing.ClassVar[str] = '+'
 
     @classmethod
     def check_ids(cls, selection: str) -> list[Principal]:
         """ check string containling one or more Principals, separated by comma,
             return them as Principal.
         """
-        return [Principal(id=selection)]
+        ids = selection.split(cls.Delim)
+        return [Principal(id=i) for i in ids]
 
 
 
