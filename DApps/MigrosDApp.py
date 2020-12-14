@@ -40,8 +40,8 @@ class Receipt(schemas.SchemaElement):
 
     @classmethod
     def resolve(cls,remainder, ids, q):
-        principals = ids.get(MigrosClient,[])
-        
+        principals = ids.get(MigrosClient,{}).get('id', [])
+
         return {}
 
 class MigrosClient(schemas.SchemaElement):

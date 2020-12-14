@@ -72,7 +72,7 @@ class SchemaElement(NoCopyBaseModel):
             raise ValueError(f'Cannot understand element {subname}={sub} in {cls}')
 
     def get_resolver(self,  selection: keys.DDHkey,access: permissions.Access, q):
-        ids = {}
+        ids : typing.Dict[type,typing.Dict[str,list]] = {} # {class : {idattr : [id,...]}}
         entire_selection = selection
         schema = self.__class__
         while len(selection.key):
@@ -84,7 +84,7 @@ class SchemaElement(NoCopyBaseModel):
                 sel,remainder = remainder.split_at(1) # next level is ids
                 if idattr:
                     principals = permissions.Principal.check_ids(str(sel))
-                    ids[schema] = principals
+                    ids.setdefault(schema,{})[idattr] = principals 
             resolver = getattr(schema,'resolve',None)
             if resolver:
                 res = resolver(remainder,ids, q)
