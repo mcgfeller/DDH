@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import abstractmethod
 import typing
 
-from core import keys,permissions,schemas,nodes
+from core import keys,permissions,schemas,nodes,policies
 from utils.pydantic_utils import NoCopyBaseModel
 
 class DApp(NoCopyBaseModel):
@@ -11,6 +11,7 @@ class DApp(NoCopyBaseModel):
 
     owner : typing.ClassVar[permissions.Principal] 
     schemakey : typing.ClassVar[keys.DDHkey] 
+    policy: policies.Policy = policies.EmptyPolicy
 
     @classmethod
     def bootstrap(cls) -> DApp:
@@ -44,7 +45,7 @@ class DApp(NoCopyBaseModel):
         raise NotImplementedError()
 
     @abstractmethod
-    def execute(self, access : permissions.Access, q : typing.Optional[str] = None):
+    def execute(self, access : permissions.Access, key_split : int, q : typing.Optional[str] = None):
         return  {}
     
 
@@ -54,7 +55,7 @@ class DAppNode(nodes.ExecutableNode):
     dapp : DApp
 
 
-    def execute(self, access : permissions.Access, q : typing.Optional[str] = None):
-        r = self.dapp.execute(access,q)
+    def execute(self, access : permissions.Access, key_split : int, q : typing.Optional[str] = None):
+        r = self.dapp.execute(access,key_split, q)
         return r
  
