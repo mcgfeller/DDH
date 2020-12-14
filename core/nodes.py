@@ -53,7 +53,7 @@ class ExecutableNode(Node):
     """ A node that provides for execution capabilities """
 
     @abstractmethod
-    def execute(self, access : permissions.Access, q : typing.Optional[str] = None):
+    def execute(self, access : permissions.Access, key_split : int, q : typing.Optional[str] = None):
         return {}
 
 

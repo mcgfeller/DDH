@@ -9,7 +9,7 @@ import abc
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import NoCopyBaseModel
 
-from . import keys
+from . import keys,permissions
 
 class SchemaElement(NoCopyBaseModel): 
     """ A Pydantic Schema class """
@@ -36,6 +36,62 @@ class SchemaElement(NoCopyBaseModel):
                     else: # path continues beyond this point, so this is not found
                         return None 
         return current
+
+    @classmethod
+    def list_of_ids(cls) -> typing.Optional[str]:
+        """ return name of identifying element if this SchemaElement is a
+            list with an Element with id : Principal.
+        """
+        return None
+
+
+    @classmethod
+    def get_subschema_class(cls, subname) -> typing.Tuple:
+        """ return subschema for this schema:
+            class
+            container
+            id
+
+        """
+        sub = typing.get_type_hints(cls).get(str(subname))
+        if sub is None:
+            return (None,None,None)
+        if isinstance(sub,SchemaElement):
+            return (sub,None,None)
+        elif isinstance(sub,typing.GenericAlias) and sub.__origin__ is list and sub.__args__:
+            innerclass = sub.__args__[0]
+            principals = [n for n,t in innerclass.__fields__.items() if issubclass(t.type_,permissions.Principal)]
+            if principals:
+                if 'id' in principals:
+                    return (innerclass,sub.__origin__,'id')
+                else:
+                    return (innerclass,sub.__origin__,principals[0])
+            else:
+                return (innerclass,sub.__origin__,None)
+        else:
+            raise ValueError(f'Cannot understand element {subname}={sub} in {cls}')
+
+    def get_resolver(self,  selection: keys.DDHkey,access: permissions.Access, q):
+        ids = {}
+        entire_selection = selection
+        schema = self.__class__
+        while len(selection.key):
+            next_key,remainder = selection.split_at(1) # next level
+            schema,container,idattr = schema.get_subschema_class(next_key)
+            if not schema:
+                raise KeyError(f'Invalid key {next_key} in {entire_selection}') 
+            if container:
+                sel,remainder = remainder.split_at(1) # next level is ids
+                if idattr:
+                    principals = permissions.Principal.check_ids(str(sel))
+                    ids[schema] = principals
+            resolver = getattr(schema,'resolve',None)
+            if resolver:
+                res = resolver(remainder,ids, q)
+                return res
+            selection = remainder
+        else:
+            raise ValueError(f'No resolver found for {entire_selection}')
 
 
 class SchemaReference(SchemaElement):

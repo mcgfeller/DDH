@@ -43,10 +43,10 @@ def get_data(access : permissions.Access, q : typing.Optional[str] = None) -> ty
     """ Service utility to retrieve data and return it in the desired format.
         Returns None if no data found.
     """
-    enode,split = nodes.NodeRegistry.get_node(access.ddhkey,nodes.NodeType.execute)
+    enode,key_split = nodes.NodeRegistry.get_node(access.ddhkey,nodes.NodeType.execute)
     enode = typing.cast(nodes.ExecutableNode,enode)
     if enode:
-        data = enode.execute(access, q)
+        data = enode.execute(access, key_split, q)
     else:
         data = {}
     return data
