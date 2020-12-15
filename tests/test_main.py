@@ -11,7 +11,7 @@ PORT = 8048
 USERPWD = {'username':'mgf','password':'secret'}
 
 def test_get_data(httpx_client):
-    r = httpx_client.get('/data/ddh/shopping/stores/migros/clients/receipts')
+    r = httpx_client.get('/data/ddh/shopping/stores/migros/clients/1/receipts')
     r.raise_for_status()
     d = r.json()
     assert d['res'],'res is empty'
@@ -52,7 +52,7 @@ def httpx_client():
     yield client
     # Finalizer:
     client.close()
-    process.terminate()
+    process.kill()
     return 
 
 
@@ -79,5 +79,5 @@ async def asgi_client():
     client = httpx.AsyncClient(app=app,base_url=url,headers=headers)
     yield client
     # Finalizer:
-    #client.close()
+    client.close()
     return 
