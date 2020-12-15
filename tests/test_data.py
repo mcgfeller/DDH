@@ -36,12 +36,11 @@ def test_dapp_read_data():
 
 def test_dapp_read_data_no_owner():
     """ test retrieval of key of test MigrosDApp, and facade.get_data() """
-    ddhkey = keys.DDHkey(key="/ddh/shopping/stores/migros/client/receipts")
+    ddhkey = keys.DDHkey(key="/ddh/shopping/stores/migros/clients/receipts")
     user = permissions.User(id='1',name='martin',email='martin.gfeller@swisscom.com')
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.read})
-    data = facade.get_data(access)
-    assert isinstance(data,dict)
-    assert len(data)>0 
+    with pytest.raises(errors. NotFound):
+        data = facade.get_data(access)
     return
 
 def test_dapp_read_data_nopermit():
@@ -51,6 +50,4 @@ def test_dapp_read_data_nopermit():
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.read})
     with pytest.raises(errors.AccessError):
         data = facade.get_data(access)
-        # assert isinstance(data,dict)
-        # assert len(data)>0 
     return

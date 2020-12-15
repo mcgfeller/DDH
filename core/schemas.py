@@ -90,8 +90,8 @@ class SchemaElement(NoCopyBaseModel):
                 res = resolver(remainder,ids, q)
                 return res
             selection = remainder
-        else:
-            raise errors.NotFound(f'No resolver found for {entire_selection}')
+        else: # there is no resolver so far, we cannot grab this without a further segment:
+            raise errors.NotFound(f'Incomplete key: {entire_selection}')
 
 
 class SchemaReference(SchemaElement):

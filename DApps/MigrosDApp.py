@@ -6,6 +6,8 @@ import typing
 from core import keys,permissions,schemas
 from core import dapp
 
+import pandas # for example
+
 class MigrosDApp(dapp.DApp):
 
     owner : typing.ClassVar[permissions.Principal] =  permissions.User(id='migros',name='Migros (fake account)')
@@ -41,8 +43,21 @@ class Receipt(schemas.SchemaElement):
     @classmethod
     def resolve(cls,remainder, ids, q):
         principals = ids.get(MigrosClient,{}).get('id', [])
+        data = {}
+        for principal in principals:
+            d = cls.get_cumulus_json(principal)
+            data[principal.id] = d
+        return data
 
-        return {}
+    @classmethod
+    def get_cumulus_json(cls,principal):
+        if principal.id =='1':
+            df = pandas.read_csv(r"C:\Projects\DDH\DApps\test_data_migros.csv")
+            d = df.to_dict()
+        else:
+            d = {}
+        return d
+
 
 class MigrosClient(schemas.SchemaElement):
 
@@ -61,7 +76,7 @@ class MigrosSchema(schemas.SchemaElement):
 
     def get_data(self, selection: keys.DDHkey,access: permissions.Access, q):
         d = self.get_resolver(selection,access,q)
-        return {}
+        return d
 
 
 
