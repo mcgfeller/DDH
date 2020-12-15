@@ -4,6 +4,7 @@ import pytest
 import httpx
 import subprocess
 import pathlib
+import signal
 
 
 UVICORN_EXE = "C:\\Program Files\\Python39\\scripts\\uvicorn.exe"
@@ -52,13 +53,14 @@ def httpx_client():
     yield client
     # Finalizer:
     client.close()
-    process.kill()
+    process.send_signal(signal.CTRL_C_EVENT )
+    process.terminate()
     return 
 
 
 def start_server(exe : str,port : int = 8080, app : str = 'frontend.main:app',cwd=pathlib.Path(__file__).parent.parent) -> subprocess.Popen:
     """ Start the uvicorn process """
-    p = subprocess.Popen([exe,app,f'--port={port}','--reload' ],bufsize=-1,cwd=cwd)
+    p = subprocess.Popen([exe,app,f'--port={port}','--reload' ],bufsize=-1,cwd=cwd,creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
     return p
 
 
