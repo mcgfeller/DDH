@@ -116,7 +116,7 @@ class SchemaReference(SchemaElement):
         return typing.cast(pydantic.AnyUrl,str(cls.__fields__['ddhkey'].default))
 
     @classmethod
-    def create_from_key(cls,name: str, ddhkey : str) -> typing.Type[SchemaReference]:
+    def create_from_key(cls,name: str, ddhkey : keys.DDHkey) -> typing.Type[SchemaReference]:
         m = pydantic.create_model(name,__base__ = cls,ddhkey = (keys.DDHkey,ddhkey))
         return typing.cast(typing.Type[SchemaReference],m)
 

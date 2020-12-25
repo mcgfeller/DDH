@@ -26,7 +26,7 @@ class DDHkey(NoCopyBaseModel):
     """
     
     key : tuple
-    node: nodes.Node = None
+    node: typing.Optional[nodes.Node] = None
 
     Delimiter : typing.ClassVar[str] = '/'
     Root : typing.ClassVar[_RootType] = _RootType(Delimiter)
