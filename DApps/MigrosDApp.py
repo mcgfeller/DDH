@@ -51,7 +51,7 @@ class Receipt(schemas.SchemaElement):
 
     @classmethod
     def get_cumulus_json(cls,principal):
-        if principal.id =='1':
+        if principal.id =='mgf':
             df = pandas.read_csv(r"C:\Projects\DDH\DApps\test_data_migros.csv")
             d = df.to_dict()
         else:
