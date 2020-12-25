@@ -5,6 +5,7 @@ import httpx
 import subprocess
 import pathlib
 import signal
+import time
 
 
 UVICORN_EXE = "C:\\Program Files\\Python39\\scripts\\uvicorn.exe"
@@ -12,7 +13,7 @@ PORT = 8048
 USERPWD = {'username':'mgf','password':'secret'}
 
 def test_get_data(httpx_client):
-    r = httpx_client.get('/data/ddh/shopping/stores/migros/clients/1/receipts')
+    r = httpx_client.get('/data/ddh/shopping/stores/migros/clients/mgf/receipts')
     r.raise_for_status()
     d = r.json()
     assert d['res'],'res is empty'
@@ -53,14 +54,13 @@ def httpx_client():
     yield client
     # Finalizer:
     client.close()
-    process.send_signal(signal.CTRL_C_EVENT )
     process.terminate()
     return 
 
 
 def start_server(exe : str,port : int = 8080, app : str = 'frontend.main:app',cwd=pathlib.Path(__file__).parent.parent) -> subprocess.Popen:
     """ Start the uvicorn process """
-    p = subprocess.Popen([exe,app,f'--port={port}','--reload' ],bufsize=-1,cwd=cwd,creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+    p = subprocess.Popen([exe,app,f'--port={port}' ,'--no-use-colors'],bufsize=-1,cwd=cwd,creationflags=subprocess.DETACHED_PROCESS)
     return p
 
 
