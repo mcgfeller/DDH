@@ -70,7 +70,7 @@ async def asgi_client():
 
     """
     url = 'http://localhost:'+str(PORT)
-    from main  import app
+    from frontend.main  import app
     async with httpx.AsyncClient(app=app, base_url=url) as client:
         r = await client.post(url+'/token',data=USERPWD)
         r.raise_for_status()
