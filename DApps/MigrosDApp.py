@@ -30,8 +30,7 @@ class MigrosDApp(dapp.DApp):
 
 class Receipt(schemas.SchemaElement):
 
-    Datum:      datetime.date 
-    Zeit:       datetime.time 
+    Datum_Zeit: datetime.datetime
     Filiale:    str
     Kassennummer:  int
     Transaktionsnummer: int
@@ -45,15 +44,16 @@ class Receipt(schemas.SchemaElement):
         principals = ids.get(MigrosClient,{}).get('id', [])
         data = {}
         for principal in principals:
-            d = cls.get_cumulus_json(principal)
+            d = cls.get_cumulus_json(principal,q)
             data[principal.id] = d
         return data
 
     @classmethod
-    def get_cumulus_json(cls,principal):
+    def get_cumulus_json(cls,principal,q):
+        """ This is extrmly fake to retrieve data for my principal """
         if principal.id =='mgf':
-            df = pandas.read_csv(r"C:\Projects\DDH\DApps\test_data_migros.csv")
-            d = df.to_dict()
+            df = pandas.read_csv(r"C:\Projects\DDH\DApps\test_data_migros.csv",parse_dates = [['Datum','Zeit']],dayfirst=True)
+            d = df.to_dict(orient='records')
         else:
             d = {}
         return d
