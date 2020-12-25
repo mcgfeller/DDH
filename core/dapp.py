@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import abstractmethod
 import typing
 
-from core import keys,permissions,schemas,nodes,policies
+from core import keys,permissions,schemas,nodes,policies,errors
 from utils.pydantic_utils import NoCopyBaseModel
 
 class DApp(NoCopyBaseModel):
@@ -42,7 +42,7 @@ class DApp(NoCopyBaseModel):
     
     def get_schema(self) -> schemas.Schema:
         """ Obtain initial schema for DApp - this is stored in the Node and must be static. """
-        raise NotImplementedError()
+        raise errors.SubClass
 
     @abstractmethod
     def execute(self, access : permissions.Access, key_split : int, q : typing.Optional[str] = None):

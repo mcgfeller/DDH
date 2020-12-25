@@ -16,3 +16,6 @@ class NotFound(DDHerror):
     http_status = 404
 
 class DAppError(DDHerror): pass
+
+
+SubClass = NotImplementedError('must be implemented in subclass')
