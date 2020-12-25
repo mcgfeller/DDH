@@ -4,8 +4,6 @@ import pytest
 import httpx
 import subprocess
 import pathlib
-import signal
-import time
 
 
 UVICORN_EXE = "C:\\Program Files\\Python39\\scripts\\uvicorn.exe"
