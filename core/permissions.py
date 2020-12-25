@@ -12,25 +12,48 @@ from . import errors
 
 
 
+
 class Principal(NoCopyBaseModel):
     """ Abstract identification of a party """
 
     id : str
-    Delim : typing.ClassVar[str] = '+'
+    Delim : typing.ClassVar[str] = ','
 
     @classmethod
-    def check_ids(cls, selection: str) -> list[Principal]:
+    def get_principals(cls, selection: str) -> list[Principal]:
         """ check string containling one or more Principals, separated by comma,
             return them as Principal.
+            First checks CommonPrincipals defined here, then user_auth.UserInDB.
         """
         ids = selection.split(cls.Delim)
-        return [Principal(id=i) for i in ids]
-        # raise errors.AccessError(f"No access to schema at {access.ddhkey}: {text}"))
+        principals = []
+        for i in ids:
+            p = CommonPrincipals.get(i)
+            if not p:
+                p = user_auth.UserInDB.load(id=i)
+                assert p # load must raise error if not found
+            principals.append(p)
+        return principals
+
+    def __eq__(self,other) -> bool:
+        """ Principals are equal if their id is equal """
+        return self.id == other.id if isinstance(other,Principal) else False
+
+    def __hash__(self): 
+        """ hashable on id """
+        return hash(self.id)
+
+    @classmethod
+    def load(cls,id):
+        raise errors.SubClass
 
 
 
 AllPrincipal = Principal(id='_all_')
 RootPrincipal = Principal(id='DDH')
+
+# Collect all common principals
+CommonPrincipals = {p.id : p for p in (AllPrincipal,RootPrincipal)}
 
 
 @enum.unique
@@ -86,6 +109,8 @@ class User(Principal):
     email : typing.Optional[pydantic.EmailStr] = None
     created_at : datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow) # defaults to now
 
+
+
 class DAppId(Principal):
     """ The identification of a DApp. We use a Principal for now. """
 
@@ -136,7 +161,7 @@ class Consents(NoCopyBaseModel):
                 cl.append(consent)
         return
 
-    def applicable_consents(self,principal : Principal ) -> list[Consents]:
+    def applicable_consents(self,principal : Principal ) -> list[Consent]:
         """ return list of Consents for this principal """
         return self._byPrincipal.get(principal.id,[]) + self._byPrincipal.get(AllPrincipal.id,[])
 
@@ -168,9 +193,11 @@ class Access(NoCopyBaseModel):
         super().__init__(*a,**kw)
         self.ddhkey = self.ddhkey.ensure_rooted()
     
-    def permitted(self) -> tuple[bool,typing.Optional[Consent],str]:
+    def permitted(self,owner : typing.Optional[Principal] = None) -> tuple[bool,typing.Optional[Consent],str]:
         """ checks whether access is permitted, returning (bool,required flags,applicable consent,explanation text)
         """
+        if owner and owner == self.principal:
+            return True,None,'principal is supplied owner'
         onode,split = nodes.NodeRegistry.get_node(self.ddhkey,nodes.NodeType.owner)
         if not onode:
             return False,None,f'No owner node found for key {self.ddhkey}'
@@ -188,6 +215,7 @@ class Access(NoCopyBaseModel):
             ok,consent,msg = consents.check(self) # check consents
             return  ok,consent,msg
 
+
     
     def audit_record(self) -> dict:
         return {}
@@ -195,4 +223,5 @@ class Access(NoCopyBaseModel):
 
 from . import keys
 from . import nodes
+from frontend import user_auth
 Access.update_forward_refs()

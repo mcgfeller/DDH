@@ -1,7 +1,7 @@
 """ Provisional User and Token management 
     See https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/
 """
-
+from __future__ import annotations
 import fastapi
 import typing
 import pydantic
@@ -12,7 +12,7 @@ import jose
 import jose.jwt
 import passlib.context
 
-from core import permissions
+from core import permissions,errors
 
 oauth2_scheme = fastapi.security.OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = passlib.context.CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -26,7 +26,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 def get_password_hash(password):
     return pwd_context.hash(password)
 
-fake_users_db = {
+FAKE_USERS_DB = {
     "mgf": {
         "id": "mgf",
         "name": "Martin Gfeller",
@@ -37,6 +37,14 @@ fake_users_db = {
         "id": "admin",
         "name": "DDH admin",
         "email": "martin.gfeller@swisscom.com",
+        "hashed_password": get_password_hash("secret"),
+
+    },
+
+    "another": {
+        "id": "another",
+        "name": "just another user",
+        "email": "nobody@swisscom.com",
         "hashed_password": get_password_hash("secret"),
 
     },
@@ -54,6 +62,15 @@ class TokenData(pydantic.BaseModel):
 
 class UserInDB(permissions.User):
     hashed_password: str
+
+    @classmethod
+    def load(cls,id) -> UserInDB:
+        """ Load user from DB, or raise NotFound """
+        u = FAKE_USERS_DB.get(id,None)
+        if u:
+            return cls(**u)
+        else:
+            raise errors.NotFound(f'User not found {id}')
 
 
 def verify_password(plain_password, hashed_password):
@@ -100,7 +117,7 @@ async def get_current_user(token: str = fastapi.Depends(oauth2_scheme)):
         token_data = TokenData(id=userid)
     except jose.JWTError:
         raise credentials_exception
-    user = get_user(fake_users_db, userid=token_data.id)
+    user = get_user(FAKE_USERS_DB, userid=token_data.id)
     if user is None:
         raise credentials_exception
     return user
@@ -112,7 +129,7 @@ async def get_current_active_user(current_user: permissions.User = fastapi.Depen
 
 
 async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordRequestForm = fastapi.Depends()):
-    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+    user = authenticate_user(FAKE_USERS_DB, form_data.username, form_data.password)
     if not user:
         raise fastapi.HTTPException(
             status_code=fastapi.status.HTTP_401_UNAUTHORIZED,
