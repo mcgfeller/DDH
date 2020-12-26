@@ -33,6 +33,10 @@ def test_dapp_read_data():
     data = facade.get_data(access)
     assert isinstance(data,dict)
     assert len(data)>0 
+    assert isinstance(data['mgf'],list)
+    assert len(data['mgf'])>10
+    assert all(a in data['mgf'][5] for a in ('Datum_Zeit','Menge','Filiale')) # these keys must be present
+    
     return
 
 def test_dapp_read_data_no_owner():
