@@ -186,34 +186,47 @@ class Access(NoCopyBaseModel):
     ddhkey:    DDHkey
     principal: Principal
     byDApp:    typing.Optional[DAppId] = None
-    modes:      set[AccessMode]  = {AccessMode.read}
+    modes:     set[AccessMode]  = {AccessMode.read}
     time:      datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow) # defaults to now
+    granted:   typing.Optional[bool] = None
+    byConsent: typing.Optional[Consent] = None
+    explanation: typing.Optional[str] = None
 
     def __init__(self,*a,**kw):
         super().__init__(*a,**kw)
         self.ddhkey = self.ddhkey.ensure_rooted()
     
-    def permitted(self,owner : typing.Optional[Principal] = None) -> tuple[bool,typing.Optional[Consent],str]:
+    def permitted(self,owner : typing.Optional[Principal] = None, record_access : bool = True) -> tuple[bool,typing.Optional[Consent],str]:
         """ checks whether access is permitted, returning (bool,required flags,applicable consent,explanation text)
+            if record_access is set, the result is recorded into self.
         """
+        consent = None
         if owner and owner == self.principal:
-            return True,None,'principal is supplied owner'
-        onode,split = nodes.NodeRegistry.get_node(self.ddhkey,nodes.NodeType.owner)
-        if not onode:
-            return False,None,f'No owner node found for key {self.ddhkey}'
-        elif onode.owner == self.principal:
-            return True,None,'Node owned by principal'
+            ok,msg = True,'principal is supplied owner'
         else:
-            if onode.consents: # onode has consents, use it
-                consents : Consents = onode.consents
-            else: # obtain from consents node
-                cnode,split = nodes.NodeRegistry.get_node(self.ddhkey,nodes.NodeType.consents) 
-                if cnode:
-                    consents = typing.cast(Consents,cnode.consents)  # consent is not None by get_node
+            onode,split = nodes.NodeRegistry.get_node(self.ddhkey,nodes.NodeType.owner)
+            if not onode:
+                ok,msg = False,f'No owner node found for key {self.ddhkey}'
+            elif onode.owner == self.principal:
+                ok,msg = True,'Node owned by principal'
+            else:
+                consents : typing.Optional[Consents] = None
+                if onode.consents: # onode has consents, use it
+                    consents  = onode.consents
+                else: # obtain from consents node
+                    cnode,split = nodes.NodeRegistry.get_node(self.ddhkey,nodes.NodeType.consents) 
+                    if cnode:
+                        consents = typing.cast(Consents,cnode.consents)  # consent is not None by get_node
+                if consents:
+                    ok,consent,msg = consents.check(self) # check consents
                 else:
-                    return False,None,f'Owner is not accessor, and no consent node found for key {self.ddhkey}'
-            ok,consent,msg = consents.check(self) # check consents
-            return  ok,consent,msg
+                    ok,msg =  False,f'Owner is not accessor, and no consent node found for key {self.ddhkey}'
+                ok,consent,msg = consents.check(self) # check consents
+        if record_access:
+            self.granted = ok
+            self.explanation = msg
+            self.byConsent = consent
+        return  ok,consent,msg
 
 
     
