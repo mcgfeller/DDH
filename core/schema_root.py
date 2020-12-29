@@ -16,7 +16,7 @@ def check_registry() -> nodes.Node:
     root = keys.DDHkey(keys.DDHkey.Root)
     root_node,split = nodes.NodeRegistry.get_node(root,nodes.NodeType.nschema)
     if not root_node:
-        schema = build_schema(keys.DDHkey(key="/ddh/shopping/stores")) # obtain static schema
+        schema = build_schema(keys.DDHkey(key="/org/living/stores")) # obtain static schema
         # for now, give schema read access to everybody
         consents = permissions.Consents(consents=[permissions.Consent(grantedTo=[permissions.AllPrincipal],withModes={permissions.AccessMode.schema_read})]) 
         root_node = nodes.Node(owner=permissions.RootPrincipal,schema=schema,consents=consents)

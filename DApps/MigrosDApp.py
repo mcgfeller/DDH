@@ -11,7 +11,7 @@ import pandas # for example
 class MigrosDApp(dapp.DApp):
 
     owner : typing.ClassVar[permissions.Principal] =  permissions.User(id='migros',name='Migros (fake account)')
-    schemakey : typing.ClassVar[keys.DDHkey] = keys.DDHkey(key="/ddh/shopping/stores/migros")
+    schemakey : typing.ClassVar[keys.DDHkey] = keys.DDHkey(key="/org/living/stores/migros.ch")
     _ddhschema : schemas.SchemaElement = None
 
 
