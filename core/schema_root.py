@@ -16,7 +16,7 @@ def check_registry() -> nodes.Node:
     root = keys.DDHkey(keys.DDHkey.Root)
     root_node,split = nodes.NodeRegistry.get_node(root,nodes.NodeType.nschema)
     if not root_node:
-        schema = build_schema(keys.DDHkey(key="/org/living/stores")) # obtain static schema
+        schema = build_root_schemas() # obtain static schema
         # for now, give schema read access to everybody
         consents = permissions.Consents(consents=[permissions.Consent(grantedTo=[permissions.AllPrincipal],withModes={permissions.AccessMode.schema_read})]) 
         root_node = nodes.Node(owner=permissions.RootPrincipal,schema=schema,consents=consents)
@@ -24,13 +24,36 @@ def check_registry() -> nodes.Node:
     logger.info('Schema Root built')
     return root_node 
 
-def build_schema(ddhkey : keys.DDHkey):
-    elements = {}
-    s = None
-    for k in ddhkey[::-1]: # loop backwards
-        if k is keys.DDHkey.Root: k = '__root__'
-        s = pydantic.create_model(k, __base__=schemas.SchemaElement, **elements)
-        elements = {k:(s,None)}
-    return schemas.PySchema(schema_element=s)
+def build_root_schemas():
+    """ build top of schema tree """
+    treetop = ['root',
+        ['org', # organizational tree, next level are org domains
+            ['living',
+                ['stores'],
+            ],
+            ['health'],
+        ],
+        ['p', # personal tree, next level are data models
+            ['family'],
+            ['employment'],
+            ['education'],
+            ['health'],
+            ['living',
+                ['shopping'],
+            ],
+            ['finance'],
+        ],
+    ]
+    root = schemas.PySchema(schema_element=descend_schema(treetop))
+    assert root.schema_element.schema_json()
+    return root
+
+
+def descend_schema(tree : list,parents=()) -> pydantic.BaseModel:
+    """ Descent on our tree representation, returning model """
+    key = parents+(tree[0],) # new key, from parents down
+    elements = {t[0]: (descend_schema(t,parents=key),None) for t in tree[1:]} # descend on subtree, build dict of {head_name  : subtree}
+    s = pydantic.create_model('_'.join(key), __base__=schemas.SchemaElement, **elements) # create a model with subtree elements
+    return s
 
 check_registry()

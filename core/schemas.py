@@ -37,13 +37,6 @@ class SchemaElement(NoCopyBaseModel):
                         return None 
         return current
 
-    @classmethod
-    def list_of_ids(cls) -> typing.Optional[str]:
-        """ return name of identifying element if this SchemaElement is a
-            list with an Element with id : Principal.
-        """
-        return None
-
 
     @classmethod
     def get_subschema_class(cls, subname) -> typing.Tuple:
@@ -183,6 +176,12 @@ class PySchema(Schema):
     def add_fields(self,fields : dict[str,tuple]):
         """ Add the field in dict """
         self.schema_element.add_fields(**fields)
+    
+    def add_empty_schemas(self,names : list[str]) -> list[PySchema]:
+        """ Add a sequence of empty models, returing them as a list """
+        schemas = [PySchema(schema_element=pydantic.create_model(name, __base__=SchemaElement)) for name in names]
+        self.add_fields({name : (schema.schema_element,None) for name,schema in zip(names,schemas)})
+        return schemas
 
 
 class JsonSchema(Schema):
