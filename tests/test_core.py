@@ -26,7 +26,7 @@ def test_nodes():
     nodes.NodeRegistry[keys.DDHkey(key='/ddh/health')] = node_s
     nodes.NodeRegistry[keys.DDHkey(key='/ddh/health/mgf')] = node_c    
     ddhkey = keys.DDHkey(key='/ddh/health/mgf/bmi/weight')
-    assert next(nodes.NodeRegistry.get_next_node(ddhkey))[0] is node_c
+    assert next(nodes.NodeRegistry.get_next_node(ddhkey,nodes.NodeType.consents))[0] is node_c
     assert nodes.NodeRegistry.get_node(ddhkey,nodes.NodeType.nschema)[0].nschema is schema 
     return
 

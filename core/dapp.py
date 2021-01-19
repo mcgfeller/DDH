@@ -22,7 +22,7 @@ class DApp(NoCopyBaseModel):
         return dnode
 
     def check_registry(self) -> nodes.Node:
-        dnode = nodes.NodeRegistry[self.schemakey]
+        dnode = nodes.NodeRegistry[self.schemakey].get(nodes.NodeType.nschema)
         if not dnode:
             # get a parent scheme to hook into
             upnode,split = nodes.NodeRegistry.get_node(self.schemakey,nodes.NodeType.nschema)
