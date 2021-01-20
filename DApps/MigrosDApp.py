@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 import typing
 
-from core import keys,permissions,schemas
+from core import keys,permissions,schemas,nodes
 from core import dapp
 
 import pandas # for example
@@ -18,15 +18,36 @@ class MigrosDApp(dapp.DApp):
     def __init__(self,*a,**kw):
         super().__init__(*a,**kw)
         self._ddhschema = MigrosSchema()
+        self.register_transform()
  
     def get_schema(self) -> schemas.Schema:
         """ Obtain initial schema for DApp """
         return schemas.PySchema(schema_element=MigrosSchema)
 
     def execute(self, access : permissions.Access, key_split: int, q : typing.Optional[str] = None):
+        """ obtain data by recursing to schema """
         here,selection = access.ddhkey.split_at(key_split)
         d = self._ddhschema.get_data(selection,access,q)
         return d
+
+
+    def register_transform(self):
+        ddhkey = keys.DDHkey('/p/living/shopping/receipts')
+        de_node = nodes.NodeRegistry[ddhkey].get(nodes.NodeType.execute)
+        if not de_node:
+            de_node = nodes.DelegatedExecutableNode(owner=self.owner)
+            de_node.executors.append(self)
+            nodes.NodeRegistry[ddhkey] = de_node
+        return
+
+    def get_and_transform(self, access : permissions.Access, key_split: int, q : typing.Optional[str] = None):
+        """ obtain data by transforming key, then executing, then transforming result """
+        here,selection = access.ddhkey.split_at(key_split)
+        selection2 = keys.DDHkey(('clients',selection.key[0],'receipts'))
+        d = self._ddhschema.get_data(selection2,access,q)
+        return d
+    
+
 
 class Receipt(schemas.SchemaElement):
 
@@ -77,7 +98,6 @@ class MigrosSchema(schemas.SchemaElement):
     def get_data(self, selection: keys.DDHkey,access: permissions.Access, q):
         d = self.get_resolver(selection,access,q)
         return d
-
 
 
 

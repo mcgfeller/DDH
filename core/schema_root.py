@@ -39,7 +39,9 @@ def build_root_schemas():
             ['education'],
             ['health'],
             ['living',
-                ['shopping'],
+                ['shopping',
+                    ['receipts']
+                ],
             ],
             ['finance'],
         ],

@@ -68,6 +68,17 @@ class ExecutableNode(Node):
     def execute(self, access : permissions.Access, key_split : int, q : typing.Optional[str] = None):
         return {}
 
+class DelegatedExecutableNode(ExecutableNode):
+    """ A node that delegates executable methods to DApps """
+
+    executors : list = []
+
+    def execute(self, access : permissions.Access, key_split: int, q : typing.Optional[str] = None):
+        """ obtain data by recursing to schema """
+        for executor in self.executors:
+            d = executor.get_and_transform(access,key_split, q)
+        return d
+
 
 class _NodeRegistry:
     """ Preliminary holder of nodes 

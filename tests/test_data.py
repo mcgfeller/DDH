@@ -66,3 +66,17 @@ def test_dapp_read_data_nopermit():
     with pytest.raises(errors.AccessError):
         data = facade.get_data(access)
     return
+
+def test_std_read_data():
+    """ test retrieval of key of test MigrosDApp with transformation to standard, and facade.get_data() """
+    ddhkey = keys.DDHkey(key="/p/living/shopping/receipts/mgf")
+    user = user_auth.UserInDB.load('mgf')
+    access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.read})
+    data = facade.get_data(access)
+    assert isinstance(data,dict)
+    assert len(data)>0 
+    assert isinstance(data['mgf'],list)
+    assert len(data['mgf'])>10
+    assert all(a in data['mgf'][5] for a in ('Datum_Zeit','Menge','Filiale')) # these keys must be present
+    
+    return
