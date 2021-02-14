@@ -1,8 +1,9 @@
 python-multipart==0.0.5
-fastapi>=0.61.0
+fastapi>=0.61.2pi
 uvicorn
 passlib[bcrypt]
 python-jose[pycryptodome]
 pydantic[email]
 pytest
 httpx
+glom==20
