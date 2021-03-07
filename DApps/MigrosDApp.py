@@ -50,7 +50,7 @@ class MigrosDApp(dapp.DApp):
         spec = {
              "items": (
               T.items(),
-              Iter((S(value=T[0]),T[1],[{'buyer':S.value,'article':'Artikel','quantity':'Menge'}])).flatten(),
+              Iter((S(value=T[0]),T[1],[{'buyer':S.value,'article':'Artikel','quantity':'Menge','amount':'Umsatz','when': 'Datum_Zeit','where':'Filiale'}])).flatten(),
               list,
              )
          }
