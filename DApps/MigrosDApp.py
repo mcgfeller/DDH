@@ -7,6 +7,7 @@ from core import keys,permissions,schemas,nodes
 from core import dapp
 
 import pandas # for example
+from glom import glom,S,T,Iter # transform
 
 class MigrosDApp(dapp.DApp):
 
@@ -43,9 +44,18 @@ class MigrosDApp(dapp.DApp):
     def get_and_transform(self, access : permissions.Access, key_split: int, q : typing.Optional[str] = None):
         """ obtain data by transforming key, then executing, then transforming result """
         here,selection = access.ddhkey.split_at(key_split)
-        selection2 = keys.DDHkey(('clients',selection.key[0],'receipts'))
-        d = self._ddhschema.get_data(selection2,access,q)
-        return d
+        selection2 = keys.DDHkey(('clients',selection.key[0],'receipts')) # insert selection
+        d = self._ddhschema.get_data(selection2,access,q) # obtain org-format data
+        # transform with glom: into list of dicts, whereas item key becomes buyer: 
+        spec = {
+             "items": (
+              T.items(),
+              Iter((S(value=T[0]),T[1],[{'buyer':S.value,'article':'Artikel','quantity':'Menge'}])).flatten(),
+              list,
+             )
+         }
+        s = glom(d,spec)
+        return s
     
 
 
