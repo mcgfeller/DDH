@@ -67,6 +67,7 @@ class AccessMode(str,enum.Enum):
     anonymous = 'anonymous'
     pseudonym = 'pseudonym'
     aggregated = 'aggregated'
+    differential = 'differential' # differential privacy aggregation
     confidential = 'confidential' # confidential computing
     schema_read = 'schema_read'
     schema_write = 'schema_write'    
@@ -102,7 +103,7 @@ class AccessMode(str,enum.Enum):
 
 # modes that need to be specified explicity in requested when consented. If value is a set, the requirement only applies to the value modes:
 AccessMode.RequiredModes = {AccessMode.anonymous : None, AccessMode.pseudonym : None, AccessMode.aggregated : None,
-     AccessMode.confidential: None, AccessMode.protected : {AccessMode.write}} 
+     AccessMode.confidential: None, AccessMode.differential: None, AccessMode.protected : {AccessMode.write}} 
 
 
 class User(Principal):
