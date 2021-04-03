@@ -225,7 +225,7 @@ class Access(NoCopyBaseModel):
                     ok,consent,msg = consents.check(self) # check consents
                 else:
                     ok,msg =  False,f'Owner is not accessor, and no consent node found for key {self.ddhkey}'
-                ok,consent,msg = consents.check(self) # check consents
+
         if record_access:
             self.granted = ok
             self.explanation = msg
