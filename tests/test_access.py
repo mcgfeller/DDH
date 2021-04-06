@@ -45,7 +45,7 @@ def users():
 def ddhkey_setup(users):
     """ return ddhkey, with Node set up """
     AM = permissions.AccessMode
-    node_c = nodes.Node(consents=permissions.Consents(consents=[
+    node_c_s = nodes.Node(consents=permissions.Consents(consents=[
         permissions.Consent(grantedTo=[users[1]]),
         permissions.Consent(grantedTo=[users[2]],withModes={AM.read}),
         permissions.Consent(grantedTo=[users[3]],withModes={AM.write}),    
@@ -53,43 +53,43 @@ def ddhkey_setup(users):
         permissions.Consent(grantedTo=[users[5]],withModes={AM.read, AM.write, permissions.AccessMode.anonymous}),  
         permissions.Consent(grantedTo=[users[6]],withModes={AM.read, AM.write, AM.protected,permissions.AccessMode.pseudonym}),           
         ]),owner=users[0])    
-    ddhkey = keys.DDHkey(key='/root')
-    nodes.NodeRegistry[ddhkey] = node_c
-    return ddhkey
+    ddhkey = keys.DDHkey(key='/root/single_owner')
+    nodes.NodeRegistry[ddhkey] = node_c_s
+    return [ddhkey]
 
 
 # Setup list of tests: 
 AM = permissions.AccessMode
 test_params = [ 
-      (True,0,{AM.read,AM.write},'accessor is owner'),
-      (True,0,{AM.read,AM.anonymous},'anonymous reader is owner'),
-      (True,1,{AM.read},'reading user has full grant'),
-      (False,1,{AM.write},'writing user has full grant'),
-      (True,1,{AM.read,AM.anonymous},'read includes anonymous read'), 
-      (True,1,{AM.read,AM.pseudonym},'read includes pseudonymous read'), 
-      (False,1,{AM.write,AM.anonymous},'no write permission'), 
-      (True,2,{AM.read},'reading user has read grant'),
-      (False,2,{AM.write},'writing user has only read grant'),      
-      (False,3,{AM.read},'write doesn\'t imply read'), 
-      (True,3,{AM.write},'writing user has only write gran'),   
-      (True,4,{AM.read},'protected not required for read'), 
-      (True,4,{AM.read,AM.protected},'protected is optional'), 
-      (False,4,{AM.write},'protected is required for write'), 
-      (True,4,{AM.write,AM.protected},'protected is required for write'), 
-      (False,5,{AM.read},'must specify anonymous'), 
-      (True,5,{AM.read,AM.anonymous},'anonymous read granted'),   
-      (True,6,{AM.read,AM.pseudonym},'pseudonym sufficient in read'), 
-      (False,6,{AM.read,AM.protected},'must specify pseudonym'), 
-      (False,6,{AM.write,AM.pseudonym},'protected is required for write'),       
-      (True,6,{AM.write,AM.protected,AM.pseudonym},'protected is required for write'),       
+      (True,0,0,{AM.read,AM.write},'accessor is owner'),
+      (True,0,0,{AM.read,AM.anonymous},'anonymous reader is owner'),
+      (True,0,1,{AM.read},'reading user has full grant'),
+      (False,0,1,{AM.write},'writing user has full grant'),
+      (True,0,1,{AM.read,AM.anonymous},'read includes anonymous read'), 
+      (True,0,1,{AM.read,AM.pseudonym},'read includes pseudonymous read'), 
+      (False,0,1,{AM.write,AM.anonymous},'no write permission'), 
+      (True,0,2,{AM.read},'reading user has read grant'),
+      (False,0,2,{AM.write},'writing user has only read grant'),      
+      (False,0,3,{AM.read},'write doesn\'t imply read'), 
+      (True,0,3,{AM.write},'writing user has only write gran'),   
+      (True,0,4,{AM.read},'protected not required for read'), 
+      (True,0,4,{AM.read,AM.protected},'protected is optional'), 
+      (False,0,4,{AM.write},'protected is required for write'), 
+      (True,0,4,{AM.write,AM.protected},'protected is required for write'), 
+      (False,0,5,{AM.read},'must specify anonymous'), 
+      (True,0,5,{AM.read,AM.anonymous},'anonymous read granted'),   
+      (True,0,6,{AM.read,AM.pseudonym},'pseudonym sufficient in read'), 
+      (False,0,6,{AM.read,AM.protected},'must specify pseudonym'), 
+      (False,0,6,{AM.write,AM.pseudonym},'protected is required for write'),       
+      (True,0,6,{AM.write,AM.protected,AM.pseudonym},'protected is required for write'),       
     ]
 
 
-@pytest.mark.parametrize('ok,user,modes,comment',
-    test_params,ids=[d[3].strip().replace(' ','-') if d[3] else None for d in test_params]) # use comment as test id
-def test_access_modes(ddhkey_setup,users,ok,user,modes,comment):
+@pytest.mark.parametrize('ok,obj,user,modes,comment',
+    test_params,ids=[d[4].strip().replace(' ','-') if d[4] else None for d in test_params]) # use comment as test id
+def test_access_modes(ddhkey_setup,users,ok,obj,user,modes,comment):
 
-    access = permissions.Access(ddhkey=ddhkey_setup,principal=users[user],modes=modes)
+    access = permissions.Access(ddhkey=ddhkey_setup[obj],principal=users[user],modes=modes)
     rok,consent,explanation = access.permitted()
     diagnose = f'Test result {rok} expected {ok} because {comment or "it is obvious"}: {explanation}, for {user=}, {modes=}, {consent=}'
     if  rok != ok: 
