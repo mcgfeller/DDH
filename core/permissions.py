@@ -190,6 +190,8 @@ class MultiOwnerConsents(NoCopyBaseModel):
 
 
     def check(self,owners : list[Principal], access : Access) -> tuple[bool,list[Consent],str]:
+        """ Check consents by all owner, only if all owners consent, we can go ahead.
+        """
         msgs = []
         consents = []
         ok = False

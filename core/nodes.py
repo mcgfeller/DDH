@@ -77,7 +77,10 @@ class MultiOwnerNode(Node):
         super().__init__(**data)
         if isinstance(self.consents,permissions.Consents): # Convert Consents into MultiOwnerConsents:
             self.consents = permissions.MultiOwnerConsents(consents_by_owner={self.owner: self.consents})
-
+        elif self.consents: # sanity check, Consents owners must be node owners
+            d = set(self.consents.consents_by_owner.keys())-set(self.all_owners)
+            if d:
+                raise ValueError(f'Following Consent owners must be Node owners: {d}')
         return
 
     @property
