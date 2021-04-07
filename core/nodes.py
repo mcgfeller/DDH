@@ -55,9 +55,36 @@ class Node(NoCopyBaseModel):
         s = s.obtain(ddhkey,split)
         return s
 
+    @property
+    def owners(self) -> list[permissions.Principal]:
+        """ get one or multiple owners """
+        return [self.owner]
+
+
+        
+
 
 from . import keys # avoid circle
 Node.update_forward_refs() # Now Node is known, update before it's derived
+
+class MultiOwnerNode(Node):
+
+    all_owners : list[permissions.Principal]
+    consents : typing.Union[permissions.Consents,permissions.MultiOwnerConsents,None] = None
+
+    def __init__(self,**data):
+        data['owner'] = data.get('all_owners',[None])[0] # first owner, will complain in super
+        super().__init__(**data)
+        if isinstance(self.consents,permissions.Consents): # Convert Consents into MultiOwnerConsents:
+            self.consents = permissions.MultiOwnerConsents(consents_by_owner={self.owner: self.consents})
+
+        return
+
+    @property
+    def owners(self) -> list[permissions.Principal]:
+        """ get one or multiple owners """
+        return self.all_owners
+
 
 class ExecutableNode(Node):
     """ A node that provides for execution capabilities """

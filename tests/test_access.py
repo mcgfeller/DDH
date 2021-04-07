@@ -45,17 +45,36 @@ def users():
 def ddhkey_setup(users):
     """ return ddhkey, with Node set up """
     AM = permissions.AccessMode
-    node_c_s = nodes.Node(consents=permissions.Consents(consents=[
-        permissions.Consent(grantedTo=[users[1]]),
-        permissions.Consent(grantedTo=[users[2]],withModes={AM.read}),
-        permissions.Consent(grantedTo=[users[3]],withModes={AM.write}),    
-        permissions.Consent(grantedTo=[users[4]],withModes={AM.read, AM.write, AM.protected}),
-        permissions.Consent(grantedTo=[users[5]],withModes={AM.read, AM.write, permissions.AccessMode.anonymous}),  
-        permissions.Consent(grantedTo=[users[6]],withModes={AM.read, AM.write, AM.protected,permissions.AccessMode.pseudonym}),           
-        ]),owner=users[0])    
-    ddhkey = keys.DDHkey(key='/root/single_owner')
-    nodes.NodeRegistry[ddhkey] = node_c_s
-    return [ddhkey]
+    node_c_s = nodes.Node(owner=users[0],
+        consents=permissions.Consents(consents=[
+            permissions.Consent(grantedTo=[users[1]]),
+            permissions.Consent(grantedTo=[users[2]],withModes={AM.read}),
+            permissions.Consent(grantedTo=[users[3]],withModes={AM.write}),    
+            permissions.Consent(grantedTo=[users[4]],withModes={AM.read, AM.write, AM.protected}),
+            permissions.Consent(grantedTo=[users[5]],withModes={AM.read, AM.write, permissions.AccessMode.anonymous}),  
+            permissions.Consent(grantedTo=[users[6]],withModes={AM.read, AM.write, AM.protected,permissions.AccessMode.pseudonym}),           
+        ]))    
+    ddhkey_s = keys.DDHkey(key='/root/single_owner')
+    nodes.NodeRegistry[ddhkey_s] = node_c_s
+
+    node_c_m = nodes.MultiOwnerNode(all_owners=users[0:2],
+        consents=permissions.MultiOwnerConsents(consents_by_owner = {
+        users[0] : permissions.Consents(consents=[
+            permissions.Consent(grantedTo=[users[1]]),
+            permissions.Consent(grantedTo=[users[2]],withModes={AM.read}),
+            permissions.Consent(grantedTo=[users[3]],withModes={AM.write}),    
+            permissions.Consent(grantedTo=[users[4]],withModes={AM.read, AM.write, AM.protected}),
+            permissions.Consent(grantedTo=[users[5]],withModes={AM.read, AM.write, permissions.AccessMode.anonymous}),  
+            permissions.Consent(grantedTo=[users[6]],withModes={AM.read, AM.write, AM.protected,permissions.AccessMode.pseudonym}),           
+            ]),
+        users[1] : permissions.Consents(consents=[
+            permissions.Consent(grantedTo=[users[2]]),
+            ]), 
+        }))   
+    ddhkey_m = keys.DDHkey(key='/root/multi_owner')
+    nodes.NodeRegistry[ddhkey_m] = node_c_m
+
+    return [ddhkey_s,ddhkey_m]
 
 
 # Setup list of tests: 
@@ -82,11 +101,15 @@ test_params = [
       (False,0,6,{AM.read,AM.protected},'must specify pseudonym'), 
       (False,0,6,{AM.write,AM.pseudonym},'protected is required for write'),       
       (True,0,6,{AM.write,AM.protected,AM.pseudonym},'protected is required for write'),       
+
+      (False,1,0,{AM.read,AM.write},'accessor is one owner, but two owners'),
+      (True,1,2,{AM.read},'both owners grant reading to user'),
+      (False,1,3,{AM.write},'only one user grants writing to user'),
     ]
 
 
 @pytest.mark.parametrize('ok,obj,user,modes,comment',
-    test_params,ids=[d[4].strip().replace(' ','-') if d[4] else None for d in test_params]) # use comment as test id
+    test_params,ids=[f"Obj {d[1]}: {d[4].strip().replace(' ','-')}" if d[4] else None for d in test_params]) # use comment as test id
 def test_access_modes(ddhkey_setup,users,ok,obj,user,modes,comment):
 
     access = permissions.Access(ddhkey=ddhkey_setup[obj],principal=users[user],modes=modes)

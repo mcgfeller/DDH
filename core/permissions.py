@@ -151,7 +151,9 @@ class Consent(NoCopyBaseModel):
         return True,'Granted by Consent; '+txt
 
 class Consents(NoCopyBaseModel):
-    """ Multiple Consents
+    """ Multiple Consents, for one owner.
+        If owner is not supplied, it is set to the Node's owner when
+        the Node is created.
     """
     consents : list[Consent] = []
     _byPrincipal : dict[str,list[Consent]] = {}
@@ -170,15 +172,36 @@ class Consents(NoCopyBaseModel):
         return self._byPrincipal.get(principal.id,[]) + self._byPrincipal.get(AllPrincipal.id,[])
 
 
-    def check(self,access : Access) -> tuple[bool,typing.Optional[Consent],str]:
+    def check(self,owners : list[Principal], access : Access) -> tuple[bool,list[Consent],str]:
         msg = 'no consent'
         consent = None
         for consent in self.applicable_consents(access.principal):
             ok,msg = consent.check(access,_principal_checked=True)
             if ok:
-                return ok,consent,msg
+                return ok,[consent],msg
         else:
-            return False,consent,msg
+            return False,[consent] if consent else [],msg
+
+class MultiOwnerConsents(NoCopyBaseModel):
+    """ Records consents by different owners,
+        check them all (they all must consent)
+    """
+    consents_by_owner : dict[Principal,Consents]
+
+
+    def check(self,owners : list[Principal], access : Access) -> tuple[bool,list[Consent],str]:
+        msgs = []
+        consents = []
+        ok = False
+        for owner in owners:
+            ok,consent,msg = self.consents_by_owner[owner].check([owner],access)
+            consents.append(consent)
+            msgs.append(f'Owner {owner.id}: {msg}')
+            if not ok:
+                break # don't need to test others
+        msgs = ('; '.join(msgs)) if msgs else 'no consent'
+        return ok,consents,msgs
+
 
 DDHkey = typing.ForwardRef('keys.DDHkey')
 
@@ -211,7 +234,7 @@ class Access(NoCopyBaseModel):
             onode,split = nodes.NodeRegistry.get_node(self.ddhkey,nodes.NodeType.owner)
             if not onode:
                 ok,msg = False,f'No owner node found for key {self.ddhkey}'
-            elif onode.owner == self.principal:
+            elif onode.owners == [self.principal]:
                 ok,msg = True,'Node owned by principal'
             else:
                 consents : typing.Optional[Consents] = None
@@ -222,7 +245,7 @@ class Access(NoCopyBaseModel):
                     if cnode:
                         consents = typing.cast(Consents,cnode.consents)  # consent is not None by get_node
                 if consents:
-                    ok,consent,msg = consents.check(self) # check consents
+                    ok,consent,msg = consents.check(onode.owners,self) # check consents
                 else:
                     ok,msg =  False,f'Owner is not accessor, and no consent node found for key {self.ddhkey}'
 
