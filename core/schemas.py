@@ -76,7 +76,7 @@ class SchemaElement(NoCopyBaseModel):
             if container:
                 sel,remainder = remainder.split_at(1) # next level is ids
                 if idattr:
-                    principals = permissions.Principal.get_principals(str(sel)) # existing prinicpals (may raise NotFound)
+                    principals = permissions.Principal.get_principals(str(sel)) # existing principals (may raise NotFound)
                     for principal in principals:
                         p_access = access.copy() # create an access record for actual key (maybe optimize if it's just one key?)
                         p_key = keys.DDHkey(key=access.ddhkey[:-(len(remainder.key)+1)]+(principal.id,)+remainder.key)

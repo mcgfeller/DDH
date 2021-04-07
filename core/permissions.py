@@ -205,7 +205,7 @@ class Access(NoCopyBaseModel):
             if record_access is set, the result is recorded into self.
         """
         consent = None
-        if owner and owner == self.principal:
+        if owner and owner == self.principal: # owner from key, remainder is owned by definition
             ok,msg = True,'principal is supplied owner'
         else:
             onode,split = nodes.NodeRegistry.get_node(self.ddhkey,nodes.NodeType.owner)
