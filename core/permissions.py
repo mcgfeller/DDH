@@ -236,7 +236,7 @@ class Access(NoCopyBaseModel):
             onode,split = nodes.NodeRegistry.get_node(self.ddhkey,nodes.NodeType.owner)
             if not onode:
                 ok,msg = False,f'No owner node found for key {self.ddhkey}'
-            elif onode.owners == [self.principal]:
+            elif onode.owners == (self.principal,):
                 ok,msg = True,'Node owned by principal'
             else:
                 consents : typing.Optional[Consents] = None

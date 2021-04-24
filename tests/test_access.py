@@ -57,7 +57,7 @@ def ddhkey_setup(users):
     ddhkey_s = keys.DDHkey(key='/root/single_owner')
     nodes.NodeRegistry[ddhkey_s] = node_c_s
 
-    node_c_m = nodes.MultiOwnerNode(all_owners=users[0:2],
+    node_c_m = nodes.MultiOwnerNode(all_owners=tuple(users[0:2]),
         consents=permissions.MultiOwnerConsents(consents_by_owner = {
         users[0] : permissions.Consents(consents=[
             permissions.Consent(grantedTo=[users[1]]),
@@ -121,4 +121,4 @@ def test_access_modes(ddhkey_setup,users,ok,obj,user,modes,comment):
     return
 
 if __name__ == '__main__':
-    test_basic_access()
+    test_access_modes()

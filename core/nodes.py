@@ -7,6 +7,7 @@ import datetime
 import typing
 import enum
 import abc
+import secrets
 
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import NoCopyBaseModel
@@ -28,8 +29,26 @@ class NodeType(str,enum.Enum):
 
     def __repr__(self): return self.value
 
+NodeId = typing.NewType('NodeId', str)
 
-class Node(NoCopyBaseModel):
+class Persistable(NoCopyBaseModel):
+    """ class that provides methods to get persistent state.
+        Works with storage.
+    """
+
+    id : NodeId = pydantic.Field(default_factory=secrets.token_urlsafe)
+
+    def to_json(self) -> str:
+        return self.json()
+
+    @classmethod
+    def from_json(cls, j :str) -> Persistable:
+        o = cls.parse_raw(j)
+        return o
+
+
+
+class Node(Persistable):
 
     types: set[NodeType] = set() # all supported type, will be filled by init unless given
     owner: permissions.Principal
@@ -56,9 +75,9 @@ class Node(NoCopyBaseModel):
         return s
 
     @property
-    def owners(self) -> list[permissions.Principal]:
+    def owners(self) -> tuple[permissions.Principal,...]:
         """ get one or multiple owners """
-        return [self.owner]
+        return (self.owner,)
 
 
         
@@ -69,11 +88,11 @@ Node.update_forward_refs() # Now Node is known, update before it's derived
 
 class MultiOwnerNode(Node):
 
-    all_owners : list[permissions.Principal]
+    all_owners : tuple[permissions.Principal,...]
     consents : typing.Union[permissions.Consents,permissions.MultiOwnerConsents,None] = None
 
     def __init__(self,**data):
-        data['owner'] = data.get('all_owners',[None])[0] # first owner, will complain in super
+        data['owner'] = data.get('all_owners',(None,))[0] # first owner, will complain in super
         super().__init__(**data)
         if isinstance(self.consents,permissions.Consents): # Convert Consents into MultiOwnerConsents:
             self.consents = permissions.MultiOwnerConsents(consents_by_owner={self.owner: self.consents})
@@ -84,7 +103,7 @@ class MultiOwnerNode(Node):
         return
 
     @property
-    def owners(self) -> list[permissions.Principal]:
+    def owners(self) -> tuple[permissions.Principal,...]:
         """ get one or multiple owners """
         return self.all_owners
 
@@ -105,6 +124,7 @@ class DelegatedExecutableNode(ExecutableNode):
 
     def execute(self, access : permissions.Access, key_split: int, q : typing.Optional[str] = None):
         """ obtain data by recursing to schema """
+        d = None
         for executor in self.executors:
             d = executor.get_and_transform(access,key_split, q)
         return d
