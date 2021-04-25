@@ -3,6 +3,8 @@ from __future__ import annotations
 import datetime
 import typing
 
+import pydantic
+
 from core import keys,permissions,schemas,nodes
 from core import dapp
 
@@ -61,8 +63,8 @@ class MigrosDApp(dapp.DApp):
 
 class Receipt(schemas.SchemaElement):
 
-    Datum_Zeit: datetime.datetime
-    Filiale:    str
+    Datum_Zeit: datetime.datetime = pydantic.Field(sensitivity= schemas.Sensitivity.sa)
+    Filiale:    str = pydantic.Field(sensitivity= schemas.Sensitivity.sa)
     Kassennummer:  int
     Transaktionsnummer: int
     Artikel:    str
@@ -92,8 +94,8 @@ class Receipt(schemas.SchemaElement):
 
 class MigrosClient(schemas.SchemaElement):
 
-    id : permissions.Principal
-    cumulus : typing.Optional[int] = None
+    id : permissions.Principal = pydantic.Field(sensitivity= schemas.Sensitivity.ei)
+    cumulus : typing.Optional[int] = pydantic.Field(None,sensitivity=schemas.Sensitivity.qi)
     receipts: list[Receipt] = []
     
 

@@ -11,6 +11,19 @@ from utils.pydantic_utils import NoCopyBaseModel
 
 from . import keys,permissions,errors
 
+@enum.unique
+class Sensitivity(str,enum.Enum):
+    """ Sensitivity, according to Fung et al., of use in export restrictions and anonymization.
+    """
+
+    ei = 'explicit id'
+    qi = 'quasi id'
+    sa = 'sensitive attribute'
+    nsa = 'non-sensitive attribute'
+
+
+#    def __repr__(self): return self.value
+
 class SchemaElement(NoCopyBaseModel): 
     """ A Pydantic Schema class """
 
