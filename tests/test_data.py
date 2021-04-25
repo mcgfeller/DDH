@@ -1,5 +1,5 @@
 """ Set up some Test data """
-from core import keys,nodes,permissions,facade,errors
+from core import keys,permissions,facade,errors
 from core import pillars
 from frontend import user_auth
 import pytest

@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import abstractmethod
 import typing
 
-from core import keys,permissions,schemas,nodes,policies,errors
+from core import keys,permissions,schemas,nodes,keydirectory,policies,errors
 from utils.pydantic_utils import NoCopyBaseModel
 
 class DApp(NoCopyBaseModel):
@@ -22,10 +22,10 @@ class DApp(NoCopyBaseModel):
         return dnode
 
     def check_registry(self) -> nodes.Node:
-        dnode = nodes.NodeRegistry[self.schemakey].get(nodes.NodeType.nschema)
+        dnode = keydirectory.NodeRegistry[self.schemakey].get(nodes.NodeType.nschema)
         if not dnode:
             # get a parent scheme to hook into
-            upnode,split = nodes.NodeRegistry.get_node(self.schemakey,nodes.NodeType.nschema)
+            upnode,split = keydirectory.NodeRegistry.get_node(self.schemakey,nodes.NodeType.nschema)
             pkey = self.schemakey.up()
             if not pkey:
                 raise ValueError(f'{self.schemakey} key is too high {self!r}')
@@ -34,7 +34,7 @@ class DApp(NoCopyBaseModel):
                 raise ValueError(f'No parent schema found for {self!r} with {self.schemakey} at upnode {upnode}')
             schema = self.get_schema() # obtain static schema
             dnode = DAppNode(owner=self.owner,schema=schema,dapp=self)
-            nodes.NodeRegistry[self.schemakey] = dnode
+            keydirectory.NodeRegistry[self.schemakey] = dnode
             # now insert our schema into the parent's:
             schemaref = schemas.SchemaReference.create_from_key(self.__class__.__name__,ddhkey=self.schemakey)
             parent.add_fields({self.schemakey[-1] : (schemaref,None)})

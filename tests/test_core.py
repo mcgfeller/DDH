@@ -1,4 +1,4 @@
-from core import keys,nodes,permissions,schemas,facade
+from core import keys,nodes,permissions,schemas,facade,keydirectory
 from . import  test_data
 import pytest
 
@@ -23,11 +23,11 @@ def test_nodes():
     user2 = permissions.User(id='2',name='roman',email='roman.stoessel@swisscom.com')
     node_s = nodes.Node(schema=schema,owner=user)
     node_c = nodes.Node(consents=permissions.Consents(consents=[permissions.Consent(grantedTo=[user2])]),owner=user)    
-    nodes.NodeRegistry[keys.DDHkey(key='/ddh/health')] = node_s
-    nodes.NodeRegistry[keys.DDHkey(key='/ddh/health/mgf')] = node_c    
+    keydirectory.NodeRegistry[keys.DDHkey(key='/ddh/health')] = node_s
+    keydirectory.NodeRegistry[keys.DDHkey(key='/ddh/health/mgf')] = node_c    
     ddhkey = keys.DDHkey(key='/ddh/health/mgf/bmi/weight')
-    assert next(nodes.NodeRegistry.get_next_node(ddhkey,nodes.NodeType.consents))[0] is node_c
-    assert nodes.NodeRegistry.get_node(ddhkey,nodes.NodeType.nschema)[0].nschema is schema 
+    assert next(keydirectory.NodeRegistry.get_next_node(ddhkey,nodes.NodeType.consents))[0] is node_c
+    assert keydirectory.NodeRegistry.get_node(ddhkey,nodes.NodeType.nschema)[0].nschema is schema 
     return
 
 def test_schema_node():
@@ -36,9 +36,9 @@ def test_schema_node():
     schema = schemas.PySchema(schema_element=DummyElement)
     user = permissions.User(id='1',name='martin',email='martin.gfeller@swisscom.com')
     node_s = nodes.Node(schema=schema,owner=user)
-    nodes.NodeRegistry[keys.DDHkey(key='/ddh/health')] = node_s
+    keydirectory.NodeRegistry[keys.DDHkey(key='/ddh/health')] = node_s
     ddhkey = keys.DDHkey(key='/ddh/health/mgf/bmi/weight') # does not exist
-    node_s,split = nodes.NodeRegistry.get_node(ddhkey,nodes.NodeType.nschema)
+    node_s,split = keydirectory.NodeRegistry.get_node(ddhkey,nodes.NodeType.nschema)
     assert node_s.nschema is schema
     assert node_s.get_sub_schema(ddhkey,split) is None
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes=[permissions.AccessMode.schema_read])

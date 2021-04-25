@@ -1,4 +1,4 @@
-from core import keys,nodes,permissions,schemas
+from core import keys,nodes,permissions,schemas,keydirectory
 from . import test_data
 import pytest
 
@@ -14,11 +14,11 @@ def test_basic_access():
 
     node_c = nodes.Node(consents=permissions.Consents(consents=[permissions.Consent(grantedTo=[user2])]),owner=user1)    
     ddhkey1 = keys.DDHkey(key='/root')
-    nodes.NodeRegistry[ddhkey1] = node_c
+    keydirectory.NodeRegistry[ddhkey1] = node_c
 
     node_o = nodes.Node(owner=user1)
     ddhkey2 = keys.DDHkey(key='/root/unknown')
-    nodes.NodeRegistry[ddhkey2] = node_o 
+    keydirectory.NodeRegistry[ddhkey2] = node_o 
 
     for ddhkey in (ddhkey1,ddhkey2):
 
@@ -55,7 +55,7 @@ def ddhkey_setup(users):
             permissions.Consent(grantedTo=[users[6]],withModes={AM.read, AM.write, AM.protected,permissions.AccessMode.pseudonym}),           
         ]))    
     ddhkey_s = keys.DDHkey(key='/root/single_owner')
-    nodes.NodeRegistry[ddhkey_s] = node_c_s
+    keydirectory.NodeRegistry[ddhkey_s] = node_c_s
 
     node_c_m = nodes.MultiOwnerNode(all_owners=tuple(users[0:2]),
         consents=permissions.MultiOwnerConsents(consents_by_owner = {
@@ -72,7 +72,7 @@ def ddhkey_setup(users):
             ]), 
         }))   
     ddhkey_m = keys.DDHkey(key='/root/multi_owner')
-    nodes.NodeRegistry[ddhkey_m] = node_c_m
+    keydirectory.NodeRegistry[ddhkey_m] = node_c_m
 
     return [ddhkey_s,ddhkey_m]
 

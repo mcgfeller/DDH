@@ -5,7 +5,7 @@ import typing
 
 import pydantic
 
-from core import keys,permissions,schemas,nodes
+from core import keys,permissions,schemas,nodes,keydirectory
 from core import dapp
 
 import pandas # for example
@@ -36,11 +36,11 @@ class MigrosDApp(dapp.DApp):
 
     def register_transform(self):
         ddhkey = keys.DDHkey('/p/living/shopping/receipts')
-        de_node = nodes.NodeRegistry[ddhkey].get(nodes.NodeType.execute)
+        de_node = keydirectory.NodeRegistry[ddhkey].get(nodes.NodeType.execute)
         if not de_node:
             de_node = nodes.DelegatedExecutableNode(owner=self.owner)
             de_node.executors.append(self)
-            nodes.NodeRegistry[ddhkey] = de_node
+            keydirectory.NodeRegistry[ddhkey] = de_node
         return
 
     def get_and_transform(self, access : permissions.Access, key_split: int, q : typing.Optional[str] = None):

@@ -233,7 +233,7 @@ class Access(NoCopyBaseModel):
         if owner and owner == self.principal: # owner from key, remainder is owned by definition
             ok,msg = True,'principal is supplied owner'
         else:
-            onode,split = nodes.NodeRegistry.get_node(self.ddhkey,nodes.NodeType.owner)
+            onode,split = keydirectory.NodeRegistry.get_node(self.ddhkey,nodes.NodeType.owner)
             if not onode:
                 ok,msg = False,f'No owner node found for key {self.ddhkey}'
             elif onode.owners == (self.principal,):
@@ -243,7 +243,7 @@ class Access(NoCopyBaseModel):
                 if onode.consents: # onode has consents, use it
                     consents  = onode.consents
                 else: # obtain from consents node
-                    cnode,split = nodes.NodeRegistry.get_node(self.ddhkey,nodes.NodeType.consents) 
+                    cnode,split = keydirectory.NodeRegistry.get_node(self.ddhkey,nodes.NodeType.consents) 
                     if cnode:
                         consents = typing.cast(Consents,cnode.consents)  # consent is not None by get_node
                 if consents:
@@ -265,5 +265,6 @@ class Access(NoCopyBaseModel):
 
 from . import keys
 from . import nodes
+from . import keydirectory
 from frontend import user_auth
 Access.update_forward_refs()

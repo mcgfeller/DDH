@@ -14,13 +14,14 @@ from . import permissions
 from . import keys
 from . import schemas
 from . import nodes
+from . import keydirectory
 
 def get_schema(access : permissions.Access, schemaformat: schemas.SchemaFormat = schemas.SchemaFormat.json) -> typing.Optional[typing.Any]:
     """ Service utility to retrieve a Schema and return it in the desired format.
         Returns None if no schema found.
     """
     formatted_schema = None # in case of not found. 
-    snode,split = nodes.NodeRegistry.get_node(access.ddhkey,nodes.NodeType.nschema) # get applicable schema nodes
+    snode,split = keydirectory.NodeRegistry.get_node(access.ddhkey,nodes.NodeType.nschema) # get applicable schema nodes
     ok,consent,text = access.permitted()
     if not ok:
        return None
@@ -36,7 +37,7 @@ def get_data(access : permissions.Access, q : typing.Optional[str] = None) -> ty
     """ Service utility to retrieve data and return it in the desired format.
         Returns None if no data found.
     """
-    enode,key_split = nodes.NodeRegistry.get_node(access.ddhkey,nodes.NodeType.execute)
+    enode,key_split = keydirectory.NodeRegistry.get_node(access.ddhkey,nodes.NodeType.execute)
     enode = typing.cast(nodes.ExecutableNode,enode)
     if enode:
         data = enode.execute(access, key_split, q)

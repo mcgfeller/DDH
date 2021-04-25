@@ -6,7 +6,7 @@ import datetime
 import typing
 import logging
 
-from core import keys,permissions,schemas,nodes,dapp
+from core import keys,permissions,schemas,nodes,dapp,keydirectory
 logger = logging.getLogger(__name__)
 
 def check_registry() -> nodes.Node:
@@ -14,13 +14,13 @@ def check_registry() -> nodes.Node:
         This is preliminary, as the schema is hard-coded.
     """
     root = keys.DDHkey(keys.DDHkey.Root)
-    root_node,split = nodes.NodeRegistry.get_node(root,nodes.NodeType.nschema)
+    root_node,split = keydirectory.NodeRegistry.get_node(root,nodes.NodeType.nschema)
     if not root_node:
         schema = build_root_schemas() # obtain static schema
         # for now, give schema read access to everybody
         consents = permissions.Consents(consents=[permissions.Consent(grantedTo=[permissions.AllPrincipal],withModes={permissions.AccessMode.schema_read})]) 
         root_node = nodes.Node(owner=permissions.RootPrincipal,schema=schema,consents=consents)
-        nodes.NodeRegistry[root] = root_node
+        keydirectory.NodeRegistry[root] = root_node
     logger.info('Schema Root built')
     return root_node 
 
