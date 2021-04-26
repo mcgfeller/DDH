@@ -1,0 +1,1 @@
+"C:\Program Files\Python39\scripts\uvicorn" frontend.dapp_api:app --reload --no-use-colors

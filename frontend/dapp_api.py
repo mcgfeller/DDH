@@ -1,3 +1,9 @@
+""" This is the API Data Apps may use. It provides the Walled Garden and defines all communication against the DDH trees.
+    This is the complete external communication, except for:
+    - Data App connecting to its its external service 
+    - Data App serving a User Interface
+"""
+
 import fastapi
 import typing
 import pydantic
@@ -6,7 +12,7 @@ import enum
 
 
 from core import pillars
-from core import keys,permissions,schemas,dapp,facade,errors
+from core import keys,permissions,schemas,dapp,facade,errors,transactions
 
 app = fastapi.FastAPI()
 

@@ -1,1 +1,0 @@
-"C:\Program Files\Python39\scripts\uvicorn" frontend.main:app --reload --no-use-colors
