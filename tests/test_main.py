@@ -11,29 +11,32 @@ PORT = 8048
 USERPWD = {'username':'mgf','password':'secret'}
 
 def test_get_data(httpx_client):
-    r = httpx_client.get('/data/org/living/stores/migros.ch/clients/mgf/receipts')
+    r = httpx_client.get('/ddh/org/living/stores/migros.ch/clients/mgf/receipts')
     r.raise_for_status()
     d = r.json()
     assert d['res'],'res is empty'
     return
 
 def test_get_schema_server(httpx_client):
-    r = httpx_client.get('/schema/org/living?schemaformat=json')
+    r = httpx_client.get('/ddh/org/living:schema?schemaformat=json')
     r.raise_for_status()
-    r.json()
+    d = r.json()
+    assert d.get('schema'),'schema is empty'
     return
 
 def test_get_schema_server2(httpx_client):
-    r = httpx_client.get('/schema/org/living/stores/migros.ch')
+    r = httpx_client.get('/ddh/org/living/stores/migros.ch:schema')
     r.raise_for_status()
-    r.json()
+    d = r.json()
+    assert d.get('schema'),'schema is empty'
     return
 
 @pytest.mark.skip
 async def  test_get_schema_asgi(asgi_client):
-    r = await asgi_client.get('/schema/ddh/shopping?schemaformat=json')
+    r = await asgi_client.get('/ddh/p/shopping:schema?schemaformat=json')
     r.raise_for_status()
-    r.json()
+    d= r.json()
+    assert d.get('schema'),'schema is empty'
     return
 
 
@@ -70,7 +73,7 @@ async def asgi_client():
 
     """
     url = 'http://localhost:'+str(PORT)
-    from frontend.main  import app
+    from frontend.dapp_api  import app
     async with httpx.AsyncClient(app=app, base_url=url) as client:
         r = await client.post(url+'/token',data=USERPWD)
         r.raise_for_status()
