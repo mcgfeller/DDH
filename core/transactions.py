@@ -32,7 +32,7 @@ class Transaction(NoCopyBaseModel):
         trxid = secrets.token_urlsafe()
         if trxid in cls.Transactions:
             raise KeyError(f'duplicate key: {trxid}')
-        trx = cls(trxid=trxid)
+        trx = cls(trxid=trxid,session=session)
         cls.Transactions[trx.trxid] = trx
         return trx
 

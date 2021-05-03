@@ -127,7 +127,7 @@ async def get_current_session(token: str = fastapi.Depends(oauth2_scheme)):
     user = get_user(FAKE_USERS_DB, userid=token_data.id)
     if user is None:
         raise credentials_exception
-    return sessions.Session(user=user,token_str=token_data.id)
+    return sessions.Session(user=user,token_str=token)
 
 
 async def get_current_active_user(current_session: sessions.Session = fastapi.Depends(get_current_session)):
