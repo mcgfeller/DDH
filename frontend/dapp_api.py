@@ -13,7 +13,7 @@ import enum
 
 from core import pillars
 from core import keys,permissions,schemas,dapp,facade,errors,transactions
-from frontend import session
+from frontend import sessions
 
 app = fastapi.FastAPI()
 
@@ -31,7 +31,7 @@ app.post("/token", response_model=user_auth.Token)(user_auth.login_for_access_to
 async def get_schema(
     docpath: str = fastapi.Path(..., title="The ddh key of the schema to get"),
     nodetype : str = 'data',
-    session: session.Session = fastapi.Depends(user_auth.get_current_session),
+    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     dapp : typing.Optional[permissions.DAppId] = None,
     schemaformat: schemas.SchemaFormat = schemas.SchemaFormat.json, # type: ignore # dynamic
     q: str = fastapi.Query(None, alias="item-query"),
@@ -50,7 +50,7 @@ async def get_schema(
 @app.get("/ddh/{docpath:path}")
 async def get_data(
     docpath: str = fastapi.Path(..., title="The ddh key of the data to get"),
-    session: session.Session = fastapi.Depends(user_auth.get_current_session),
+    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     dapp : typing.Optional[permissions.DAppId] = None,
     modes: set[permissions.AccessMode] = {permissions.AccessMode.read},
     q: str = fastapi.Query(None, alias="item-query"),
@@ -67,7 +67,7 @@ async def get_data(
 
 @app.post("/transaction")
 async def create_transaction(
-    session: session.Session = fastapi.Depends(user_auth.get_current_session),
+    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     dapp : typing.Optional[permissions.DAppId] = None,
     ):    
     try:

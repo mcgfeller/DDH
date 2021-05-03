@@ -10,6 +10,7 @@ from utils.pydantic_utils import NoCopyBaseModel
 
 from core import pillars
 from core import keys,permissions,schemas,nodes,errors
+from frontend import sessions
 
 import secrets
 
@@ -19,6 +20,7 @@ TrxId = typing.NewType('TrxId',str)
 
 class Transaction(NoCopyBaseModel):
     trxid : TrxId 
+    session: sessions.Session
 
     read_owners : set[permissions.Principal] = set()
     read4write_consented : set[permissions.Principal] =  {permissions.AllPrincipal}
@@ -26,7 +28,7 @@ class Transaction(NoCopyBaseModel):
     Transactions : typing.ClassVar[dict] = {}
 
     @classmethod
-    def create(cls,session) -> Transaction:
+    def create(cls,session : sessions.Session) -> Transaction:
         trxid = secrets.token_urlsafe()
         if trxid in cls.Transactions:
             raise KeyError(f'duplicate key: {trxid}')
