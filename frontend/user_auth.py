@@ -13,6 +13,7 @@ import jose.jwt
 import passlib.context
 
 from core import permissions,errors
+from frontend import session
 
 oauth2_scheme = fastapi.security.OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = passlib.context.CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -76,9 +77,7 @@ class UserInDB(permissions.User):
         """ return user only """
         return permissions.User(**self.dict(include=permissions.User.__fields__.keys()))
 
-class Session(pydantic.BaseModel):
-    token_data : TokenData
-    user: permissions.User
+
 
 
 def verify_password(plain_password, hashed_password):
@@ -128,10 +127,10 @@ async def get_current_session(token: str = fastapi.Depends(oauth2_scheme)):
     user = get_user(FAKE_USERS_DB, userid=token_data.id)
     if user is None:
         raise credentials_exception
-    return Session(user=user,token_data=token_data)
+    return session.Session(user=user,token_str=token_data.id)
 
 
-async def get_current_active_user(current_session: Session = fastapi.Depends(get_current_session)):
+async def get_current_active_user(current_session: session.Session = fastapi.Depends(get_current_session)):
     return current_session.user
 
 
