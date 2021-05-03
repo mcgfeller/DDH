@@ -26,7 +26,7 @@ class Transaction(NoCopyBaseModel):
     Transactions : typing.ClassVar[dict] = {}
 
     @classmethod
-    def intent(cls) -> Transaction:
+    def create(cls,session) -> Transaction:
         trxid = secrets.token_urlsafe()
         if trxid in cls.Transactions:
             raise KeyError(f'duplicate key: {trxid}')

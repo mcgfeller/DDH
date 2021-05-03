@@ -72,6 +72,14 @@ class UserInDB(permissions.User):
         else:
             raise errors.NotFound(f'User not found {id}')
 
+    def as_user(self) -> permissions.User:
+        """ return user only """
+        return permissions.User(**self.dict(include=permissions.User.__fields__.keys()))
+
+class Session(pydantic.BaseModel):
+    token_data : TokenData
+    user: permissions.User
+
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -103,7 +111,7 @@ def create_access_token(data: dict, expires_delta: typing.Optional[datetime.time
     return encoded_jwt
 
 
-async def get_current_user(token: str = fastapi.Depends(oauth2_scheme)):
+async def get_current_session(token: str = fastapi.Depends(oauth2_scheme)):
     credentials_exception = fastapi.HTTPException(
         status_code=fastapi.status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -120,11 +128,11 @@ async def get_current_user(token: str = fastapi.Depends(oauth2_scheme)):
     user = get_user(FAKE_USERS_DB, userid=token_data.id)
     if user is None:
         raise credentials_exception
-    return user
+    return Session(user=user,token_data=token_data)
 
 
-async def get_current_active_user(current_user: permissions.User = fastapi.Depends(get_current_user)):
-    return current_user
+async def get_current_active_user(current_session: Session = fastapi.Depends(get_current_session)):
+    return current_session.user
 
 
 
