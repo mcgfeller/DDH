@@ -6,12 +6,20 @@ import typing
 from core import keys,permissions,schemas,nodes,keydirectory,policies,errors
 from utils.pydantic_utils import NoCopyBaseModel
 
+
+DAppId = typing.NewType('DAppId', permissions.Principal)
+
 class DApp(NoCopyBaseModel):
     
-
     owner : typing.ClassVar[permissions.Principal] 
     schemakey : typing.ClassVar[keys.DDHkey] 
     policy: policies.Policy = policies.EmptyPolicy
+    
+
+    @property
+    def id(self) -> DAppId:
+        """ Default DAppId is class name """
+        return typing.cast(DAppId,self.__class__.__name__) 
 
     @classmethod
     def bootstrap(cls) -> DApp:

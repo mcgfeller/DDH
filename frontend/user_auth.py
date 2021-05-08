@@ -88,6 +88,19 @@ def get_user(db, userid: str):
     if userid in db:
         user_dict = db[userid]
         return UserInDB(**user_dict)
+    else: return None # be explicit
+
+def get_dappid(dappid: str) -> str:
+    """ Verify the id of the DApp. This is largely provisional.
+    """ 
+    from core import pillars
+    if dappid not in pillars.DAppManager.DAppsById:
+        raise fastapi.HTTPException(
+            status_code=fastapi.status.HTTP_404_NOT_FOUND,
+            detail=f"Invalid DApp id {dappid}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return dappid
 
 
 def authenticate_user(fake_db, userid: str, password: str):
@@ -127,7 +140,8 @@ async def get_current_session(token: str = fastapi.Depends(oauth2_scheme)):
     user = get_user(FAKE_USERS_DB, userid=token_data.id)
     if user is None:
         raise credentials_exception
-    return sessions.Session(user=user,token_str=token)
+    dappid = payload.get('xdapp') # verified dapp id
+    return sessions.Session(user=user,dappid=dappid,token_str=token)
 
 
 async def get_current_active_user(current_session: sessions.Session = fastapi.Depends(get_current_session)):
@@ -136,6 +150,9 @@ async def get_current_active_user(current_session: sessions.Session = fastapi.De
 
 
 async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordRequestForm = fastapi.Depends()):
+    """ get user from login form, including optional dappid,
+        which provisionally comes from client_id. 
+    """
     user = authenticate_user(FAKE_USERS_DB, form_data.username, form_data.password)
     if not user:
         raise fastapi.HTTPException(
@@ -143,9 +160,10 @@ async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordReque
             detail="Incorrect user or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    dappid = get_dappid(form_data.client_id) if form_data.client_id else None
     access_token_expires = datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.id}, expires_delta=access_token_expires
+        data={"sub": user.id,'xdapp':dappid,}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
