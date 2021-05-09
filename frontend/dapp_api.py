@@ -51,13 +51,12 @@ async def get_schema(
 async def get_data(
     docpath: str = fastapi.Path(..., title="The ddh key of the data to get"),
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
-    dapp : typing.Optional[permissions.DAppId] = None,
     modes: set[permissions.AccessMode] = {permissions.AccessMode.read},
     q: str = fastapi.Query(None, alias="item-query"),
     ):
     if permissions.AccessMode.read not in modes: # get_data requires read-access
         modes.add(permissions.AccessMode.read)
-    access = permissions.Access(ddhkey = keys.DDHkey(docpath),principal=session.user, modes = modes,byDApp=dapp)
+    access = permissions.Access(ddhkey = keys.DDHkey(docpath),principal=session.user, modes = modes, byDApp=session.dappid)
     try:
         d = facade.get_data(access,q)
     except errors.DDHerror as e:
