@@ -16,6 +16,15 @@ from . import nodes
 from . import keys
 
 
+
+class NodeAtKey:
+    def __init__(self,key: keys.DDHkey,**d):
+        self.key = key
+        self.__dict__.update(d)
+
+
+
+
 class _NodeRegistry:
     """ Preliminary holder of nodes 
         Note that Nodes are held per NodeType, duplicating them as required 
@@ -59,6 +68,19 @@ class _NodeRegistry:
         """ get closest (upward-bound) node which has nonzero attribute """
         node,split = next(( (node,split) for node,split in self.get_next_node(key, type) ),(None,-1))
         return node,split
+
+
+    def get_nodes(self,key : keys.DDHkey, types : set[nodes.NodeType] = set()) -> NodeAtKey:
+        if not types:
+            types = {nodes.NodeType.data,nodes.NodeType.nschema, nodes.NodeType.consents}
+        d = {}
+        for type in types:
+            n,n_split = self.get_node(key,type)
+            d[type.value] = n
+            d[type.value+'_split'] = n_split
+        nak = NodeAtKey(key=key,**d)
+        return nak
+
     
 
 NodeRegistry = _NodeRegistry()
