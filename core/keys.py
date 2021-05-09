@@ -19,36 +19,55 @@ class _RootType(str):
     def __str__(self):
         return ''
 
+@enum.unique
+class ForkType(str,enum.Enum):
+    """ types of forks """
 
+    data = 'data'
+    schema = 'schema'
+    consents = 'consents'
+
+    def __repr__(self): return self.value
 
 class DDHkey(NoCopyBaseModel):
     """ A key identifying a DDH ressource. DDHkey is decoupled from any permissions, storage, etc.,
     """
     
     key : tuple
-    node: typing.Optional[nodes.Node] = None
+    fork : ForkType = ForkType.data
+
+    node: typing.Optional[nodes.Node] = None # XXX Used?
 
     Delimiter : typing.ClassVar[str] = '/'
+    ForkDelimiter : typing.ClassVar[str] = ':'
     Root : typing.ClassVar[_RootType] = _RootType(Delimiter)
 
-    def __init__(self,key : typing.Union[tuple,list,str], node :  typing.Optional[nodes.Node] = None):
+    def __init__(self,key : typing.Union[tuple,list,str], node :  typing.Optional[nodes.Node] = None, fork :  typing.Optional[ForkType] = None):
         """ Convert key string into tuple, eliminate empty segments, and set root to self.Root """
         if isinstance(key,str):
-            key = key.split(self.Delimiter)
+            key = key.strip().split(self.Delimiter)
         if len(key) == 0:
             key = () # ensure tuple
         elif not key[0]: # replace root delimiter with root object
             key = (self.Root,)+tuple(filter(None,key[1:]))
         else:
             key = tuple(filter(None,key))
-        super().__init__(key=key,node=node)
+        if not fork:
+            if key and self.ForkDelimiter in key[-1]: # forks are only allowed in last segment
+                lk,fork = key[-1].split(self.ForkDelimiter,1) # type:ignore
+                key = key[:-1] + (lk,) if lk else ()
+            fork = ForkType(fork) if fork else ForkType.data
+        super().__init__(key=key,node=node,fork=fork)
         return 
 
     def __str__(self) -> str:
-        return self.Delimiter.join(map(str,self.key))
+        s = self.Delimiter.join(map(str,self.key))
+        if self.fork != ForkType.data:
+            s += self.ForkDelimiter+self.fork.value
+        return s
 
     def __repr__(self) -> str:
-        return f'DDHkey({self.Delimiter.join(map(str,self.key))})'
+        return f'DDHkey({self.__str__()})'
 
     def __iter__(self) -> typing.Iterator:
         """ Iterate over key """
@@ -63,7 +82,7 @@ class DDHkey(NoCopyBaseModel):
         """ return key up one level, or None if at top """
         upkey = self.key[:-1]
         if upkey:
-            return self.__class__(upkey)
+            return self.__class__(upkey,fork=self.fork)
         else: 
             return None
 
@@ -74,7 +93,7 @@ class DDHkey(NoCopyBaseModel):
     def ensure_rooted(self) -> DDHkey:
         """ return a DHHkey that is rooted """
         if not self.key[0] == self.Root:
-            return self.__class__((self.Root,)+self.key)
+            return self.__class__((self.Root,)+self.key,fork=self.fork)
         else:
             return self
 
