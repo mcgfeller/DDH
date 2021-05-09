@@ -207,11 +207,23 @@ class MultiOwnerConsents(NoCopyBaseModel):
 
 DDHkey = typing.ForwardRef('keys.DDHkey')
 
+@enum.unique
+class Operation(str,enum.Enum):
+    """ allowed operations on keys """
+
+    get = 'get'
+    put = 'put'
+    post = 'post'
+    delete = 'delete'
+
+    def __repr__(self): return self.value
+
 
 class Access(NoCopyBaseModel):
     """ This is a loggable Access Request, which may or may not get fulfilled.
         Use .permitted() to check whether this request is permitted. 
     """
+    op:        Operation = Operation.get
     ddhkey:    DDHkey
     principal: Principal
     byDApp:    typing.Optional[DAppId] = None

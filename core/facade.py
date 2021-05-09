@@ -15,6 +15,7 @@ from . import keys
 from . import schemas
 from . import nodes
 from . import keydirectory
+from frontend import sessions
 
 def get_schema(access : permissions.Access, schemaformat: schemas.SchemaFormat = schemas.SchemaFormat.json) -> typing.Optional[typing.Any]:
     """ Service utility to retrieve a Schema and return it in the desired format.
@@ -33,7 +34,9 @@ def get_schema(access : permissions.Access, schemaformat: schemas.SchemaFormat =
     return formatted_schema
 
 
-def get_data(access : permissions.Access, q : typing.Optional[str] = None) -> typing.Any:
+    
+
+def perform_access(access : permissions.Access, session : sessions.Session, q : typing.Optional[str] = None, ) -> typing.Any:
     """ Service utility to retrieve data and return it in the desired format.
         Returns None if no data found.
     """

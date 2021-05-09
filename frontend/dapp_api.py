@@ -56,9 +56,9 @@ async def get_data(
     ):
     if permissions.AccessMode.read not in modes: # get_data requires read-access
         modes.add(permissions.AccessMode.read)
-    access = permissions.Access(ddhkey = keys.DDHkey(docpath),principal=session.user, modes = modes, byDApp=session.dappid)
+    access = permissions.Access(op = permissions.Operation.get, ddhkey = keys.DDHkey(docpath),principal=session.user, modes = modes, byDApp=session.dappid)
     try:
-        d = facade.get_data(access,q)
+        d = facade.perform_access(access,session,q)
     except errors.DDHerror as e:
         raise e.to_http()
 
