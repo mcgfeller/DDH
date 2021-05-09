@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from utils import utils
-from core import schema_root,dapp
+from core import schema_root,dapp,permissions
 from utils import import_modules 
 import DApps
 from utils.pydantic_utils import NoCopyBaseModel
@@ -25,7 +25,7 @@ class _DAppManager(NoCopyBaseModel):
         Real Manager would orchestrate DApps in their own container.
 
     """
-    DAppsById : dict[dapp.DAppId,dapp.DApp] = {} # registry of DApps
+    DAppsById : dict[permissions.DAppId,dapp.DApp] = {} # registry of DApps
 
     def bootstrap(self) :
         for module in import_modules.importAllSubPackages(DApps):

@@ -7,7 +7,6 @@ from core import keys,permissions,schemas,nodes,keydirectory,policies,errors
 from utils.pydantic_utils import NoCopyBaseModel
 
 
-DAppId = typing.NewType('DAppId', permissions.Principal)
 
 class DApp(NoCopyBaseModel):
     
@@ -17,9 +16,9 @@ class DApp(NoCopyBaseModel):
     
 
     @property
-    def id(self) -> DAppId:
+    def id(self) -> permissions.DAppId:
         """ Default DAppId is class name """
-        return typing.cast(DAppId,self.__class__.__name__) 
+        return typing.cast(permissions.DAppId,self.__class__.__name__) 
 
     @classmethod
     def bootstrap(cls) -> DApp:

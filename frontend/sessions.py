@@ -16,7 +16,7 @@ class Session(pydantic.BaseModel):
     """ The session is currently identified by its JWT token """
     token_str : str
     user: permissions.User
-    dappid: typing.Optional[str] = None
+    dappid: typing.Optional[permissions.DAppId] = None
 
     @property
     def id(self) -> SessionId:

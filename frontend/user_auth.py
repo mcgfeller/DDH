@@ -90,7 +90,7 @@ def get_user(db, userid: str):
         return UserInDB(**user_dict)
     else: return None # be explicit
 
-def get_dappid(dappid: str) -> str:
+def get_dappid(dappid: str) -> permissions.DAppId:
     """ Verify the id of the DApp. This is largely provisional.
     """ 
     from core import pillars
@@ -100,7 +100,7 @@ def get_dappid(dappid: str) -> str:
             detail=f"Invalid DApp id {dappid}",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return dappid
+    return typing.cast(permissions.DAppId,dappid)
 
 
 def authenticate_user(fake_db, userid: str, password: str):
