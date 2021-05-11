@@ -4,6 +4,8 @@
 from __future__ import annotations
 import typing
 import time
+import datetime
+import pydantic
 
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import NoCopyBaseModel
@@ -22,14 +24,16 @@ TrxId = typing.NewType('TrxId',str)
 class Transaction(NoCopyBaseModel):
     trxid : TrxId 
     session: sessions.Session
-    exp : float = 0.0
+    for_user: permissions.Principal
+    accesses: list[permissions.Access] = pydantic.Field(default_factory=list)
+    exp : datetime.datetime = datetime.datetime.now()
 
     read_owners : set[permissions.Principal] = set()
     read4write_consented : set[permissions.Principal] =  {permissions.AllPrincipal}
 
     Transactions : typing.ClassVar[dict[TrxId,Transaction]] = {}
     BySessions : typing.ClassVar[dict[sessions.SessionId,Transaction]] = {} # current trx by session
-    TTL : typing.ClassVar[int] = 5 # max duration of a transaction
+    TTL : typing.ClassVar[datetime.timedelta] = datetime.timedelta(seconds=5) # max duration of a transaction in seconds
 
     @classmethod
     def create(cls,session : sessions.Session) -> Transaction:
@@ -77,7 +81,7 @@ class Transaction(NoCopyBaseModel):
         self.abort()
     
     def use(self):
-        if time.time() > self.exp:
+        if datetime.datetime.now() > self.exp:
             raise TrxAccessError(f'Transaction has expired; {self.TTL=}')
         return self
 
