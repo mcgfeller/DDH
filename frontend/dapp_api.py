@@ -24,7 +24,7 @@ async def read_users_me(current_user: user_auth.UserInDB = fastapi.Depends(user_
     """ return my user """
     return current_user.as_user()
 
-# get user_auth.login_for_access_token defined in app: 
+# get user_auth.login_for_access_token defined in app: # TODO: We should create access record
 app.post("/token", response_model=user_auth.Token)(user_auth.login_for_access_token)
 
 @app.get("/ddh/{docpath:path}:schema")
@@ -66,11 +66,13 @@ async def get_data(
 
 @app.post("/transaction")
 async def create_transaction(
+    for_user : permissions.Principal,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     dapp : typing.Optional[permissions.DAppId] = None,
+
     ):    
     try:
-        trx = transactions.Transaction.create(session)
+        trx = session.new_transaction(for_user)
     except errors.DDHerror as e:
         raise e.to_http()
 

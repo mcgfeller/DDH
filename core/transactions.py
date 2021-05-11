@@ -10,9 +10,7 @@ import pydantic
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import NoCopyBaseModel
 
-from core import pillars
 from core import keys,permissions,schemas,nodes,errors
-from frontend import sessions
 
 import secrets
 
@@ -23,7 +21,6 @@ TrxId = typing.NewType('TrxId',str)
 
 class Transaction(NoCopyBaseModel):
     trxid : TrxId 
-    session: sessions.Session
     for_user: permissions.Principal
     accesses: list[permissions.Access] = pydantic.Field(default_factory=list)
     exp : datetime.datetime = datetime.datetime.now()
@@ -32,20 +29,15 @@ class Transaction(NoCopyBaseModel):
     read4write_consented : set[permissions.Principal] =  {permissions.AllPrincipal}
 
     Transactions : typing.ClassVar[dict[TrxId,Transaction]] = {}
-    BySessions : typing.ClassVar[dict[sessions.SessionId,Transaction]] = {} # current trx by session
     TTL : typing.ClassVar[datetime.timedelta] = datetime.timedelta(seconds=5) # max duration of a transaction in seconds
 
     @classmethod
-    def create(cls,session : sessions.Session) -> Transaction:
+    def create(cls,for_user : permissions.Principal) -> Transaction:
         """ Create Trx, and begin it """
-        if (p_trx := cls.BySessions.get(session.id)):
-            # previous transaction in session
-            p_trx.abort()
-
         trxid = secrets.token_urlsafe()
         if trxid in cls.Transactions:
             raise KeyError(f'duplicate key: {trxid}')
-        trx = cls(trxid=trxid,session=session)
+        trx = cls(trxid=trxid,for_user=for_user)
         trx.begin()
         return trx
 
@@ -53,24 +45,15 @@ class Transaction(NoCopyBaseModel):
     def get(cls,trxid : TrxId) -> Transaction:
         return cls.Transactions[trxid].use()
 
-    @classmethod
-    def get_by_session(cls, session: sessions.Session) -> Transaction:
-        """ get transaction by session, creating it if necessary """
-        trx = cls.BySessions.get(session.id)
-        if not trx:
-            trx = cls.create(session)
-        return trx.use()   
 
     def begin(self):
         """ begin this transaction """
         self.Transactions[self.trxid] = self
-        self.BySessions[self.session.id] = self
         self.exp = time.time() + self.TTL
         return
 
     def end(self):
         """ end this transaction """
-        self.BySessions.pop(self.session.id,None)
         self.Transactions.pop(self.trxid,None)
         return
 
