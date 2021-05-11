@@ -1,7 +1,7 @@
 """ Set up some Test data """
 from core import keys,permissions,facade,errors
 from core import pillars
-from frontend import user_auth
+from frontend import user_auth,sessions
 import pytest
 
 
@@ -26,11 +26,12 @@ def test_complete_schema():
     return s
 
 def test_dapp_read_data():
-    """ test retrieval of key of test MigrosDApp, and facade.get_data() """
+    """ test retrieval of key of test MigrosDApp, and facade.perform_access() """
     ddhkey = keys.DDHkey(key="/org/living/stores/migros.ch/clients/mgf/receipts")
     user = user_auth.UserInDB.load('mgf')
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.read})
-    data = facade.get_data(access)
+    session = sessions.Session(token_str='',user=user)
+    data = facade.perform_access(access,session)
     assert isinstance(data,dict)
     assert len(data)>0 
     assert isinstance(data['mgf'],list)
@@ -40,12 +41,13 @@ def test_dapp_read_data():
     return
 
 def test_dapp_read_data_no_owner():
-    """ test retrieval of key of test MigrosDApp, and facade.get_data() """
+    """ test retrieval of key of test MigrosDApp, and facade.perform_access() """
     ddhkey = keys.DDHkey(key="/org/living/stores/migros.ch/clients/receipts")
     user = user_auth.UserInDB.load('mgf')
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.read})
+    session = sessions.Session(token_str='',user=user)
     with pytest.raises(errors.NotFound):
-        data = facade.get_data(access)
+        data = facade.perform_access(access,session)
     return
 
 def test_dapp_read_data_unknown():
@@ -53,8 +55,9 @@ def test_dapp_read_data_unknown():
     ddhkey = keys.DDHkey(key="/org/living/stores/migros.ch/clients/mgf,unknown/receipts")
     user = user_auth.UserInDB.load('mgf')
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.read})
+    session = sessions.Session(token_str='',user=user)
     with pytest.raises(errors.NotFound):
-        data = facade.get_data(access)
+        data = facade.perform_access(access,session)
     return
 
 def test_dapp_read_data_nopermit():
@@ -63,16 +66,18 @@ def test_dapp_read_data_nopermit():
     user = user_auth.UserInDB.load('mgf')
     assert user_auth.UserInDB.load('another')
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.read})
+    session = sessions.Session(token_str='',user=user)
     with pytest.raises(errors.AccessError):
-        data = facade.get_data(access)
+        data = facade.perform_access(access,session)
     return
 
 def test_std_read_data():
-    """ test retrieval of key of test MigrosDApp with transformation to standard, and facade.get_data() """
+    """ test retrieval of key of test MigrosDApp with transformation to standard, and facade.perform_access() """
     ddhkey = keys.DDHkey(key="/p/living/shopping/receipts/mgf")
     user = user_auth.UserInDB.load('mgf')
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.read})
-    data = facade.get_data(access)
+    session = sessions.Session(token_str='',user=user)
+    data = facade.perform_access(access,session)
     assert isinstance(data,dict)
     assert len(data)>0 
     assert isinstance(data['items'],list)
