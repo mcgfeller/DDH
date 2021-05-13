@@ -72,7 +72,7 @@ class _NodeRegistry:
 
     def get_nodes(self,key : keys.DDHkey, types : set[nodes.NodeType] = set()) -> NodeAtKey:
         if not types:
-            types = {nodes.NodeType.data,nodes.NodeType.nschema, nodes.NodeType.consents}
+            types = {nodes.NodeType.owner,nodes.NodeType.data,nodes.NodeType.nschema, nodes.NodeType.consents}
         d = {}
         for type in types:
             n,n_split = self.get_node(key,type)

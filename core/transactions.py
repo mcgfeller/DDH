@@ -28,7 +28,7 @@ class Transaction(NoCopyBaseModel):
     read_owners : set[permissions.Principal] = set()
     read4write_consented : set[permissions.Principal] =  {permissions.AllPrincipal}
 
-    Transactions : typing.ClassVar[dict[TrxId,Transaction]] = {}
+    Transactions : typing.ClassVar[dict[TrxId,'Transaction']] = {}
     TTL : typing.ClassVar[datetime.timedelta] = datetime.timedelta(seconds=5) # max duration of a transaction in seconds
 
     @classmethod
@@ -49,7 +49,7 @@ class Transaction(NoCopyBaseModel):
     def begin(self):
         """ begin this transaction """
         self.Transactions[self.trxid] = self
-        self.exp = time.time() + self.TTL
+        self.exp = datetime.datetime.now() + self.TTL
         return
 
     def end(self):

@@ -44,7 +44,9 @@ def perform_access(access : permissions.Access, session : sessions.Session, q : 
     enode,key_split = keydirectory.NodeRegistry.get_node(access.ddhkey,nodes.NodeType.execute)
     enode = typing.cast(nodes.ExecutableNode,enode)
     # need to get owner of ressource, we need owner node and nodetuple for this
-    # transaction = session.get_transaction(for_user)
+    nak = keydirectory.NodeRegistry.get_nodes(access.ddhkey)
+    transaction = session.get_transaction(for_user=nak.owner.owner,create=True)
+    transaction.accesses.append(access)
     if enode:
         data = enode.execute(access, key_split, q)
     else:

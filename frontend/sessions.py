@@ -5,7 +5,7 @@
 from __future__ import annotations
 import typing
 import pydantic
-from pydantic.types import PaymentCardNumber
+from utils.pydantic_utils import NoCopyBaseModel
 
 
 from core import permissions,errors,transactions
@@ -13,7 +13,7 @@ from core import permissions,errors,transactions
 
 SessionId = typing.NewType('SessionId', str) # identifies the session
 
-class Session(pydantic.BaseModel):
+class Session(NoCopyBaseModel):
     """ The session is currently identified by its JWT token """
     token_str : str
     user: permissions.User
@@ -25,8 +25,15 @@ class Session(pydantic.BaseModel):
         """ return id """
         return typing.cast(SessionId,self.token_str)
 
-    def get_transaction(self,for_user : permissions.Principal) -> typing.Optional[transactions.Transaction]:
-        return self.trxs_for_user.get(for_user).use()
+    def get_transaction(self,for_user : permissions.Principal,create=False) -> typing.Optional[transactions.Transaction]:
+        """ get existing trx or create new one """
+        trx = self.trxs_for_user.get(for_user)
+        if trx:
+            return trx.use() 
+        elif create:
+            return self.new_transaction(for_user=for_user)
+        else:
+            return None
 
     def new_transaction(self,for_user : permissions.Principal) -> transactions.Transaction:
         prev_trx = self.trxs_for_user.get(for_user)
