@@ -89,20 +89,20 @@ class AccessMode(str,enum.Enum):
         """
         # 1:
         for req in requested:
-            if req not in consented and req not in AccessMode.RequiredModes :
+            if req not in consented and req not in AccessMode.RequiredModes : # type:ignore
                 return False,f'requested mode {req} not in consented modes {", ".join(consented)}.'
 
         # 2:
-        required_modes = consented.intersection(AccessMode.RequiredModes) # all modes required by our consent
+        required_modes = consented.intersection(AccessMode.RequiredModes) # type:ignore # all modes required by our consent 
         for miss in required_modes - requested: # but not requested
-            if m:= AccessMode.RequiredModes[miss]: # specific for a requested mode only?
+            if m:= AccessMode.RequiredModes[miss]: # type:ignore # specific for a requested mode only?
                 if m.isdisjoint(requested): # yes, but this mode is not requested, so check next miss
                     continue
             return False,f'Consent requires {miss} mode in request, but only {", ".join(requested)} requested.' 
         return True,'ok, with required modes' if required_modes else 'ok, no restrictions'
 
 # modes that need to be specified explicity in requested when consented. If value is a set, the requirement only applies to the value modes:
-AccessMode.RequiredModes = {AccessMode.anonymous : None, AccessMode.pseudonym : None, AccessMode.aggregated : None,
+AccessMode.RequiredModes = {AccessMode.anonymous : None, AccessMode.pseudonym : None, AccessMode.aggregated : None, # type:ignore
      AccessMode.confidential: None, AccessMode.differential: None, AccessMode.protected : {AccessMode.write}} 
 
 @pyright_check
@@ -226,7 +226,7 @@ class Access(NoCopyBaseModel):
         Use .permitted() to check whether this request is permitted. 
     """
     op:        Operation = Operation.get
-    ddhkey:    DDHkey
+    ddhkey:    DDHkey # type: ignore
     principal: Principal
     byDApp:    typing.Optional[DAppId] = None
     modes:     set[AccessMode]  = {AccessMode.read}

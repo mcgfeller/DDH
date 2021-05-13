@@ -58,7 +58,7 @@ class DDHkey(NoCopyBaseModel):
                 lk,fork = key[-1].split(self.ForkDelimiter,1) # type:ignore
                 key = key[:-1] + (lk,) if lk else ()
             fork = ForkType(fork) if fork else ForkType.data
-        super().__init__(key=key,node=node,fork=fork)
+        super().__init__(key=key,node=node,fork=fork) # type:ignore
         return 
 
     def __str__(self) -> str:
