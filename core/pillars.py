@@ -10,16 +10,17 @@ from utils import utils
 from core import schema_root,dapp,permissions
 from utils import import_modules 
 import DApps
-from utils.pydantic_utils import NoCopyBaseModel
+from utils.pydantic_utils import NoCopyBaseModel,pyright_check
 
-
+@pyright_check
 class Executor(NoCopyBaseModel):
     ...
 
+@pyright_check
 class ClearingHouse(NoCopyBaseModel):
     ...
 
-
+@pyright_check
 class _DAppManager(NoCopyBaseModel):
     """ Provisional DAppManager, loads modules and instantiates DApps.
         Real Manager would orchestrate DApps in their own container.

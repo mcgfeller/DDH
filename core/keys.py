@@ -7,7 +7,7 @@ import enum
 import abc
 
 from pydantic.errors import PydanticErrorMixin
-from utils.pydantic_utils import NoCopyBaseModel
+from utils.pydantic_utils import NoCopyBaseModel,pyright_check
 
 
 
@@ -29,6 +29,7 @@ class ForkType(str,enum.Enum):
 
     def __repr__(self): return self.value
 
+@pyright_check
 class DDHkey(NoCopyBaseModel):
     """ A key identifying a DDH ressource. DDHkey is decoupled from any permissions, storage, etc.,
     """

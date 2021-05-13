@@ -8,7 +8,7 @@ import datetime
 import pydantic
 
 from pydantic.errors import PydanticErrorMixin
-from utils.pydantic_utils import NoCopyBaseModel
+from utils.pydantic_utils import NoCopyBaseModel,pyright_check
 
 from core import keys,permissions,schemas,nodes,errors
 
@@ -19,6 +19,7 @@ class TrxAccessError(errors.AccessError): ...
 
 TrxId = typing.NewType('TrxId',str)
 
+@pyright_check
 class Transaction(NoCopyBaseModel):
     trxid : TrxId 
     for_user: permissions.Principal
@@ -99,5 +100,4 @@ class Transaction(NoCopyBaseModel):
         if not_consented:
             raise TrxAccessError(f"Cannot write to nodes, because we've read notes that do not consent to write to owners {', '.join(map(str,not_consented))}")        
         return
-
 

@@ -4,6 +4,20 @@ from __future__ import annotations
 import pydantic 
 import typing
 
+
+# Make PyLance think Pydantic is a dataclass, because otherwise it cannot support it.
+# Needs @pyright_check in front of every class derived from BaseClass
+# https://github.com/samuelcolvin/pydantic/issues/650
+
+
+if not typing.TYPE_CHECKING:
+    def pyright_check(model):
+        return model
+else:
+    from dataclasses import dataclass as pyright_check
+
+
+@pyright_check
 class NoCopyBaseModel(pydantic.BaseModel):
     """ https://github.com/samuelcolvin/pydantic/issues/1246
         https://github.com/samuelcolvin/pydantic/blob/52af9162068a06eed5b84176e987a534f6d9126a/pydantic/main.py#L574-L575

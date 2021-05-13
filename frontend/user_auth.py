@@ -11,6 +11,7 @@ import fastapi.security
 import jose
 import jose.jwt
 import passlib.context
+from utils.pydantic_utils import NoCopyBaseModel,pyright_check
 
 from core import permissions,errors
 from frontend import sessions
@@ -51,18 +52,18 @@ FAKE_USERS_DB = {
     },
 }
 
-
-class Token(pydantic.BaseModel):
+@pyright_check
+class Token(NoCopyBaseModel):
     access_token: str
     token_type: str
 
-
-class TokenData(pydantic.BaseModel):
+@pyright_check
+class TokenData(NoCopyBaseModel):
     id: str
 
-
+@pyright_check
 class UserInDB(permissions.User):
-    hashed_password: str
+    hashed_password: str # type: ignore
 
     @classmethod
     def load(cls,id) -> UserInDB:

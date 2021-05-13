@@ -5,7 +5,7 @@
 from __future__ import annotations
 import typing
 import pydantic
-from utils.pydantic_utils import NoCopyBaseModel
+from utils.pydantic_utils import NoCopyBaseModel,pyright_check
 
 
 from core import permissions,errors,transactions
@@ -13,6 +13,7 @@ from core import permissions,errors,transactions
 
 SessionId = typing.NewType('SessionId', str) # identifies the session
 
+@pyright_check
 class Session(NoCopyBaseModel):
     """ The session is currently identified by its JWT token """
     token_str : str

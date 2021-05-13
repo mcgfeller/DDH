@@ -5,9 +5,9 @@ from abc import abstractmethod
 import typing
 
 from core import keys,permissions,nodes
-from utils.pydantic_utils import NoCopyBaseModel
+from utils.pydantic_utils import NoCopyBaseModel,pyright_check
 
-
+@pyright_check
 class Storage(NoCopyBaseModel):
 
     byId : dict[nodes.NodeId,nodes.Persistable] = {}
@@ -22,12 +22,13 @@ class Storage(NoCopyBaseModel):
         return n
 
 
-
+@pyright_check
 class OwnedStorage(Storage):
     """ Storage for a particular owners """
 
     owners : tuple[permissions.Principal]
 
+@pyright_check
 class OwnerStorage(Storage):
 
     byOwners : dict[tuple[permissions.Principal,...],OwnedStorage] = {}
