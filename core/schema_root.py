@@ -28,10 +28,7 @@ def build_root_schemas():
     """ build top of schema tree """
     treetop = ['root',
         ['org', # organizational tree, next level are org domains
-            ['living',
-                ['stores'],
-            ],
-            ['health'],
+
         ],
         ['p', # personal tree, next level are data models
             ['family'],

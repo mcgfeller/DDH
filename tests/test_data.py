@@ -14,7 +14,7 @@ def session(user):
 
 def test_dapp_schema(user):
     """ test retrieval of key of test MigrosDApp, and facade.get_schema() """
-    ddhkey = keys.DDHkey(key="/org/living/stores/migros.ch/clients/receipts")
+    ddhkey = keys.DDHkey(key="/org/migros.ch/clients/receipts")
     user = user_auth.UserInDB.load('mgf')
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.schema_read})
     jschema = facade.get_schema(access)
@@ -23,16 +23,24 @@ def test_dapp_schema(user):
     return
 
 
-def test_complete_schema(user):
-    ddhkey = keys.DDHkey(key="/org/living")
+def test_complete_schema_org(user):
+    ddhkey = keys.DDHkey(key="/org")
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.schema_read})
     s = facade.get_schema(access)
     assert s
     return s
 
+def test_complete_schema_p(user):
+    ddhkey = keys.DDHkey(key="/p/living/shopping")
+    access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.schema_read})
+    s = facade.get_schema(access)
+    assert s
+    return s
+
+
 def test_dapp_read_data(user,session):
     """ test retrieval of key of test MigrosDApp, and facade.perform_access() """
-    ddhkey = keys.DDHkey(key="/org/living/stores/migros.ch/clients/mgf/receipts")
+    ddhkey = keys.DDHkey(key="/org/migros.ch/clients/mgf/receipts")
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.read})
     data = facade.perform_access(access,session)
     assert isinstance(data,dict)
@@ -45,7 +53,7 @@ def test_dapp_read_data(user,session):
 
 def test_dapp_read_data_no_owner(user,session):
     """ test retrieval of key of test MigrosDApp, and facade.perform_access() """
-    ddhkey = keys.DDHkey(key="/org/living/stores/migros.ch/clients/receipts")
+    ddhkey = keys.DDHkey(key="/org/migros.ch/clients/receipts")
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.read})
     with pytest.raises(errors.NotFound):
         data = facade.perform_access(access,session)
@@ -53,7 +61,7 @@ def test_dapp_read_data_no_owner(user,session):
 
 def test_dapp_read_data_unknown(user,session):
     """ test retrieval of key of test MigrosDApp, with a user that does not exist """
-    ddhkey = keys.DDHkey(key="/org/living/stores/migros.ch/clients/mgf,unknown/receipts")
+    ddhkey = keys.DDHkey(key="/org/migros.ch/clients/mgf,unknown/receipts")
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.read})
     with pytest.raises(errors.NotFound):
         data = facade.perform_access(access,session)
@@ -61,7 +69,7 @@ def test_dapp_read_data_unknown(user,session):
 
 def test_dapp_read_data_nopermit(user,session):
     """ test retrieval of key of test MigrosDApp, with a user that has no permission """
-    ddhkey = keys.DDHkey(key="/org/living/stores/migros.ch/clients/mgf,another/receipts")
+    ddhkey = keys.DDHkey(key="/org/migros.ch/clients/mgf,another/receipts")
     assert user_auth.UserInDB.load('another')
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.read})
     with pytest.raises(errors.AccessError):

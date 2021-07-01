@@ -11,21 +11,21 @@ PORT = 8048
 USERPWD = {'username':'mgf','password':'secret'}
 
 def test_get_data(httpx_client):
-    r = httpx_client.get('/ddh/org/living/stores/migros.ch/clients/mgf/receipts')
+    r = httpx_client.get('/ddh/org/migros.ch/clients/mgf/receipts')
     r.raise_for_status()
     d = r.json()
     assert d['res'],'res is empty'
     return
 
 def test_get_schema_server(httpx_client):
-    r = httpx_client.get('/ddh/org/living:schema?schemaformat=json')
+    r = httpx_client.get('/ddh/org:schema?schemaformat=json')
     r.raise_for_status()
     d = r.json()
     assert d.get('schema'),'schema is empty'
     return
 
 def test_get_schema_server2(httpx_client):
-    r = httpx_client.get('/ddh/org/living/stores/migros.ch:schema')
+    r = httpx_client.get('/ddh/org/migros.ch:schema')
     r.raise_for_status()
     d = r.json()
     assert d.get('schema'),'schema is empty'
@@ -33,7 +33,7 @@ def test_get_schema_server2(httpx_client):
 
 @pytest.mark.skip
 async def  test_get_schema_asgi(asgi_client):
-    r = await asgi_client.get('/ddh/p/shopping:schema?schemaformat=json')
+    r = await asgi_client.get('/ddh/p/living/shopping:schema?schemaformat=json')
     r.raise_for_status()
     d= r.json()
     assert d.get('schema'),'schema is empty'
