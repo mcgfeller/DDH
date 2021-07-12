@@ -13,7 +13,7 @@ from core import permissions,errors,transactions
 
 SessionId = typing.NewType('SessionId', str) # identifies the session
 
-@pyright_check
+
 class Session(NoCopyBaseModel):
     """ The session is currently identified by its JWT token """
     token_str : str

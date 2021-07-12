@@ -12,7 +12,7 @@ from utils.pydantic_utils import NoCopyBaseModel,pyright_check
 from . import permissions
 from . import nodes
 
-@pyright_check
+
 class Policy(NoCopyBaseModel):
     """ WIP: 
         The policy of a service or a DApp.

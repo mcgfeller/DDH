@@ -32,7 +32,7 @@ class NodeType(str,enum.Enum):
 NodeId = typing.NewType('NodeId', str)
 
 
-@pyright_check
+
 class Persistable(NoCopyBaseModel):
     """ class that provides methods to get persistent state.
         Works with storage.
@@ -49,7 +49,7 @@ class Persistable(NoCopyBaseModel):
         return o
 
 
-@pyright_check
+
 class Node(Persistable):
 
     types: set[NodeType] = set() # all supported type, will be filled by init unless given
@@ -88,7 +88,7 @@ class Node(Persistable):
 from . import keys # avoid circle
 Node.update_forward_refs() # Now Node is known, update before it's derived
 
-@pyright_check
+
 class MultiOwnerNode(Node):
 
     all_owners : tuple[permissions.Principal,...]
@@ -110,7 +110,7 @@ class MultiOwnerNode(Node):
         """ get one or multiple owners """
         return self.all_owners
 
-@pyright_check
+
 class ExecutableNode(Node):
     """ A node that provides for execution capabilities """
 
@@ -120,7 +120,7 @@ class ExecutableNode(Node):
     def execute(self, access : permissions.Access, key_split : int, q : typing.Optional[str] = None):
         return {}
 
-@pyright_check
+
 class DelegatedExecutableNode(ExecutableNode):
     """ A node that delegates executable methods to DApps """
 

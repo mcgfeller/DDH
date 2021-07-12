@@ -52,16 +52,16 @@ FAKE_USERS_DB = {
     },
 }
 
-@pyright_check
+
 class Token(NoCopyBaseModel):
     access_token: str
     token_type: str
 
-@pyright_check
+
 class TokenData(NoCopyBaseModel):
     id: str
 
-@pyright_check
+
 class UserInDB(permissions.User):
     hashed_password: str # type: ignore
 

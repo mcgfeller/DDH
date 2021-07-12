@@ -7,7 +7,7 @@ from core import keys,permissions,schemas,nodes,keydirectory,policies,errors
 from utils.pydantic_utils import NoCopyBaseModel,pyright_check
 
 
-@pyright_check
+
 class DApp(NoCopyBaseModel):
     
     owner : typing.ClassVar[permissions.Principal] 
@@ -56,7 +56,7 @@ class DApp(NoCopyBaseModel):
         return  {}
     
 
-@pyright_check
+
 class DAppNode(nodes.ExecutableNode):
     """ node managed by a DApp """
     dapp : DApp

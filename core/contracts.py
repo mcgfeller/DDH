@@ -6,15 +6,19 @@ from __future__ import annotations
 import typing
 import pydantic
 import enum
+import decimal
 from utils.pydantic_utils import NoCopyBaseModel,pyright_check
 
 from core import permissions,errors,dapp,privacyIcons
 
 
 
-@pyright_check
+
 class Price(NoCopyBaseModel):
     currency : str = 'CHF'
+    amount = decimal.Decimal 
+
+
 
 @enum.unique
 class Periodicity(str,enum.Enum):
@@ -28,13 +32,13 @@ class Periodicity(str,enum.Enum):
 
     def __repr__(self): return self.value
 
-@pyright_check
+
 class SubscriptionPrice(Price):
 
     periodicity : Periodicity = Periodicity.M
     price_per_period : float
 
-@pyright_check
+
 class TransactionPrice(Price):
     ...
 
@@ -43,18 +47,26 @@ FreePrice = SubscriptionPrice(price_per_period=0.0,periodicity= Periodicity.O)
 
 
 
+class CancellationTerms(NoCopyBaseModel):
+
+    runs_until_cancelled : bool = True
+    cancellation_days : int = 1
+    auto_expires_in_days : typing.Optional[int] = None
 
 
-@pyright_check
+
 class TermsAndConditions(NoCopyBaseModel):
     """ There should be just a number of easy-to-understand Standard Terms and Conditions
     """
-    privacy_icons = privacyIcons.PrivacyIcons
+
 
     StandardTACs : typing.ClassVar[dict[str,TermsAndConditions]] = {}
 
+    privacy_icons = privacyIcons.PrivacyIcons
+    cancellation_terms = CancellationTerms
 
-@pyright_check
+
+
 class Offer(NoCopyBaseModel):
     """ The offer made by a DApp on a key """
 
@@ -64,7 +76,7 @@ class Offer(NoCopyBaseModel):
     dapp: permissions.DAppId
     price : Price = FreePrice
 
-@pyright_check
+
 class Contract(NoCopyBaseModel):
 
     offer = Offer

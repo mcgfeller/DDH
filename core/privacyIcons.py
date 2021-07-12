@@ -42,7 +42,7 @@ class PlaceOfProcessing(PrivacyIcon):
     Europe = 'Europe'
     Worldwide = 'Worldwide'
 
-@pyright_check
+
 class PrivacyIcons(NoCopyBaseModel):
 
     included : set[PrivacyIcon] = pydantic.Field(default_factory=set,description='Positive icons')

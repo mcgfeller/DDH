@@ -19,7 +19,7 @@ class TrxAccessError(errors.AccessError): ...
 
 TrxId = typing.NewType('TrxId',str)
 
-@pyright_check
+
 class Transaction(NoCopyBaseModel):
     trxid : TrxId 
     for_user: permissions.Principal
