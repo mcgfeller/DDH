@@ -7,7 +7,7 @@ import typing
 import pydantic
 import enum
 import decimal
-from utils.pydantic_utils import NoCopyBaseModel,pyright_check
+from utils.pydantic_utils import NoCopyBaseModel
 
 from core import permissions,errors,dapp,privacyIcons
 

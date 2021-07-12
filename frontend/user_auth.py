@@ -11,7 +11,7 @@ import fastapi.security
 import jose
 import jose.jwt
 import passlib.context
-from utils.pydantic_utils import NoCopyBaseModel,pyright_check
+from utils.pydantic_utils import NoCopyBaseModel
 
 from core import permissions,errors
 from frontend import sessions

@@ -8,7 +8,7 @@ import datetime
 import pydantic
 
 from pydantic.errors import PydanticErrorMixin
-from utils.pydantic_utils import NoCopyBaseModel,pyright_check
+from utils.pydantic_utils import NoCopyBaseModel
 
 from core import keys,permissions,schemas,nodes,errors
 

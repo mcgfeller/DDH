@@ -2,7 +2,7 @@ from __future__ import annotations
 import typing
 import pydantic
 import enum
-from utils.pydantic_utils import NoCopyBaseModel,pyright_check
+from utils.pydantic_utils import NoCopyBaseModel
 
 @enum.unique
 class PrivacyIcon(str,enum.Enum):

@@ -7,12 +7,12 @@ import enum
 import abc
 
 from pydantic.errors import PydanticErrorMixin
-from utils.pydantic_utils import NoCopyBaseModel,pyright_check
+from utils.pydantic_utils import NoCopyBaseModel
 from . import errors
 
 
 
-@pyright_check
+
 class Principal(NoCopyBaseModel):
     """ Abstract identification of a party """
 
@@ -105,7 +105,7 @@ class AccessMode(str,enum.Enum):
 AccessMode.RequiredModes = {AccessMode.anonymous : None, AccessMode.pseudonym : None, AccessMode.aggregated : None, # type:ignore
      AccessMode.confidential: None, AccessMode.differential: None, AccessMode.protected : {AccessMode.write}} 
 
-@pyright_check
+
 class User(Principal):
     """ Concrete user, may login """
        
@@ -114,14 +114,14 @@ class User(Principal):
     created_at : datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow) # defaults to now
 
 
-@pyright_check
+
 class DAppId(Principal):
     """ The identification of a DApp. We use a Principal for now. """
 
     name : str
 
 
-@pyright_check
+
 class Consent(NoCopyBaseModel):
     """ Consent to access a ressource denoted by DDHkey.
     """
@@ -150,7 +150,7 @@ class Consent(NoCopyBaseModel):
 
         return True,'Granted by Consent; '+txt
 
-@pyright_check
+
 class Consents(NoCopyBaseModel):
     """ Multiple Consents, for one owner.
         If owner is not supplied, it is set to the Node's owner when
@@ -183,7 +183,7 @@ class Consents(NoCopyBaseModel):
         else:
             return False,[consent] if consent else [],msg
 
-@pyright_check
+
 class MultiOwnerConsents(NoCopyBaseModel):
     """ Records consents by different owners,
         check them all (they all must consent)

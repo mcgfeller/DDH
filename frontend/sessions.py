@@ -5,7 +5,7 @@
 from __future__ import annotations
 import typing
 import pydantic
-from utils.pydantic_utils import NoCopyBaseModel,pyright_check
+from utils.pydantic_utils import NoCopyBaseModel
 
 
 from core import permissions,errors,transactions

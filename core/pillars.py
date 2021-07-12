@@ -10,7 +10,7 @@ from utils import utils
 from core import schema_root,dapp,permissions
 from utils import import_modules 
 import DApps
-from utils.pydantic_utils import NoCopyBaseModel,pyright_check
+from utils.pydantic_utils import NoCopyBaseModel
 
 
 class Executor(NoCopyBaseModel):
