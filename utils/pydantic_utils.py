@@ -5,7 +5,7 @@ import pydantic
 import typing
 
 
- class NoCopyBaseModel(pydantic.BaseModel):
+class NoCopyBaseModel(pydantic.BaseModel):
     """ https://github.com/samuelcolvin/pydantic/issues/1246
         https://github.com/samuelcolvin/pydantic/blob/52af9162068a06eed5b84176e987a534f6d9126a/pydantic/main.py#L574-L575
     """
