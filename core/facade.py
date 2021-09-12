@@ -40,8 +40,8 @@ def perform_access(access : permissions.Access, session : sessions.Session, q : 
     """ Service utility to retrieve data and return it in the desired format.
         Returns None if no data found.
     """
-
-    enode,key_split = keydirectory.NodeRegistry.get_node(access.ddhkey,nodes.NodeType.execute)
+    nodekey = access.ddhkey.without_owner()
+    enode,key_split = keydirectory.NodeRegistry.get_node(nodekey,nodes.NodeType.execute)
     enode = typing.cast(nodes.ExecutableNode,enode)
     # need to get owner of ressource, we need owner node and nodetuple for this
     nak = keydirectory.NodeRegistry.get_nodes(access.ddhkey)

@@ -11,21 +11,20 @@ PORT = 8048
 USERPWD = {'username':'mgf','password':'secret'}
 
 def test_get_data(httpx_client):
-    r = httpx_client.get('/ddh/org/migros.ch/clients/mgf/receipts')
+    r = httpx_client.get('/ddh/mgf/org/migros.ch/receipts')
     r.raise_for_status()
     d = r.json()
     assert d['res'],'res is empty'
     return
 
-def test_get_schema_server(httpx_client):
-    r = httpx_client.get('/ddh/org:schema?schemaformat=json')
+    r = httpx_client.get('/ddh//org:schema?schemaformat=json')
     r.raise_for_status()
     d = r.json()
     assert d.get('schema'),'schema is empty'
     return
 
 def test_get_schema_server2(httpx_client):
-    r = httpx_client.get('/ddh/org/migros.ch:schema')
+    r = httpx_client.get('/ddh//org/migros.ch:schema')
     r.raise_for_status()
     d = r.json()
     assert d.get('schema'),'schema is empty'

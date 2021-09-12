@@ -19,6 +19,14 @@ class _RootType(str):
     def __str__(self):
         return ''
 
+class _AnyType(str):
+    """ Singleton any marker """
+    def __repr__(self):
+        return '<Any>'
+
+    def __str__(self):
+        return ''
+
 @enum.unique
 class ForkType(str,enum.Enum):
     """ types of forks """
@@ -42,21 +50,26 @@ class DDHkey(NoCopyBaseModel):
     Delimiter : typing.ClassVar[str] = '/'
     ForkDelimiter : typing.ClassVar[str] = ':'
     Root : typing.ClassVar[_RootType] = _RootType(Delimiter)
+    AnyKey : typing.ClassVar[_AnyType] = _AnyType(Delimiter)
 
     def __init__(self,key : typing.Union[tuple,list,str], node :  typing.Optional[nodes.Node] = None, fork :  typing.Optional[ForkType] = None):
         """ Convert key string into tuple, eliminate empty segments, and set root to self.Root """
         if isinstance(key,str):
             key = key.strip().split(self.Delimiter)
-        if len(key) == 0:
-            key = () # ensure tuple
-        elif not key[0]: # replace root delimiter with root object
-            key = (self.Root,)+tuple(filter(None,key[1:]))
         else:
-            key = tuple(filter(None,key))
-        if not fork:
+            key = list(key) # ensure list
+        
+        if len(key)>1 and not key[0]: # replace root delimiter with root object
+            key[0] = self.Root
+        if len(key)>2 and not key[1]: # replace empty segment in pos 1 with AllKey
+            key[1] = self.AnyKey
+        # remove empty segments and make tuple:
+        key = tuple(filter(None,key))
+
+        if not fork: # set fork, and remove it from .key if present
             if key and self.ForkDelimiter in key[-1]: # forks are only allowed in last segment
                 lk,fork = key[-1].split(self.ForkDelimiter,1) # type:ignore
-                key = key[:-1] + (lk,) if lk else ()
+                key = key[:-1] + (lk,) if lk else () 
             fork = ForkType(fork) if fork else ForkType.data
         super().__init__(key=key,node=node,fork=fork) # type:ignore
         return 
@@ -93,10 +106,27 @@ class DDHkey(NoCopyBaseModel):
 
     def ensure_rooted(self) -> DDHkey:
         """ return a DHHkey that is rooted """
-        if not self.key[0] == self.Root:
+        if len(self.key) < 1  or self.key[0] != self.Root:
             return self.__class__((self.Root,)+self.key,fork=self.fork)
         else:
             return self
+
+    def without_owner(self):
+        """ return key without owner """
+        rooted_key = self.ensure_rooted()
+        if len(rooted_key.key) > 1 and rooted_key.key != self.AnyKey:
+            return self.__class__((self.Root,self.AnyKey)+rooted_key.key[2:],fork=rooted_key.fork)
+        else:
+            return rooted_key
+
+    @property
+    def owners(self) -> str:
+        """ return owner as string """
+        rooted_key = self.ensure_rooted()
+        if len(rooted_key.key) > 1 and rooted_key.key[0] == self.Root:
+            return rooted_key.key[1]
+        else:
+            return str(self.AnyKey)
 
 
 from . import nodes

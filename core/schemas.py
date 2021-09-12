@@ -36,7 +36,7 @@ class SchemaElement(NoCopyBaseModel):
         current = cls # before we descend path, this cls is at the current level 
         pathit = iter(path) # so we can peek whether we're at end
         for segment in pathit:
-            mf = current.__fields__.get(segment,None) # look up one segment of path, returning ModelField
+            mf = current.__fields__.get(str(segment),None) # look up one segment of path, returning ModelField
             if mf is None:
                 return None
             else: 
@@ -78,9 +78,20 @@ class SchemaElement(NoCopyBaseModel):
             raise errors.DAppError(f'Cannot understand element {subname}={sub} in {cls}')
 
     def get_resolver(self,  selection: keys.DDHkey,access: permissions.Access, q):
-        ids : typing.Dict[type,typing.Dict[str,list]] = {} # {class : {idattr : [id,...]}}
+        # ids : typing.Dict[type,typing.Dict[str,list]] = {} # {class : {idattr : [id,...]}}
         entire_selection = selection
         schema = self.__class__
+        principals = permissions.Principal.get_principals(access.ddhkey.owners)
+        for principal in principals:
+            # p_access = access.copy() # create an access record for actual key (maybe optimize if it's just one key?)
+            # p_key = keys.DDHkey(key=access.ddhkey[:-(len(remainder.key)+1)]+(principal.id,)+remainder.key)
+            # p_access.ddhkey = p_key
+            ok,consent,text = access.permitted(owner=principal) # here we check the consent
+            if not ok:
+                raise errors.AccessError(text)
+
+
+
         while len(selection.key):
             next_key,remainder = selection.split_at(1) # next level
             schema,container,idattr = schema.get_subschema_class(next_key)
@@ -88,19 +99,19 @@ class SchemaElement(NoCopyBaseModel):
                 raise errors.NotFound(f'Invalid key {next_key} in {entire_selection}') 
             if container:
                 sel,remainder = remainder.split_at(1) # next level is ids
-                if idattr:
-                    principals = permissions.Principal.get_principals(str(sel)) # existing principals (may raise NotFound)
-                    for principal in principals:
-                        p_access = access.copy() # create an access record for actual key (maybe optimize if it's just one key?)
-                        p_key = keys.DDHkey(key=access.ddhkey[:-(len(remainder.key)+1)]+(principal.id,)+remainder.key)
-                        p_access.ddhkey = p_key
-                        ok,consent,text = p_access.permitted(owner=principal) # here we check the consent
-                        if not ok:
-                            raise errors.AccessError(text)
-                    ids.setdefault(schema,{})[idattr] = principals 
+                # if idattr:
+                #     principals = permissions.Principal.get_principals(str(sel)) # existing principals (may raise NotFound)
+                #     for principal in principals:
+                #         p_access = access.copy() # create an access record for actual key (maybe optimize if it's just one key?)
+                #         p_key = keys.DDHkey(key=access.ddhkey[:-(len(remainder.key)+1)]+(principal.id,)+remainder.key)
+                #         p_access.ddhkey = p_key
+                #         ok,consent,text = p_access.permitted(owner=principal) # here we check the consent
+                #         if not ok:
+                #             raise errors.AccessError(text)
+                #     ids.setdefault(schema,{})[idattr] = principals 
             resolver = getattr(schema,'resolve',None)
             if resolver:
-                res = resolver(remainder,ids, q)
+                res = resolver(remainder,principals, q)
                 return res
             selection = remainder
         else: # there is no resolver so far, we cannot grab this without a further segment:

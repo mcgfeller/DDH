@@ -10,7 +10,7 @@ from core import dapp
 class CoopDApp(dapp.DApp):
 
     owner : typing.ClassVar[permissions.Principal] =  permissions.User(id='mgf',name='Martin')
-    schemakey : typing.ClassVar[keys.DDHkey] = keys.DDHkey(key="/org/coop.ch")
+    schemakey : typing.ClassVar[keys.DDHkey] = keys.DDHkey(key="//org/coop.ch")
  
     def get_schema(self) -> schemas.Schema:
         """ Obtain initial schema for DApp """

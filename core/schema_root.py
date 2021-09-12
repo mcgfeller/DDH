@@ -27,21 +27,23 @@ def check_registry() -> nodes.Node:
 def build_root_schemas():
     """ build top of schema tree """
     treetop = ['root',
-        ['org', # organizational tree, next level are org domains
+        ['', # no owner
+            ['org', # organizational tree, next level are org domains
 
-        ],
-        ['p', # personal tree, next level are data models
-            ['family'],
-            ['employment'],
-            ['education'],
-            ['health'],
-            ['living',
-                ['shopping',
-                    ['receipts']
-                ],
             ],
-            ['finance'],
-        ],
+            ['p', # personal tree, next level are data models
+                ['family'],
+                ['employment'],
+                ['education'],
+                ['health'],
+                ['living',
+                    ['shopping',
+                        ['receipts']
+                    ],
+                ],
+                ['finance'],
+            ],
+        ]
     ]
     root = schemas.PySchema(schema_element=descend_schema(treetop))
     assert root.schema_element.schema_json()

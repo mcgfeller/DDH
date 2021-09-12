@@ -14,7 +14,7 @@ from glom import glom,S,T,Iter # transform
 class MigrosDApp(dapp.DApp):
 
     owner : typing.ClassVar[permissions.Principal] =  permissions.User(id='migros',name='Migros (fake account)')
-    schemakey : typing.ClassVar[keys.DDHkey] = keys.DDHkey(key="/org/migros.ch")
+    schemakey : typing.ClassVar[keys.DDHkey] = keys.DDHkey(key="//org/migros.ch")
     _ddhschema : schemas.SchemaElement = None
 
 
@@ -35,7 +35,7 @@ class MigrosDApp(dapp.DApp):
 
 
     def register_transform(self):
-        ddhkey = keys.DDHkey('/p/living/shopping/receipts')
+        ddhkey = keys.DDHkey('//p/living/shopping/receipts')
         de_node = keydirectory.NodeRegistry[ddhkey].get(nodes.NodeType.execute)
         if not de_node:
             de_node = nodes.DelegatedExecutableNode(owner=self.owner)
@@ -46,7 +46,7 @@ class MigrosDApp(dapp.DApp):
     def get_and_transform(self, access : permissions.Access, key_split: int, q : typing.Optional[str] = None):
         """ obtain data by transforming key, then executing, then transforming result """
         here,selection = access.ddhkey.split_at(key_split)
-        selection2 = keys.DDHkey(('clients',selection.key[0],'receipts')) # insert selection
+        selection2 = keys.DDHkey(('receipts',)) # insert selection
         d = self._ddhschema.get_data(selection2,access,q) # obtain org-format data
         # transform with glom: into list of dicts, whereas item key becomes buyer: 
         spec = {
@@ -73,8 +73,7 @@ class Receipt(schemas.SchemaElement):
     Umsatz:     float = 0
 
     @classmethod
-    def resolve(cls,remainder, ids, q):
-        principals = ids.get(MigrosClient,{}).get('id', [])
+    def resolve(cls,remainder, principals, q):
         data = {}
         for principal in principals:
             d = cls.get_cumulus_json(principal,q)
@@ -83,7 +82,7 @@ class Receipt(schemas.SchemaElement):
 
     @classmethod
     def get_cumulus_json(cls,principal,q):
-        """ This is extrmly fake to retrieve data for my principal """
+        """ This is extremly fake to retrieve data for my principal """
         if principal.id =='mgf':
             df = pandas.read_csv(r"C:\Projects\DDH\DApps\test_data_migros.csv",parse_dates = [['Datum','Zeit']],dayfirst=True)
             d = df.to_dict(orient='records')
@@ -92,11 +91,10 @@ class Receipt(schemas.SchemaElement):
         return d
 
 
-class MigrosClient(schemas.SchemaElement):
+# class MigrosClient(schemas.SchemaElement):
 
-    id : permissions.Principal = pydantic.Field(sensitivity= schemas.Sensitivity.ei)
-    cumulus : typing.Optional[int] = pydantic.Field(None,sensitivity=schemas.Sensitivity.qi)
-    receipts: list[Receipt] = []
+#     # id : permissions.Principal = pydantic.Field(sensitivity= schemas.Sensitivity.ei)
+
     
 
 
@@ -104,7 +102,8 @@ class MigrosClient(schemas.SchemaElement):
 
 class MigrosSchema(schemas.SchemaElement):
 
-    clients : list[MigrosClient] = []
+    cumulus : typing.Optional[int] = pydantic.Field(None,sensitivity=schemas.Sensitivity.qi)
+    receipts: list[Receipt] = []
 
 
     def get_data(self, selection: keys.DDHkey,access: permissions.Access, q):
