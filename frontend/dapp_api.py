@@ -27,16 +27,14 @@ async def read_users_me(current_user: user_auth.UserInDB = fastapi.Depends(user_
 # get user_auth.login_for_access_token defined in app: # TODO: We should create access record
 app.post("/token", response_model=user_auth.Token)(user_auth.login_for_access_token)
 
-@app.get("/ddh/{docpath:path}:schema")
+@app.get("/ddh{docpath:path}:schema")
 async def get_schema(
     docpath: str = fastapi.Path(..., title="The ddh key of the schema to get"),
-    nodetype : str = 'data',
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     dapp : typing.Optional[permissions.DAppId] = None,
     schemaformat: schemas.SchemaFormat = schemas.SchemaFormat.json, # type: ignore # dynamic
     q: str = fastapi.Query(None, alias="item-query"),
     ):
-    
     access = permissions.Access(ddhkey=keys.DDHkey(docpath),principal=session.user, modes = {permissions.AccessMode.schema_read},byDApp=dapp)
     ok,consent,text = access.permitted()
     if not ok: # TODO: Should be errors
@@ -47,7 +45,7 @@ async def get_schema(
     else:
         return {"ddhkey": access.ddhkey, 'schema': fschema}
 
-@app.get("/ddh/{docpath:path}")
+@app.get("/ddh{docpath:path}")
 async def get_data(
     docpath: str = fastapi.Path(..., title="The ddh key of the data to get"),
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),

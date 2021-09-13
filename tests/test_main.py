@@ -17,6 +17,7 @@ def test_get_data(httpx_client):
     assert d['res'],'res is empty'
     return
 
+def test_get_schema_server1(httpx_client):
     r = httpx_client.get('/ddh//org:schema?schemaformat=json')
     r.raise_for_status()
     d = r.json()
