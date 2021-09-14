@@ -56,7 +56,25 @@ async def get_data(
         modes.add(permissions.AccessMode.read)
     access = permissions.Access(op = permissions.Operation.get, ddhkey = keys.DDHkey(docpath),principal=session.user, modes = modes, byDApp=session.dappid)
     try:
-        d = facade.perform_access(access,session,q)
+        d = facade.get_access(access,session,q)
+    except errors.DDHerror as e:
+        raise e.to_http()
+
+    return {"ddhkey": access.ddhkey, "res": d}
+
+@app.put("/ddh{docpath:path}")
+async def put_data(
+    data: pydantic.Json,
+    docpath: str = fastapi.Path(..., title="The ddh key of the data to put"),
+    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
+    modes: set[permissions.AccessMode] = {permissions.AccessMode.write},
+    q: str = fastapi.Query(None, alias="item-query"),
+    ):
+    if permissions.AccessMode.write not in modes: # get_data requires read-access
+        modes.add(permissions.AccessMode.write)
+    access = permissions.Access(op = permissions.Operation.put, ddhkey = keys.DDHkey(docpath),principal=session.user, modes = modes, byDApp=session.dappid)
+    try:
+        d = facade.put_access(access,session,data,q)
     except errors.DDHerror as e:
         raise e.to_http()
 

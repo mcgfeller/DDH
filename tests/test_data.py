@@ -39,10 +39,10 @@ def test_complete_schema_p(user):
 
 
 def test_dapp_read_data(user,session):
-    """ test retrieval of key of test MigrosDApp, and facade.perform_access() """
+    """ test retrieval of key of test MigrosDApp, and facade.get_access() """
     ddhkey = keys.DDHkey(key="/mgf/org/migros.ch/receipts")
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.read})
-    data = facade.perform_access(access,session)
+    data = facade.get_access(access,session)
     assert isinstance(data,dict)
     assert len(data)>0 
     assert isinstance(data['mgf'],list)
@@ -52,11 +52,11 @@ def test_dapp_read_data(user,session):
     return
 
 def test_dapp_read_data_no_owner(user,session):
-    """ test retrieval of key of test MigrosDApp, and facade.perform_access() """
+    """ test retrieval of key of test MigrosDApp, and facade.get_access() """
     ddhkey = keys.DDHkey(key="//org/migros.ch/receipts")
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.read})
     with pytest.raises(errors.NotFound):
-        data = facade.perform_access(access,session)
+        data = facade.get_access(access,session)
     return
 
 def test_dapp_read_data_unknown(user,session):
@@ -64,7 +64,7 @@ def test_dapp_read_data_unknown(user,session):
     ddhkey = keys.DDHkey(key="/mgf,unknown/org/migros.ch/receipts")
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.read})
     with pytest.raises(errors.NotFound):
-        data = facade.perform_access(access,session)
+        data = facade.get_access(access,session)
     return
 
 def test_dapp_read_data_nopermit(user,session):
@@ -73,14 +73,14 @@ def test_dapp_read_data_nopermit(user,session):
     assert user_auth.UserInDB.load('another')
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.read})
     with pytest.raises(errors.AccessError):
-        data = facade.perform_access(access,session)
+        data = facade.get_access(access,session)
     return
 
 def test_std_read_data(user,session):
-    """ test retrieval of key of test MigrosDApp with transformation to standard, and facade.perform_access() """
+    """ test retrieval of key of test MigrosDApp with transformation to standard, and facade.get_access() """
     ddhkey = keys.DDHkey(key="/mgf/p/living/shopping/receipts")
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.read})
-    data = facade.perform_access(access,session)
+    data = facade.get_access(access,session)
     assert isinstance(data,dict)
     assert len(data)>0 
     assert isinstance(data['items'],list)

@@ -36,9 +36,25 @@ def get_schema(access : permissions.Access, schemaformat: schemas.SchemaFormat =
 
     
 
-def perform_access(access : permissions.Access, session : sessions.Session, q : typing.Optional[str] = None, ) -> typing.Any:
+def get_access(access : permissions.Access, session : sessions.Session, q : typing.Optional[str] = None, ) -> typing.Any:
     """ Service utility to retrieve data and return it in the desired format.
         Returns None if no data found.
+    """
+    nodekey = access.ddhkey.without_owner()
+    enode,key_split = keydirectory.NodeRegistry.get_node(nodekey,nodes.NodeType.execute)
+    enode = typing.cast(nodes.ExecutableNode,enode)
+    # need to get owner of ressource, we need owner node and nodetuple for this
+    nak = keydirectory.NodeRegistry.get_nodes(access.ddhkey)
+    transaction = session.get_transaction(for_user=nak.owner.owner,create=True)
+    transaction.accesses.append(access)
+    if enode:
+        data = enode.execute(access, key_split, q)
+    else:
+        data = {}
+    return data
+
+def put_access(access : permissions.Access, session : sessions.Session, data : pydantic.Json, q : typing.Optional[str] = None, ) -> typing.Any:
+    """ Service utility to store data.
     """
     nodekey = access.ddhkey.without_owner()
     enode,key_split = keydirectory.NodeRegistry.get_node(nodekey,nodes.NodeType.execute)
