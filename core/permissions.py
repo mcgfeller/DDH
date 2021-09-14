@@ -183,6 +183,11 @@ class Consents(NoCopyBaseModel):
         else:
             return False,[consent] if consent else [],msg
 
+    def changes(self,new_consents:Consents) -> tuple:
+        """ return added and removed consents as (set(),set()) """
+        # TODO!
+        return (frozenset(),frozenset())
+
 
 class MultiOwnerConsents(NoCopyBaseModel):
     """ Records consents by different owners,

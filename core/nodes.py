@@ -17,6 +17,7 @@ from . import schemas
 
 
 
+
 @enum.unique
 class NodeType(str,enum.Enum):
     """ Types of Nodes, marked by presence of attribute corresponding with enum value """
@@ -134,3 +135,31 @@ class DelegatedExecutableNode(ExecutableNode):
         return d
 
 
+from backend import storage,keyvault
+
+class DataNode(Persistable):
+    """ New data node, points to storage and consents """
+
+    owner: permissions.Principal
+    key : typing.Optional[keys.DDHkey] = None
+    _consents : typing.Optional[permissions.Consents] = None
+    storage_loc : typing.Optional[storage.StorageId] = None
+    access_key: typing.Optional[keyvault.AccessKey] = None
+
+    @property
+    def consents(self):
+        return self._consents
+
+    @consents.setter
+    def consents(self, value):
+        """ We want to make clear that this is an expensive operation, not just a param """
+        raise NotImplementedError('use .change_consents()')
+
+    def change_consents(self,new_consents=permissions.Consents):
+        """ set new consents """
+        added,removed = self.consents.changes(new_consents)
+
+
+    
+
+DataNode.update_forward_refs() # Now Node is known, update before it's derived

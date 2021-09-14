@@ -44,3 +44,6 @@ class OwnerStorage(Storage):
         n = owned_storage.load(id)
         return n
 
+
+class StorageId(str):
+    ...

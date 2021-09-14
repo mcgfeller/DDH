@@ -29,7 +29,8 @@ def build_root_schemas():
     treetop = ['root',
         ['', # no owner
             ['org', # organizational tree, next level are org domains
-
+                ['private'], # for the user him/herself
+                    ['documents']
             ],
             ['p', # personal tree, next level are data models
                 ['family'],
