@@ -1,5 +1,5 @@
 from core import keys,nodes,permissions,schemas,keydirectory
-from . import test_data
+from . import test_dapp_data
 import pytest
 
 
