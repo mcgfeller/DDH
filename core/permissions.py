@@ -15,6 +15,8 @@ from . import errors
 
 class Principal(NoCopyBaseModel):
     """ Abstract identification of a party """
+    class Config:
+        extra = pydantic.Extra.ignore # for parsing of subclass
 
     id : str
     Delim : typing.ClassVar[str] = ','
@@ -168,9 +170,14 @@ class Consents(NoCopyBaseModel):
                 cl.append(consent)
         return
 
+    def consentees(self) -> list[Principal]:
+        """ all principals that enjoy some sort of Consent """
+        return sum([c.grantedTo for c in self.consents],[])
+
     def applicable_consents(self,principal : Principal ) -> list[Consent]:
         """ return list of Consents for this principal """
         return self._byPrincipal.get(principal.id,[]) + self._byPrincipal.get(AllPrincipal.id,[])
+        
 
 
     def check(self,owners : list[Principal], access : Access) -> tuple[bool,list[Consent],str]:

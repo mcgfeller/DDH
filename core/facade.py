@@ -7,6 +7,7 @@ import typing
 import enum
 import abc
 
+
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import NoCopyBaseModel
 
@@ -15,6 +16,7 @@ from . import keys
 from . import schemas
 from . import nodes
 from . import keydirectory
+from . import errors
 from frontend import sessions
 
 def get_schema(access : permissions.Access, schemaformat: schemas.SchemaFormat = schemas.SchemaFormat.json) -> typing.Optional[typing.Any]:
@@ -56,15 +58,40 @@ def get_access(access : permissions.Access, session : sessions.Session, q : typi
 def put_access(access : permissions.Access, session : sessions.Session, data : pydantic.Json, q : typing.Optional[str] = None, ) -> typing.Any:
     """ Service utility to store data.
     """
-    nodekey = access.ddhkey.without_owner()
-    enode,key_split = keydirectory.NodeRegistry.get_node(nodekey,nodes.NodeType.execute)
-    enode = typing.cast(nodes.ExecutableNode,enode)
-    # need to get owner of ressource, we need owner node and nodetuple for this
-    nak = keydirectory.NodeRegistry.get_nodes(access.ddhkey)
-    transaction = session.get_transaction(for_user=nak.owner.owner,create=True)
-    transaction.accesses.append(access)
-    if enode:
-        data = enode.execute(access, key_split, q)
+    data_node,d_key_split = keydirectory.NodeRegistry.get_node(access.ddhkey,nodes.NodeType.data)
+    if not data_node:
+
+        topkey,remainder = access.ddhkey.split_at(2)
+        # there is no node, create it if owner asks for it:
+        if topkey.owners == access.principal.id:
+            data_node = nodes.DataNode(owner= access.principal,key=topkey)
+            data_node.store(access) # put node into directory
+            d_key_split = 0 # now this is the split
+        else: # not owner, we simply say no access to this path
+            raise errors.AccessError(f'not authorized to write to {topkey}')
     else:
-        data = {}
+        topkey,remainder = access.ddhkey.split_at(d_key_split)
+
+    data_node = typing.cast(nodes.DataNode,data_node)
+    
+    if access.ddhkey.fork == keys.ForkType.data:
+        data_node.insert(remainder,data)
+    elif access.ddhkey.fork == keys.ForkType.consents:
+        consents = permissions.Consents.parse_raw(data)
+        data_node.update_consents(access, remainder,consents)
+            
+
+    
+
+    # nodekey = access.ddhkey.without_owner()
+    # enode,e_key_split = keydirectory.NodeRegistry.get_node(nodekey,nodes.NodeType.execute)
+    # enode = typing.cast(nodes.ExecutableNode,enode)
+    # # need to get owner of ressource, we need owner node and nodetuple for this
+    # nak = keydirectory.NodeRegistry.get_nodes(access.ddhkey)
+    # transaction = session.get_transaction(for_user=nak.owner.owner,create=True)
+    # transaction.accesses.append(access)
+    # if enode:
+    #     data = enode.execute(access, key_split, q)
+    # else:
+    #     data = {}
     return data

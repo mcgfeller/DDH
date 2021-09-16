@@ -48,7 +48,13 @@ FAKE_USERS_DB = {
         "name": "just another user",
         "email": "nobody@swisscom.com",
         "hashed_password": get_password_hash("secret"),
+    },
 
+    "another3": {
+        "id": "another3",
+        "name": "just yet another user",
+        "email": "nobody@swisscom.com",
+        "hashed_password": get_password_hash("secret"),
     },
 }
 

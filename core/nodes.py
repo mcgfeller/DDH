@@ -12,8 +12,11 @@ import secrets
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import NoCopyBaseModel
 
+
 from . import permissions
 from . import schemas
+from backend import keyvault
+from utils import datautils
 
 
 
@@ -158,6 +161,59 @@ class DataNode(Persistable):
     def change_consents(self,new_consents=permissions.Consents):
         """ set new consents """
         added,removed = self.consents.changes(new_consents)
+
+    def store(self,access):
+        keyvault.set_new_storage_key(self.id,access.principal,[],[])
+        return
+
+    def insert(self,remainder,data):
+        """ insert data at remainder key """
+        raise NotImplementedError('TODO')
+        return
+
+    def read_data(self,principal: permissions.Principal):
+        plain = b'data'
+        data = keyvault.encrypt_data(principal,self,plain) # TODO: actually read data
+        return keyvault.decrypt_data(principal,self,data)
+
+    def write_data(self,principal: permissions.Principal,data):
+        enc = keyvault.encrypt_data(principal,self,data)
+        # TODO: actually write data
+        return 
+
+    def update_consents(self,access : permissions.Access, remainder: keys.DDHkey, consents: permissions.Consents):
+        """ update consents at remainder key.
+            Data must be read using previous encryption and rewritten using the new encryption.
+        """
+        assert self.key
+        if self.consents:
+            added,removed = self.consents.changes(consents)
+            effective = consents.consentees()
+        else:
+            added = effective = consents.consentees() ; removed = []
+
+        if added or removed: # expensive op follows, do only if something has changed
+
+            if remainder.key: # change is not at this level, insert a new node:
+                key=keys.DDHkey(key=self.key.key+remainder.key)
+                node = self.__class__(owner=self.owner,key=key,_consents=consents)
+            else:
+                node = self # top level
+
+            prev_data = self.read_data(access.principal) # need to read before new key is generated
+            keyvault.set_new_storage_key(node.id,access.principal,effective,removed) # now we can set the new key
+            above,below = datautils.splitdata(prev_data,remainder) # if we're deep in data
+            node.write_data(access.principal, below) # re-encrypt on new node (may be self if there is not remainder)
+            if above: # need to write data with below part cut out again, but with changed key
+                self.write_data(access.principal, above) # old node
+      
+        return        
+
+
+
+
+
+
 
 
     
