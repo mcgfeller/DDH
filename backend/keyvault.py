@@ -53,7 +53,7 @@ class AccessKeyVaultClass(NoCopyBaseModel):
         self.access_keys.pop((principal.id, nodeid),None) 
 
 
-    def get_storage_key(self, principal : permissions.Principal, node) -> StorageKey:
+    def get_storage_key(self, principal : permissions.Principal, node : nodes.DataNode) -> StorageKey:
         p_key = PrincipalKeyVault.key_for_principal(principal)
         if not p_key:
             raise KeyError(f'no key found for principal={principal}')
@@ -129,13 +129,13 @@ def set_new_storage_key(nodeid: str, principal: permissions.Principal, effective
         AccessKeyVault.remove(principal=p,nodeid=nodeid)
     return 
 
-def encrypt_data(principal : permissions.Principal, node, data : bytes) -> bytes:
+def encrypt_data(principal : permissions.Principal, node : nodes.DataNode, data : bytes) -> bytes:
     """ Encrypt data going to storage for a node and accessing Principal """
     storage_key = AccessKeyVault.get_storage_key(principal,node)
     cipherdata = storage_key.encrypt(data)
     return cipherdata
 
-def decrypt_data(principal : permissions.Principal, node, cipherdata : bytes) -> bytes:
+def decrypt_data(principal : permissions.Principal, node : nodes.DataNode, cipherdata : bytes) -> bytes:
     """ Decrypt data coming from storage for a node and accessing Principal """
     storage_key = AccessKeyVault.get_storage_key(principal,node)
     data = storage_key.decrypt(cipherdata)

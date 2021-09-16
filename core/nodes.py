@@ -158,9 +158,6 @@ class DataNode(Persistable):
         """ We want to make clear that this is an expensive operation, not just a param """
         raise NotImplementedError('use .change_consents()')
 
-    def change_consents(self,new_consents=permissions.Consents):
-        """ set new consents """
-        added,removed = self.consents.changes(new_consents)
 
     def store(self,access):
         keyvault.set_new_storage_key(self.id,access.principal,[],[])
@@ -183,13 +180,14 @@ class DataNode(Persistable):
 
     def update_consents(self,access : permissions.Access, remainder: keys.DDHkey, consents: permissions.Consents):
         """ update consents at remainder key.
-            Data must be read using previous encryption and rewritten using the new encryption.
+            Data must be read using previous encryption and rewritten using the new encryption. See 
+            section 7.3 "Protection of data at rest and on the move" of the DDH paper.
         """
         assert self.key
-        if self.consents:
+        if self.consents: # had consents before, check changes:
             added,removed = self.consents.changes(consents)
             effective = consents.consentees()
-        else:
+        else: # all new
             added = effective = consents.consentees() ; removed = []
 
         if added or removed: # expensive op follows, do only if something has changed
