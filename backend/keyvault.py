@@ -5,7 +5,7 @@
 from __future__ import annotations
 from abc import abstractmethod
 import typing
-import authlib.jose
+import hashlib
 import cryptography.fernet
 
 from cryptography.hazmat.primitives import hashes
@@ -54,12 +54,13 @@ class AccessKeyVaultClass(NoCopyBaseModel):
 
 
     def get_storage_key(self, principal : permissions.Principal, node : nodes.DataNode) -> StorageKey:
+        assert node.consents
         p_key = PrincipalKeyVault.key_for_principal(principal)
         if not p_key:
             raise KeyError(f'no key found for principal={principal}')
         else:
             a_key = self.access_keys[(principal.id, node.id)]
-            s_key = StorageKey(p_key.decrypt(a_key.key))
+            s_key = StorageKey(add_consent_hash(p_key.decrypt(a_key.key),node.consents))
         return s_key
 
 
@@ -71,7 +72,7 @@ class PrincipalKey(NoCopyBaseModel):
 
     principal  : permissions.Principal
     key        : typing.Any # the exact type is something deep in authlib.
-    key_params : typing.ClassVar[dict] = {'kty':'RSA','crv_or_size':512,'is_private':True} # params to JsonWebKey.generate_key
+    key_params : typing.ClassVar[dict] = {'kty':'RSA','crv_or_size':2048,'is_private':True} # params to JsonWebKey.generate_key
 
     Padding : typing.ClassVar[typing.Any] =  padding.OAEP(
         mgf=padding.MGF1(algorithm=hashes.SHA256()),
@@ -81,7 +82,8 @@ class PrincipalKey(NoCopyBaseModel):
 
     @classmethod
     def create(cls,principal):
-        return cls(principal=principal,key=rsa.generate_private_key(public_exponent=65537,key_size=2048,))
+        """ Would like to be more generic with key generation here, but Padding needs to corrspond. """
+        return cls(principal=principal,key=rsa.generate_private_key(public_exponent=65537,key_size=cls.key_params['crv_or_size'],))
 
     def encrypt(self, plaintext : bytes) -> bytes:
         public_key = self.key.public_key()
@@ -113,20 +115,25 @@ PrincipalKeyVault = PrincipalKeyVaultClass()
 def get_nonce() -> bytes:
     return cryptography.fernet.Fernet.generate_key()
 
+def add_consent_hash(key : bytes , consents : permissions.Consents):
+    ch = hashlib.blake2b(consents.json().encode(),digest_size=len(key)).digest()
+    key = bytes([a ^ b for a, b in zip(key,ch)]) # xor
+    return key
 
 
-def set_new_storage_key(nodeid: str, principal: permissions.Principal, effective : list[permissions.Principal], removed : list[permissions.Principal]):
+def set_new_storage_key(node : nodes.DataNode, principal: permissions.Principal, effective : list[permissions.Principal], removed : list[permissions.Principal]):
     """ set storage key based on private key of principal and public keys of consentees """
-    
-    storage_key = get_nonce() # storage key
+    assert node.consents
+    storage_key = add_consent_hash(get_nonce(),node.consents) # new storage key
+
     for p in [principal]+effective:
         p_key = PrincipalKeyVault.key_for_principal(p)
         if not p_key:
             p_key = PrincipalKeyVault.create(p)
-        p_storage_key = AccessKey(nodeid=nodeid,principal=p,key=p_key.encrypt(storage_key))
+        p_storage_key = AccessKey(nodeid=node.id,principal=p,key=p_key.encrypt(storage_key))
         AccessKeyVault.add(p_storage_key)
     for p in removed: # remove old entries
-        AccessKeyVault.remove(principal=p,nodeid=nodeid)
+        AccessKeyVault.remove(principal=p,nodeid=node.id)
     return 
 
 def encrypt_data(principal : permissions.Principal, node : nodes.DataNode, data : bytes) -> bytes:

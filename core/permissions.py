@@ -195,6 +195,7 @@ class Consents(NoCopyBaseModel):
         # TODO!
         return (frozenset(),frozenset())
 
+DefaultConsents = Consents(consents=[])
 
 class MultiOwnerConsents(NoCopyBaseModel):
     """ Records consents by different owners,

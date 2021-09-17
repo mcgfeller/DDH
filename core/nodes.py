@@ -145,7 +145,7 @@ class DataNode(Persistable):
 
     owner: permissions.Principal
     key : typing.Optional[keys.DDHkey] = None
-    _consents : typing.Optional[permissions.Consents] = None
+    _consents : permissions.Consents = permissions.DefaultConsents
     storage_loc : typing.Optional[storage.StorageId] = None
     access_key: typing.Optional[keyvault.AccessKey] = None
 
@@ -160,7 +160,7 @@ class DataNode(Persistable):
 
 
     def store(self,access):
-        keyvault.set_new_storage_key(self.id,access.principal,[],[])
+        keyvault.set_new_storage_key(self,access.principal,[],[])
         return
 
     def insert(self,remainder,data):
@@ -189,9 +189,12 @@ class DataNode(Persistable):
             effective = consents.consentees()
         else: # all new
             added = effective = consents.consentees() ; removed = []
+        
+
 
         if added or removed: # expensive op follows, do only if something has changed
-
+            self._consents = consents # actually update
+            
             if remainder.key: # change is not at this level, insert a new node:
                 key=keys.DDHkey(key=self.key.key+remainder.key)
                 node = self.__class__(owner=self.owner,key=key,_consents=consents)
@@ -199,7 +202,7 @@ class DataNode(Persistable):
                 node = self # top level
 
             prev_data = self.read_data(access.principal) # need to read before new key is generated
-            keyvault.set_new_storage_key(node.id,access.principal,effective,removed) # now we can set the new key
+            keyvault.set_new_storage_key(node,access.principal,effective,removed) # now we can set the new key
             above,below = datautils.splitdata(prev_data,remainder) # if we're deep in data
             node.write_data(access.principal, below) # re-encrypt on new node (may be self if there is not remainder)
             if above: # need to write data with below part cut out again, but with changed key
