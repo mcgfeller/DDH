@@ -9,13 +9,14 @@ import enum
 import abc
 import secrets
 
-from pydantic.errors import PydanticErrorMixin
+from pydantic.errors import PydanticErrorMixin, SubclassError
 from utils.pydantic_utils import NoCopyBaseModel
 
 
 from . import permissions
 from . import schemas
-from backend import keyvault
+from . import transactions
+from backend import keyvault,storage
 from utils import datautils
 
 
@@ -51,6 +52,23 @@ class Persistable(NoCopyBaseModel):
     def from_json(cls, j :str) -> Persistable:
         o = cls.parse_raw(j)
         return o
+
+    def store(self, transaction: transactions.Transaction ):
+        storage.Storage.store(self.id,self.get_key(),self.to_json().encode())
+        return
+
+    @classmethod
+    def load(cls, id:NodeId, key: bytes,  transaction: transactions.Transaction ):
+        data = storage.Storage.load(id,key)
+        o = cls.from_json(data.decode())
+        return o
+
+    def delete(self, transaction: transactions.Transaction ):
+        storage.Storage.delete(self.id,self.get_key())
+        return
+
+    def get_key(self):
+        raise NotImplementedError()
 
 
 
@@ -211,12 +229,5 @@ class DataNode(Persistable):
         return        
 
 
-
-
-
-
-
-
-    
 
 DataNode.update_forward_refs() # Now Node is known, update before it's derived

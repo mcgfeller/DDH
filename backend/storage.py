@@ -1,49 +1,54 @@
 """ DDH abstract storage
 """
 from __future__ import annotations
-from abc import abstractmethod
-import typing
+import zlib
+import cryptography.fernet
+import enum
 
 from core import keys,permissions,nodes
 from utils.pydantic_utils import NoCopyBaseModel
 
+@enum.unique
+class Variant(enum.IntEnum):
+    """ Storage variant, record whether blob is compressed.
+    """
+    uncompressed = 0
+    zlib = 1
 
-class Storage(NoCopyBaseModel):
+class StorageClass(NoCopyBaseModel):
 
-    byId : dict[nodes.NodeId,nodes.Persistable] = {}
+    byId : dict[nodes.NodeId,StorageBlock] = {}
 
-    def store(self,node: nodes.Persistable):
-        self.byId[node.id] = node
+    def store(self,id : nodes.NodeId, key: bytes, data : bytes):
+        data = zlib.compress(data, level=-1)
+        data = cryptography.fernet.Fernet(key).encrypt(data)
+        self.byId[id] = StorageBlock(variant=Variant.zlib,blob=data)
         return
 
-    def load(self,id : nodes.NodeId) -> typing.Optional[nodes.Persistable]:
-        # sourcery skip: inline-immediately-returned-variable
-        n = self.byId.get(id,None)
-        return n
+    def delete(self,id : nodes.NodeId, key: bytes):
+        """ delete from storage, must supply key to verify """
+        data = self.load(id,key) # just load to verify
+        self.byId.pop(id,None)
+        return
 
+    def load(self,id : nodes.NodeId, key: bytes) -> bytes:
+        sb = self.byId.get(id,None)
+        if not sb:
+            raise KeyError(id)
+        else:
+            data = cryptography.fernet.Fernet(key).decrypt(sb.blob)
+            if sb.variant == Variant.uncompressed:
+                pass
+            elif sb.variant == Variant.zlib:
+                data = zlib.decompress(data)
+            else: 
+                raise ValueError(f'Unknown storage variant {sb.variant}')
+            return data
 
+Storage = StorageClass()
 
-class OwnedStorage(Storage):
-    """ Storage for a particular owners """
+class StorageBlock(NoCopyBaseModel):
+    """ Elementary block of storage """
+    variant : Variant = Variant.uncompressed
+    blob : bytes
 
-    owners : tuple[permissions.Principal]
-
-
-class OwnerStorage(Storage):
-
-    byOwners : dict[tuple[permissions.Principal,...],OwnedStorage] = {}
-
-    def store(self,node: nodes.Node):
-        o = node.owners
-        owned_storage = self.byOwners.get(o,OwnedStorage(owners=o))
-        return owned_storage.store(node)
-
-    def load(self,id : nodes.NodeId) -> typing.Optional[nodes.Node]:
-        o = node.owners
-        owned_storage = self.byOwners.get(o,OwnedStorage(owners=o))
-        n = owned_storage.load(id)
-        return n
-
-
-class StorageId(str):
-    ...

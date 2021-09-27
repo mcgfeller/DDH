@@ -29,6 +29,8 @@ class _NodeRegistry:
     """ Preliminary holder of nodes 
         Note that Nodes are held per NodeType, duplicating them as required 
         for easy lookup by NodeType.
+
+        A proper realization could use a PatriciaTrie.
     """
 
     nodes_by_key : dict[tuple,dict[nodes.NodeType,nodes.Node]] # by key, then by NodeTypes
