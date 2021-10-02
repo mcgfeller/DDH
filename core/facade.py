@@ -41,18 +41,27 @@ def get_schema(access : permissions.Access, schemaformat: schemas.SchemaFormat =
 def get_access(access : permissions.Access, session : sessions.Session, q : typing.Optional[str] = None, ) -> typing.Any:
     """ Service utility to retrieve data and return it in the desired format.
         Returns None if no data found.
+
+        First we get the data (and consent), then we pass it to an enode if an enode is found.
+
     """
-    nodekey = access.ddhkey.without_owner()
-    enode,key_split = keydirectory.NodeRegistry.get_node(nodekey,nodes.NodeType.execute)
-    enode = typing.cast(nodes.ExecutableNode,enode)
+    data_node,d_key_split = keydirectory.NodeRegistry.get_node(access.ddhkey,nodes.NodeType.data)
+    if data_node:
+        data_node = typing.cast(nodes.DataNode,data_node)
+        topkey,remainder = access.ddhkey.split_at(d_key_split)
+        data = data_node.read_data(remainder)
+    else:
+        data = {}
+
+    # now for the enode:
+    e_node,e_key_split = keydirectory.NodeRegistry.get_node(access.ddhkey.without_owner(),nodes.NodeType.execute)
+    e_node = typing.cast(nodes.ExecutableNode,e_node)
     # need to get owner of ressource, we need owner node and nodetuple for this
     nak = keydirectory.NodeRegistry.get_nodes(access.ddhkey)
     transaction = session.get_transaction(for_user=nak.owner.owner,create=True)
     transaction.accesses.append(access)
-    if enode:
-        data = enode.execute(access, key_split, q)
-    else:
-        data = {}
+    if e_node:
+        data = e_node.execute(access, e_key_split, data, q)
     return data
 
 def put_access(access : permissions.Access, session : sessions.Session, data : pydantic.Json, q : typing.Optional[str] = None, ) -> typing.Any:

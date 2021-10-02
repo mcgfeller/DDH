@@ -8,6 +8,7 @@ import typing
 import enum
 import abc
 import secrets
+import zlib
 
 from pydantic.errors import PydanticErrorMixin, SubclassError
 from utils.pydantic_utils import NoCopyBaseModel
@@ -16,7 +17,7 @@ from utils.pydantic_utils import NoCopyBaseModel
 from . import permissions
 from . import schemas
 from . import transactions
-from backend import keyvault,storage
+
 from utils import datautils
 
 
@@ -36,7 +37,7 @@ class NodeType(str,enum.Enum):
 
 NodeId = typing.NewType('NodeId', str)
 
-
+from backend import keyvault,storage
 
 class Persistable(NoCopyBaseModel):
     """ class that provides methods to get persistent state.
@@ -53,8 +54,8 @@ class Persistable(NoCopyBaseModel):
         o = cls.parse_raw(j)
         return o
 
-    def store(self, transaction: transactions.Transaction ):
-        storage.Storage.store(self.id,self.get_key(),self.to_json().encode())
+    def store(self, data: bytes , transaction: transactions.Transaction ):
+        storage.Storage.store(self.id,data)
         return
 
     @classmethod
@@ -63,8 +64,9 @@ class Persistable(NoCopyBaseModel):
         o = cls.from_json(data.decode())
         return o
 
-    def delete(self, transaction: transactions.Transaction ):
-        storage.Storage.delete(self.id,self.get_key())
+    def delete(self, key: bytes, transaction: transactions.Transaction ):
+        self.load(self.id, key, transaction) # verify encryption by loading
+        storage.Storage.delete(self.id)
         return
 
     def get_key(self):
@@ -139,7 +141,7 @@ class ExecutableNode(Node):
     type: typing.ClassVar[NodeType] = NodeType.execute
 
     @abstractmethod
-    def execute(self, access : permissions.Access, key_split : int, q : typing.Optional[str] = None):
+    def execute(self, access : permissions.Access, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
         return {}
 
 
@@ -148,7 +150,7 @@ class DelegatedExecutableNode(ExecutableNode):
 
     executors : list = []
 
-    def execute(self, access : permissions.Access, key_split: int, q : typing.Optional[str] = None):
+    def execute(self, access : permissions.Access, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
         """ obtain data by recursing to schema """
         d = None
         for executor in self.executors:
@@ -164,7 +166,7 @@ class DataNode(Persistable):
     owner: permissions.Principal
     key : typing.Optional[keys.DDHkey] = None
     _consents : permissions.Consents = permissions.DefaultConsents
-    storage_loc : typing.Optional[storage.StorageId] = None
+    storage_loc : typing.Optional[NodeId] = None
     access_key: typing.Optional[keyvault.AccessKey] = None
 
     @property
@@ -192,8 +194,9 @@ class DataNode(Persistable):
         return keyvault.decrypt_data(principal,self,data)
 
     def write_data(self,principal: permissions.Principal,data):
+        data = zlib.compress(data, level=-1)
         enc = keyvault.encrypt_data(principal,self,data)
-        # TODO: actually write data
+        self.store(self.id,enc)
         return 
 
     def update_consents(self,access : permissions.Access, remainder: keys.DDHkey, consents: permissions.Consents):

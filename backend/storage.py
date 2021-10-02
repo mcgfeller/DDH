@@ -2,7 +2,6 @@
 """
 from __future__ import annotations
 import zlib
-import cryptography.fernet
 import enum
 
 from core import keys,permissions,nodes
@@ -19,15 +18,12 @@ class StorageClass(NoCopyBaseModel):
 
     byId : dict[nodes.NodeId,StorageBlock] = {}
 
-    def store(self,id : nodes.NodeId, key: bytes, data : bytes):
-        data = zlib.compress(data, level=-1)
-        data = cryptography.fernet.Fernet(key).encrypt(data)
-        self.byId[id] = StorageBlock(variant=Variant.zlib,blob=data)
+    def store(self,id : nodes.NodeId, data : bytes):
+        self.byId[id] = StorageBlock(variant=Variant.uncompressed,blob=data)
         return
 
-    def delete(self,id : nodes.NodeId, key: bytes):
+    def delete(self,id : nodes.NodeId):
         """ delete from storage, must supply key to verify """
-        data = self.load(id,key) # just load to verify
         self.byId.pop(id,None)
         return
 
@@ -36,11 +32,10 @@ class StorageClass(NoCopyBaseModel):
         if not sb:
             raise KeyError(id)
         else:
-            data = cryptography.fernet.Fernet(key).decrypt(sb.blob)
             if sb.variant == Variant.uncompressed:
-                pass
+                data = sb.blob
             elif sb.variant == Variant.zlib:
-                data = zlib.decompress(data)
+                data = zlib.decompress(sb.blob)
             else: 
                 raise ValueError(f'Unknown storage variant {sb.variant}')
             return data
