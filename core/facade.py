@@ -45,27 +45,37 @@ def get_access(access : permissions.Access, session : sessions.Session, q : typi
         First we get the data (and consent), then we pass it to an enode if an enode is found.
 
     """
-    data_node,d_key_split = keydirectory.NodeRegistry.get_node(access.ddhkey,nodes.NodeType.data)
-    if data_node:
-        data_node = typing.cast(nodes.DataNode,data_node)
-        topkey,remainder = access.ddhkey.split_at(d_key_split)
-        data = data_node.read_data(remainder)
-    else:
-        data = {}
+    # if we ask for schema, we don't need a transaction:
+    if access.ddhkey.fork == keys.ForkType.schema:
+        return get_schema(access, schemaformat=schemas.SchemaFormat.json)
+    else: # data or consent
 
-    # now for the enode:
-    e_node,e_key_split = keydirectory.NodeRegistry.get_node(access.ddhkey.without_owner(),nodes.NodeType.execute)
-    e_node = typing.cast(nodes.ExecutableNode,e_node)
-    # need to get owner of ressource, we need owner node and nodetuple for this
-    nak = keydirectory.NodeRegistry.get_nodes(access.ddhkey)
-    transaction = session.get_transaction(for_user=nak.owner.owner,create=True)
-    transaction.accesses.append(access)
-    if e_node:
-        data = e_node.execute(access, e_key_split, data, q)
-    return data
+        transaction = session.get_transaction(for_user=access.principal,create=True)
+        transaction.accesses.append(access)
+        # get data node first
+        data_node,d_key_split = keydirectory.NodeRegistry.get_node(access.ddhkey,nodes.NodeType.data)
+        if access.ddhkey.fork == keys.ForkType.consents:
+            return data_node.consents
+        else:
+            if data_node:
+                data_node = typing.cast(nodes.DataNode,data_node)
+                topkey,remainder = access.ddhkey.split_at(d_key_split)
+                data = data_node.execute(nodes.Ops.get,access, e_key_split, data, q)
+            else:
+                data = {}
+
+            # now for the enode:
+            e_node,e_key_split = keydirectory.NodeRegistry.get_node(access.ddhkey.without_owner(),nodes.NodeType.execute)
+            e_node = typing.cast(nodes.ExecutableNode,e_node)
+            # need to get owner of ressource, we need owner node and nodetuple for this
+            nak = keydirectory.NodeRegistry.get_nodes(access.ddhkey)
+            if e_node:
+                data = e_node.execute(nodes.Ops.get,access, e_key_split, data, q)
+            return data
 
 def put_access(access : permissions.Access, session : sessions.Session, data : pydantic.Json, q : typing.Optional[str] = None, ) -> typing.Any:
     """ Service utility to store data.
+        
     """
     data_node,d_key_split = keydirectory.NodeRegistry.get_node(access.ddhkey,nodes.NodeType.data)
     if not data_node:
@@ -84,23 +94,14 @@ def put_access(access : permissions.Access, session : sessions.Session, data : p
     data_node = typing.cast(nodes.DataNode,data_node)
     
     if access.ddhkey.fork == keys.ForkType.data:
-        data_node.insert(remainder,data)
+        # first e_node to transform data:
+        e_node,e_key_split = keydirectory.NodeRegistry.get_node(access.ddhkey.without_owner(),nodes.NodeType.execute)
+        e_node = typing.cast(nodes.ExecutableNode,e_node)
+        data = e_node.execute(access, e_key_split, data, q) 
+        if data:
+            data_node.insert(remainder,data)
+            data_node.execute(nodes.Ops.put,access, e_key_split, data, q)
     elif access.ddhkey.fork == keys.ForkType.consents:
         consents = permissions.Consents.parse_raw(data)
         data_node.update_consents(access, remainder,consents)
-            
-
-    
-
-    # nodekey = access.ddhkey.without_owner()
-    # enode,e_key_split = keydirectory.NodeRegistry.get_node(nodekey,nodes.NodeType.execute)
-    # enode = typing.cast(nodes.ExecutableNode,enode)
-    # # need to get owner of ressource, we need owner node and nodetuple for this
-    # nak = keydirectory.NodeRegistry.get_nodes(access.ddhkey)
-    # transaction = session.get_transaction(for_user=nak.owner.owner,create=True)
-    # transaction.accesses.append(access)
-    # if enode:
-    #     data = enode.execute(access, key_split, q)
-    # else:
-    #     data = {}
     return data

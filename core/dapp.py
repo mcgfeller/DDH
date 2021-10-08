@@ -52,8 +52,8 @@ class DApp(NoCopyBaseModel):
         raise errors.SubClass
 
     @abstractmethod
-    def execute(self, access : permissions.Access, key_split : int, q : typing.Optional[str] = None):
-        return  {}
+    def execute(self, op: nodes.Ops, access : permissions.Access, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
+        return  data
     
 
 
@@ -62,7 +62,7 @@ class DAppNode(nodes.ExecutableNode):
     dapp : DApp
 
 
-    def execute(self, access : permissions.Access, key_split : int, q : typing.Optional[str] = None):
-        r = self.dapp.execute(access,key_split, q)
+    def execute(self, op: nodes.Ops, access : permissions.Access, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
+        r = self.dapp.execute(op,access,key_split, data, q)
         return r
  

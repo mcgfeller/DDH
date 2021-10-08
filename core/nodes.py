@@ -35,6 +35,18 @@ class NodeType(str,enum.Enum):
 
     def __repr__(self): return self.value
 
+@enum.unique
+class Ops(str,enum.Enum):
+    """ Operations """
+
+    get     = 'get'
+    post    = 'post'
+    put     = 'put'
+    delete  = 'delete'
+
+
+    def __repr__(self): return self.value
+
 NodeId = typing.NewType('NodeId', str)
 
 from backend import keyvault,storage
@@ -141,7 +153,7 @@ class ExecutableNode(Node):
     type: typing.ClassVar[NodeType] = NodeType.execute
 
     @abstractmethod
-    def execute(self, access : permissions.Access, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
+    def execute(self, op: Ops, access : permissions.Access, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
         return {}
 
 
@@ -150,7 +162,7 @@ class DelegatedExecutableNode(ExecutableNode):
 
     executors : list = []
 
-    def execute(self, access : permissions.Access, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
+    def execute(self, op: Ops, access : permissions.Access, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
         """ obtain data by recursing to schema """
         d = None
         for executor in self.executors:
@@ -187,6 +199,14 @@ class DataNode(Persistable):
         """ insert data at remainder key """
         raise NotImplementedError('TODO')
         return
+
+    def execute(self, op: Ops, access : permissions.Access, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
+        if op == Ops.get:
+            data = self.read_data(access.principal)
+        elif op == Ops.put:
+            self.write_data(access.principal,data)
+
+        return {}
 
     def read_data(self,principal: permissions.Principal):
         plain = b'data'

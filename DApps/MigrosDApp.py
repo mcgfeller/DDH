@@ -27,10 +27,13 @@ class MigrosDApp(dapp.DApp):
         """ Obtain initial schema for DApp """
         return schemas.PySchema(schema_element=MigrosSchema)
 
-    def execute(self, access : permissions.Access, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
+    def execute(self, op: nodes.Ops, access : permissions.Access, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
         """ obtain data by recursing to schema """
-        here,selection = access.ddhkey.split_at(key_split)
-        d = self._ddhschema.get_data(selection,access,q)
+        if op == nodes.Ops.get:
+            here,selection = access.ddhkey.split_at(key_split)
+            d = self._ddhschema.get_data(selection,access,q)
+        else:
+            raise ValueError(f'Unsupported {op=}')
         return d
 
 
