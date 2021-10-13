@@ -14,10 +14,7 @@ from pydantic.errors import PydanticErrorMixin, SubclassError
 from utils.pydantic_utils import NoCopyBaseModel
 
 
-from . import permissions
-from . import schemas
-from . import transactions
-
+from . import permissions,schemas,transactions,errors
 from utils import datautils
 
 
@@ -47,16 +44,57 @@ class Ops(str,enum.Enum):
 
     def __repr__(self): return self.value
 
+@enum.unique
+class DataFormat(str,enum.Enum):
+    """ Operations """
+
+    dict = 'd'
+    blob = 'b'
+    json = 'j'    
+
 NodeId = typing.NewType('NodeId', str)
 
 from backend import keyvault,storage
+
+
+
 
 class Persistable(NoCopyBaseModel):
     """ class that provides methods to get persistent state.
         Works with storage.
     """
 
+    Registry : typing.ClassVar[dict[str,type]] = {}
     id : NodeId = pydantic.Field(default_factory=secrets.token_urlsafe)
+    format : DataFormat = DataFormat.dict
+
+    @classmethod
+    def __init_subclass__(cls):
+        Persistable.Registry[cls.__name__] = cls
+ 
+
+    def store(self, transaction: transactions.Transaction ):
+        d = self.to_compressed()
+        storage.Storage.store(self.id,d, transaction)
+        return
+
+    @classmethod
+    def load(cls, id:NodeId,  transaction: transactions.Transaction ):
+        d = storage.Storage.load(id, transaction)
+        o = cls.from_compressed(d)
+        return o
+
+    def delete(self, transaction: transactions.Transaction ):
+        self.__class__.load(self.id, transaction) # verify encryption by loading
+        storage.Storage.delete(self.id, transaction)
+        return
+
+    def to_compressed(self) -> bytes:
+        return zlib.compress(self.to_json().encode(), level=-1)
+
+    @classmethod
+    def from_compressed(cls,data : bytes):
+        return cls.from_json(zlib.decompress(data).decode()).data
 
     def to_json(self) -> str:
         return self.json()
@@ -66,23 +104,28 @@ class Persistable(NoCopyBaseModel):
         o = cls.parse_raw(j)
         return o
 
-    def store(self, data: bytes , transaction: transactions.Transaction ):
-        storage.Storage.store(self.id,data)
-        return
-
-    @classmethod
-    def load(cls, id:NodeId, key: bytes,  transaction: transactions.Transaction ):
-        data = storage.Storage.load(id,key)
-        o = cls.from_json(data.decode())
-        return o
-
-    def delete(self, key: bytes, transaction: transactions.Transaction ):
-        self.load(self.id, key, transaction) # verify encryption by loading
-        storage.Storage.delete(self.id)
-        return
-
     def get_key(self):
         raise NotImplementedError()
+
+    def ensure_loaded(self, transaction : transactions.Transaction) -> Persistable:
+        return self
+
+    def get_proxy(self) -> PersistableProxy:
+        return PersistableProxy(id=self.id,cls=self.__class__.__name__)
+
+class PersistableProxy(NoCopyBaseModel):
+    """ Proxy with minimal data to load Persistable """
+    id : NodeId
+    cls: str
+
+    def ensure_loaded(self, transaction : transactions.Transaction) -> Persistable:
+        cls = Persistable.Registry[self.cls]
+#        cls = typing.cast(Persistable,cls)
+        obj = cls.load(self.id,transaction)
+        assert isinstance(obj,cls)
+        return obj
+
+
 
 
 
@@ -153,7 +196,7 @@ class ExecutableNode(Node):
     type: typing.ClassVar[NodeType] = NodeType.execute
 
     @abstractmethod
-    def execute(self, op: Ops, access : permissions.Access, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
+    def execute(self, op: Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
         return {}
 
 
@@ -162,7 +205,7 @@ class DelegatedExecutableNode(ExecutableNode):
 
     executors : list = []
 
-    def execute(self, op: Ops, access : permissions.Access, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
+    def execute(self, op: Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
         """ obtain data by recursing to schema """
         d = None
         for executor in self.executors:
@@ -172,14 +215,24 @@ class DelegatedExecutableNode(ExecutableNode):
 
 from backend import storage,keyvault
 
+
+
+
+
+
 class DataNode(Persistable):
     """ New data node, points to storage and consents """
 
     owner: permissions.Principal
     key : typing.Optional[keys.DDHkey] = None
+
+    format : DataFormat = DataFormat.dict
+    data : typing.Any        
     _consents : permissions.Consents = permissions.DefaultConsents
     storage_loc : typing.Optional[NodeId] = None
     access_key: typing.Optional[keyvault.AccessKey] = None
+
+
 
     @property
     def consents(self):
@@ -190,36 +243,43 @@ class DataNode(Persistable):
         """ We want to make clear that this is an expensive operation, not just a param """
         raise NotImplementedError('use .change_consents()')
 
-
-    def store(self,access):
-        keyvault.set_new_storage_key(self,access.principal,[],[])
+    def store(self, transaction: transactions.Transaction ):
+        d = self.to_compressed()
+        if self.id not in storage.Storage:
+            keyvault.set_new_storage_key(self,transaction.for_user,[],[])
+        enc = keyvault.encrypt_data(transaction.for_user,self,d)
+        storage.Storage.store(self.id,enc, transaction)
         return
 
-    def insert(self,remainder,data):
-        """ insert data at remainder key """
-        raise NotImplementedError('TODO')
-        return
+    @classmethod
+    def load(cls, id:NodeId,  transaction: transactions.Transaction ):
+        enc = storage.Storage.load(id,transaction)
+        plain = keyvault.decrypt_data(transaction.for_user,self,enc)
+        o = cls.from_compressed(plain)
+        return o
 
-    def execute(self, op: Ops, access : permissions.Access, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
+
+
+
+    def execute(self, op: Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
+        if key_split:
+            top,remainder = access.ddhkey.split_at(key_split)
+            if self.format != DataFormat.dict:
+                raise errors.NotSelectable(remainder)
         if op == Ops.get:
-            data = self.read_data(access.principal)
+            if key_split:
+                self.data = datautils.extract_data(self.data,remainder,raise_error=errors.NotFound)
         elif op == Ops.put:
-            self.write_data(access.principal,data)
+            assert data is not None
+            if key_split:
+                self.data = datautils.insert_data(self.data,remainder,data,raise_error=errors.NotFound)
+            self.store(transaction)
+        elif op == Ops.delete:
+            self.delete(transaction)
 
-        return {}
+        return data
 
-    def read_data(self,principal: permissions.Principal):
-        plain = b'data'
-        data = keyvault.encrypt_data(principal,self,plain) # TODO: actually read data
-        return keyvault.decrypt_data(principal,self,data)
-
-    def write_data(self,principal: permissions.Principal,data):
-        data = zlib.compress(data, level=-1)
-        enc = keyvault.encrypt_data(principal,self,data)
-        self.store(self.id,enc)
-        return 
-
-    def update_consents(self,access : permissions.Access, remainder: keys.DDHkey, consents: permissions.Consents):
+    def update_consents(self,access : permissions.Access, transaction: transactions.Transaction, remainder: keys.DDHkey, consents: permissions.Consents):
         """ update consents at remainder key.
             Data must be read using previous encryption and rewritten using the new encryption. See 
             section 7.3 "Protection of data at rest and on the move" of the DDH paper.
@@ -230,24 +290,28 @@ class DataNode(Persistable):
             effective = consents.consentees()
         else: # all new
             added = effective = consents.consentees() ; removed = []
-        
-
 
         if added or removed: # expensive op follows, do only if something has changed
             self._consents = consents # actually update
-            
+            prev_data = self.data  # need before new key is generated          
             if remainder.key: # change is not at this level, insert a new node:
+                if self.format != DataFormat.dict:
+                    raise errors.NotSelectable(remainder)
                 key=keys.DDHkey(key=self.key.key+remainder.key)
-                node = self.__class__(owner=self.owner,key=key,_consents=consents)
+                above,below = datautils.split_data(prev_data,remainder,raise_error=errors.NotFound) # if we're deep in data
+                node = self.__class__(owner=self.owner,key=key,_consents=consents,data=below)
+                self.data = above
             else:
+                above =  None
                 node = self # top level
 
-            prev_data = self.read_data(access.principal) # need to read before new key is generated
+                
             keyvault.set_new_storage_key(node,access.principal,effective,removed) # now we can set the new key
-            above,below = datautils.splitdata(prev_data,remainder) # if we're deep in data
-            node.write_data(access.principal, below) # re-encrypt on new node (may be self if there is not remainder)
+
+            node.store(transaction) # re-encrypt on new node (may be self if there is not remainder)
             if above: # need to write data with below part cut out again, but with changed key
-                self.write_data(access.principal, above) # old node
+                # TODO: Record the hole with reference to the below-node
+                self.store(transaction) # old node
       
         return        
 

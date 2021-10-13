@@ -36,6 +36,12 @@ class Session(NoCopyBaseModel):
         else:
             return None
 
+    def get_or_create_transaction(self,for_user : permissions.Principal) -> transactions.Transaction:
+        """ always returns transaction, for easier type checking """
+        trx = self.get_transaction(for_user=for_user,create=True)
+        trx = typing.cast(transactions.Transaction,trx)
+        return trx
+        
     def new_transaction(self,for_user : permissions.Principal) -> transactions.Transaction:
         prev_trx = self.trxs_for_user.get(for_user)
         if prev_trx:

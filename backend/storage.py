@@ -4,7 +4,7 @@ from __future__ import annotations
 import zlib
 import enum
 
-from core import keys,permissions,nodes
+from core import keys,permissions,nodes,transactions
 from utils.pydantic_utils import NoCopyBaseModel
 
 @enum.unique
@@ -18,16 +18,21 @@ class StorageClass(NoCopyBaseModel):
 
     byId : dict[nodes.NodeId,StorageBlock] = {}
 
-    def store(self,id : nodes.NodeId, data : bytes):
+
+    def __contains__(self, id : nodes.NodeId):
+        """ does id exist in storage? """
+        return id in self.byId
+
+    def store(self,id : nodes.NodeId, data : bytes, transaction: transactions.Transaction):
         self.byId[id] = StorageBlock(variant=Variant.uncompressed,blob=data)
         return
 
-    def delete(self,id : nodes.NodeId):
+    def delete(self,id : nodes.NodeId, transaction: transactions.Transaction):
         """ delete from storage, must supply key to verify """
         self.byId.pop(id,None)
         return
 
-    def load(self,id : nodes.NodeId, key: bytes) -> bytes:
+    def load(self,id : nodes.NodeId, transaction: transactions.Transaction) -> bytes:
         sb = self.byId.get(id,None)
         if not sb:
             raise KeyError(id)

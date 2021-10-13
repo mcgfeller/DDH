@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import abstractmethod
 import typing
 
-from core import keys,permissions,schemas,nodes,keydirectory,policies,errors
+from core import keys,permissions,schemas,nodes,keydirectory,policies,errors,transactions
 from utils.pydantic_utils import NoCopyBaseModel
 
 
@@ -52,7 +52,7 @@ class DApp(NoCopyBaseModel):
         raise errors.SubClass
 
     @abstractmethod
-    def execute(self, op: nodes.Ops, access : permissions.Access, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
+    def execute(self, op: nodes.Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
         return  data
     
 
@@ -62,7 +62,7 @@ class DAppNode(nodes.ExecutableNode):
     dapp : DApp
 
 
-    def execute(self, op: nodes.Ops, access : permissions.Access, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
-        r = self.dapp.execute(op,access,key_split, data, q)
+    def execute(self, op: nodes.Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
+        r = self.dapp.execute(op,access,transaction, key_split, data, q)
         return r
  

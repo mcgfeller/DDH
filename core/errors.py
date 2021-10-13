@@ -15,6 +15,10 @@ class AccessError(DDHerror):
 class NotFound(DDHerror):
     http_status = 404
 
+class NotSelectable(DDHerror):
+    """ This key cannot be selected because ressource has no subpported substructure. """
+    http_status = 406
+
 class DAppError(DDHerror): pass
 
 
