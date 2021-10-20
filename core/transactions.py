@@ -101,3 +101,8 @@ class Transaction(NoCopyBaseModel):
             raise TrxAccessError(f"Cannot write to nodes, because we've read notes that do not consent to write to owners {', '.join(map(str,not_consented))}")        
         return
 
+    def add_and_validate(self, access : permissions.Access):
+        """ add an access and validate whether it is ok """
+        self.accesses.append(access)
+        # TODO: Validation
+        return

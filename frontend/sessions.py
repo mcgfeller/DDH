@@ -26,8 +26,11 @@ class Session(NoCopyBaseModel):
         """ return id """
         return typing.cast(SessionId,self.token_str)
 
-    def get_transaction(self,for_user : permissions.Principal,create=False) -> typing.Optional[transactions.Transaction]:
-        """ get existing trx or create new one """
+    def get_transaction(self,for_user :typing.Optional[permissions.Principal] = None,create=False) -> typing.Optional[transactions.Transaction]:
+        """ get existing trx or create new one
+            for_user defaults to session.user
+        """
+        for_user = for_user or self.user
         trx = self.trxs_for_user.get(for_user)
         if trx:
             return trx.use() 
@@ -36,13 +39,14 @@ class Session(NoCopyBaseModel):
         else:
             return None
 
-    def get_or_create_transaction(self,for_user : permissions.Principal) -> transactions.Transaction:
+    def get_or_create_transaction(self,for_user : typing.Optional[permissions.Principal] = None) -> transactions.Transaction:
         """ always returns transaction, for easier type checking """
         trx = self.get_transaction(for_user=for_user,create=True)
         trx = typing.cast(transactions.Transaction,trx)
         return trx
         
-    def new_transaction(self,for_user : permissions.Principal) -> transactions.Transaction:
+    def new_transaction(self,for_user : typing.Optional[permissions.Principal] = None) -> transactions.Transaction:
+        for_user = for_user or self.user
         prev_trx = self.trxs_for_user.get(for_user)
         if prev_trx:
             # previous transaction in session
@@ -50,3 +54,6 @@ class Session(NoCopyBaseModel):
         new_trx =  transactions.Transaction.create(for_user = for_user)
         return new_trx.use()
 
+def get_system_session() -> Session:
+    """ get a session for system purposes """
+    return Session(token_str='system_session',user=permissions.SystemUser)

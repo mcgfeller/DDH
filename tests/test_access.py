@@ -5,34 +5,41 @@ import pytest
 
 class DummyElement(schemas.SchemaElement): ...
 
+class DummyNode(nodes.Node,nodes.NonPersistable): 
+    @property
+    def supports(self):
+        return {nodes.NodeSupports.data}
+
+class DummyMultiOwnerNode(nodes.MultiOwnerNode,nodes.NonPersistable): 
+    @property
+    def supports(self):
+        return {nodes.NodeSupports.data}
+
 def test_basic_access():
-    """ Test permissions of two nodes, with basic grant to another user """
+    """ Test permissions of a nodes, with basic grant to another user
+        Note that each data node carries the whole consents, and there
+        is no consent inheritance, so we need to test one node only. 
+    """
 
     user1 = permissions.User(id='1',name='martin',email='martin.gfeller@swisscom.com')
     user2 = permissions.User(id='2',name='roman',email='roman.stoessel@swisscom.com')
     user3 = permissions.User(id='3',name='patrick',email='patrick.keller@swisscom.com')
 
-    node_c = nodes.Node(consents=permissions.Consents(consents=[permissions.Consent(grantedTo=[user2])]),owner=user1)    
-    ddhkey1 = keys.DDHkey(key='/root')
-    keydirectory.NodeRegistry[ddhkey1] = node_c
+    node_c = DummyNode(consents=permissions.Consents(consents=[permissions.Consent(grantedTo=[user2])]),owner=user1)    
+    ddhkey = keys.DDHkey(key='/root')
+    keydirectory.NodeRegistry[ddhkey] = node_c
 
-    node_o = nodes.Node(owner=user1)
-    ddhkey2 = keys.DDHkey(key='/root/unknown')
-    keydirectory.NodeRegistry[ddhkey2] = node_o 
+    access = permissions.Access(ddhkey=ddhkey,principal=user1) # node owned by user1
+    assert access.permitted(node_c)[0]
 
-    for ddhkey in (ddhkey1,ddhkey2):
+    access = permissions.Access(ddhkey=ddhkey,principal=user2) # read granted to user2
+    assert access.permitted(node_c)[0] 
 
-        access = permissions.Access(ddhkey=ddhkey,principal=user1) # node owned by user1
-        assert access.permitted()[0]
+    access = permissions.Access(ddhkey=ddhkey,principal=user2,modes=[permissions.AccessMode.write])
+    assert not access.permitted(node_c)[0] # write not granted to user2
 
-        access = permissions.Access(ddhkey=ddhkey,principal=user2) # read granted to user2
-        assert access.permitted()[0] 
-
-        access = permissions.Access(ddhkey=ddhkey,principal=user2,modes=[permissions.AccessMode.write])
-        assert not access.permitted()[0] # write not granted to user2
-
-        access = permissions.Access(ddhkey=ddhkey,principal=user3) # read granted to user2
-        assert not access.permitted()[0] 
+    access = permissions.Access(ddhkey=ddhkey,principal=user3) # read granted to user2
+    assert not access.permitted(node_c)[0] 
 
     return
 
@@ -45,7 +52,7 @@ def users():
 def ddhkey_setup(users):
     """ return ddhkey, with Node set up """
     AM = permissions.AccessMode
-    node_c_s = nodes.Node(owner=users[0],
+    node_c_s = DummyNode(owner=users[0],
         consents=permissions.Consents(consents=[
             permissions.Consent(grantedTo=[users[1]]),
             permissions.Consent(grantedTo=[users[2]],withModes={AM.read}),
@@ -57,7 +64,7 @@ def ddhkey_setup(users):
     ddhkey_s = keys.DDHkey(key='/root/single_owner')
     keydirectory.NodeRegistry[ddhkey_s] = node_c_s
 
-    node_c_m = nodes.MultiOwnerNode(all_owners=tuple(users[0:2]),
+    node_c_m = DummyMultiOwnerNode(all_owners=tuple(users[0:2]),
         consents=permissions.MultiOwnerConsents(consents_by_owner = {
         users[0] : permissions.Consents(consents=[
             permissions.Consent(grantedTo=[users[1]]),
@@ -112,8 +119,10 @@ test_params = [
     test_params,ids=[f"Obj {d[1]}: {d[4].strip().replace(' ','-')}" if d[4] else None for d in test_params]) # use comment as test id
 def test_access_modes(ddhkey_setup,users,ok,obj,user,modes,comment):
 
-    access = permissions.Access(ddhkey=ddhkey_setup[obj],principal=users[user],modes=modes)
-    rok,consent,explanation = access.permitted()
+    ddhkey = ddhkey_setup[obj]
+    access = permissions.Access(ddhkey=ddhkey,principal=users[user],modes=modes)
+    node,dummy = keydirectory.NodeRegistry.get_node(ddhkey, support = nodes.NodeSupports.data, transaction = None)
+    rok,consent,explanation = access.permitted(node)
     diagnose = f'Test result {rok} expected {ok} because {comment or "it is obvious"}: {explanation}, for {user=}, {modes=}, {consent=}'
     if  rok != ok: 
         print(diagnose)

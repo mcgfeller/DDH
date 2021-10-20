@@ -21,26 +21,32 @@ class DApp(NoCopyBaseModel):
         return typing.cast(permissions.DAppId,self.__class__.__name__) 
 
     @classmethod
-    def bootstrap(cls) -> DApp:
+    def bootstrap(cls,session) -> DApp:
         return cls()
 
-    def startup(self)  -> nodes.Node:
-        dnode = self.check_registry()
+    def startup(self,session)  -> nodes.Node:
+        dnode = self.check_registry(session)
         return dnode
 
-    def check_registry(self) -> nodes.Node:
-        dnode = keydirectory.NodeRegistry[self.schemakey].get(nodes.NodeType.nschema)
-        if not dnode:
+    def check_registry(self,session) -> nodes.Node:
+        transaction = session.get_or_create_transaction()
+        dnode = keydirectory.NodeRegistry[self.schemakey].get(nodes.NodeSupports.schema) # need exact location, not up the tree
+        if dnode:
+            dnode = dnode.ensure_loaded(transaction)
+        else:
             # get a parent scheme to hook into
-            upnode,split = keydirectory.NodeRegistry.get_node(self.schemakey,nodes.NodeType.nschema)
+            upnode,split = keydirectory.NodeRegistry.get_node(self.schemakey,nodes.NodeSupports.schema,transaction)
             pkey = self.schemakey.up()
             if not pkey:
                 raise ValueError(f'{self.schemakey} key is too high {self!r}')
+            upnode = typing.cast(nodes.SchemaNode,upnode)
             parent = upnode.get_sub_schema(pkey,split)
             if not parent:
                 raise ValueError(f'No parent schema found for {self!r} with {self.schemakey} at upnode {upnode}')
             schema = self.get_schema() # obtain static schema
-            dnode = DAppNode(owner=self.owner,schema=schema,dapp=self)
+            # give world schema_read access
+            consents = permissions.Consents(consents=[permissions.Consent(grantedTo=[permissions.AllPrincipal],withModes={permissions.AccessMode.schema_read})])
+            dnode = DAppNode(owner=self.owner,schema=schema,dapp=self,consents=consents)
             keydirectory.NodeRegistry[self.schemakey] = dnode
             # now insert our schema into the parent's:
             schemaref = schemas.SchemaReference.create_from_key(self.__class__.__name__,ddhkey=self.schemakey)

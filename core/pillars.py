@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 from utils import utils
 from core import schema_root,dapp,permissions
+from frontend import sessions
 from utils import import_modules 
 import DApps
 from utils.pydantic_utils import NoCopyBaseModel
@@ -29,6 +30,7 @@ class _DAppManager(NoCopyBaseModel):
     DAppsById : dict[permissions.DAppId,dapp.DApp] = {} # registry of DApps
 
     def bootstrap(self) :
+        session = sessions.get_system_session()
         for module in import_modules.importAllSubPackages(DApps):
             classname = module.__name__.split('.')[-1]
             cls = getattr(module,classname,None) # class must have same name as module
@@ -36,13 +38,13 @@ class _DAppManager(NoCopyBaseModel):
                 logger.error(f'DApp module {module.__name__} has no DApp class named {classname}.')
             else:
                 try:
-                    dapp = cls.bootstrap()
+                    dapp = cls.bootstrap(session)
                 except Exception as e:
                     logger.error(f'DApp {cls.__name__} bootstrap error: {e}')
                 else:
                     self.DAppsById[dapp.id] = dapp
                     try:
-                        dnode = dapp.startup()
+                        dnode = dapp.startup(session)
                         logger.info(f'DApp {dapp!r} initialized at {dnode!s}.')
                     except Exception as e:
                         logger.error(f'DApp {dapp!r} startup error: {e}')

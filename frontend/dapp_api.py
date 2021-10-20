@@ -36,11 +36,8 @@ async def get_schema(
     q: str = fastapi.Query(None, alias="item-query"),
     ):
     access = permissions.Access(ddhkey=keys.DDHkey(docpath),principal=session.user, modes = {permissions.AccessMode.schema_read},byDApp=dapp)
-    ok,consent,text = access.permitted()
-    if not ok: # TODO: Should be errors
-        raise fastapi.HTTPException(status_code=403, detail=f"No access to schema at {access.ddhkey}: {text}")
-    fschema = facade.get_schema(access,schemaformat)
-    if not fschema: # TODO: Should be errors
+    fschema = facade.get_schema(access,session,schemaformat)
+    if not fschema: 
         raise fastapi.HTTPException(status_code=404, detail=f"No schema found at {access.ddhkey}.")
     else:
         return {"ddhkey": access.ddhkey, 'schema': fschema}

@@ -23,7 +23,7 @@ class Principal(NoCopyBaseModel):
 
     @classmethod
     def get_principals(cls, selection: str) -> list[Principal]:
-        """ check string containling one or more Principals, separated by comma,
+        """ check string containing one or more Principals, separated by comma,
             return them as Principal.
             First checks CommonPrincipals defined here, then user_auth.UserInDB.
         """
@@ -54,8 +54,7 @@ class Principal(NoCopyBaseModel):
 AllPrincipal = Principal(id='_all_')
 RootPrincipal = Principal(id='DDH')
 
-# Collect all common principals
-CommonPrincipals = {p.id : p for p in (AllPrincipal,RootPrincipal)}
+
 
 
 @enum.unique
@@ -115,6 +114,8 @@ class User(Principal):
     email : typing.Optional[pydantic.EmailStr] = None
     created_at : datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow) # defaults to now
 
+SystemUser = User(id='root',name='root')
+
 
 
 class DAppId(Principal):
@@ -170,6 +171,7 @@ class Consents(NoCopyBaseModel):
                 cl.append(consent)
         return
 
+
     def consentees(self) -> list[Principal]:
         """ all principals that enjoy some sort of Consent """
         return sum([c.grantedTo for c in self.consents],[])
@@ -180,7 +182,7 @@ class Consents(NoCopyBaseModel):
         
 
 
-    def check(self,owners : list[Principal], access : Access) -> tuple[bool,list[Consent],str]:
+    def check(self,owners : typing.Iterable[Principal], access : Access) -> tuple[bool,list[Consent],str]:
         msg = 'no consent'
         consent = None
         for consent in self.applicable_consents(access.principal):
@@ -204,7 +206,7 @@ class MultiOwnerConsents(NoCopyBaseModel):
     consents_by_owner : dict[Principal,Consents]
 
 
-    def check(self,owners : list[Principal], access : Access) -> tuple[bool,list[Consent],str]:
+    def check(self,owners : typing.Iterable[Principal], access : Access) -> tuple[bool,list[Consent],str]:
         """ Check consents by all owner, only if all owners consent, we can go ahead.
         """
         msgs = []
@@ -245,44 +247,41 @@ class Access(NoCopyBaseModel):
     modes:     set[AccessMode]  = {AccessMode.read}
     time:      datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow) # defaults to now
     granted:   typing.Optional[bool] = None
-    byConsent: typing.Optional[Consent] = None
+    byConsents: list[Consent] = []
     explanation: typing.Optional[str] = None
 
     def __init__(self,*a,**kw):
         super().__init__(*a,**kw)
         self.ddhkey = self.ddhkey.ensure_rooted()
-    
-    def permitted(self,owner : typing.Optional[Principal] = None, record_access : bool = True) -> tuple[bool,typing.Optional[Consent],str]:
+
+    def permitted(self,node : typing.Optional[nodes.Node], owner : typing.Optional[Principal] = None, record_access : bool = True) -> tuple[bool,list[Consent],str]:
         """ checks whether access is permitted, returning (bool,required flags,applicable consent,explanation text)
             if record_access is set, the result is recorded into self.
         """
-        consent = None
-        if owner and owner == self.principal: # owner from key, remainder is owned by definition
-            ok,msg = True,'principal is supplied owner'
+        used_consents = []
+        if owner is not None:
+            keyowners = (owner,)
         else:
-            onode,split = keydirectory.NodeRegistry.get_node(self.ddhkey,nodes.NodeType.owner)
-            if not onode:
-                ok,msg = False,f'No owner node found for key {self.ddhkey}'
-            elif onode.owners == (self.principal,):
+            keyowners = Principal.get_principals(self.ddhkey.owners)
+        if False: # this won't work with MultiOwnerNodes because owners are not in key
+            # len(keyowners) == 1 and self.principal == keyowners[0]: # single owner from key, remainder is owned by definition
+            ok,msg = True,'principal is key owner'
+        else:
+            if not node:
+                ok,msg = False,f'No data/consent node found for key {self.ddhkey}'
+            elif (self.principal,) == node.owners:
                 ok,msg = True,'Node owned by principal'
             else:
-                consents : typing.Optional[Consents] = None
-                if onode.consents: # onode has consents, use it
-                    consents  = onode.consents
-                else: # obtain from consents node
-                    cnode,split = keydirectory.NodeRegistry.get_node(self.ddhkey,nodes.NodeType.consents) 
-                    if cnode:
-                        consents = typing.cast(Consents,cnode.consents)  # consent is not None by get_node
-                if consents:
-                    ok,consent,msg = consents.check(onode.owners,self) # check consents
+                if node.consents:
+                    ok,used_consents,msg = node.consents.check(node.owners,self) # check consents
                 else:
-                    ok,msg =  False,f'Owner is not accessor, and no consent node found for key {self.ddhkey}'
+                    ok,msg =  False,f'Owner is not accessor, and no consent found for key {self.ddhkey}'
 
         if record_access:
             self.granted = ok
             self.explanation = msg
-            self.byConsent = consent
-        return  ok,consent,msg
+            self.byConsents = used_consents
+        return  ok,used_consents,msg
 
 
     
@@ -293,5 +292,10 @@ class Access(NoCopyBaseModel):
 from . import keys
 from . import nodes
 from . import keydirectory
+from . import transactions
 from frontend import user_auth
 Access.update_forward_refs()
+
+# Collect all common principals
+CommonPrincipals = {p.id : p for p in (AllPrincipal,RootPrincipal,SystemUser)}
+CommonPrincipals[keys.DDHkey.AnyKey] = RootPrincipal

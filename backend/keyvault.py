@@ -54,7 +54,6 @@ class AccessKeyVaultClass(NoCopyBaseModel):
 
 
     def get_storage_key(self, principal : permissions.Principal, node : nodes.DataNode) -> StorageKey:
-        assert node.consents
         p_key = PrincipalKeyVault.key_for_principal(principal)
         if not p_key:
             raise KeyError(f'no key found for principal={principal}')
@@ -123,7 +122,7 @@ def add_consent_hash(key : bytes , consents : permissions.Consents):
 
 def set_new_storage_key(node : nodes.DataNode, principal: permissions.Principal, effective : list[permissions.Principal], removed : list[permissions.Principal]):
     """ set storage key based on private key of principal and public keys of consentees """
-    assert node.consents
+    # assert node.consents
     storage_key = add_consent_hash(get_nonce(),node.consents) # new storage key
 
     for p in [principal]+effective:

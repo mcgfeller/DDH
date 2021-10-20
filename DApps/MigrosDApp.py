@@ -39,7 +39,7 @@ class MigrosDApp(dapp.DApp):
 
     def register_transform(self):
         ddhkey = keys.DDHkey('//p/living/shopping/receipts')
-        de_node = keydirectory.NodeRegistry[ddhkey].get(nodes.NodeType.execute)
+        de_node = keydirectory.NodeRegistry[ddhkey].get(nodes.NodeSupports.execute)
         if not de_node:
             de_node = nodes.DelegatedExecutableNode(owner=self.owner)
             de_node.executors.append(self)

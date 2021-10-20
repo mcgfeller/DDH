@@ -82,13 +82,11 @@ class SchemaElement(NoCopyBaseModel):
         entire_selection = selection
         schema = self.__class__
         principals = permissions.Principal.get_principals(access.ddhkey.owners)
-        for principal in principals:
-            # p_access = access.copy() # create an access record for actual key (maybe optimize if it's just one key?)
-            # p_key = keys.DDHkey(key=access.ddhkey[:-(len(remainder.key)+1)]+(principal.id,)+remainder.key)
-            # p_access.ddhkey = p_key
-            ok,consent,text = access.permitted(owner=principal) # here we check the consent
-            if not ok:
-                raise errors.AccessError(text)
+        # TODO
+        # for principal in principals:
+        #     ok,consent,text = access.permitted(owner=principal) # here we check the consent
+        #     if not ok:
+        #         raise errors.AccessError(text)
 
 
 

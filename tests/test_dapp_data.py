@@ -12,28 +12,28 @@ def user():
 def session(user):
     return sessions.Session(token_str='test_session',user=user)
 
-def test_dapp_schema(user):
+def test_dapp_schema(user,session):
     """ test retrieval of key of test MigrosDApp, and facade.get_schema() """
     ddhkey = keys.DDHkey(key="//org/migros.ch/receipts")
     user = user_auth.UserInDB.load('mgf')
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.schema_read})
-    jschema = facade.get_schema(access)
+    jschema = facade.get_schema(access,session)
     assert isinstance(jschema,dict)
     assert jschema['title'] == 'Receipt' # type: ignore
     return
 
 
-def test_complete_schema_org(user):
+def test_complete_schema_org(user,session):
     ddhkey = keys.DDHkey(key="//org")
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.schema_read})
-    s = facade.get_schema(access)
+    s = facade.get_schema(access,session)
     assert s
     return s
 
-def test_complete_schema_p(user):
+def test_complete_schema_p(user,session):
     ddhkey = keys.DDHkey(key="//p/living/shopping")
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.schema_read})
-    s = facade.get_schema(access)
+    s = facade.get_schema(access,session)
     assert s
     return s
 

@@ -14,21 +14,20 @@ from pydantic.errors import PydanticErrorMixin, SubclassError
 from utils.pydantic_utils import NoCopyBaseModel
 
 
-from . import permissions,schemas,transactions,errors
+from . import permissions,schemas,transactions,errors,keydirectory
 from utils import datautils
 
 
 
 
 @enum.unique
-class NodeType(str,enum.Enum):
-    """ Types of Nodes, marked by presence of attribute corresponding with enum value """
+class NodeSupports(str,enum.Enum):
+    """ Node supports protocol """
 
-    owner = 'owner'
-    nschema = 'nschema'
-    consents = 'consents'
-    data = 'data'
-    execute = 'execute'
+    schema      = 'schema'
+    data        = 'data'
+    execute     = 'execute'
+    consents    = 'consents'
 
     def __repr__(self): return self.value
 
@@ -57,7 +56,17 @@ NodeId = typing.NewType('NodeId', str)
 from backend import keyvault,storage
 
 
+class NonPersistable(NoCopyBaseModel):
+    """ NonPersistable, has itself as proxy """
 
+
+    def ensure_loaded(self, transaction : transactions.Transaction) -> Node:
+        """ Non-persistable nodes don't need to be loaded """
+        return self
+
+    def get_proxy(self) -> Node:
+        """ Non-persistable nodes don't need a Proxy """
+        return self
 
 class Persistable(NoCopyBaseModel):
     """ class that provides methods to get persistent state.
@@ -71,7 +80,6 @@ class Persistable(NoCopyBaseModel):
     @classmethod
     def __init_subclass__(cls):
         Persistable.Registry[cls.__name__] = cls
- 
 
     def store(self, transaction: transactions.Transaction ):
         d = self.to_compressed()
@@ -108,52 +116,50 @@ class Persistable(NoCopyBaseModel):
         raise NotImplementedError()
 
     def ensure_loaded(self, transaction : transactions.Transaction) -> Persistable:
+        """ self is already loaded, make operation idempotent """
         return self
 
     def get_proxy(self) -> PersistableProxy:
-        return PersistableProxy(id=self.id,cls=self.__class__.__name__)
+        """ get a loadable proxy for us; idempotent. Reverse .ensureLoaded() """
+        return PersistableProxy(supports=self.supports,id=self.id,classname=self.__class__.__name__)
 
 class PersistableProxy(NoCopyBaseModel):
     """ Proxy with minimal data to load Persistable """
+    supports : set[NodeSupports]
     id : NodeId
-    cls: str
+    classname: str
 
     def ensure_loaded(self, transaction : transactions.Transaction) -> Persistable:
-        cls = Persistable.Registry[self.cls]
+        """ return an instantiaded Persistable subclass; idempotent """
+        cls = Persistable.Registry[self.classname]
 #        cls = typing.cast(Persistable,cls)
         obj = cls.load(self.id,transaction)
         assert isinstance(obj,cls)
         return obj
 
+    def get_proxy(self) -> PersistableProxy:
+        """ this is already a proxy """
+        return self
 
 
 
 
-class Node(Persistable):
 
-    types: set[NodeType] = set() # all supported type, will be filled by init unless given
+class Node(pydantic.BaseModel):
+
+
     owner: permissions.Principal
-    consents : typing.Optional[permissions.Consents] = None
-    nschema : typing.Optional[schemas.Schema] =  pydantic.Field(alias='schema')
+    consents : typing.Optional[permissions.Consents] = permissions.DefaultConsents
     key : typing.Optional[keys.DDHkey] = None
 
-    def __init__(self,**data):
-        """ .types will be filled based on attributes that are not Falsy """
-        super().__init__(**data)
-        if not self.types:
-            self.types = {t for t in NodeType if getattr(self,t.value,None)}
-        return
+    @property
+    def supports(self) -> set[NodeSupports]:
+        return set()
 
     def __str__(self):
         """ short representation """
-        return f'Node(types={self.types!s},key={self.key!s},owner={self.owner.id})'
+        return f'{self.__class__.__name__}(nodetype={self.nodetype},key={self.key!s},owner={self.owner.id})'
 
-
-    def get_sub_schema(self, ddhkey: keys.DDHkey,split: int, schema_type : str = 'json') -> typing.Optional[schemas.Schema]:
-        """ return schema based on ddhkey and split """
-        s = typing.cast(schemas.Schema,self.nschema)
-        s = s.obtain(ddhkey,split)
-        return s
 
     @property
     def owners(self) -> tuple[permissions.Principal,...]:
@@ -161,17 +167,17 @@ class Node(Persistable):
         return (self.owner,)
 
 
-        
+
 
 
 from . import keys # avoid circle
 Node.update_forward_refs() # Now Node is known, update before it's derived
-
+NodeOrProxy = typing.Union[Node,PersistableProxy]
 
 class MultiOwnerNode(Node):
 
     all_owners : tuple[permissions.Principal,...]
-    consents : typing.Union[permissions.Consents,permissions.MultiOwnerConsents,None] = None
+    consents : typing.Union[permissions.Consents,permissions.MultiOwnerConsents] = permissions.DefaultConsents
 
     def __init__(self,**data):
         data['owner'] = data.get('all_owners',(None,))[0] # first owner, will complain in super
@@ -190,10 +196,38 @@ class MultiOwnerNode(Node):
         return self.all_owners
 
 
-class ExecutableNode(Node):
+class SchemaNode(Node,NonPersistable):
+
+    nschema : typing.Optional[schemas.Schema] =  pydantic.Field(alias='schema')
+
+
+
+    @property
+    def supports(self) -> set[NodeSupports]:
+        s =  {NodeSupports.schema}
+        if self.consents:
+            s.add(NodeSupports.consents)
+        return s
+
+
+    def get_sub_schema(self, ddhkey: keys.DDHkey,split: int, schema_type : str = 'json') -> typing.Optional[schemas.Schema]:
+        """ return schema based on ddhkey and split """
+        s = typing.cast(schemas.Schema,self.nschema)
+        s = s.obtain(ddhkey,split)
+        return s
+
+class ExecutableNode(SchemaNode,NonPersistable):
     """ A node that provides for execution capabilities """
 
-    type: typing.ClassVar[NodeType] = NodeType.execute
+    @property
+    def supports(self) -> set[NodeSupports]:
+        s =  {NodeSupports.execute}
+        if self.nschema:
+            s.add(NodeSupports.schema)
+        if self.consents:
+            s.add(NodeSupports.consents)
+        return s
+
 
     @abstractmethod
     def execute(self, op: Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
@@ -220,28 +254,25 @@ from backend import storage,keyvault
 
 
 
-class DataNode(Persistable):
+class DataNode(Node,Persistable):
     """ New data node, points to storage and consents """
 
     owner: permissions.Principal
-    key : typing.Optional[keys.DDHkey] = None
 
     format : DataFormat = DataFormat.dict
     data : typing.Any        
-    _consents : permissions.Consents = permissions.DefaultConsents
     storage_loc : typing.Optional[NodeId] = None
     access_key: typing.Optional[keyvault.AccessKey] = None
-
-
+    sub_nodes : dict[keys.DDHkey,keys.DDHkey] = {}
 
     @property
-    def consents(self):
-        return self._consents
+    def supports(self) -> set[NodeSupports]:
+        s =  {NodeSupports.data}
+        if self.consents:
+            s.add(NodeSupports.consents)
+        return s
 
-    @consents.setter
-    def consents(self, value):
-        """ We want to make clear that this is an expensive operation, not just a param """
-        raise NotImplementedError('use .change_consents()')
+
 
     def store(self, transaction: transactions.Transaction ):
         d = self.to_compressed()
@@ -267,8 +298,9 @@ class DataNode(Persistable):
             if self.format != DataFormat.dict:
                 raise errors.NotSelectable(remainder)
         if op == Ops.get:
+            data = self.unsplit_data(self.data,transaction)
             if key_split:
-                self.data = datautils.extract_data(self.data,remainder,raise_error=errors.NotFound)
+                data = datautils.extract_data(self.data,remainder,raise_error=errors.NotFound)
         elif op == Ops.put:
             assert data is not None
             if key_split:
@@ -292,15 +324,10 @@ class DataNode(Persistable):
             added = effective = consents.consentees() ; removed = []
 
         if added or removed: # expensive op follows, do only if something has changed
-            self._consents = consents # actually update
-            prev_data = self.data  # need before new key is generated          
+            self.consents = consents # actually update
+            
             if remainder.key: # change is not at this level, insert a new node:
-                if self.format != DataFormat.dict:
-                    raise errors.NotSelectable(remainder)
-                key=keys.DDHkey(key=self.key.key+remainder.key)
-                above,below = datautils.split_data(prev_data,remainder,raise_error=errors.NotFound) # if we're deep in data
-                node = self.__class__(owner=self.owner,key=key,_consents=consents,data=below)
-                self.data = above
+                node = self.split_node(remainder,consents)
             else:
                 above =  None
                 node = self # top level
@@ -309,11 +336,34 @@ class DataNode(Persistable):
             keyvault.set_new_storage_key(node,access.principal,effective,removed) # now we can set the new key
 
             node.store(transaction) # re-encrypt on new node (may be self if there is not remainder)
-            if above: # need to write data with below part cut out again, but with changed key
-                # TODO: Record the hole with reference to the below-node
+            if remainder.key: # need to write data with below part cut out again, but with changed key
+                
                 self.store(transaction) # old node
       
         return        
+
+    def split_node(self, remainder: keys.DDHkey, consents: permissions.Consents) -> DataNode:
+        prev_data = self.data  # need before new key is generated          
+        if self.format != DataFormat.dict:
+            raise errors.NotSelectable(remainder)
+        key=keys.DDHkey(key=self.key.key+remainder.key)
+        above,below = datautils.split_data(prev_data,remainder,raise_error=errors.NotFound) # if we're deep in data
+        node = self.__class__(owner=self.owner,key=key,consents=consents,data=below)
+        self.data = above
+        # Record the hole with reference to the below-node. We keep the below node in the directory, so
+        # its data can be accessed without access to self.
+        keydirectory.NodeRegistry[key] = node
+        return node
+
+    def unsplit_data(self,data,transaction):
+        for remainder,fullkey in self.sub_nodes.items():
+            subnodeproxy = keydirectory.NodeRegistry[fullkey][NodeSupports.data]
+            if subnodeproxy:
+                subnode = subnodeproxy.ensure_loaded(transaction)
+                assert isinstance(subnode,DataNode) # because of lookup by type
+                data = datautils.insert_data(data,remainder,subnode.data)
+
+        return data
 
 
 
