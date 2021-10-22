@@ -51,21 +51,20 @@ class DataFormat(str,enum.Enum):
     blob = 'b'
     json = 'j'    
 
-NodeId = typing.NewType('NodeId', str)
+PersistId = typing.NewType('PersistId', str)
 
 from backend import keyvault,storage
-
 
 class NonPersistable(NoCopyBaseModel):
     """ NonPersistable, has itself as proxy """
 
 
-    def ensure_loaded(self, transaction : transactions.Transaction) -> Node:
-        """ Non-persistable nodes don't need to be loaded """
+    def ensure_loaded(self, transaction : transactions.Transaction) -> NonPersistable:
+        """ Non-persistables don't need to be loaded """
         return self
 
-    def get_proxy(self) -> Node:
-        """ Non-persistable nodes don't need a Proxy """
+    def get_proxy(self) -> NonPersistable:
+        """ Non-persistables don't need a Proxy """
         return self
 
 class Persistable(NoCopyBaseModel):
@@ -74,7 +73,7 @@ class Persistable(NoCopyBaseModel):
     """
 
     Registry : typing.ClassVar[dict[str,type]] = {}
-    id : NodeId = pydantic.Field(default_factory=secrets.token_urlsafe)
+    id : PersistId = pydantic.Field(default_factory=secrets.token_urlsafe)
     format : DataFormat = DataFormat.dict
 
     @classmethod
@@ -87,7 +86,7 @@ class Persistable(NoCopyBaseModel):
         return
 
     @classmethod
-    def load(cls, id:NodeId,  transaction: transactions.Transaction ):
+    def load(cls, id:PersistId,  transaction: transactions.Transaction ):
         d = storage.Storage.load(id, transaction)
         o = cls.from_compressed(d)
         return o
@@ -121,12 +120,11 @@ class Persistable(NoCopyBaseModel):
 
     def get_proxy(self) -> PersistableProxy:
         """ get a loadable proxy for us; idempotent. Reverse .ensureLoaded() """
-        return PersistableProxy(supports=self.supports,id=self.id,classname=self.__class__.__name__)
+        return PersistableProxy(id=self.id,classname=self.__class__.__name__)
 
 class PersistableProxy(NoCopyBaseModel):
     """ Proxy with minimal data to load Persistable """
-    supports : set[NodeSupports]
-    id : NodeId
+    id : PersistId
     classname: str
 
     def ensure_loaded(self, transaction : transactions.Transaction) -> Persistable:
@@ -141,12 +139,12 @@ class PersistableProxy(NoCopyBaseModel):
         """ this is already a proxy """
         return self
 
-
+class NodeProxy(PersistableProxy):
+    supports : set[NodeSupports]    
 
 
 
 class Node(pydantic.BaseModel):
-
 
     owner: permissions.Principal
     consents : typing.Optional[permissions.Consents] = permissions.DefaultConsents
@@ -158,7 +156,7 @@ class Node(pydantic.BaseModel):
 
     def __str__(self):
         """ short representation """
-        return f'{self.__class__.__name__}(nodetype={self.nodetype},key={self.key!s},owner={self.owner.id})'
+        return f'{self.__class__.__name__}(supports={self.supports},key={self.key!s},owner={self.owner.id})'
 
 
     @property
@@ -166,7 +164,12 @@ class Node(pydantic.BaseModel):
         """ get one or multiple owners """
         return (self.owner,)
 
-
+    def get_proxy(self) -> typing.Union[Node,NodeProxy]:
+        """ get a loadable proxy for us; idempotent. Reverse .ensureLoaded() """
+        if isinstance(self,Persistable):
+            return NodeProxy(supports=self.supports,id=self.id,classname=self.__class__.__name__)
+        else:
+            return self
 
 
 
@@ -196,7 +199,7 @@ class MultiOwnerNode(Node):
         return self.all_owners
 
 
-class SchemaNode(Node,NonPersistable):
+class SchemaNode(NonPersistable,Node):
 
     nschema : typing.Optional[schemas.Schema] =  pydantic.Field(alias='schema')
 
@@ -216,7 +219,7 @@ class SchemaNode(Node,NonPersistable):
         s = s.obtain(ddhkey,split)
         return s
 
-class ExecutableNode(SchemaNode,NonPersistable):
+class ExecutableNode(SchemaNode):
     """ A node that provides for execution capabilities """
 
     @property
@@ -254,14 +257,14 @@ from backend import storage,keyvault
 
 
 
-class DataNode(Node,Persistable):
+class DataNode(Persistable,Node):
     """ New data node, points to storage and consents """
 
     owner: permissions.Principal
 
     format : DataFormat = DataFormat.dict
     data : typing.Any        
-    storage_loc : typing.Optional[NodeId] = None
+    storage_loc : typing.Optional[PersistId] = None
     access_key: typing.Optional[keyvault.AccessKey] = None
     sub_nodes : dict[keys.DDHkey,keys.DDHkey] = {}
 
@@ -283,7 +286,7 @@ class DataNode(Node,Persistable):
         return
 
     @classmethod
-    def load(cls, id:NodeId,  transaction: transactions.Transaction ):
+    def load(cls, id:PersistId,  transaction: transactions.Transaction ):
         enc = storage.Storage.load(id,transaction)
         plain = keyvault.decrypt_data(transaction.for_user,self,enc)
         o = cls.from_compressed(plain)

@@ -1,4 +1,4 @@
-""" rovides a Facade from Core to Frontend """
+""" Provides a Facade from Core to Frontend """
 
 from __future__ import annotations
 import pydantic 
