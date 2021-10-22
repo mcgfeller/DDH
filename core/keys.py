@@ -45,14 +45,14 @@ class DDHkey(NoCopyBaseModel):
     key : tuple
     fork : ForkType = ForkType.data
 
-    node: typing.Optional[nodes.Node] = None # XXX Used?
+    # node: typing.Optional[nodes.Node] = None # XXX Used?
 
     Delimiter : typing.ClassVar[str] = '/'
     ForkDelimiter : typing.ClassVar[str] = ':'
     Root : typing.ClassVar[_RootType] = _RootType(Delimiter)
     AnyKey : typing.ClassVar[_AnyType] = _AnyType(Delimiter)
 
-    def __init__(self,key : typing.Union[tuple,list,str], node :  typing.Optional[nodes.Node] = None, fork :  typing.Optional[ForkType] = None):
+    def __init__(self,key : typing.Union[tuple,list,str], fork :  typing.Optional[ForkType] = None):
         """ Convert key string into tuple, eliminate empty segments, and set root to self.Root """
         if isinstance(key,str):
             key = key.strip().split(self.Delimiter)
@@ -71,7 +71,7 @@ class DDHkey(NoCopyBaseModel):
                 lk,fork = key[-1].split(self.ForkDelimiter,1) # type:ignore
                 key = key[:-1] + (lk,) if lk else () 
             fork = ForkType(fork) if fork else ForkType.data
-        super().__init__(key=key,node=node,fork=fork) # type:ignore
+        super().__init__(key=key,fork=fork) # type:ignore
         return 
 
     def __str__(self) -> str:
