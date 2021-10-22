@@ -3,19 +3,15 @@
 from __future__ import annotations
 from abc import abstractmethod
 import pydantic 
-import datetime
 import typing
 import enum
-import abc
-import secrets
-import zlib
 
-from pydantic.errors import PydanticErrorMixin, SubclassError
-from utils.pydantic_utils import NoCopyBaseModel
+
 
 
 from . import permissions,schemas,transactions,errors,keydirectory
 from utils import datautils
+from backend import persistable
 
 
 
@@ -43,103 +39,7 @@ class Ops(str,enum.Enum):
 
     def __repr__(self): return self.value
 
-@enum.unique
-class DataFormat(str,enum.Enum):
-    """ Operations """
-
-    dict = 'd'
-    blob = 'b'
-    json = 'j'    
-
-PersistId = typing.NewType('PersistId', str)
-
-from backend import keyvault,storage
-
-class NonPersistable(NoCopyBaseModel):
-    """ NonPersistable, has itself as proxy """
-
-
-    def ensure_loaded(self, transaction : transactions.Transaction) -> NonPersistable:
-        """ Non-persistables don't need to be loaded """
-        return self
-
-    def get_proxy(self) -> NonPersistable:
-        """ Non-persistables don't need a Proxy """
-        return self
-
-class Persistable(NoCopyBaseModel):
-    """ class that provides methods to get persistent state.
-        Works with storage.
-    """
-
-    Registry : typing.ClassVar[dict[str,type]] = {}
-    id : PersistId = pydantic.Field(default_factory=secrets.token_urlsafe)
-    format : DataFormat = DataFormat.dict
-
-    @classmethod
-    def __init_subclass__(cls):
-        Persistable.Registry[cls.__name__] = cls
-
-    def store(self, transaction: transactions.Transaction ):
-        d = self.to_compressed()
-        storage.Storage.store(self.id,d, transaction)
-        return
-
-    @classmethod
-    def load(cls, id:PersistId,  transaction: transactions.Transaction ):
-        d = storage.Storage.load(id, transaction)
-        o = cls.from_compressed(d)
-        return o
-
-    def delete(self, transaction: transactions.Transaction ):
-        self.__class__.load(self.id, transaction) # verify encryption by loading
-        storage.Storage.delete(self.id, transaction)
-        return
-
-    def to_compressed(self) -> bytes:
-        return zlib.compress(self.to_json().encode(), level=-1)
-
-    @classmethod
-    def from_compressed(cls,data : bytes):
-        return cls.from_json(zlib.decompress(data).decode()).data
-
-    def to_json(self) -> str:
-        return self.json()
-
-    @classmethod
-    def from_json(cls, j :str) -> Persistable:
-        o = cls.parse_raw(j)
-        return o
-
-    def get_key(self):
-        raise NotImplementedError()
-
-    def ensure_loaded(self, transaction : transactions.Transaction) -> Persistable:
-        """ self is already loaded, make operation idempotent """
-        return self
-
-    def get_proxy(self) -> PersistableProxy:
-        """ get a loadable proxy for us; idempotent. Reverse .ensureLoaded() """
-        return PersistableProxy(id=self.id,classname=self.__class__.__name__)
-
-class PersistableProxy(NoCopyBaseModel):
-    """ Proxy with minimal data to load Persistable """
-    id : PersistId
-    classname: str
-
-    def ensure_loaded(self, transaction : transactions.Transaction) -> Persistable:
-        """ return an instantiaded Persistable subclass; idempotent """
-        cls = Persistable.Registry[self.classname]
-#        cls = typing.cast(Persistable,cls)
-        obj = cls.load(self.id,transaction)
-        assert isinstance(obj,cls)
-        return obj
-
-    def get_proxy(self) -> PersistableProxy:
-        """ this is already a proxy """
-        return self
-
-class NodeProxy(PersistableProxy):
+class NodeProxy(persistable.PersistableProxy):
     supports : set[NodeSupports]    
 
 
@@ -166,7 +66,7 @@ class Node(pydantic.BaseModel):
 
     def get_proxy(self) -> typing.Union[Node,NodeProxy]:
         """ get a loadable proxy for us; idempotent. Reverse .ensureLoaded() """
-        if isinstance(self,Persistable):
+        if isinstance(self,persistable.Persistable):
             return NodeProxy(supports=self.supports,id=self.id,classname=self.__class__.__name__)
         else:
             return self
@@ -175,7 +75,7 @@ class Node(pydantic.BaseModel):
 
 from . import keys # avoid circle
 Node.update_forward_refs() # Now Node is known, update before it's derived
-NodeOrProxy = typing.Union[Node,PersistableProxy]
+NodeOrProxy = typing.Union[Node,persistable.PersistableProxy]
 
 class MultiOwnerNode(Node):
 
@@ -199,7 +99,7 @@ class MultiOwnerNode(Node):
         return self.all_owners
 
 
-class SchemaNode(NonPersistable,Node):
+class SchemaNode(Node,persistable.NonPersistable):
 
     nschema : typing.Optional[schemas.Schema] =  pydantic.Field(alias='schema')
 
@@ -257,14 +157,14 @@ from backend import storage,keyvault
 
 
 
-class DataNode(Persistable,Node):
+class DataNode(Node,persistable.Persistable):
     """ New data node, points to storage and consents """
 
     owner: permissions.Principal
 
-    format : DataFormat = DataFormat.dict
+    format : persistable.DataFormat = persistable.DataFormat.dict
     data : typing.Any        
-    storage_loc : typing.Optional[PersistId] = None
+    storage_loc : typing.Optional[persistable.PersistId] = None
     access_key: typing.Optional[keyvault.AccessKey] = None
     sub_nodes : dict[keys.DDHkey,keys.DDHkey] = {}
 
@@ -286,7 +186,7 @@ class DataNode(Persistable,Node):
         return
 
     @classmethod
-    def load(cls, id:PersistId,  transaction: transactions.Transaction ):
+    def load(cls, id: persistable.PersistId,  transaction: transactions.Transaction ):
         enc = storage.Storage.load(id,transaction)
         plain = keyvault.decrypt_data(transaction.for_user,self,enc)
         o = cls.from_compressed(plain)
@@ -298,7 +198,7 @@ class DataNode(Persistable,Node):
     def execute(self, op: Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
         if key_split:
             top,remainder = access.ddhkey.split_at(key_split)
-            if self.format != DataFormat.dict:
+            if self.format != persistable.DataFormat.dict:
                 raise errors.NotSelectable(remainder)
         if op == Ops.get:
             data = self.unsplit_data(self.data,transaction)
@@ -347,7 +247,7 @@ class DataNode(Persistable,Node):
 
     def split_node(self, remainder: keys.DDHkey, consents: permissions.Consents) -> DataNode:
         prev_data = self.data  # need before new key is generated          
-        if self.format != DataFormat.dict:
+        if self.format != persistable.DataFormat.dict:
             raise errors.NotSelectable(remainder)
         key=keys.DDHkey(key=self.key.key+remainder.key)
         above,below = datautils.split_data(prev_data,remainder,raise_error=errors.NotFound) # if we're deep in data

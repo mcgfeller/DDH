@@ -11,6 +11,7 @@ from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import NoCopyBaseModel
 
 from . import nodes, keys, transactions
+from backend import persistable
 
 
 class _NodeRegistry:
@@ -21,7 +22,7 @@ class _NodeRegistry:
         A proper realization could use a PatriciaTrie.
     """
 
-    nodes_by_key : dict[tuple,dict[nodes.NodeSupports,nodes.PersistableProxy]] # by key, then by NodeTypes
+    nodes_by_key : dict[tuple,dict[nodes.NodeSupports,nodes.NodeProxy]] # by key, then by NodeTypes
 
     def __init__(self):
         self.nodes_by_key = {}
@@ -36,7 +37,7 @@ class _NodeRegistry:
         return 
 
 
-    def __getitem__(self,key : keys.DDHkey) -> dict[nodes.NodeSupports,nodes.PersistableProxy]:
+    def __getitem__(self,key : keys.DDHkey) -> dict[nodes.NodeSupports,persistable.PersistableProxy]:
         return self.nodes_by_key.get(key.key,{}) 
 
     def get_next_proxy(self,key : typing.Optional[keys.DDHkey], support: nodes.NodeSupports) -> typing.Iterator[typing.Tuple[nodes.NodeOrProxy,int]]:

@@ -6,6 +6,7 @@ import enum
 
 from core import keys,permissions,nodes,transactions
 from utils.pydantic_utils import NoCopyBaseModel
+from . import persistable
 
 @enum.unique
 class Variant(enum.IntEnum):
@@ -16,23 +17,23 @@ class Variant(enum.IntEnum):
 
 class StorageClass(NoCopyBaseModel):
 
-    byId : dict[nodes.PersistId,StorageBlock] = {}
+    byId : dict[persistable.PersistId,StorageBlock] = {}
 
 
-    def __contains__(self, id : nodes.PersistId):
+    def __contains__(self, id : persistable.PersistId):
         """ does id exist in storage? """
         return id in self.byId
 
-    def store(self,id : nodes.PersistId, data : bytes, transaction: transactions.Transaction):
+    def store(self,id : persistable.PersistId, data : bytes, transaction: transactions.Transaction):
         self.byId[id] = StorageBlock(variant=Variant.uncompressed,blob=data)
         return
 
-    def delete(self,id : nodes.PersistId, transaction: transactions.Transaction):
+    def delete(self,id : persistable.PersistId, transaction: transactions.Transaction):
         """ delete from storage, must supply key to verify """
         self.byId.pop(id,None)
         return
 
-    def load(self,id : nodes.PersistId, transaction: transactions.Transaction) -> bytes:
+    def load(self,id : persistable.PersistId, transaction: transactions.Transaction) -> bytes:
         sb = self.byId.get(id,None)
         if not sb:
             raise KeyError(id)

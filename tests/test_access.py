@@ -1,16 +1,17 @@
 from core import keys,nodes,permissions,schemas,keydirectory
+from backend import persistable
 from . import test_dapp_data
 import pytest
 
 
 class DummyElement(schemas.SchemaElement): ...
 
-class DummyNode(nodes.Node,nodes.NonPersistable): 
+class DummyNode(nodes.Node,persistable.NonPersistable): 
     @property
     def supports(self):
         return {nodes.NodeSupports.data}
 
-class DummyMultiOwnerNode(nodes.MultiOwnerNode,nodes.NonPersistable): 
+class DummyMultiOwnerNode(nodes.MultiOwnerNode,persistable.NonPersistable): 
     @property
     def supports(self):
         return {nodes.NodeSupports.data}
