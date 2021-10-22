@@ -268,13 +268,14 @@ class Access(NoCopyBaseModel):
             keyowners = (owner,)
         else:
             keyowners = Principal.get_principals(self.ddhkey.owners)
-        if False: # this won't work with MultiOwnerNodes because owners are not in key
-            # len(keyowners) == 1 and self.principal == keyowners[0]: # single owner from key, remainder is owned by definition
-            ok,msg = True,'principal is key owner'
-        else:
-            if not node:
+
+        if not node: # cannot use this test when a MultiOwnerNode is given!
+            if len(keyowners) == 1 and self.principal == keyowners[0]: # single owner from key, remainder is owned by definition
+                ok,msg = True,'principal is key owner'
+            else: # no applicable node, and keyowner is not principal accessor!
                 ok,msg = False,f'No data/consent node found for key {self.ddhkey}'
-            elif (self.principal,) == node.owners:
+        else: # we have a node
+            if (self.principal,) == node.owners: # single owner == principal
                 ok,msg = True,'Node owned by principal'
             else:
                 if node.consents:
@@ -288,7 +289,10 @@ class Access(NoCopyBaseModel):
             self.byConsents = used_consents
         return  ok,used_consents,msg
 
-
+    def raise_permitted(self,node : typing.Optional[nodes.Node], owner : typing.Optional[Principal] = None, record_access : bool = True):
+        ok,consent,text = self.permitted(node)
+        if not ok:
+            raise errors.AccessError(text)
     
     def audit_record(self) -> dict:
         return {}

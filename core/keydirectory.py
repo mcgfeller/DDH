@@ -61,12 +61,28 @@ class _NodeRegistry:
         nop,split = next(( (node,split) for node,split in self.get_next_proxy(key, support) ),(None,-1))
         return nop,split
 
-    def get_node(self,key : keys.DDHkey,support : nodes.NodeSupports, transaction: transactions.Transaction) -> typing.Tuple[typing.Optional[nodes.Node],int]:
+    def get_node(self,key : keys.DDHkey,support : nodes.NodeSupports, transaction: transactions.Transaction, 
+                condition : typing.Optional[typing.Callable] = None) -> typing.Tuple[typing.Optional[nodes.Node],int]:
+        """ get a node that supports support, walking up the tree.
+            ProxyNodes are loaded. 
+            If the Node doesn't meet condition, the search goes up the tree looking for a Node. 
+        """
         nop,split = self.get_proxy(key,support)
         if nop:
-            nop = nop.ensure_loaded(transaction)
-            assert isinstance(nop,nodes.Node) # searchable Persistable must be Node
-        return nop,split
+            node = nop.ensure_loaded(transaction)
+            assert isinstance(node,nodes.Node) # searchable Persistable must be Node
+            if condition and not condition(node): # apply condition to loaded Node
+                key = key.up() # go one up and recurse
+                if key:
+                    node,split = self.get_node(key,support,transaction,condition=condition)
+                    split -= 1
+                else:
+                    return (None,-1)
+        else:
+            node = None
+
+
+        return node,split
 
     
 

@@ -54,6 +54,10 @@ class Node(pydantic.BaseModel):
     def supports(self) -> set[NodeSupports]:
         return set()
 
+    def has_consents(self):
+        """ None consents means to check parent node """
+        return self.consents is not None
+
     def __str__(self):
         """ short representation """
         return f'{self.__class__.__name__}(supports={self.supports},key={self.key!s},owner={self.owner.id})'

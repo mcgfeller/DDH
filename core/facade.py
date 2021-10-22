@@ -15,18 +15,17 @@ from utils.pydantic_utils import NoCopyBaseModel
 from . import permissions, keys, schemas, nodes, keydirectory, transactions, errors
 from frontend import sessions
 
-def get_consent_node(ddhkey: keys.DDHkey, node : nodes.Node, support: nodes.NodeSupports, transaction : transactions.Transaction) -> typing.Optional[nodes.Node]:
+
+def _get_consent_node(ddhkey: keys.DDHkey, support: nodes.NodeSupports, node : typing.Optional[nodes.Node], transaction : transactions.Transaction) -> nodes.Node:
     """ get consents, from current node or from its parent """
-    cnode = node
-    while True:
-        if cnode.consents:
-            return cnode
-        else:
-            ddhkey = ddhkey.up()
-            if ddhkey:
-                cnode,split = keydirectory.NodeRegistry.get_node(ddhkey,support,transaction)
-            else:
-                return None
+    if node and node.has_consents():
+        cnode = node
+    else:
+        cnode,d = keydirectory.NodeRegistry.get_node(ddhkey,support,transaction,condition=nodes.Node.has_consents)
+        if not cnode: # means that upper nodes don't have consent
+            cnode = node 
+    return cnode
+
     
 
 
@@ -41,12 +40,10 @@ def get_schema(access : permissions.Access, session : sessions.Session, schemafo
     snode,split = keydirectory.NodeRegistry.get_node(access.ddhkey,nodes.NodeSupports.schema,transaction) # get applicable schema nodes
    
     if snode:
-        cnode = get_consent_node(access.ddhkey,snode,nodes.NodeSupports.schema,transaction)
-        ok,consent,text = access.permitted(cnode)
-        if ok:
-            schema = snode.get_sub_schema(access.ddhkey,split)
-            if schema:
-                formatted_schema = schema.format(schemaformat)
+        access.raise_permitted(_get_consent_node(access.ddhkey,nodes.NodeSupports.schema,snode,transaction))
+        schema = snode.get_sub_schema(access.ddhkey,split)
+        if schema:
+            formatted_schema = schema.format(schemaformat)
     return formatted_schema
 
 
@@ -63,8 +60,10 @@ def ddh_get(access : permissions.Access, session : sessions.Session, q : typing.
 
     # if we ask for schema, we don't need a transaction:
     if access.ddhkey.fork == keys.ForkType.schema:
-        return get_schema(access, schemaformat=schemas.SchemaFormat.json)
+        return get_schema(access, session, schemaformat=schemas.SchemaFormat.json)
     else: # data or consent
+        if access.ddhkey.owners is keys.DDHkey.AnyKey:
+            raise errors.NotFound('key has no owner')
         access.include_mode(permissions.AccessMode.read)
         transaction = session.get_or_create_transaction(for_user=access.principal)
         transaction.add_and_validate(access)
@@ -72,22 +71,19 @@ def ddh_get(access : permissions.Access, session : sessions.Session, q : typing.
         # get data node first
         data_node,d_key_split = keydirectory.NodeRegistry.get_node(access.ddhkey,nodes.NodeSupports.data,transaction)
         if data_node:
-            cnode = get_consent_node(access.ddhkey,data_node,nodes.NodeSupports.data,transaction)
-            ok,consent,text = access.permitted(cnode)
-            if not ok:
-                raise errors.AccessError(text)
-            
-        if access.ddhkey.fork == keys.ForkType.consents:
-            access.include_mode(permissions.AccessMode.consent_read)
-            return data_node.consents
-        else:
-            if data_node:
+            if access.ddhkey.fork == keys.ForkType.consents:
+                access.include_mode(permissions.AccessMode.consent_read)
+                access.raise_permitted(data_node)
+                return data_node.consents
+            else:
                 data_node = data_node.ensure_loaded(transaction)
                 data_node = typing.cast(nodes.DataNode,data_node)
+                access.raise_permitted(data_node)
                 topkey,remainder = access.ddhkey.split_at(d_key_split)
                 data = data_node.execute(nodes.Ops.get,access, transaction, d_key_split, None, q)
-            else:
-                data = {}
+        else:
+            access.raise_permitted(_get_consent_node(access.ddhkey,nodes.NodeSupports.data,None,transaction))
+            data = {}
 
             # now for the enode:
             e_node,e_key_split = keydirectory.NodeRegistry.get_node(access.ddhkey.without_owner(),nodes.NodeSupports.execute,transaction)
@@ -111,7 +107,7 @@ def ddh_put(access : permissions.Access, session : sessions.Session, data : pyda
 
         topkey,remainder = access.ddhkey.split_at(2)
         # there is no node, create it if owner asks for it:
-        if topkey.owners == access.principal.id:
+        if access.principal.id in topkey.owners:
             data_node = nodes.DataNode(owner= access.principal,key=topkey)
             data_node.store(transaction) # put node into directory
             d_key_split = 0 # now this is the split
@@ -124,6 +120,7 @@ def ddh_put(access : permissions.Access, session : sessions.Session, data : pyda
     data_node = typing.cast(nodes.DataNode,data_node)
     
     if access.ddhkey.fork == keys.ForkType.data:
+        access.raise_permitted(data_node)
         data = json.loads(data) # make dict
         # first e_node to transform data:
         e_node,e_key_split = keydirectory.NodeRegistry.get_node(access.ddhkey.without_owner(),nodes.NodeSupports.execute,transaction)
@@ -136,6 +133,7 @@ def ddh_put(access : permissions.Access, session : sessions.Session, data : pyda
 
     elif access.ddhkey.fork == keys.ForkType.consents:
         access.include_mode(permissions.AccessMode.consent_write)
+        access.raise_permitted(data_node)
         consents = permissions.Consents.parse_raw(data)
         data_node.update_consents(access, transaction, remainder,consents)
     return data
