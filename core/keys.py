@@ -45,8 +45,6 @@ class DDHkey(NoCopyBaseModel):
     key : tuple
     fork : ForkType = ForkType.data
 
-    # node: typing.Optional[nodes.Node] = None # XXX Used?
-
     Delimiter : typing.ClassVar[str] = '/'
     ForkDelimiter : typing.ClassVar[str] = ':'
     Root : typing.ClassVar[_RootType] = _RootType(Delimiter)
