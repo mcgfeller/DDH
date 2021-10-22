@@ -82,13 +82,6 @@ class SchemaElement(NoCopyBaseModel):
         entire_selection = selection
         schema = self.__class__
         principals = permissions.Principal.get_principals(access.ddhkey.owners)
-        # TODO
-        # for principal in principals:
-        #     ok,consent,text = access.permitted(owner=principal) # here we check the consent
-        #     if not ok:
-        #         raise errors.AccessError(text)
-
-
 
         while len(selection.key):
             next_key,remainder = selection.split_at(1) # next level
@@ -97,16 +90,6 @@ class SchemaElement(NoCopyBaseModel):
                 raise errors.NotFound(f'Invalid key {next_key} in {entire_selection}') 
             if container:
                 sel,remainder = remainder.split_at(1) # next level is ids
-                # if idattr:
-                #     principals = permissions.Principal.get_principals(str(sel)) # existing principals (may raise NotFound)
-                #     for principal in principals:
-                #         p_access = access.copy() # create an access record for actual key (maybe optimize if it's just one key?)
-                #         p_key = keys.DDHkey(key=access.ddhkey[:-(len(remainder.key)+1)]+(principal.id,)+remainder.key)
-                #         p_access.ddhkey = p_key
-                #         ok,consent,text = p_access.permitted(owner=principal) # here we check the consent
-                #         if not ok:
-                #             raise errors.AccessError(text)
-                #     ids.setdefault(schema,{})[idattr] = principals 
             resolver = getattr(schema,'resolve',None)
             if resolver:
                 res = resolver(remainder,principals, q)

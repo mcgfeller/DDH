@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 import pydantic 
-import datetime
 import typing
-import enum
-import abc
 import json
 
 
@@ -79,7 +76,6 @@ def ddh_get(access : permissions.Access, session : sessions.Session, q : typing.
                 data_node = data_node.ensure_loaded(transaction)
                 data_node = typing.cast(nodes.DataNode,data_node)
                 access.raise_permitted(data_node)
-                topkey,remainder = access.ddhkey.split_at(d_key_split)
                 data = data_node.execute(nodes.Ops.get,access, transaction, d_key_split, None, q)
         else:
             access.raise_permitted(_get_consent_node(access.ddhkey,nodes.NodeSupports.data,None,transaction))
