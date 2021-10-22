@@ -79,6 +79,7 @@ class AccessMode(str,enum.Enum):
         """ more compact representation in messages and logs """
         return str.__str__(self)
 
+
     @classmethod
     def check(cls,requested :set[AccessMode], consented : set[AccessMode]) -> tuple[bool,str]:
         """ Check wether requsted modes are permitted by consented modes.
@@ -253,6 +254,10 @@ class Access(NoCopyBaseModel):
     def __init__(self,*a,**kw):
         super().__init__(*a,**kw)
         self.ddhkey = self.ddhkey.ensure_rooted()
+
+    def include_mode(self,mode : AccessMode):
+        """ ensure that mode is included in access modes """
+        self.modes.add(mode)
 
     def permitted(self,node : typing.Optional[nodes.Node], owner : typing.Optional[Principal] = None, record_access : bool = True) -> tuple[bool,list[Consent],str]:
         """ checks whether access is permitted, returning (bool,required flags,applicable consent,explanation text)

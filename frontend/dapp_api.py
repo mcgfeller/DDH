@@ -49,11 +49,10 @@ async def get_data(
     modes: set[permissions.AccessMode] = {permissions.AccessMode.read},
     q: str = fastapi.Query(None, alias="item-query"),
     ):
-    if permissions.AccessMode.read not in modes: # get_data requires read-access
-        modes.add(permissions.AccessMode.read)
+
     access = permissions.Access(op = permissions.Operation.get, ddhkey = keys.DDHkey(docpath),principal=session.user, modes = modes, byDApp=session.dappid)
     try:
-        d = facade.get_access(access,session,q)
+        d = facade.ddh_get(access,session,q)
     except errors.DDHerror as e:
         raise e.to_http()
 
@@ -67,11 +66,9 @@ async def put_data(
     modes: set[permissions.AccessMode] = {permissions.AccessMode.write},
     q: str = fastapi.Query(None, alias="item-query"),
     ):
-    if permissions.AccessMode.write not in modes: # get_data requires read-access
-        modes.add(permissions.AccessMode.write)
     access = permissions.Access(op = permissions.Operation.put, ddhkey = keys.DDHkey(docpath),principal=session.user, modes = modes, byDApp=session.dappid)
     try:
-        d = facade.put_access(access,session,data,q)
+        d = facade.ddh_put(access,session,data,q)
     except errors.DDHerror as e:
         raise e.to_http()
 

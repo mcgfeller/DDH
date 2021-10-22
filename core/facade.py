@@ -34,6 +34,7 @@ def get_schema(access : permissions.Access, session : sessions.Session, schemafo
     """ Service utility to retrieve a Schema and return it in the desired format.
         Returns None if no schema found.
     """
+    access.include_mode(permissions.AccessMode.schema_read)
     transaction = session.get_or_create_transaction(for_user=access.principal)
     transaction.add_and_validate(access)
     formatted_schema = None # in case of not found. 
@@ -51,17 +52,20 @@ def get_schema(access : permissions.Access, session : sessions.Session, schemafo
 
     
 
-def get_access(access : permissions.Access, session : sessions.Session, q : typing.Optional[str] = None, ) -> typing.Any:
+def ddh_get(access : permissions.Access, session : sessions.Session, q : typing.Optional[str] = None, ) -> typing.Any:
     """ Service utility to retrieve data and return it in the desired format.
         Returns None if no data found.
 
         First we get the data (and consent), then we pass it to an enode if an enode is found.
 
     """
+
+
     # if we ask for schema, we don't need a transaction:
     if access.ddhkey.fork == keys.ForkType.schema:
         return get_schema(access, schemaformat=schemas.SchemaFormat.json)
     else: # data or consent
+        access.include_mode(permissions.AccessMode.read)
         transaction = session.get_or_create_transaction(for_user=access.principal)
         transaction.add_and_validate(access)
 
@@ -74,6 +78,7 @@ def get_access(access : permissions.Access, session : sessions.Session, q : typi
                 raise errors.AccessError(text)
             
         if access.ddhkey.fork == keys.ForkType.consents:
+            access.include_mode(permissions.AccessMode.consent_read)
             return data_node.consents
         else:
             if data_node:
@@ -92,12 +97,14 @@ def get_access(access : permissions.Access, session : sessions.Session, q : typi
                 data = e_node.execute(nodes.Ops.get,access, transaction, e_key_split, data, q)
             return data
 
-def put_access(access : permissions.Access, session : sessions.Session, data : pydantic.Json, q : typing.Optional[str] = None, ) -> typing.Any:
+def ddh_put(access : permissions.Access, session : sessions.Session, data : pydantic.Json, q : typing.Optional[str] = None, ) -> typing.Any:
     """ Service utility to store data.
         
     """
+    access.include_mode(permissions.AccessMode.write)
     transaction = session.get_or_create_transaction(for_user=access.principal)
     transaction.add_and_validate(access)
+
 
     data_node,d_key_split = keydirectory.NodeRegistry.get_node(access.ddhkey,nodes.NodeSupports.data,transaction)
     if not data_node:
@@ -128,6 +135,7 @@ def put_access(access : permissions.Access, session : sessions.Session, data : p
             data_node.execute(nodes.Ops.put,access, transaction, d_key_split, data, q)
 
     elif access.ddhkey.fork == keys.ForkType.consents:
+        access.include_mode(permissions.AccessMode.consent_write)
         consents = permissions.Consents.parse_raw(data)
         data_node.update_consents(access, transaction, remainder,consents)
     return data

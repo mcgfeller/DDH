@@ -26,22 +26,22 @@ def session(user):
 
 
 def test_write_data(user,session):
-    """ test write through facade.put_access() """
+    """ test write through facade.ddh_put() """
     ddhkey = keys.DDHkey(key="/mgf/org/private/documents/doc1")
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.write})
     data = json.dumps({'document':'not much'})
-    facade.put_access(access,session,data)
+    facade.ddh_put(access,session,data)
 
     
     return
 
 def test_write_data_other_owner(user,session):
-    """ test write through facade.put_access() using another owenr"""
+    """ test write through facade.ddh_put() using another owenr"""
     ddhkey = keys.DDHkey(key="/another/org/private/documents/doc1")
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.write})
     data = json.dumps({'document':'not much'})
     with pytest.raises(errors.AccessError):
-        facade.put_access(access,session,data)
+        facade.ddh_put(access,session,data)
     return
 
 def test_set_consent_top(user,user2,session):
@@ -49,7 +49,7 @@ def test_set_consent_top(user,user2,session):
     ddhkey = keys.DDHkey(key="/mgf:consents")
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.write})
     consents=permissions.Consents(consents=[permissions.Consent(grantedTo=[user2])])
-    facade.put_access(access,session,consents.json())
+    facade.ddh_put(access,session,consents.json())
 
 def test_set_consent_deep(user,user2,user3,session):
     """ test set consent deeper in tree """
@@ -57,10 +57,10 @@ def test_set_consent_deep(user,user2,user3,session):
     ddhkey = keys.DDHkey(key="/mgf:consents")
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.write})
     consents=permissions.Consents(consents=[permissions.Consent(grantedTo=[user2])])
-    facade.put_access(access,session,consents.json())
+    facade.ddh_put(access,session,consents.json())
 
     # now withdraw access for user2 to a specific document, but give user3 access:
     ddhkey2 = keys.DDHkey(key="/mgf/org/private/documents:consents")
     access2 = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.write})
     consents2 =permissions.Consents(consents=[permissions.Consent(grantedTo=[user3])])
-    facade.put_access(access2,session,consents2.json())    
+    facade.ddh_put(access2,session,consents2.json())    
