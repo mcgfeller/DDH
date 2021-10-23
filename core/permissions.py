@@ -155,6 +155,20 @@ class Consent(NoCopyBaseModel):
 
         return True,'Granted by Consent; '+txt
 
+    def __hash__(self):
+        """ make consents hashable """
+        return hash(self._as_tuple())
+
+    def __eq__(self,other):
+        if isinstance(self,Consent):
+            return self._as_tuple() == other._as_tuple()
+        else:
+            return False
+
+    def _as_tuple(self):
+        """ return hashable tuple """
+        return (tuple(self.grantedTo),frozenset(self.withApps),frozenset(self.withModes))
+
 
 class Consents(NoCopyBaseModel):
     """ Multiple Consents, for one owner.
@@ -196,8 +210,8 @@ class Consents(NoCopyBaseModel):
 
     def changes(self,new_consents:Consents) -> tuple:
         """ return added and removed consents as (set(),set()) """
-        # TODO: Changed consents
-        return (frozenset(),frozenset())
+        old = frozenset(self.consents) ; new = frozenset(new_consents.consents)
+        return (new-old,old-new)
 
 DefaultConsents = Consents(consents=[])
 
