@@ -156,7 +156,7 @@ async def get_current_active_user(current_session: sessions.Session = fastapi.De
 
 
 
-async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordRequestForm = fastapi.Depends()):
+async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordRequestForm):
     """ get user from login form, including optional dappid,
         which provisionally comes from client_id. 
     """
@@ -172,7 +172,7 @@ async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordReque
     access_token = create_access_token(
         data={"sub": user.id,'xdapp':dappid,}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return user,dappid, {"access_token": access_token, "token_type": "bearer"}
 
 
 

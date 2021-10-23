@@ -74,6 +74,7 @@ class AccessMode(str,enum.Enum):
     schema_write = 'schema_write'    
     consent_read = 'consent_read'
     consent_write = 'consent_write'
+    login = 'login'
 
     def __repr__(self) -> str:
         """ more compact representation in messages and logs """

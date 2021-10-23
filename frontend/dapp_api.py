@@ -5,6 +5,7 @@
 """
 
 import fastapi
+import fastapi.security
 import typing
 import pydantic
 import datetime
@@ -24,8 +25,13 @@ async def read_users_me(current_user: user_auth.UserInDB = fastapi.Depends(user_
     """ return my user """
     return current_user.as_user()
 
-# get user_auth.login_for_access_token defined in app: # TODO: We should create access record
-app.post("/token", response_model=user_auth.Token)(user_auth.login_for_access_token)
+# get user_auth.login_for_access_token defined in app:
+@app.post("/token", response_model=user_auth.Token)
+async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordRequestForm = fastapi.Depends()):
+    user,dappid,token =  await user_auth.login_for_access_token(form_data)
+    # Create access record:
+    access = permissions.Access(ddhkey=keys.DDHkey('/login'),principal=user, modes = {permissions.AccessMode.login},byDApp=dappid)
+    return token
 
 @app.get("/ddh{docpath:path}:schema")
 async def get_schema(
