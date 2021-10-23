@@ -90,4 +90,4 @@ def test_std_read_data(user,session):
     return
 
 if __name__ == '__main__':
-    test_std_read_data()
+    test_std_read_data(user,session)
