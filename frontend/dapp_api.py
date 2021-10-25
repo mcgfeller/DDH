@@ -94,3 +94,16 @@ async def create_transaction(
 
     return {"transaction": trx.trxid}  
 
+@app.post("/reinitialize")
+async def reinitialize(
+    for_user : permissions.Principal,
+    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
+
+    ):    
+    try:
+        trx = session.new_transaction(for_user)
+    except errors.DDHerror as e:
+        raise e.to_http()
+
+    return {"transaction": trx.trxid}  
+
