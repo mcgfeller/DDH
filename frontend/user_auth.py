@@ -147,7 +147,7 @@ async def get_current_session(token: str = fastapi.Depends(oauth2_scheme)):
     user = get_user(FAKE_USERS_DB, userid=token_data.id)
     if user is None:
         raise credentials_exception
-    dappid = payload.get('xdapp') # verified dapp id
+    dappid = payload.get('x_dapp') # verified dapp id
     return sessions.Session(user=user,dappid=dappid,token_str=token)
 
 
