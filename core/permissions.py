@@ -188,9 +188,13 @@ class Consents(NoCopyBaseModel):
         return
 
 
-    def consentees(self) -> list[Principal]:
+    def consentees(self) -> set[Principal]:
         """ all principals that enjoy some sort of Consent """
-        return sum([c.grantedTo for c in self.consents],[])
+        return set(sum([c.grantedTo for c in self.consents],[]))
+
+    def consentees_with_mode(self, mode : AccessMode) -> set[Principal]:
+        """ all principals that enjoy Consent of mode """
+        return set(sum([c.grantedTo for c in self.consents if mode in c.withModes],[]))
 
     def applicable_consents(self,principal : Principal ) -> list[Consent]:
         """ return list of Consents for this principal """
@@ -237,6 +241,14 @@ class MultiOwnerConsents(NoCopyBaseModel):
         msgs = ('; '.join(msgs)) if msgs else 'no consent'
         return ok,consents,msgs
 
+    def consentees(self) -> set[Principal]:
+        """ all principals that enjoy some sort of Consent """
+        return set.intersection(*[c.consentees() for c in self.consents_by_owner.values()])
+
+    def consentees_with_mode(self, mode : AccessMode) -> set[Principal]:
+        """ all principals that enjoy Consent of mode """
+        return set.intersection(*[c.consentees_with_mode(mode) for c in self.consents_by_owner.values()])
+
 
 DDHkey = typing.ForwardRef('keys.DDHkey')
 
@@ -274,11 +286,12 @@ class Access(NoCopyBaseModel):
         """ ensure that mode is included in access modes """
         self.modes.add(mode)
 
-    def permitted(self,node : typing.Optional[nodes.Node], owner : typing.Optional[Principal] = None, record_access : bool = True) -> tuple[bool,list[Consent],str]:
+    def permitted(self,node : typing.Optional[nodes.Node], owner : typing.Optional[Principal] = None, record_access : bool = True) -> tuple[bool,list[Consent],set[Principal],str]:
         """ checks whether access is permitted, returning (bool,required flags,applicable consent,explanation text)
             if record_access is set, the result is recorded into self.
         """
         used_consents = []
+        consentees = set()
         if owner is not None:
             keyowners = (owner,)
         else:
@@ -287,27 +300,34 @@ class Access(NoCopyBaseModel):
         if not node: # cannot use this test when a MultiOwnerNode is given!
             if len(keyowners) == 1 and self.principal == keyowners[0]: # single owner from key, remainder is owned by definition
                 ok,msg = True,'principal is key owner'
+                consentees = {self.principal}
             else: # no applicable node, and keyowner is not principal accessor!
                 ok,msg = False,f'No data/consent node found for key {self.ddhkey}'
         else: # we have a node
             if (self.principal,) == node.owners: # single owner == principal
                 ok,msg = True,'Node owned by principal'
+                consentees = {self.principal}
             else:
                 if node.consents:
                     ok,used_consents,msg = node.consents.check(node.owners,self) # check consents
+                    consentees = node.consents.consentees_with_mode(AccessMode.read) | {self.principal}
                 else:
                     ok,msg =  False,f'Owner is not accessor, and no consent found for key {self.ddhkey}'
+
+        if AccessMode.read not in self.modes: # consentees are for read only
+            consentees = set()
 
         if record_access:
             self.granted = ok
             self.explanation = msg
             self.byConsents = used_consents
-        return  ok,used_consents,msg
+        return  ok,used_consents,consentees,msg
 
     def raise_permitted(self,node : typing.Optional[nodes.Node], owner : typing.Optional[Principal] = None, record_access : bool = True):
-        ok,consent,text = self.permitted(node)
+        ok,used_consents,msg,consentees = self.permitted(node)
         if not ok:
-            raise errors.AccessError(text)
+            raise errors.AccessError(msg)
+        return ok,used_consents,consentees,msg
     
     def audit_record(self) -> dict:
         return {}

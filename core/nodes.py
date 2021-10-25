@@ -184,7 +184,7 @@ class DataNode(Node,persistable.Persistable):
     def store(self, transaction: transactions.Transaction ):
         d = self.to_compressed()
         if self.id not in storage.Storage:
-            keyvault.set_new_storage_key(self,transaction.for_user,[],[])
+            keyvault.set_new_storage_key(self,transaction.for_user,set(),set())
         enc = keyvault.encrypt_data(transaction.for_user,self,d)
         storage.Storage.store(self.id,enc, transaction)
         return
@@ -228,7 +228,7 @@ class DataNode(Node,persistable.Persistable):
             added,removed = self.consents.changes(consents)
             effective = consents.consentees()
         else: # all new
-            added = effective = consents.consentees() ; removed = []
+            added = effective = consents.consentees() ; removed = set()
 
         if added or removed: # expensive op follows, do only if something has changed
             self.consents = consents # actually update

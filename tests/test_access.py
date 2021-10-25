@@ -123,7 +123,7 @@ def test_access_modes(ddhkey_setup,users,ok,obj,user,modes,comment):
     ddhkey = ddhkey_setup[obj]
     access = permissions.Access(ddhkey=ddhkey,principal=users[user],modes=modes)
     node,dummy = keydirectory.NodeRegistry.get_node(ddhkey, support = nodes.NodeSupports.data, transaction = None)
-    rok,consent,explanation = access.permitted(node)
+    rok,consent,consentees,explanation = access.permitted(node)
     diagnose = f'Test result {rok} expected {ok} because {comment or "it is obvious"}: {explanation}, for {user=}, {modes=}, {consent=}'
     if  rok != ok: 
         print(diagnose)

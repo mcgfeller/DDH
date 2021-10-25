@@ -26,8 +26,7 @@ class Transaction(NoCopyBaseModel):
     accesses: list[permissions.Access] = pydantic.Field(default_factory=list)
     exp : datetime.datetime = datetime.datetime.now()
 
-    read_owners : set[permissions.Principal] = set()
-    read4write_consented : set[permissions.Principal] =  {permissions.AllPrincipal}
+    read_consentees : typing.Optional[set[permissions.Principal]] = None # don't initialize with empty set - first assignment is set
 
     Transactions : typing.ClassVar[dict[TrxId,'Transaction']] = {}
     TTL : typing.ClassVar[datetime.timedelta] = datetime.timedelta(seconds=5) # max duration of a transaction in seconds
@@ -69,27 +68,6 @@ class Transaction(NoCopyBaseModel):
             raise TrxAccessError(f'Transaction has expired; {self.TTL=}')
         return self
 
-    @staticmethod
-    def _get_owners(nodes: typing.Iterable[nodes.Node]) -> set[permissions.Principal]:
-        """ set of all owners of nodes """
-        return set.union(*[set(node.owners) for node in nodes])
-
-    @staticmethod
-    def _get_consents(nodes: typing.Iterable[nodes.Node]) -> dict[permissions.Principal, permissions.Consents]:
-        """ get the consent of all nodes by owner """
-        return {}    
-
-    @staticmethod
-    def _get_consent_owners(nodes: typing.Iterable[nodes.Node], access_mode: permissions.AccessMode) -> set[permissions.Principal]:
-        """ get a set of principals for which we have access_mode permission in nodes """
-        return {permissions.AllPrincipal}
-
-    def read(self, nodes: typing.Iterable[nodes.Node]):
-        self.read_owners |= self._get_owners(nodes)
-
-    def read_for_write(self, nodes: typing.Iterable[nodes.Node]):
-        self.read4write_consented &= self._get_consent_owners(nodes,permissions.AccessMode.protected)
-
 
     def write(self, nodes: typing.Iterable[nodes.Node]):
         # all reads must be read4write
@@ -106,3 +84,11 @@ class Transaction(NoCopyBaseModel):
         self.accesses.append(access)
         # TODO: Validation
         return
+
+    def add_read_consentees(self, read_consentees: set[permissions.Principal]):
+        if self.read_consentees is None:
+            self.read_consentees = read_consentees
+        else:
+            self.read_consentees &= read_consentees
+        return
+
