@@ -70,24 +70,26 @@ def ddh_get(access : permissions.Access, session : sessions.Session, q : typing.
         if data_node:
             if access.ddhkey.fork == keys.ForkType.consents:
                 access.include_mode(permissions.AccessMode.consent_read)
-                access.raise_permitted(data_node)
+                *d,consentees = access.raise_permitted(data_node)
                 return data_node.consents
             else:
                 data_node = data_node.ensure_loaded(transaction)
                 data_node = typing.cast(nodes.DataNode,data_node)
-                access.raise_permitted(data_node)
+                *d,consentees = access.raise_permitted(data_node)
                 data = data_node.execute(nodes.Ops.get,access, transaction, d_key_split, None, q)
         else:
-            access.raise_permitted(_get_consent_node(access.ddhkey,nodes.NodeSupports.data,None,transaction))
+            *d,consentees = access.raise_permitted(_get_consent_node(access.ddhkey,nodes.NodeSupports.data,None,transaction))
             data = {}
+        transaction.add_read_consentees(consentees)
 
-            # now for the enode:
-            e_node,e_key_split = keydirectory.NodeRegistry.get_node(access.ddhkey.without_owner(),nodes.NodeSupports.execute,transaction)
-            if e_node:
-                e_node = e_node.ensure_loaded(transaction)
-                e_node = typing.cast(nodes.ExecutableNode,e_node)
-                data = e_node.execute(nodes.Ops.get,access, transaction, e_key_split, data, q)
-            return data
+
+        # now for the enode:
+        e_node,e_key_split = keydirectory.NodeRegistry.get_node(access.ddhkey.without_owner(),nodes.NodeSupports.execute,transaction)
+        if e_node:
+            e_node = e_node.ensure_loaded(transaction)
+            e_node = typing.cast(nodes.ExecutableNode,e_node)
+            data = e_node.execute(nodes.Ops.get,access, transaction, e_key_split, data, q)
+        return data
 
 def ddh_put(access : permissions.Access, session : sessions.Session, data : pydantic.Json, q : typing.Optional[str] = None, ) -> typing.Any:
     """ Service utility to store data.
