@@ -97,4 +97,48 @@ def test_write_data_with_consent(user,user2,session):
 def test_read_and_write_data(user,user2,session):
     # first, set up some data:
     test_write_data_with_consent(user,user2,session)
+
+    session.new_transaction(for_user=user)
+
+    ddhkey1 = keys.DDHkey(key="/mgf/org/private/documents/doc1")
+    access = permissions.Access(ddhkey=ddhkey1,principal=user,modes={permissions.AccessMode.read})
+    facade.ddh_get(access,session)
+
+    # we have grant to read:
+    ddhkey2 = keys.DDHkey(key="/another/org/private/documents/doc2")
+    access = permissions.Access(ddhkey=ddhkey2,principal=user2,modes={permissions.AccessMode.read})
+    facade.ddh_get(access,session)
+
+    # we can write both docs to user
+    ddhkeyW1 = keys.DDHkey(key="/mgf/org/private/documents/docnew")
+    access = permissions.Access(ddhkey=ddhkeyW1,principal=user,modes={permissions.AccessMode.write})
+    data = json.dumps({'document':'no need to be related'})
+    facade.ddh_put(access,session,data)    
+
+    # but not to user2 as user:
+    ddhkeyW2 = keys.DDHkey(key="/another/org/private/documents/docnew")
+    access = permissions.Access(ddhkey=ddhkeyW2,principal=user,modes={permissions.AccessMode.write})
+    data = json.dumps({'document':'no need to be related'})
+    with pytest.raises(errors.AccessError):
+        facade.ddh_put(access,session,data)    
+
+    # and not as user2:
+    access = permissions.Access(ddhkey=ddhkeyW2,principal=user2,modes={permissions.AccessMode.write})
+    data = json.dumps({'document':'no need to be related'})
+    facade.ddh_put(access,session,data)  
+
+    # even with a new transaction
+    session.new_transaction(for_user=user2)
+    ddhkeyW2 = keys.DDHkey(key="/another/org/private/documents/docnew")
+    access = permissions.Access(ddhkey=ddhkeyW2,principal=user2,modes={permissions.AccessMode.write})
+    data = json.dumps({'document':'no need to be related'})
+    facade.ddh_put(access,session,data)    
+
+    # but with a reinit
+    # session.reinit()
+    session.new_transaction(for_user=user2)
+    ddhkeyW2 = keys.DDHkey(key="/another/org/private/documents/docnew")
+    access = permissions.Access(ddhkey=ddhkeyW2,principal=user2,modes={permissions.AccessMode.write})
+    data = json.dumps({'document':'no need to be related'})
+    facade.ddh_put(access,session,data)    
     return
