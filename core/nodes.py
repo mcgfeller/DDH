@@ -254,6 +254,9 @@ class DataNode(Node,persistable.Persistable):
         if self.format != persistable.DataFormat.dict:
             raise errors.NotSelectable(remainder)
         key=keys.DDHkey(key=self.key.key+remainder.key)
+        # if prev_data is not complete until remainder, fill it:
+        if datautils.hole is datautils.extract_data(prev_data,remainder,default=datautils.hole):
+            prev_data = datautils.insert_data(prev_data or {},remainder,None,missing=dict)
         above,below = datautils.split_data(prev_data,remainder,raise_error=errors.NotFound) # if we're deep in data
         node = self.__class__(owner=self.owner,key=key,consents=consents,data=below)
         self.data = above
