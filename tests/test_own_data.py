@@ -66,10 +66,12 @@ def test_set_consent_deep(user,user2,user3,session):
     facade.ddh_put(access2,session,consents2.json())    
 
 
-def test_read_and_write_data(user,user2,session):
-    """ test write through facade.ddh_put() """
-    # first write some data:
-
+def test_write_data_with_consent(user,user2,session):
+    """ test write through facade.ddh_put() with three objects:
+        - mgf/.../doc1
+        - another/.../doc2 with read grant to user
+        - another/.../doc3
+    """
     ddhkey1 = keys.DDHkey(key="/mgf/org/private/documents/doc1")
     access = permissions.Access(ddhkey=ddhkey1,principal=user,modes={permissions.AccessMode.write})
     data = json.dumps({'document':'not much'})
@@ -85,14 +87,14 @@ def test_read_and_write_data(user,user2,session):
     access = permissions.Access(ddhkey=ddhkey2f,principal=user2,modes={permissions.AccessMode.consent_write})
     facade.ddh_put(access,session,consents.json())
 
-
-
     ddhkey3 = keys.DDHkey(key="/another/org/private/documents/doc3")
     access = permissions.Access(ddhkey=ddhkey3,principal=user2,modes={permissions.AccessMode.write})
     data = json.dumps({'document':'not much more'})
     facade.ddh_put(access,session,data)
+  
+    return
 
-    transaction = session.new_transaction()
-
-    
+def test_read_and_write_data(user,user2,session):
+    # first, set up some data:
+    test_write_data_with_consent(user,user2,session)
     return
