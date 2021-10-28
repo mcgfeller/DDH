@@ -19,6 +19,18 @@
             "env": {
                 "_PYTEST_RAISE": "1"
             },
+        },
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "purpose": ["debug-test"],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "_PYTEST_RAISE": "1"
+            },
         }
     ]
 }

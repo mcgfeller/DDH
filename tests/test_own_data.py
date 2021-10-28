@@ -64,3 +64,35 @@ def test_set_consent_deep(user,user2,user3,session):
     access2 = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.write})
     consents2 =permissions.Consents(consents=[permissions.Consent(grantedTo=[user3])])
     facade.ddh_put(access2,session,consents2.json())    
+
+
+def test_read_and_write_data(user,user2,session):
+    """ test write through facade.ddh_put() """
+    # first write some data:
+
+    ddhkey1 = keys.DDHkey(key="/mgf/org/private/documents/doc1")
+    access = permissions.Access(ddhkey=ddhkey1,principal=user,modes={permissions.AccessMode.write})
+    data = json.dumps({'document':'not much'})
+    facade.ddh_put(access,session,data)
+
+    ddhkey2 = keys.DDHkey(key="/another/org/private/documents/doc2")
+    access = permissions.Access(ddhkey=ddhkey2,principal=user2,modes={permissions.AccessMode.write})
+    data = json.dumps({'document':'not much'})
+    facade.ddh_put(access,session,data)
+    # grant read access to user1
+    consents = permissions.Consent.single(grantedTo=[user],withModes={permissions.AccessMode.read})
+    ddhkey2f = ddhkey2 ; ddhkey2f.fork = keys.ForkType.consents
+    access = permissions.Access(ddhkey=ddhkey2f,principal=user2,modes={permissions.AccessMode.consent_write})
+    facade.ddh_put(access,session,consents.json())
+
+
+
+    ddhkey3 = keys.DDHkey(key="/another/org/private/documents/doc3")
+    access = permissions.Access(ddhkey=ddhkey3,principal=user2,modes={permissions.AccessMode.write})
+    data = json.dumps({'document':'not much more'})
+    facade.ddh_put(access,session,data)
+
+    transaction = session.new_transaction()
+
+    
+    return

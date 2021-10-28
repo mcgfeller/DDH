@@ -27,6 +27,7 @@ class Transaction(NoCopyBaseModel):
     exp : datetime.datetime = datetime.datetime.now()
 
     read_consentees : typing.Optional[set[permissions.Principal]] = None # don't initialize with empty set - first assignment is set
+    initial_read_consentees :  typing.Optional[set[permissions.Principal]] = None # same as read_consentees, but not modified during transaction
 
     Transactions : typing.ClassVar[dict[TrxId,'Transaction']] = {}
     TTL : typing.ClassVar[datetime.timedelta] = datetime.timedelta(seconds=5) # max duration of a transaction in seconds
@@ -82,7 +83,15 @@ class Transaction(NoCopyBaseModel):
     def add_and_validate(self, access : permissions.Access):
         """ add an access and validate whether it is ok """
         self.accesses.append(access)
-        # TODO: Validation
+        # TODO: Validation: 
+        # TODO: Add read,read,write test
+        # TODO: Handle world access
+        if self.read_consentees is not None and  access.ddhkey.owners not in self.read_consentees:
+            if self.initial_read_consentees is not None and access.ddhkey.owners not in self.initial_read_consentees:
+                # this transaction contains data from previous transaction, must reinit
+                raise TrxAccessError('must reinit')
+            else:
+                raise TrxAccessError(f'transactions contains data with no consent to use for {access.ddhkey.owners}')
         return
 
     def add_read_consentees(self, read_consentees: set[permissions.Principal]):

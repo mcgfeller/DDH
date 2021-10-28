@@ -170,6 +170,12 @@ class Consent(NoCopyBaseModel):
         return (tuple(self.grantedTo),frozenset(self.withApps),frozenset(self.withModes))
 
 
+    @classmethod
+    def single(cls,*a,**kw) -> Consents:
+        """ Create Consents from arguments of Consent; for lazy typers """
+        return Consents(consents=[cls(*a,**kw)])
+
+
 class Consents(NoCopyBaseModel):
     """ Multiple Consents, for one owner.
         If owner is not supplied, it is set to the Node's owner when

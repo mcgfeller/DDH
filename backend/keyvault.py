@@ -11,7 +11,7 @@ import cryptography.fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding,rsa
 import cryptography.fernet 
-
+import base64
 
 
 from core import keys,permissions,nodes
@@ -20,7 +20,11 @@ from utils.pydantic_utils import NoCopyBaseModel
 class StorageKey:
     """ Ephemeral storage key, never stored """
     def __init__(self,key : bytes):
-        self._fernet = cryptography.fernet .Fernet(key)
+        try:
+            self._fernet = cryptography.fernet.Fernet(key)
+        except Exception as e:
+            print(e,key)
+            self._fernet = cryptography.fernet.Fernet(base64.urlsafe_b64encode(key))
 
     def encrypt(self, plaintext : bytes) -> bytes:
         ciphertext = self._fernet.encrypt(plaintext) 
@@ -116,7 +120,9 @@ def get_nonce() -> bytes:
 
 def add_consent_hash(key : bytes , consents : permissions.Consents):
     ch = hashlib.blake2b(consents.json().encode(),digest_size=len(key)).digest()
+    key = base64.urlsafe_b64decode(key)
     key = bytes([a ^ b for a, b in zip(key,ch)]) # xor
+    key = base64.urlsafe_b64encode(key)
     return key
 
 
