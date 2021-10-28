@@ -1,5 +1,5 @@
 """ Set up some Test data """
-from core import keys,permissions,facade,errors
+from core import keys,permissions,facade,errors, transactions
 from core import pillars
 from frontend import user_auth,sessions
 import pytest
@@ -125,14 +125,16 @@ def test_read_and_write_data(user,user2,session):
     # and not as user2:
     access = permissions.Access(ddhkey=ddhkeyW2,principal=user2,modes={permissions.AccessMode.write})
     data = json.dumps({'document':'no need to be related'})
-    facade.ddh_put(access,session,data)  
+    with pytest.raises(transactions.TrxAccessError):
+        facade.ddh_put(access,session,data)  
 
     # even with a new transaction
     session.new_transaction(for_user=user2)
     ddhkeyW2 = keys.DDHkey(key="/another/org/private/documents/docnew")
     access = permissions.Access(ddhkey=ddhkeyW2,principal=user2,modes={permissions.AccessMode.write})
     data = json.dumps({'document':'no need to be related'})
-    facade.ddh_put(access,session,data)    
+    with pytest.raises(transactions.TrxAccessError):
+        facade.ddh_put(access,session,data)    
 
     # but with a reinit
     # session.reinit()
