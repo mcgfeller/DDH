@@ -185,14 +185,14 @@ class DataNode(Node,persistable.Persistable):
         d = self.to_compressed()
         if self.id not in storage.Storage:
             keyvault.set_new_storage_key(self,transaction.for_user,set(),set())
-        enc = keyvault.encrypt_data(transaction.for_user,self,d)
+        enc = keyvault.encrypt_data(transaction.for_user,self.id,d)
         storage.Storage.store(self.id,enc, transaction)
         return
 
     @classmethod
     def load(cls, id: persistable.PersistId,  transaction: transactions.Transaction ):
         enc = storage.Storage.load(id,transaction)
-        plain = keyvault.decrypt_data(transaction.for_user,self,enc)
+        plain = keyvault.decrypt_data(transaction.for_user,id,enc)
         o = cls.from_compressed(plain)
         return o
 
@@ -211,7 +211,7 @@ class DataNode(Node,persistable.Persistable):
         elif op == Ops.put:
             assert data is not None
             if key_split:
-                self.data = datautils.insert_data(self.data,remainder,data,raise_error=errors.NotFound)
+                self.data = datautils.insert_data(self.data or {},remainder,data,missing=dict)
             self.store(transaction)
         elif op == Ops.delete:
             self.delete(transaction)

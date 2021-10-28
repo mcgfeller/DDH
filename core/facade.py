@@ -108,7 +108,6 @@ def ddh_put(access : permissions.Access, session : sessions.Session, data : pyda
         if access.principal.id in topkey.owners:
             data_node = nodes.DataNode(owner= access.principal,key=topkey)
             data_node.store(transaction) # put node into directory
-            d_key_split = 0 # now this is the split
         else: # not owner, we simply say no access to this path
             raise errors.AccessError(f'not authorized to write to {topkey}')
     else:

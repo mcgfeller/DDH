@@ -69,7 +69,7 @@ class Persistable(NoCopyBaseModel):
 
     @classmethod
     def from_compressed(cls,data : bytes):
-        return cls.from_json(zlib.decompress(data).decode()).data
+        return cls.from_json(zlib.decompress(data).decode())
 
     def to_json(self) -> str:
         return self.json()
