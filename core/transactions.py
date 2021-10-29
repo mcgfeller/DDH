@@ -10,7 +10,7 @@ import pydantic
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import NoCopyBaseModel
 
-from core import keys,permissions,schemas,nodes,errors
+from core import permissions,nodes,errors
 
 import secrets
 
@@ -32,8 +32,14 @@ class Transaction(NoCopyBaseModel):
     Transactions : typing.ClassVar[dict[TrxId,'Transaction']] = {}
     TTL : typing.ClassVar[datetime.timedelta] = datetime.timedelta(seconds=5) # max duration of a transaction in seconds
 
+    def __init__(self,**kw):
+        super().__init__(**kw)
+        self.read_consentees = self.initial_read_consentees
+        return
+
+
     @classmethod
-    def create(cls,for_user : permissions.Principal) -> Transaction:
+    def create(cls,for_user : permissions.Principal,initial_read_consentees : typing.Optional[set[permissions.Principal]] = None) -> Transaction:
         """ Create Trx, and begin it """
         trxid = secrets.token_urlsafe()
         if trxid in cls.Transactions:

@@ -50,8 +50,12 @@ class Session(NoCopyBaseModel):
         prev_trx = self.trxs_for_user.get(for_user)
         if prev_trx:
             # previous transaction in session
+            prev_read_consentees = prev_trx.read_consentees
             prev_trx.abort()
-        new_trx =  transactions.Transaction.create(for_user = for_user)
+        else:
+            prev_read_consentees = None
+        new_trx =  transactions.Transaction.create(for_user = for_user,initial_read_consentees=prev_read_consentees)
+        self.trxs_for_user[for_user] = new_trx
         return new_trx.use()
 
 def get_system_session() -> Session:
