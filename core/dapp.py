@@ -3,22 +3,22 @@ from __future__ import annotations
 from abc import abstractmethod
 import typing
 
-from core import keys,permissions,schemas,nodes,keydirectory,policies,errors,transactions
+from core import keys,permissions,schemas,nodes,keydirectory,policies,errors,transactions,principals
 from utils.pydantic_utils import NoCopyBaseModel
 
 
 
 class DApp(NoCopyBaseModel):
     
-    owner : typing.ClassVar[permissions.Principal] 
+    owner : typing.ClassVar[principals.Principal] 
     schemakey : typing.ClassVar[keys.DDHkey] 
     policy: policies.Policy = policies.EmptyPolicy
     
 
     @property
-    def id(self) -> permissions.DAppId:
+    def id(self) -> principals.DAppId:
         """ Default DAppId is class name """
-        return typing.cast(permissions.DAppId,self.__class__.__name__) 
+        return typing.cast(principals.DAppId,self.__class__.__name__) 
 
     @classmethod
     def bootstrap(cls,session) -> DApp:
@@ -45,7 +45,7 @@ class DApp(NoCopyBaseModel):
                 raise ValueError(f'No parent schema found for {self!r} with {self.schemakey} at upnode {upnode}')
             schema = self.get_schema() # obtain static schema
             # give world schema_read access
-            consents = permissions.Consents(consents=[permissions.Consent(grantedTo=[permissions.AllPrincipal],withModes={permissions.AccessMode.schema_read})])
+            consents = permissions.Consents(consents=[permissions.Consent(grantedTo=[principals.AllPrincipal],withModes={permissions.AccessMode.schema_read})])
             dnode = DAppNode(owner=self.owner,schema=schema,dapp=self,consents=consents)
             keydirectory.NodeRegistry[self.schemakey] = dnode
             # now insert our schema into the parent's:

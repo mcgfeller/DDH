@@ -9,7 +9,7 @@ import enum
 import decimal
 from utils.pydantic_utils import NoCopyBaseModel
 
-from core import permissions,errors,dapp,privacyIcons
+from core import permissions,errors,dapp,privacyIcons,principals
 
 
 
@@ -73,17 +73,17 @@ class Offer(NoCopyBaseModel):
 
     required_consents : permissions.Consents
     tac : TermsAndConditions
-    dapp: permissions.DAppId
+    dapp: principals.DAppId
     price : Price = FreePrice
 
 
 class Contract(NoCopyBaseModel):
 
     offer = Offer
-    acceptor = permissions.Principal
+    acceptor = principals.Principal
 
     @property 
-    def offerer(self) -> permissions.Principal:
+    def offerer(self) -> principals.Principal:
         """ contract offerer """
         return self.offer.dapp
 

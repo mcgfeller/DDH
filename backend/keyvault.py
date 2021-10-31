@@ -15,7 +15,7 @@ import base64
 from backend import persistable
 
 
-from core import keys,permissions,nodes
+from core import keys,permissions,nodes,principals
 from utils.pydantic_utils import NoCopyBaseModel
 
 class StorageKey:
@@ -42,7 +42,7 @@ class AccessKey(NoCopyBaseModel):
         only in the PrincipalKey.
     """
     nodeid : str
-    principal : permissions.Principal
+    principal : principals.Principal
     key : bytes
 
 
@@ -54,11 +54,11 @@ class AccessKeyVaultClass(NoCopyBaseModel):
     def add(self,key: AccessKey):
         self.access_keys[(key.principal.id, key.nodeid)] = key
 
-    def remove(self,principal : permissions.Principal, nodeid :str ):
+    def remove(self,principal : principals.Principal, nodeid :str ):
         self.access_keys.pop((principal.id, nodeid),None) 
 
 
-    def get_storage_key(self, principal : permissions.Principal, nodeid : persistable.PersistId) -> StorageKey:
+    def get_storage_key(self, principal : principals.Principal, nodeid : persistable.PersistId) -> StorageKey:
         p_key = PrincipalKeyVault.key_for_principal(principal)
         if not p_key:
             raise KeyError(f'no key found for principal={principal}')
@@ -75,7 +75,7 @@ AccessKeyVault = AccessKeyVaultClass()
 class PrincipalKey(NoCopyBaseModel):
     """ Public/Private key for a principal """
 
-    principal  : permissions.Principal
+    principal  : principals.Principal
     key        : typing.Any # the exact type is something deep in authlib.
     key_params : typing.ClassVar[dict] = {'kty':'RSA','crv_or_size':2048,'is_private':True} # params to JsonWebKey.generate_key
 
@@ -105,10 +105,10 @@ class PrincipalKeyVaultClass(NoCopyBaseModel):
 
     key_by_principal : dict[str,PrincipalKey] = {}
 
-    def key_for_principal(self, principal : permissions.Principal) -> typing.Optional[PrincipalKey]:
+    def key_for_principal(self, principal : principals.Principal) -> typing.Optional[PrincipalKey]:
         return self.key_by_principal.get(principal.id)
 
-    def create(self,principal : permissions.Principal) -> PrincipalKey:
+    def create(self,principal : principals.Principal) -> PrincipalKey:
         """ create a user key, store and return it """
         assert principal.id not in self.key_by_principal
         key = PrincipalKey.create(principal=principal)
@@ -128,7 +128,7 @@ def add_consent_hash(key : bytes , consents : permissions.Consents):
     return key
 
 
-def set_new_storage_key(node : nodes.DataNode, principal: permissions.Principal, effective : set[permissions.Principal], removed : set[permissions.Principal]):
+def set_new_storage_key(node : nodes.DataNode, principal: principals.Principal, effective : set[principals.Principal], removed : set[principals.Principal]):
     """ set storage key based on private key of principal and public keys of consentees """
     # assert node.consents
     storage_key = get_nonce() # add_consent_hash(get_nonce(),node.consents) # new storage key
@@ -143,13 +143,13 @@ def set_new_storage_key(node : nodes.DataNode, principal: permissions.Principal,
         AccessKeyVault.remove(principal=p,nodeid=node.id)
     return 
 
-def encrypt_data(principal : permissions.Principal, nodeid : persistable.PersistId, data : bytes) -> bytes:
+def encrypt_data(principal : principals.Principal, nodeid : persistable.PersistId, data : bytes) -> bytes:
     """ Encrypt data going to storage for a node and accessing Principal """
     storage_key = AccessKeyVault.get_storage_key(principal,nodeid)
     cipherdata = storage_key.encrypt(data)
     return cipherdata
 
-def decrypt_data(principal : permissions.Principal, nodeid : persistable.PersistId, cipherdata : bytes) -> bytes:
+def decrypt_data(principal : principals.Principal, nodeid : persistable.PersistId, cipherdata : bytes) -> bytes:
     """ Decrypt data coming from storage for a node and accessing Principal """
     storage_key = AccessKeyVault.get_storage_key(principal,nodeid)
     data = storage_key.decrypt(cipherdata)

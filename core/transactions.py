@@ -10,7 +10,7 @@ import pydantic
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import NoCopyBaseModel
 
-from core import permissions,nodes,errors
+from core import permissions,errors,principals
 
 import secrets
 
@@ -18,16 +18,16 @@ import secrets
 class TrxAccessError(errors.AccessError): ...
 
 TrxId = typing.NewType('TrxId',str)
-DefaultReadConsentees = {permissions.AllPrincipal.id} # by default, nothing is readable by everybody
+DefaultReadConsentees = {principals.AllPrincipal.id} # by default, nothing is readable by everybody
 
 class Transaction(NoCopyBaseModel):
     trxid : TrxId 
-    for_user: permissions.Principal
+    for_user: principals.Principal
     accesses: list[permissions.Access] = pydantic.Field(default_factory=list)
     exp : datetime.datetime = datetime.datetime.now()
 
-    read_consentees : set[permissions.PrincipalId] = DefaultReadConsentees # with nothing read, the world has access
-    initial_read_consentees :  set[permissions.PrincipalId] = DefaultReadConsentees # same as read_consentees, but not modified during transaction
+    read_consentees : set[principals.PrincipalId] = DefaultReadConsentees # with nothing read, the world has access
+    initial_read_consentees :  set[principals.PrincipalId] = DefaultReadConsentees # same as read_consentees, but not modified during transaction
 
     Transactions : typing.ClassVar[dict[TrxId,'Transaction']] = {}
     TTL : typing.ClassVar[datetime.timedelta] = datetime.timedelta(seconds=30) # max duration of a transaction in seconds
@@ -39,7 +39,7 @@ class Transaction(NoCopyBaseModel):
 
 
     @classmethod
-    def create(cls,for_user : permissions.Principal,**kw) -> Transaction:
+    def create(cls,for_user : principals.Principal,**kw) -> Transaction:
         """ Create Trx, and begin it """
         trxid = secrets.token_urlsafe()
         if trxid in cls.Transactions:
@@ -80,17 +80,17 @@ class Transaction(NoCopyBaseModel):
         """ add an access and validate whether it is ok """
         self.accesses.append(access)
         if permissions.AccessMode.write in access.modes: # we must check writes for presence of read objects
-            if permissions.AllPrincipal.id not in self.read_consentees and  access.ddhkey.owners not in self.read_consentees:
+            if principals.AllPrincipal.id not in self.read_consentees and  access.ddhkey.owners not in self.read_consentees:
                 msg = f'transactions contains data with no consent to use for {access.ddhkey.owners}'
-                if permissions.AllPrincipal.id not in self.initial_read_consentees and access.ddhkey.owners not in self.initial_read_consentees:
+                if principals.AllPrincipal.id not in self.initial_read_consentees and access.ddhkey.owners not in self.initial_read_consentees:
                     # this transaction contains data from previous transaction, must reinit
                     raise TrxAccessError('call session.reinit(); '+msg)
                 else:
                     raise TrxAccessError(msg)
         return
 
-    def add_read_consentees(self, read_consentees: set[permissions.PrincipalId]):
-        if permissions.AllPrincipal.id in self.read_consentees:
+    def add_read_consentees(self, read_consentees: set[principals.PrincipalId]):
+        if principals.AllPrincipal.id in self.read_consentees:
             self.read_consentees = read_consentees
         else:
             self.read_consentees &= read_consentees

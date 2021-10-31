@@ -9,7 +9,7 @@ import abc
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import NoCopyBaseModel
 
-from . import keys,permissions,errors
+from . import keys,permissions,errors,principals
 
 @enum.unique
 class Sensitivity(str,enum.Enum):
@@ -66,12 +66,12 @@ class SchemaElement(NoCopyBaseModel):
             return (sub,None,None)
         elif isinstance(sub,typing.GenericAlias) and sub.__origin__ is list and sub.__args__:
             innerclass = sub.__args__[0]
-            principals = [n for n,t in innerclass.__fields__.items() if issubclass(t.type_,permissions.Principal)]
-            if principals:
-                if 'id' in principals:
+            princs = [n for n,t in innerclass.__fields__.items() if issubclass(t.type_,principals.Principal)]
+            if princs:
+                if 'id' in princs:
                     return (innerclass,sub.__origin__,'id')
                 else:
-                    return (innerclass,sub.__origin__,principals[0])
+                    return (innerclass,sub.__origin__,princs[0])
             else:
                 return (innerclass,sub.__origin__,None)
         else:
@@ -81,7 +81,7 @@ class SchemaElement(NoCopyBaseModel):
         # ids : typing.Dict[type,typing.Dict[str,list]] = {} # {class : {idattr : [id,...]}}
         entire_selection = selection
         schema = self.__class__
-        principals = permissions.Principal.get_principals(access.ddhkey.owners)
+        princs = principals.Principal.get_principals(access.ddhkey.owners)
 
         while len(selection.key):
             next_key,remainder = selection.split_at(1) # next level
@@ -92,7 +92,7 @@ class SchemaElement(NoCopyBaseModel):
                 sel,remainder = remainder.split_at(1) # next level is ids
             resolver = getattr(schema,'resolve',None)
             if resolver:
-                res = resolver(remainder,principals, q)
+                res = resolver(remainder,princs, q)
                 return res
             selection = remainder
         else: # there is no resolver so far, we cannot grab this without a further segment:

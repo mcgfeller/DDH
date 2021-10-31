@@ -1,4 +1,4 @@
-from core import keys,nodes,permissions,schemas,facade,keydirectory,transactions
+from core import keys,nodes,permissions,schemas,facade,keydirectory,transactions,principals
 from . import  test_dapp_data
 from frontend import sessions
 import pytest
@@ -35,8 +35,8 @@ class DummyElement(schemas.SchemaElement): ...
 
 def test_nodes():
     schema = schemas.PySchema(schema_element=DummyElement)
-    user = permissions.User(id='1',name='martin',email='martin.gfeller@swisscom.com')
-    user2 = permissions.User(id='2',name='roman',email='roman.stoessel@swisscom.com')
+    user = principals.User(id='1',name='martin',email='martin.gfeller@swisscom.com')
+    user2 = principals.User(id='2',name='roman',email='roman.stoessel@swisscom.com')
     transaction = transactions.Transaction.create(user)
     node_s = nodes.SchemaNode(schema=schema,owner=user)
     node_d = nodes.DataNode(consents=permissions.Consents(consents=[permissions.Consent(grantedTo=[user2])]),owner=user)    
@@ -52,7 +52,7 @@ def test_schema_node():
     """ Retrieval of schema and application of get_sub_schema() 
     """
     schema = schemas.PySchema(schema_element=DummyElement)
-    user = permissions.User(id='1',name='martin',email='martin.gfeller@swisscom.com')
+    user = principals.User(id='1',name='martin',email='martin.gfeller@swisscom.com')
     session = sessions.Session(token_str='test_session',user=user)
     transaction = session.get_or_create_transaction(for_user=user)
     node_s = nodes.SchemaNode(schema=schema,owner=user)

@@ -1,4 +1,4 @@
-from core import keys,nodes,permissions,schemas,keydirectory
+from core import keys,nodes,permissions,schemas,keydirectory,principals
 from backend import persistable
 from . import test_dapp_data
 import pytest
@@ -22,9 +22,9 @@ def test_basic_access():
         is no consent inheritance, so we need to test one node only. 
     """
 
-    user1 = permissions.User(id='1',name='martin',email='martin.gfeller@swisscom.com')
-    user2 = permissions.User(id='2',name='roman',email='roman.stoessel@swisscom.com')
-    user3 = permissions.User(id='3',name='patrick',email='patrick.keller@swisscom.com')
+    user1 = principals.User(id='1',name='martin',email='martin.gfeller@swisscom.com')
+    user2 = principals.User(id='2',name='roman',email='roman.stoessel@swisscom.com')
+    user3 = principals.User(id='3',name='patrick',email='patrick.keller@swisscom.com')
 
     node_c = DummyNode(consents=permissions.Consents(consents=[permissions.Consent(grantedTo=[user2])]),owner=user1)    
     ddhkey = keys.DDHkey(key='/root')
@@ -46,7 +46,7 @@ def test_basic_access():
 
 @pytest.fixture
 def users():
-    users = [permissions.User(id=str(id),name='user'+str(id),email='user'+str(id)+'@dummy.com') for id in range(7)]
+    users = [principals.User(id=str(id),name='user'+str(id),email='user'+str(id)+'@dummy.com') for id in range(7)]
     return users
 
 @pytest.fixture

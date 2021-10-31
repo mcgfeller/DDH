@@ -6,7 +6,7 @@ import datetime
 import typing
 import logging
 
-from core import keys,permissions,schemas,nodes,dapp,keydirectory
+from core import keys,permissions,schemas,nodes,dapp,keydirectory,principals
 from frontend import sessions
 logger = logging.getLogger(__name__)
 
@@ -21,8 +21,8 @@ def check_registry() -> nodes.SchemaNode:
     if not root_node:
         schema = build_root_schemas() # obtain static schema
         # for now, give schema read access to everybody
-        consents = permissions.Consents(consents=[permissions.Consent(grantedTo=[permissions.AllPrincipal],withModes={permissions.AccessMode.schema_read})]) 
-        root_node = nodes.SchemaNode(owner=permissions.RootPrincipal,schema=schema,consents=consents)
+        consents = permissions.Consents(consents=[permissions.Consent(grantedTo=[principals.AllPrincipal],withModes={permissions.AccessMode.schema_read})]) 
+        root_node = nodes.SchemaNode(owner=principals.RootPrincipal,schema=schema,consents=consents)
         keydirectory.NodeRegistry[root] = root_node
     logger.info('Schema Root built')
     return root_node 

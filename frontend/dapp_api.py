@@ -13,14 +13,14 @@ import enum
 
 
 from core import pillars
-from core import keys,permissions,schemas,dapp,facade,errors,transactions
+from core import keys,permissions,schemas,facade,errors,principals
 from frontend import sessions
 
 app = fastapi.FastAPI()
 
 from frontend import user_auth # provisional user management
 
-@app.get("/users/me/", response_model=permissions.User)
+@app.get("/users/me/", response_model=principals.User)
 async def read_users_me(current_user: user_auth.UserInDB = fastapi.Depends(user_auth.get_current_active_user)):
     """ return my user """
     return current_user.as_user()
@@ -37,7 +37,7 @@ async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordReque
 async def get_schema(
     docpath: str = fastapi.Path(..., title="The ddh key of the schema to get"),
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
-    dapp : typing.Optional[permissions.DAppId] = None,
+    dapp : typing.Optional[principals.DAppId] = None,
     schemaformat: schemas.SchemaFormat = schemas.SchemaFormat.json, # type: ignore # dynamic
     q: str = fastapi.Query(None, alias="item-query"),
     ):
@@ -82,9 +82,9 @@ async def put_data(
 
 @app.post("/transaction")
 async def create_transaction(
-    for_user : permissions.Principal,
+    for_user : principals.Principal,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
-    dapp : typing.Optional[permissions.DAppId] = None,
+    dapp : typing.Optional[principals.DAppId] = None,
 
     ):    
     try:
@@ -96,7 +96,7 @@ async def create_transaction(
 
 @app.post("/reinitialize")
 async def reinitialize(
-    for_user : permissions.Principal,
+    for_user : principals.Principal,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
 
     ):    

@@ -8,7 +8,7 @@ import pydantic
 from utils.pydantic_utils import NoCopyBaseModel
 
 
-from core import permissions,errors,transactions
+from core import errors,transactions,principals
 
 
 SessionId = typing.NewType('SessionId', str) # identifies the session
@@ -18,9 +18,9 @@ SessionId = typing.NewType('SessionId', str) # identifies the session
 class Session(NoCopyBaseModel):
     """ The session is currently identified by its JWT token """
     token_str : str
-    user: permissions.User
-    dappid: typing.Optional[permissions.DAppId] = None
-    trxs_for_user: dict[permissions.Principal,transactions.Transaction] = pydantic.Field(default_factory=dict)
+    user: principals.User
+    dappid: typing.Optional[principals.DAppId] = None
+    trxs_for_user: dict[principals.Principal,transactions.Transaction] = pydantic.Field(default_factory=dict)
     current_trx : typing.Optional[transactions.Transaction] = None
 
     @property
@@ -28,7 +28,7 @@ class Session(NoCopyBaseModel):
         """ return id """
         return typing.cast(SessionId,self.token_str)
 
-    def get_transaction(self,for_user :typing.Optional[permissions.Principal] = None,create=False) -> typing.Optional[transactions.Transaction]:
+    def get_transaction(self,for_user :typing.Optional[principals.Principal] = None,create=False) -> typing.Optional[transactions.Transaction]:
         """ get existing trx or create new one
             for_user defaults to session.user
         """
@@ -41,13 +41,13 @@ class Session(NoCopyBaseModel):
         else:
             return None
 
-    def get_or_create_transaction(self,for_user : typing.Optional[permissions.Principal] = None) -> transactions.Transaction:
+    def get_or_create_transaction(self,for_user : typing.Optional[principals.Principal] = None) -> transactions.Transaction:
         """ always returns transaction, for easier type checking """
         trx = self.get_transaction(for_user=for_user,create=True)
         trx = typing.cast(transactions.Transaction,trx)
         return trx
         
-    def new_transaction(self,for_user : typing.Optional[permissions.Principal] = None) -> transactions.Transaction:
+    def new_transaction(self,for_user : typing.Optional[principals.Principal] = None) -> transactions.Transaction:
         for_user = for_user or self.user
         prev_trx = self.current_trx # self.trxs_for_user.get(for_user)
         if prev_trx:
@@ -71,4 +71,4 @@ class Session(NoCopyBaseModel):
 
 def get_system_session() -> Session:
     """ get a session for system purposes """
-    return Session(token_str='system_session',user=permissions.SystemUser)
+    return Session(token_str='system_session',user=principals.SystemUser)

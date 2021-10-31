@@ -8,52 +8,7 @@ import abc
 
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import NoCopyBaseModel
-from . import errors
-
-
-PrincipalId = typing.NewType('PrincipalId', str)
-
-class Principal(NoCopyBaseModel):
-    """ Abstract identification of a party """
-    class Config:
-        extra = pydantic.Extra.ignore # for parsing of subclass
-
-    id : PrincipalId
-    Delim : typing.ClassVar[str] = ','
-
-    @classmethod
-    def get_principals(cls, selection: str) -> list[Principal]:
-        """ check string containing one or more Principals, separated by comma,
-            return them as Principal.
-            First checks CommonPrincipals defined here, then user_auth.UserInDB.
-        """
-        ids = selection.split(cls.Delim)
-        principals = []
-        for i in ids:
-            p = CommonPrincipals.get(i)
-            if not p:
-                p = user_auth.UserInDB.load(id=i)
-                assert p # load must raise error if not found
-            principals.append(p)
-        return principals
-
-    def __eq__(self,other) -> bool:
-        """ Principals are equal if their id is equal """
-        return self.id == other.id if isinstance(other,Principal) else False
-
-    def __hash__(self): 
-        """ hashable on id """
-        return hash(self.id)
-
-    @classmethod
-    def load(cls,id):
-        raise errors.SubClass
-
-
-
-AllPrincipal = Principal(id='_all_')
-RootPrincipal = Principal(id='DDH')
-
+from . import errors,principals
 
 
 
@@ -109,29 +64,15 @@ AccessMode.RequiredModes = {AccessMode.anonymous : None, AccessMode.pseudonym : 
      AccessMode.confidential: None, AccessMode.differential: None, AccessMode.protected : {AccessMode.write}} 
 
 
-class User(Principal):
-    """ Concrete user, may login """
-       
-    name : str 
-    email : typing.Optional[pydantic.EmailStr] = None
-    created_at : datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow) # defaults to now
 
-SystemUser = User(id='root',name='root')
-
-
-
-class DAppId(Principal):
-    """ The identification of a DApp. We use a Principal for now. """
-
-    name : str
 
 
 
 class Consent(NoCopyBaseModel):
     """ Consent to access a ressource denoted by DDHkey.
     """
-    grantedTo : list[Principal]
-    withApps : set[DAppId] = set()
+    grantedTo : list[principals.Principal]
+    withApps : set[principals.DAppId] = set()
     withModes : set[AccessMode]  = {AccessMode.read}
 
 
@@ -140,7 +81,7 @@ class Consent(NoCopyBaseModel):
             If _principal_checked is True, applicable consents with correct principals 
             are checked, hence we don't need to double-check.
         """
-        if (not _principal_checked) and self.grantedTo != AllPrincipal and access.principal not in self.grantedTo:
+        if (not _principal_checked) and self.grantedTo != principals.AllPrincipal and access.principal not in self.grantedTo:
             return False,f'Consent not granted to {access.principal}'
         if self.withApps:
             if access.byDApp:
@@ -194,21 +135,21 @@ class Consents(NoCopyBaseModel):
         return
 
 
-    def consentees(self) -> set[Principal]:
+    def consentees(self) -> set[principals.Principal]:
         """ all principals that enjoy some sort of Consent """
         return set(sum([c.grantedTo for c in self.consents],[]))
 
-    def consentees_with_mode(self, mode : AccessMode) -> set[Principal]:
+    def consentees_with_mode(self, mode : AccessMode) -> set[principals.Principal]:
         """ all principals that enjoy Consent of mode """
         return set(sum([c.grantedTo for c in self.consents if mode in c.withModes],[]))
 
-    def applicable_consents(self,principal : Principal ) -> list[Consent]:
+    def applicable_consents(self,principal : principals.Principal ) -> list[Consent]:
         """ return list of Consents for this principal """
-        return self._byPrincipal.get(principal.id,[]) + self._byPrincipal.get(AllPrincipal.id,[])
+        return self._byPrincipal.get(principal.id,[]) + self._byPrincipal.get(principals.AllPrincipal.id,[])
         
 
 
-    def check(self,owners : typing.Iterable[Principal], access : Access) -> tuple[bool,list[Consent],str]:
+    def check(self,owners : typing.Iterable[principals.Principal], access : Access) -> tuple[bool,list[Consent],str]:
         msg = 'no consent'
         consent = None
         for consent in self.applicable_consents(access.principal):
@@ -229,10 +170,10 @@ class MultiOwnerConsents(NoCopyBaseModel):
     """ Records consents by different owners,
         check them all (they all must consent)
     """
-    consents_by_owner : dict[Principal,Consents]
+    consents_by_owner : dict[principals.Principal,Consents]
 
 
-    def check(self,owners : typing.Iterable[Principal], access : Access) -> tuple[bool,list[Consent],str]:
+    def check(self,owners : typing.Iterable[principals.Principal], access : Access) -> tuple[bool,list[Consent],str]:
         """ Check consents by all owner, only if all owners consent, we can go ahead.
         """
         msgs = []
@@ -247,11 +188,11 @@ class MultiOwnerConsents(NoCopyBaseModel):
         msgs = ('; '.join(msgs)) if msgs else 'no consent'
         return ok,consents,msgs
 
-    def consentees(self) -> set[Principal]:
+    def consentees(self) -> set[principals.Principal]:
         """ all principals that enjoy some sort of Consent """
         return set.intersection(*[c.consentees() for c in self.consents_by_owner.values()])
 
-    def consentees_with_mode(self, mode : AccessMode) -> set[Principal]:
+    def consentees_with_mode(self, mode : AccessMode) -> set[principals.Principal]:
         """ all principals that enjoy Consent of mode """
         return set.intersection(*[c.consentees_with_mode(mode) for c in self.consents_by_owner.values()])
 
@@ -276,8 +217,8 @@ class Access(NoCopyBaseModel):
     """
     op:        Operation = Operation.get
     ddhkey:    DDHkey # type: ignore
-    principal: Principal
-    byDApp:    typing.Optional[DAppId] = None
+    principal: principals.Principal
+    byDApp:    typing.Optional[principals.DAppId] = None
     modes:     set[AccessMode]  = {AccessMode.read}
     time:      datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow) # defaults to now
     granted:   typing.Optional[bool] = None
@@ -292,7 +233,7 @@ class Access(NoCopyBaseModel):
         """ ensure that mode is included in access modes """
         self.modes.add(mode)
 
-    def permitted(self,node : typing.Optional[nodes.Node], owner : typing.Optional[Principal] = None, record_access : bool = True) -> tuple[bool,list[Consent],set[Principal],str]:
+    def permitted(self,node : typing.Optional[nodes.Node], owner : typing.Optional[principals.Principal] = None, record_access : bool = True) -> tuple[bool,list[Consent],set[Principal],str]:
         """ checks whether access is permitted, returning (bool,required flags,applicable consent,explanation text)
             if record_access is set, the result is recorded into self.
         """
@@ -301,7 +242,7 @@ class Access(NoCopyBaseModel):
         if owner is not None:
             keyowners = (owner,)
         else:
-            keyowners = Principal.get_principals(self.ddhkey.owners)
+            keyowners = principals.Principal.get_principals(self.ddhkey.owners)
 
         if not node: # cannot use this test when a MultiOwnerNode is given!
             if len(keyowners) == 1 and self.principal == keyowners[0]: # single owner from key, remainder is owned by definition
@@ -329,7 +270,7 @@ class Access(NoCopyBaseModel):
             self.byConsents = used_consents
         return  ok,used_consents,consentees,msg
 
-    def raise_permitted(self,node : typing.Optional[nodes.Node], owner : typing.Optional[Principal] = None, record_access : bool = True):
+    def raise_permitted(self,node : typing.Optional[nodes.Node], owner : typing.Optional[principals.Principal] = None, record_access : bool = True):
         ok,used_consents,msg,consentees = self.permitted(node)
         if not ok:
             raise errors.AccessError(msg)
@@ -343,9 +284,5 @@ from . import keys
 from . import nodes
 from . import keydirectory
 from . import transactions
-from frontend import user_auth
 Access.update_forward_refs()
 
-# Collect all common principals
-CommonPrincipals = {p.id : p for p in (AllPrincipal,RootPrincipal,SystemUser)}
-CommonPrincipals[keys.DDHkey.AnyKey] = RootPrincipal

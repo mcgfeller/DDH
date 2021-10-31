@@ -3,13 +3,13 @@ from __future__ import annotations
 import datetime
 import typing
 
-from core import keys,permissions,schemas
+from core import keys,schemas,principals
 from core import dapp
 
 
 class CoopDApp(dapp.DApp):
 
-    owner : typing.ClassVar[permissions.Principal] =  permissions.User(id='mgf',name='Martin')
+    owner : typing.ClassVar[principals.Principal] =  principals.User(id='mgf',name='Martin')
     schemakey : typing.ClassVar[keys.DDHkey] = keys.DDHkey(key="//org/coop.ch")
  
     def get_schema(self) -> schemas.Schema:
@@ -20,7 +20,7 @@ class CoopDApp(dapp.DApp):
 
 class CoopClient(schemas.SchemaElement):
 
-    id = permissions.Principal
+    id = principals.Principal
     supercard : typing.Optional[int] = None
 
     

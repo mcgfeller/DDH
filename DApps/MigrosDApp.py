@@ -5,7 +5,7 @@ import typing
 
 import pydantic
 
-from core import keys,permissions,schemas,nodes,keydirectory
+from core import keys,permissions,schemas,nodes,keydirectory,principals,transactions
 from core import dapp
 
 import pandas # for example
@@ -13,7 +13,7 @@ from glom import glom,S,T,Iter # transform
 
 class MigrosDApp(dapp.DApp):
 
-    owner : typing.ClassVar[permissions.Principal] =  permissions.User(id='migros',name='Migros (fake account)')
+    owner : typing.ClassVar[principals.Principal] =  principals.User(id='migros',name='Migros (fake account)')
     schemakey : typing.ClassVar[keys.DDHkey] = keys.DDHkey(key="//org/migros.ch")
     _ddhschema : schemas.SchemaElement = None
 
@@ -96,7 +96,7 @@ class Receipt(schemas.SchemaElement):
 
 # class MigrosClient(schemas.SchemaElement):
 
-#     # id : permissions.Principal = pydantic.Field(sensitivity= schemas.Sensitivity.ei)
+#     # id : principals.Principal = pydantic.Field(sensitivity= schemas.Sensitivity.ei)
 
     
 

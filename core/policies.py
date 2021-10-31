@@ -19,7 +19,7 @@ class Policy(NoCopyBaseModel):
         Encompasses the required consent, the update policy
     """
 
-    consent : permissions.Consent = None
+    consents : typing.Optional[permissions.Consents] = permissions.DefaultConsents
 
 
 EmptyPolicy = Policy()

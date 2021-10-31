@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from utils import utils
-from core import schema_root,dapp,permissions
+from core import schema_root,dapp,principals
 from frontend import sessions
 from utils import import_modules 
 import DApps
@@ -27,7 +27,7 @@ class _DAppManager(NoCopyBaseModel):
         Real Manager would orchestrate DApps in their own container.
 
     """
-    DAppsById : dict[permissions.DAppId,dapp.DApp] = {} # registry of DApps
+    DAppsById : dict[principals.DAppId,dapp.DApp] = {} # registry of DApps
 
     def bootstrap(self) :
         session = sessions.get_system_session()

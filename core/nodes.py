@@ -9,7 +9,7 @@ import enum
 
 
 
-from . import permissions,schemas,transactions,errors,keydirectory
+from . import permissions,schemas,transactions,errors,keydirectory,principals
 from utils import datautils
 from backend import persistable
 
@@ -46,7 +46,7 @@ class NodeProxy(persistable.PersistableProxy):
 
 class Node(pydantic.BaseModel):
 
-    owner: permissions.Principal
+    owner: principals.Principal
     consents : typing.Optional[permissions.Consents] = permissions.DefaultConsents
     key : typing.Optional[keys.DDHkey] = None
 
@@ -64,7 +64,7 @@ class Node(pydantic.BaseModel):
 
 
     @property
-    def owners(self) -> tuple[permissions.Principal,...]:
+    def owners(self) -> tuple[principals.Principal,...]:
         """ get one or multiple owners """
         return (self.owner,)
 
@@ -83,7 +83,7 @@ NodeOrProxy = typing.Union[Node,persistable.PersistableProxy]
 
 class MultiOwnerNode(Node):
 
-    all_owners : tuple[permissions.Principal,...]
+    all_owners : tuple[principals.Principal,...]
     consents : typing.Union[permissions.Consents,permissions.MultiOwnerConsents] = permissions.DefaultConsents
 
     def __init__(self,**data):
@@ -98,7 +98,7 @@ class MultiOwnerNode(Node):
         return
 
     @property
-    def owners(self) -> tuple[permissions.Principal,...]:
+    def owners(self) -> tuple[principals.Principal,...]:
         """ get one or multiple owners """
         return self.all_owners
 
@@ -164,7 +164,7 @@ from backend import storage,keyvault
 class DataNode(Node,persistable.Persistable):
     """ New data node, points to storage and consents """
 
-    owner: permissions.Principal
+    owner: principals.Principal
 
     format : persistable.DataFormat = persistable.DataFormat.dict
     data : typing.Any        

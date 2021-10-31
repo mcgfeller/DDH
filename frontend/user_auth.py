@@ -13,8 +13,9 @@ import jose.jwt
 import passlib.context
 from utils.pydantic_utils import NoCopyBaseModel
 
-from core import permissions,errors
+from core import errors,principals
 from frontend import sessions
+
 
 oauth2_scheme = fastapi.security.OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = passlib.context.CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -68,7 +69,7 @@ class TokenData(NoCopyBaseModel):
     id: str
 
 
-class UserInDB(permissions.User):
+class UserInDB(principals.User):
     hashed_password: str # type: ignore
 
     @classmethod
@@ -80,9 +81,9 @@ class UserInDB(permissions.User):
         else:
             raise errors.NotFound(f'User not found {id}')
 
-    def as_user(self) -> permissions.User:
+    def as_user(self) -> principals.User:
         """ return user only """
-        return permissions.User(**self.dict(include=permissions.User.__fields__.keys()))
+        return principals.User(**self.dict(include=principals.User.__fields__.keys()))
 
 
 
@@ -97,7 +98,7 @@ def get_user(db, userid: str):
         return UserInDB(**user_dict)
     else: return None # be explicit
 
-def get_dappid(dappid: str) -> permissions.DAppId:
+def get_dappid(dappid: str) -> principals.DAppId:
     """ Verify the id of the DApp. This is largely provisional.
     """ 
     from core import pillars
@@ -107,7 +108,7 @@ def get_dappid(dappid: str) -> permissions.DAppId:
             detail=f"Invalid DApp id {dappid}",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return typing.cast(permissions.DAppId,dappid)
+    return typing.cast(principals.DAppId,dappid)
 
 
 def authenticate_user(fake_db, userid: str, password: str):
@@ -173,7 +174,6 @@ async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordReque
         data={"sub": user.id,'xdapp':dappid,}, expires_delta=access_token_expires
     )
     return user,dappid, {"access_token": access_token, "token_type": "bearer"}
-
 
 
 
