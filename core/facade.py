@@ -80,7 +80,7 @@ def ddh_get(access : permissions.Access, session : sessions.Session, q : typing.
         else:
             *d,consentees = access.raise_permitted(_get_consent_node(access.ddhkey,nodes.NodeSupports.data,None,transaction))
             data = {}
-        transaction.add_read_consentees(consentees)
+        transaction.add_read_consentees({c.id for c in consentees})
 
 
         # now for the enode:

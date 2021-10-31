@@ -18,7 +18,7 @@ import secrets
 class TrxAccessError(errors.AccessError): ...
 
 TrxId = typing.NewType('TrxId',str)
-
+DefaultReadConsentees = {permissions.AllPrincipal.id} # by default, nothing is readable by everybody
 
 class Transaction(NoCopyBaseModel):
     trxid : TrxId 
@@ -26,11 +26,11 @@ class Transaction(NoCopyBaseModel):
     accesses: list[permissions.Access] = pydantic.Field(default_factory=list)
     exp : datetime.datetime = datetime.datetime.now()
 
-    read_consentees : typing.Optional[set[permissions.Principal]] = None # don't initialize with empty set - first assignment is set
-    initial_read_consentees :  typing.Optional[set[permissions.Principal]] = None # same as read_consentees, but not modified during transaction
+    read_consentees : set[permissions.PrincipalId] = DefaultReadConsentees # with nothing read, the world has access
+    initial_read_consentees :  set[permissions.PrincipalId] = DefaultReadConsentees # same as read_consentees, but not modified during transaction
 
     Transactions : typing.ClassVar[dict[TrxId,'Transaction']] = {}
-    TTL : typing.ClassVar[datetime.timedelta] = datetime.timedelta(seconds=5) # max duration of a transaction in seconds
+    TTL : typing.ClassVar[datetime.timedelta] = datetime.timedelta(seconds=30) # max duration of a transaction in seconds
 
     def __init__(self,**kw):
         super().__init__(**kw)
@@ -39,12 +39,12 @@ class Transaction(NoCopyBaseModel):
 
 
     @classmethod
-    def create(cls,for_user : permissions.Principal,initial_read_consentees : typing.Optional[set[permissions.Principal]] = None) -> Transaction:
+    def create(cls,for_user : permissions.Principal,**kw) -> Transaction:
         """ Create Trx, and begin it """
         trxid = secrets.token_urlsafe()
         if trxid in cls.Transactions:
             raise KeyError(f'duplicate key: {trxid}')
-        trx = cls(trxid=trxid,for_user=for_user)
+        trx = cls(trxid=trxid,for_user=for_user,**kw)
         trx.begin()
         return trx
 
@@ -76,32 +76,21 @@ class Transaction(NoCopyBaseModel):
         return self
 
 
-    def write(self, nodes: typing.Iterable[nodes.Node]):
-        # all reads must be read4write
-        not4write = self.read_owners - self.read4write_consented
-        if not4write:
-            raise TrxAccessError(f"Cannot write: reads requested, but not read_for_write for owners {', '.join(map(str,not4write))}")
-        not_consented = self._get_owners(nodes) - self.read4write_consented
-        if not_consented:
-            raise TrxAccessError(f"Cannot write to nodes, because we've read notes that do not consent to write to owners {', '.join(map(str,not_consented))}")        
-        return
-
     def add_and_validate(self, access : permissions.Access):
         """ add an access and validate whether it is ok """
         self.accesses.append(access)
-        # TODO: Validation: 
-        # TODO: Add read,read,write test
-        # TODO: Handle world access
-        if self.read_consentees is not None and  access.ddhkey.owners not in self.read_consentees:
-            if self.initial_read_consentees is not None and access.ddhkey.owners not in self.initial_read_consentees:
-                # this transaction contains data from previous transaction, must reinit
-                raise TrxAccessError('must reinit')
-            else:
-                raise TrxAccessError(f'transactions contains data with no consent to use for {access.ddhkey.owners}')
+        if permissions.AccessMode.write in access.modes: # we must check writes for presence of read objects
+            if permissions.AllPrincipal.id not in self.read_consentees and  access.ddhkey.owners not in self.read_consentees:
+                msg = f'transactions contains data with no consent to use for {access.ddhkey.owners}'
+                if permissions.AllPrincipal.id not in self.initial_read_consentees and access.ddhkey.owners not in self.initial_read_consentees:
+                    # this transaction contains data from previous transaction, must reinit
+                    raise TrxAccessError('call session.reinit(); '+msg)
+                else:
+                    raise TrxAccessError(msg)
         return
 
-    def add_read_consentees(self, read_consentees: set[permissions.Principal]):
-        if self.read_consentees is None:
+    def add_read_consentees(self, read_consentees: set[permissions.PrincipalId]):
+        if permissions.AllPrincipal.id in self.read_consentees:
             self.read_consentees = read_consentees
         else:
             self.read_consentees &= read_consentees

@@ -11,14 +11,14 @@ from utils.pydantic_utils import NoCopyBaseModel
 from . import errors
 
 
-
+PrincipalId = typing.NewType('PrincipalId', str)
 
 class Principal(NoCopyBaseModel):
     """ Abstract identification of a party """
     class Config:
         extra = pydantic.Extra.ignore # for parsing of subclass
 
-    id : str
+    id : PrincipalId
     Delim : typing.ClassVar[str] = ','
 
     @classmethod

@@ -13,6 +13,7 @@ from core import permissions,errors,transactions
 
 SessionId = typing.NewType('SessionId', str) # identifies the session
 
+# TODO: Should we have a single current trx per session or something per user?
 
 class Session(NoCopyBaseModel):
     """ The session is currently identified by its JWT token """
