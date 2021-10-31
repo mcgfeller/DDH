@@ -242,7 +242,7 @@ class Access(NoCopyBaseModel):
         if owner is not None:
             keyowners = (owner,)
         else:
-            keyowners = principals.Principal.get_principals(self.ddhkey.owners)
+            keyowners = user_auth.get_principals(self.ddhkey.owners)
 
         if not node: # cannot use this test when a MultiOwnerNode is given!
             if len(keyowners) == 1 and self.principal == keyowners[0]: # single owner from key, remainder is owned by definition
@@ -284,5 +284,6 @@ from . import keys
 from . import nodes
 from . import keydirectory
 from . import transactions
+from frontend import user_auth
 Access.update_forward_refs()
 

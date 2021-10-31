@@ -10,6 +10,7 @@ from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import NoCopyBaseModel
 
 from . import keys,permissions,errors,principals
+from frontend import user_auth
 
 @enum.unique
 class Sensitivity(str,enum.Enum):
@@ -81,7 +82,7 @@ class SchemaElement(NoCopyBaseModel):
         # ids : typing.Dict[type,typing.Dict[str,list]] = {} # {class : {idattr : [id,...]}}
         entire_selection = selection
         schema = self.__class__
-        princs = principals.Principal.get_principals(access.ddhkey.owners)
+        princs = user_auth.get_principals(access.ddhkey.owners)
 
         while len(selection.key):
             next_key,remainder = selection.split_at(1) # next level

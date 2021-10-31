@@ -22,23 +22,6 @@ class Principal(NoCopyBaseModel):
     id : PrincipalId
     Delim : typing.ClassVar[str] = ','
 
-    @classmethod
-    def get_principals(cls, selection: str) -> list[Principal]:
-        """ check string containing one or more Principals, separated by comma,
-            return them as Principal.
-            First checks CommonPrincipals defined here, then user_auth.UserInDB.
-        """
-        from frontend import user_auth
-        ids = selection.split(cls.Delim)
-        principals = []
-        for i in ids:
-            p = CommonPrincipals.get(i)
-            if not p:
-                p = user_auth.UserInDB.load(id=i)
-                assert p # load must raise error if not found
-            principals.append(p)
-        return principals
-
     def __eq__(self,other) -> bool:
         """ Principals are equal if their id is equal """
         return self.id == other.id if isinstance(other,Principal) else False

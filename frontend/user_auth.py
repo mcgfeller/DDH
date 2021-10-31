@@ -175,6 +175,20 @@ async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordReque
     )
     return user,dappid, {"access_token": access_token, "token_type": "bearer"}
 
-
+def get_principals(selection: str) -> list[principals.Principal]:
+    """ check string containing one or more Principals, separated by comma,
+        return them as Principal.
+        First checks CommonPrincipals defined here, then user_auth.UserInDB.
+    """
+    
+    ids = selection.split(principals.Principal.Delim)
+    princs = []
+    for i in ids:
+        p = principals.CommonPrincipals.get(i)
+        if not p:
+            p = UserInDB.load(id=i)
+            assert p # load must raise error if not found
+        princs.append(p)
+    return princs
 
 
