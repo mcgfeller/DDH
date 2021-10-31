@@ -20,6 +20,7 @@ class Session(NoCopyBaseModel):
     user: permissions.User
     dappid: typing.Optional[permissions.DAppId] = None
     trxs_for_user: dict[permissions.Principal,transactions.Transaction] = pydantic.Field(default_factory=dict)
+    current_trx : typing.Optional[transactions.Transaction] = None
 
     @property
     def id(self) -> SessionId:
@@ -31,7 +32,7 @@ class Session(NoCopyBaseModel):
             for_user defaults to session.user
         """
         for_user = for_user or self.user
-        trx = self.trxs_for_user.get(for_user)
+        trx = self.current_trx # trxs_for_user.get(for_user)
         if trx:
             return trx.use() 
         elif create:
@@ -47,16 +48,25 @@ class Session(NoCopyBaseModel):
         
     def new_transaction(self,for_user : typing.Optional[permissions.Principal] = None) -> transactions.Transaction:
         for_user = for_user or self.user
-        prev_trx = self.trxs_for_user.get(for_user)
+        prev_trx = self.current_trx # self.trxs_for_user.get(for_user)
         if prev_trx:
             # previous transaction in session
             prev_read_consentees = prev_trx.read_consentees
             prev_trx.abort()
         else:
-            prev_read_consentees = None
+            prev_read_consentees = transactions.DefaultReadConsentees
         new_trx =  transactions.Transaction.create(for_user = for_user,initial_read_consentees=prev_read_consentees)
-        self.trxs_for_user[for_user] = new_trx
+        self.trxs_for_user[for_user] = new_trx # TODO: Decide
+        self.current_trx = new_trx
         return new_trx.use()
+
+    def reinit(self):
+        prev_trx = self.current_trx # self.trxs_for_user.get(self.user)  
+        if prev_trx:
+            # abort and clean previous transaction in session
+            prev_trx.abort()      
+            prev_trx.read_consentees = transactions.DefaultReadConsentees
+        return 
 
 def get_system_session() -> Session:
     """ get a session for system purposes """
