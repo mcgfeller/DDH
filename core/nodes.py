@@ -9,7 +9,7 @@ import enum
 
 
 
-from . import permissions,schemas,transactions,errors,keydirectory,principals
+from . import permissions,schemas,transactions,errors,keydirectory,principals,common_ids
 from utils import datautils
 from backend import persistable
 
@@ -168,7 +168,7 @@ class DataNode(Node,persistable.Persistable):
 
     format : persistable.DataFormat = persistable.DataFormat.dict
     data : typing.Any        
-    storage_loc : typing.Optional[persistable.PersistId] = None
+    storage_loc : typing.Optional[common_ids.PersistId] = None
     access_key: typing.Optional[keyvault.AccessKey] = None
     sub_nodes : dict[keys.DDHkey,keys.DDHkey] = {}
 
@@ -190,7 +190,7 @@ class DataNode(Node,persistable.Persistable):
         return
 
     @classmethod
-    def load(cls, id: persistable.PersistId,  transaction: transactions.Transaction ):
+    def load(cls, id: common_ids.PersistId,  transaction: transactions.Transaction ):
         enc = storage.Storage.load(id,transaction)
         plain = keyvault.decrypt_data(transaction.for_user,id,enc)
         o = cls.from_compressed(plain)

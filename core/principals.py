@@ -9,17 +9,18 @@ import abc
 
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import NoCopyBaseModel
-from . import errors,keys
+from . import errors,keys,common_ids
 
 
-PrincipalId = typing.NewType('PrincipalId', str)
+
+
 
 class Principal(NoCopyBaseModel):
     """ Abstract identification of a party """
     class Config:
         extra = pydantic.Extra.ignore # for parsing of subclass
 
-    id : PrincipalId
+    id : common_ids.PrincipalId
     Delim : typing.ClassVar[str] = ','
 
     def __eq__(self,other) -> bool:

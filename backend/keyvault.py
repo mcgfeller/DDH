@@ -12,7 +12,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding,rsa
 import cryptography.fernet 
 import base64
-from backend import persistable
+from core import common_ids
 
 
 from core import keys,permissions,nodes,principals
@@ -58,7 +58,7 @@ class AccessKeyVaultClass(NoCopyBaseModel):
         self.access_keys.pop((principal.id, nodeid),None) 
 
 
-    def get_storage_key(self, principal : principals.Principal, nodeid : persistable.PersistId) -> StorageKey:
+    def get_storage_key(self, principal : principals.Principal, nodeid : common_ids.PersistId) -> StorageKey:
         p_key = PrincipalKeyVault.key_for_principal(principal)
         if not p_key:
             raise KeyError(f'no key found for principal={principal}')
@@ -143,13 +143,13 @@ def set_new_storage_key(node : nodes.DataNode, principal: principals.Principal, 
         AccessKeyVault.remove(principal=p,nodeid=node.id)
     return 
 
-def encrypt_data(principal : principals.Principal, nodeid : persistable.PersistId, data : bytes) -> bytes:
+def encrypt_data(principal : principals.Principal, nodeid : common_ids.PersistId, data : bytes) -> bytes:
     """ Encrypt data going to storage for a node and accessing Principal """
     storage_key = AccessKeyVault.get_storage_key(principal,nodeid)
     cipherdata = storage_key.encrypt(data)
     return cipherdata
 
-def decrypt_data(principal : principals.Principal, nodeid : persistable.PersistId, cipherdata : bytes) -> bytes:
+def decrypt_data(principal : principals.Principal, nodeid : common_ids.PersistId, cipherdata : bytes) -> bytes:
     """ Decrypt data coming from storage for a node and accessing Principal """
     storage_key = AccessKeyVault.get_storage_key(principal,nodeid)
     data = storage_key.decrypt(cipherdata)

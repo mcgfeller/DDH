@@ -10,26 +10,26 @@ import pydantic
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import NoCopyBaseModel
 
-from core import permissions,errors,principals
+from core import permissions,errors,principals,common_ids
 
 import secrets
 
 
 class TrxAccessError(errors.AccessError): ...
 
-TrxId = typing.NewType('TrxId',str)
+
 DefaultReadConsentees = {principals.AllPrincipal.id} # by default, nothing is readable by everybody
 
 class Transaction(NoCopyBaseModel):
-    trxid : TrxId 
+    trxid : common_ids.TrxId 
     for_user: principals.Principal
     accesses: list[permissions.Access] = pydantic.Field(default_factory=list)
     exp : datetime.datetime = datetime.datetime.now()
 
-    read_consentees : set[principals.PrincipalId] = DefaultReadConsentees # with nothing read, the world has access
-    initial_read_consentees :  set[principals.PrincipalId] = DefaultReadConsentees # same as read_consentees, but not modified during transaction
+    read_consentees : set[common_ids.PrincipalId] = DefaultReadConsentees # with nothing read, the world has access
+    initial_read_consentees :  set[common_ids.PrincipalId] = DefaultReadConsentees # same as read_consentees, but not modified during transaction
 
-    Transactions : typing.ClassVar[dict[TrxId,'Transaction']] = {}
+    Transactions : typing.ClassVar[dict[common_ids.TrxId,'Transaction']] = {}
     TTL : typing.ClassVar[datetime.timedelta] = datetime.timedelta(seconds=30) # max duration of a transaction in seconds
 
     def __init__(self,**kw):
@@ -49,7 +49,7 @@ class Transaction(NoCopyBaseModel):
         return trx
 
     @classmethod
-    def get(cls,trxid : TrxId) -> Transaction:
+    def get(cls,trxid : common_ids.TrxId) -> Transaction:
         return cls.Transactions[trxid].use()
 
 
@@ -89,7 +89,7 @@ class Transaction(NoCopyBaseModel):
                     raise TrxAccessError(msg)
         return
 
-    def add_read_consentees(self, read_consentees: set[principals.PrincipalId]):
+    def add_read_consentees(self, read_consentees: set[common_ids.PrincipalId]):
         if principals.AllPrincipal.id in self.read_consentees:
             self.read_consentees = read_consentees
         else:

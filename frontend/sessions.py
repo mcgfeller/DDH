@@ -8,10 +8,10 @@ import pydantic
 from utils.pydantic_utils import NoCopyBaseModel
 
 
-from core import errors,transactions,principals
+from core import errors,transactions,principals,common_ids
 
 
-SessionId = typing.NewType('SessionId', str) # identifies the session
+
 
 # TODO: Should we have a single current trx per session or something per user?
 
@@ -24,9 +24,9 @@ class Session(NoCopyBaseModel):
     current_trx : typing.Optional[transactions.Transaction] = None
 
     @property
-    def id(self) -> SessionId:
+    def id(self) -> common_ids.SessionId:
         """ return id """
-        return typing.cast(SessionId,self.token_str)
+        return typing.cast(common_ids.SessionId,self.token_str)
 
     def get_transaction(self,for_user :typing.Optional[principals.Principal] = None,create=False) -> typing.Optional[transactions.Transaction]:
         """ get existing trx or create new one

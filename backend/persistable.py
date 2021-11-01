@@ -8,7 +8,7 @@ import pydantic
 
 
 from utils.pydantic_utils import NoCopyBaseModel
-from core import transactions
+from core import transactions,common_ids
 
 
 @enum.unique
@@ -19,7 +19,7 @@ class DataFormat(str,enum.Enum):
     blob = 'b'
     json = 'j'    
 
-PersistId = typing.NewType('PersistId', str)
+
 
 from backend import keyvault,storage
 
@@ -41,7 +41,7 @@ class Persistable(NoCopyBaseModel):
     """
 
     Registry : typing.ClassVar[dict[str,type]] = {}
-    id : PersistId = pydantic.Field(default_factory=secrets.token_urlsafe)
+    id : common_ids.PersistId = pydantic.Field(default_factory=secrets.token_urlsafe)
     format : DataFormat = DataFormat.dict
 
     @classmethod
@@ -54,7 +54,7 @@ class Persistable(NoCopyBaseModel):
         return
 
     @classmethod
-    def load(cls, id:PersistId,  transaction: transactions.Transaction ):
+    def load(cls, id:common_ids.PersistId,  transaction: transactions.Transaction ):
         d = storage.Storage.load(id, transaction)
         o = cls.from_compressed(d)
         return o
@@ -92,7 +92,7 @@ class Persistable(NoCopyBaseModel):
 
 class PersistableProxy(NoCopyBaseModel):
     """ Proxy with minimal data to load Persistable """
-    id : PersistId
+    id : common_ids.PersistId
     classname: str
 
     def ensure_loaded(self, transaction : transactions.Transaction) -> Persistable:
