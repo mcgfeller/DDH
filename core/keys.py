@@ -8,6 +8,7 @@ import abc
 
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import NoCopyBaseModel
+from core import common_ids
 
 
 
@@ -118,13 +119,13 @@ class DDHkey(NoCopyBaseModel):
             return rooted_key
 
     @property
-    def owners(self) -> str:
+    def owners(self) -> common_ids.PrincipalId:
         """ return owner as string """
         rooted_key = self.ensure_rooted()
         if len(rooted_key.key) > 1 and rooted_key.key[0] == self.Root:
             return rooted_key.key[1]
         else:
-            return str(self.AnyKey)
+            return typing.cast(common_ids.PrincipalId,str(self.AnyKey))
 
 
 from . import nodes
