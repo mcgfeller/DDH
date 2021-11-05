@@ -2,23 +2,66 @@
 from __future__ import annotations
 from abc import abstractmethod
 import typing
+import pydantic
 
 from core import keys,permissions,schemas,nodes,keydirectory,policies,errors,transactions,principals
 from utils.pydantic_utils import NoCopyBaseModel
 
 
 
-class DApp(NoCopyBaseModel):
-    
+class DAppOrFamily(NoCopyBaseModel):
+    """ common properties between DApp and DAppFamily """
+    class Config:
+        extra = 'ignore'
+
+    id : typing.Optional[str]  = None # principals.DAppId causes Pydantic errors!
     owner : typing.ClassVar[principals.Principal] 
-    schemakey : typing.ClassVar[keys.DDHkey] 
     policy: policies.Policy = policies.EmptyPolicy
+    dependsOn: set[DAppOrFamily] = set()
+    labels : dict[str,typing.Any] = {}
+    searchtext : typing.Optional[str] = None
+
+    def __init__(self,*a,**kw):
+        """ Calculate labels; would like a computed and cached property,
+            but Pydantic currently doesn't support that:
+            https://github.com/samuelcolvin/pydantic/pull/2625
+        """
+        super().__init__(*a,**kw)
+        if not self.id:
+            self.id = typing.cast(principals.DAppId,self.__class__.__name__) 
+        self.labels = self.compute_labels()
+
+
+    def compute_labels(self) ->dict:
+        """ Compute and assign labels """
+        # TODO: Compute labels from other attributes
+        return {'id':self.id}
+    
+    def to_DAppOrFamily(self):
+        """ convert DApp or DAppFamily to DAppOrFamily """
+        return DAppOrFamily(**self.dict())
+
+DAppOrFamily.update_forward_refs()
+
+class DAppFamily(DAppOrFamily):
+    members : dict[principals.DAppId,DApp] = {}
+
+
+class DApp(DAppOrFamily):
     
 
-    @property
-    def id(self) -> principals.DAppId:
-        """ Default DAppId is class name """
-        return typing.cast(principals.DAppId,self.__class__.__name__) 
+    schemakey : typing.ClassVar[keys.DDHkey] 
+    belongsTo: typing.Optional[DAppFamily] = None
+
+
+    def __init__(self,*a,**kw):
+        """ Add to family as member """
+        super().__init__(*a,**kw)
+        if self.belongsTo:
+            self.belongsTo.members[self.id] = self
+    
+
+
 
     @classmethod
     def bootstrap(cls,session) -> DApp:
