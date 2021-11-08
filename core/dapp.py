@@ -14,7 +14,7 @@ class DAppOrFamily(NoCopyBaseModel):
     class Config:
         extra = 'ignore'
 
-    id : typing.Optional[str]  = None # principals.DAppId causes Pydantic errors!
+    id : typing.Optional[str]  = None # principals.DAppId causes Pydantic errors - I don't know why
     owner : typing.ClassVar[principals.Principal] 
     policy: policies.Policy = policies.EmptyPolicy
     dependsOn: set[DAppOrFamily] = set()
@@ -38,8 +38,8 @@ class DAppOrFamily(NoCopyBaseModel):
         return {'id':self.id}
     
     def to_DAppOrFamily(self):
-        """ convert DApp or DAppFamily to DAppOrFamily """
-        return DAppOrFamily(**self.dict())
+        """ convert DApp or DAppFamily to DAppOrFamily, which is the FastAPI ResponseModel  """
+        return DAppOrFamily(**self.dict()) # excess attributes are ignore
 
 DAppOrFamily.update_forward_refs()
 
