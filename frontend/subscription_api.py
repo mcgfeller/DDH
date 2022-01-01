@@ -1,5 +1,7 @@
-""" This is the Market API to retrieve and engage with DApps.
-    The main client is the Client User interface and the DApp author interface.
+""" This is the Subscription API, to register and handle user subscriptions and consents.
+    The main client is the Client User interface.
+
+
 """
 
 import fastapi
@@ -31,24 +33,15 @@ async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordReque
     access = permissions.Access(ddhkey=keys.DDHkey('/login'),principal=user, modes = {permissions.AccessMode.login},byDApp=dappid)
     return token
 
-@app.get("/market/dapp",response_model=list[dapp.DAppOrFamily])
-async def get_dapps(
-    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
-    q: str = fastapi.Query(None, alias="item-query"),
-    ):
-    """ search for DApps or DApp Families """
-    dapps = [v.to_DAppOrFamily() for v in pillars.DAppManager.DAppsById.values()]
-    return dapps
 
 
-@app.get("/market/dapp/{dappid:principals.DAppId}",response_model=dapp.DAppOrFamily)
-async def get_dapp(
+@app.post("/subscriptions/dapp/{dappid:principals.DAppId}",response_model=list[dapp.DAppOrFamily])
+async def create_subscription(
     dappid : principals.DAppId,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     ):
-    """ get a single DApp or DApp Family by its ID """
+    """ Create a single subscription for a user """
     dapp = pillars.DAppManager.DAppsById.get(dappid)
-    if dapp:
-        return dapp
-    else:
+    if not dapp:
         raise fastapi.HTTPException(status_code=404, detail=f"DApp not found: {dappid}.")
+    

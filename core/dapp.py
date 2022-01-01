@@ -44,6 +44,7 @@ class DAppOrFamily(NoCopyBaseModel):
 DAppOrFamily.update_forward_refs()
 
 class DAppFamily(DAppOrFamily):
+    """ A DAppFamily is a collection of DApps that can be subscribed together """
     members : dict[principals.DAppId,DApp] = {}
 
 
