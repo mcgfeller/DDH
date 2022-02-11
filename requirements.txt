@@ -6,4 +6,4 @@ python-jose[pycryptodome]
 pydantic[email]
 pytest
 httpx
-glom==20
+glom==20.*
