@@ -1,6 +1,7 @@
 *.pyc
 *.pyo
 /.vscode
+/.venv
 /.pytest_cache
 /.mypy_cache
 /.ipynb_checkpoints
