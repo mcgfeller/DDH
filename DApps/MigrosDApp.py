@@ -96,15 +96,6 @@ class Receipt(schemas.SchemaElement):
         return d
 
 
-# class MigrosClient(schemas.SchemaElement):
-
-#     # id : principals.Principal = pydantic.Field(sensitivity= schemas.Sensitivity.ei)
-
-    
-
-
-    
-
 class MigrosSchema(schemas.SchemaElement):
 
     cumulus : typing.Optional[int] = pydantic.Field(None,sensitivity=schemas.Sensitivity.qi)

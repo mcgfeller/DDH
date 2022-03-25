@@ -50,10 +50,7 @@ class DAppFamily(DAppOrFamily):
 
 class DApp(DAppOrFamily):
     
-
-    schemakey : typing.ClassVar[keys.DDHkey] # TODO: Replace by defines
     belongsTo: typing.Optional[DAppFamily] = None
-
     references : list[relationships.Reference] = []
 
 
@@ -67,10 +64,6 @@ class DApp(DAppOrFamily):
     def get_schemas(self) -> dict[keys.DDHkey,schemas.Schema]:
         """ Obtain initial schema for DApp """
         return {}
-
-    def get_schema(self) -> schemas.Schema:
-        s = self.get_schemas()
-        return list(s.values())[0]
 
 
     def register_schema(self):
