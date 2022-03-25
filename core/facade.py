@@ -13,7 +13,7 @@ from . import permissions, keys, schemas, nodes, keydirectory, transactions, err
 from frontend import sessions
 
 
-def _get_consent_node(ddhkey: keys.DDHkey, support: nodes.NodeSupports, node : typing.Optional[nodes.Node], transaction : transactions.Transaction) -> nodes.Node:
+def _get_consent_node(ddhkey: keys.DDHkey, support: nodes.NodeSupports, node : typing.Optional[nodes.Node], transaction : transactions.Transaction) -> typing.Optional[nodes.Node]:
     """ get consents, from current node or from its parent """
     if node and node.has_consents():
         cnode = node
