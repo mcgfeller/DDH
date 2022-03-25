@@ -1,0 +1,22 @@
+
+<html> 
+  <head>
+    <script src="https://unpkg.com/htmx.org@1.6.1"></script>
+    <title>DDH Market Place</title> 
+  </head>
+
+  <body> 
+    <base href="http://localhost:8002">
+    <h1>DDH Market Place</h1> 
+    <div>
+    <button hx-get="/test"
+       hx-swap="outerHTML">
+    Click Me!
+  </button>
+  </div>
+
+  <div hx-get="/test"
+    Put To Messages
+  </div>
+  </body>
+</html>

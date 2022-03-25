@@ -14,7 +14,16 @@ from core import pillars,dapp
 from core import keys,permissions,schemas,facade,errors,principals
 from frontend import sessions
 
+import fastapi.middleware.cors as cors
+
 app = fastapi.FastAPI()
+app.add_middleware(
+    cors.CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 from frontend import user_auth # provisional user management
 
@@ -52,3 +61,8 @@ async def get_dapp(
         return dapp
     else:
         raise fastapi.HTTPException(status_code=404, detail=f"DApp not found: {dappid}.")
+
+
+@app.get("/test") 
+async def test() -> str:
+    return 'ok' 

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>SDX VanillaJS Example</title>
+
+    <!-- SDX CSS (~10 KB gzipped, needed for SDX Web Components) -->
+    <link rel="stylesheet" href="https://sdx.scsstatic.ch/v2.34.1/css/webcomponents.min.css"
+          integrity="sha384-r7Zvc7SsNR4IQNzeDY5qpF2YRVyaKHhX1Sh5DxUpXneQl0UhrgA9RAYFNXxuaZhX"
+          crossorigin="anonymous">
+
+    <!-- SDX Web Components JS (~3 KB gzipped, lazy loads SDX Web Components in use) -->
+    <script type="module"
+            src="https://sdx.scsstatic.ch/v2.34.1/js/webcomponents/webcomponents/webcomponents.esm.js"
+            integrity="sha384-cTHUxjyTzdW0bK06g/IhDVV6tX61p9Aqj3RB8ZJdG7Wn2IsKopHRVDYcv2xRkFsN"
+            crossorigin="anonymous"></script>
+
+    <script>
+        const sdxSelectOptions = ['Option 1', 'Option 2'];
+
+        function onButtonClick() {
+            document.querySelector("sdx-select").value = [];
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            const sdxSelectElement = document.querySelector("sdx-select");
+            const sdxSelectedValueElement = document.querySelector("#sdx-selected-value");
+
+            sdxSelectOptions.map((item) => {
+                let selectOption = document.createElement("sdx-select-option");
+                selectOption.value = selectOption.textContent = item;
+                sdxSelectElement.appendChild(selectOption);
+            });
+
+            sdxSelectElement.changeCallback = (value) => {
+                console.log("sdx-select changeCallback fired");
+                sdxSelectedValueElement.textContent = value;
+            };
+        });
+    </script>
+</head>
+<body class="sdx">
+    <div class="container"> <!-- .container is an SDX class -->
+        <h1>SDX VanillaJS Example</h1>
+
+        <p>It uses the CDN to get SDX.</p>
+
+        <div class="row">
+            <div class="col-xs col-lg-3">
+                <sdx-select
+                    label="What is your choice?"
+                    placeholder="Choose your option..."
+                ></sdx-select>
+            </div>
+
+            <div class="col-xs col-lg-9">
+                <span class="margin-1">Selected value: </span>
+                <span class="margin-1" id="sdx-selected-value"></span>
+            </div>
+        </div>
+
+        <div class="row margin-top-3">
+            <div class="col">
+                <sdx-button
+                        label="Reset Dropdown"
+                        onclick="onButtonClick()"
+                ></sdx-button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

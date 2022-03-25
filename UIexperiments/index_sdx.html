@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+
+    <!-- SDX CSS (~10 KB gzipped, needed for SDX Web Components) -->
+    <link integrity="sha384-aiZo3R2wS3xHLFkltM6SylRIukG8zMwvnsKhQ9/bQ95NMraX4TnbLPdMO3hghdPH" crossorigin="anonymous" rel="stylesheet" href="https://sdx.scsstatic.ch/v2.38.0/css/webcomponents.min.css">
+
+    <!-- SDX CSS (~140 KB gzipped, needed for "non-Web Component" SDX components) -->
+    <!-- <link integrity="sha384-qNLvVjNMUXqU2evW5/wGeqksTGjrp/8hqhR0GyHjKDQH3LbL5v400+cP/Hvla4Q7" crossorigin="anonymous" rel="stylesheet" href="https://sdx.scsstatic.ch/v2.38.0/css/sdx.min.css"> -->
+
+    <!-- SDX Web Components JS (~3 KB gzipped, lazy loads SDX Web Components in use) -->
+    <script integrity="sha384-g+ILNaPppdCP958lyx6AMTxWMtJ6YIMqjNT7wejMFbiMZ18kj2GLymQn6gq1IY9f" crossorigin="anonymous" type="module" src="https://sdx.scsstatic.ch/v2.38.0/js/webcomponents/webcomponents/webcomponents.esm.js"></script>
+    <script src="https://unpkg.com/htmx.org@1.6.1"></script>
+  </head>
+  <body class="sdx"> <!-- SDX scope (can be applied to any containing element) -->
+    <base href="http://localhost:8002">
+    <app-root></app-root>
+    <div>
+      <button hx-get="/test"
+         hx-swap="innerHTML">
+      Click Me!
+    </button>
+    </div>
+    <div class="container">
+      <div class="row">
+        <div class="col">
+          <h1 class="sc-navy" hx-get="/test" hx-trigger="load" hx-swap="innerHTML">Hello World!</h1>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <p>SDX is loaded via CDN (note the integrity attribute).</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SDX JS (~340 KB gzipped, needed for "non-Web Component" SDX components) -->
+    <!-- <script integrity="sha384-xLy60XlO2DzfFWZ5DOtZ6oOA4pdzCK/nuCMW5jASTLMXvD9O1jRuazZbhR/oAXlm" crossorigin="anonymous" src="https://sdx.scsstatic.ch/v2.38.0/js/sdx.min.js"></script> -->
+  </body>
+</html>
