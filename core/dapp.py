@@ -4,7 +4,7 @@ from abc import abstractmethod
 import typing
 import pydantic
 
-from core import keys,permissions,schemas,nodes,keydirectory,policies,errors,transactions,principals
+from core import keys,permissions,schemas,nodes,keydirectory,policies,errors,transactions,principals,relationships
 from utils.pydantic_utils import NoCopyBaseModel
 
 
@@ -51,8 +51,10 @@ class DAppFamily(DAppOrFamily):
 class DApp(DAppOrFamily):
     
 
-    schemakey : typing.ClassVar[keys.DDHkey] 
+    schemakey : typing.ClassVar[keys.DDHkey] # TODO: Replace by defines
     belongsTo: typing.Optional[DAppFamily] = None
+
+    references : typing.ClassVar[list[relationships.Reference]] = []
 
 
     def __init__(self,*a,**kw):
@@ -61,7 +63,10 @@ class DApp(DAppOrFamily):
         if self.belongsTo:
             self.belongsTo.members[self.id] = self
     
-
+    @classmethod
+    def get_references(cls):
+        """ retrutn references; can be overwritten """
+        return cls.references
 
 
     @classmethod
