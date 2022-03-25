@@ -35,6 +35,9 @@ class Reference(NoCopyBaseModel):
     def provides(cls,*a,**kw):
         return cls.multiple(Relation.provides,*a,**kw)
 
+    @classmethod
+    def defines(cls,*a,**kw):
+        return cls.multiple(Relation.defines,*a,**kw)
 
 
 

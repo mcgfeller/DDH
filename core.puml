@@ -1,0 +1,224 @@
+@startuml
+class core.dapp.DApp {
+  schemakey: typing.ClassVar[keys.DDHkey] {static}
+  belongsTo: typing.Optional[DAppFamily] {static}
+}
+class core.dapp.DAppFamily {
+  members: dict[principals.DAppId, DApp] {static}
+}
+class core.dapp.DAppNode {
+  dapp: DApp {static}
+}
+class core.dapp.DAppOrFamily {
+  id: typing.Optional[str] {static}
+  owner: typing.ClassVar[principals.Principal] {static}
+  policy: policies.Policy {static}
+  dependsOn: set[DAppOrFamily] {static}
+  labels: dict[str, typing.Any] {static}
+  searchtext: typing.Optional[str] {static}
+  id: None
+  labels: None
+}
+class core.errors.AccessError {
+  http_status: typing.ClassVar[int] {static}
+}
+class core.errors.DAppError {
+  http_status: typing.ClassVar[int] {static}
+}
+class core.errors.DDHerror {
+  http_status: typing.ClassVar[int] {static}
+}
+class core.errors.NotFound {
+  http_status: typing.ClassVar[int] {static}
+}
+class core.errors.NotSelectable {
+  http_status: typing.ClassVar[int] {static}
+}
+class core.keydirectory._NodeRegistry {
+  nodes_by_key: dict[tuple, dict[nodes.NodeSupports, nodes.NodeProxy]] {static}
+  nodes_by_key: None
+}
+class core.keys.DDHkey {
+  key: tuple {static}
+  fork: ForkType {static}
+  Delimiter: typing.ClassVar[str] {static}
+  ForkDelimiter: typing.ClassVar[str] {static}
+  Root: typing.ClassVar[_RootType] {static}
+  AnyKey: typing.ClassVar[_AnyType] {static}
+}
+enum core.keys.ForkType {
+  data: data {static}
+  schema: schema {static}
+  consents: consents {static}
+}
+class core.keys._AnyType {
+}
+class core.keys._RootType {
+}
+class core.nodes.DataNode {
+  owner: principals.Principal {static}
+  format: persistable.DataFormat {static}
+  data: typing.Any {static}
+  storage_loc: typing.Optional[common_ids.PersistId] {static}
+  access_key: typing.Optional[keyvault.AccessKey] {static}
+  sub_nodes: dict[keys.DDHkey, keys.DDHkey] {static}
+}
+class core.nodes.DelegatedExecutableNode {
+  executors: list {static}
+}
+class core.nodes.ExecutableNode {
+  nschema: typing.Optional[schemas.Schema] {static}
+}
+class core.nodes.MultiOwnerNode {
+  all_owners: tuple[principals.Principal, ...] {static}
+  consents: typing.Union[permissions.Consents, permissions.MultiOwnerConsents] {static}
+  consents: None
+}
+class core.nodes.Node {
+  owner: principals.Principal {static}
+  consents: typing.Optional[permissions.Consents] {static}
+  key: typing.Optional[keys.DDHkey] {static}
+}
+class core.nodes.NodeProxy {
+  supports: set[NodeSupports] {static}
+}
+enum core.nodes.NodeSupports {
+  schema: schema {static}
+  data: data {static}
+  execute: execute {static}
+  consents: consents {static}
+}
+enum core.nodes.Ops {
+  get: get {static}
+  post: post {static}
+  put: put {static}
+  delete: delete {static}
+}
+class core.nodes.SchemaNode {
+  nschema: typing.Optional[schemas.Schema] {static}
+}
+class core.permissions.Access {
+  op: Operation {static}
+  ddhkey: DDHkey {static}
+  principal: principals.Principal {static}
+  byDApp: typing.Optional[principals.DAppId] {static}
+  modes: set[AccessMode] {static}
+  time: datetime.datetime {static}
+  granted: typing.Optional[bool] {static}
+  byConsents: list[Consent] {static}
+  explanation: typing.Optional[str] {static}
+  ddhkey: None
+}
+enum core.permissions.AccessMode {
+  read: read {static}
+  protected: protected {static}
+  write: write {static}
+  anonymous: anonymous {static}
+  pseudonym: pseudonym {static}
+  aggregated: aggregated {static}
+  differential: differential {static}
+  confidential: confidential {static}
+  schema_read: schema_read {static}
+  schema_write: schema_write {static}
+  consent_read: consent_read {static}
+  consent_write: consent_write {static}
+  login: login {static}
+}
+class core.permissions.Consent {
+  grantedTo: list[principals.Principal] {static}
+  withApps: set[principals.DAppId] {static}
+  withModes: set[AccessMode] {static}
+}
+class core.permissions.Consents {
+  consents: list[Consent] {static}
+  _byPrincipal: dict[str, list[Consent]] {static}
+  _byPrincipal: None
+}
+class core.permissions.MultiOwnerConsents {
+  consents_by_owner: dict[principals.Principal, Consents] {static}
+}
+enum core.permissions.Operation {
+  get: get {static}
+  put: put {static}
+  post: post {static}
+  delete: delete {static}
+}
+class core.pillars.ClearingHouse {
+}
+class core.pillars.Executor {
+}
+class core.pillars._DAppManager {
+  DAppsById: dict[principals.DAppId, dapp.DApp] {static}
+}
+class core.policies.Policy {
+  consents: typing.Optional[permissions.Consents] {static}
+}
+class core.principals.DAppId {
+  name: str {static}
+}
+class core.principals.Principal {
+  id: common_ids.PrincipalId {static}
+  Delim: typing.ClassVar[str] {static}
+}
+class core.principals.User {
+  name: str {static}
+  email: typing.Optional[pydantic.EmailStr] {static}
+  created_at: datetime.datetime {static}
+}
+class core.schemas.JsonSchema {
+  json_schema: pydantic.Json {static}
+}
+class core.schemas.PySchema {
+  schema_element: typing.Type[SchemaElement] {static}
+}
+class core.schemas.Schema {
+}
+class core.schemas.SchemaElement {
+}
+enum core.schemas.SchemaFormat {
+  json: json {static}
+  internal: internal {static}
+}
+class core.schemas.SchemaReference {
+  ddhkey: typing.ClassVar[str] {static}
+}
+enum core.schemas.Sensitivity {
+  ei: explicit id {static}
+  qi: quasi id {static}
+  sa: sensitive attribute {static}
+  nsa: non-sensitive attribute {static}
+}
+class core.transactions.Transaction {
+  trxid: common_ids.TrxId {static}
+  for_user: principals.Principal {static}
+  accesses: list[permissions.Access] {static}
+  exp: datetime.datetime {static}
+  read_consentees: set[common_ids.PrincipalId] {static}
+  initial_read_consentees: set[common_ids.PrincipalId] {static}
+  Transactions: typing.ClassVar[dict[common_ids.TrxId, 'Transaction']] {static}
+  TTL: typing.ClassVar[datetime.timedelta] {static}
+  read_consentees: None
+}
+class core.transactions.TrxAccessError {
+  http_status: typing.ClassVar[int] {static}
+}
+core.dapp.DAppOrFamily <|-- core.dapp.DApp
+core.dapp.DAppOrFamily <|-- core.dapp.DAppFamily
+core.nodes.ExecutableNode <|-- core.dapp.DAppNode
+core.errors.DDHerror <|-- core.errors.AccessError
+core.errors.DDHerror <|-- core.errors.DAppError
+core.errors.DDHerror <|-- core.errors.NotFound
+core.errors.DDHerror <|-- core.errors.NotSelectable
+core.nodes.Node <|-- core.nodes.DataNode
+core.nodes.ExecutableNode <|-- core.nodes.DelegatedExecutableNode
+core.nodes.SchemaNode <|-- core.nodes.ExecutableNode
+core.nodes.Node <|-- core.nodes.MultiOwnerNode
+core.nodes.Node <|-- core.nodes.SchemaNode
+core.principals.Principal <|-- core.principals.DAppId
+core.principals.Principal <|-- core.principals.User
+core.schemas.Schema <|-- core.schemas.JsonSchema
+core.schemas.Schema <|-- core.schemas.PySchema
+core.schemas.SchemaElement <|-- core.schemas.SchemaReference
+core.errors.AccessError <|-- core.transactions.TrxAccessError
+@enduml
+

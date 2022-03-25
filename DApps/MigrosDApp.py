@@ -18,14 +18,16 @@ class MigrosDApp(dapp.DApp):
     _ddhschema : schemas.SchemaElement = None
 
 
+
     def __init__(self,*a,**kw):
         super().__init__(*a,**kw)
         self._ddhschema = MigrosSchema()
         self.register_transform()
  
-    def get_schema(self) -> schemas.Schema:
+    def get_schemas(self) -> dict[keys.DDHkey,schemas.Schema]:
         """ Obtain initial schema for DApp """
-        return schemas.PySchema(schema_element=MigrosSchema)
+        return {keys.DDHkey(key="//org/migros.ch"):schemas.PySchema(schema_element=MigrosSchema)}
+
 
     def execute(self, op: nodes.Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
         """ obtain data by recursing to schema """

@@ -73,6 +73,15 @@ class DDHkey(NoCopyBaseModel):
         super().__init__(key=key,fork=fork) # type:ignore
         return 
 
+    def __hash__(self):
+        return hash((self.key,self.fork))
+    
+    def __eq__(self,other):
+        if isinstance(other,DDHkey):
+            return (self.key==other.key) and (self.fork == other.fork)
+        else:
+            return False
+
     def __str__(self) -> str:
         s = self.Delimiter.join(map(str,self.key))
         if self.fork != ForkType.data:

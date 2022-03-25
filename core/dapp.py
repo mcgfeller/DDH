@@ -54,7 +54,7 @@ class DApp(DAppOrFamily):
     schemakey : typing.ClassVar[keys.DDHkey] # TODO: Replace by defines
     belongsTo: typing.Optional[DAppFamily] = None
 
-    references : typing.ClassVar[list[relationships.Reference]] = []
+    references : list[relationships.Reference] = []
 
 
     def __init__(self,*a,**kw):
@@ -62,6 +62,20 @@ class DApp(DAppOrFamily):
         super().__init__(*a,**kw)
         if self.belongsTo:
             self.belongsTo.members[self.id] = self
+            
+
+    def get_schemas(self) -> dict[keys.DDHkey,schemas.Schema]:
+        """ Obtain initial schema for DApp """
+        return {}
+
+    def get_schema(self) -> schemas.Schema:
+        s = self.get_schemas()
+        return list(s.values())[0]
+
+
+    def register_schema(self):
+        s = self.get_schemas()
+        self.references.extend(relationships.Reference.defines(s.keys()))
     
     @classmethod
     def get_references(cls):
@@ -102,9 +116,6 @@ class DApp(DAppOrFamily):
             parent.add_fields({self.schemakey[-1] : (schemaref,None)})
         return dnode 
     
-    def get_schema(self) -> schemas.Schema:
-        """ Obtain initial schema for DApp - this is stored in the Node and must be static. """
-        raise errors.SubClass
 
     @abstractmethod
     def execute(self, op: nodes.Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
