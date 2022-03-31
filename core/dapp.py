@@ -80,11 +80,11 @@ class DApp(DAppOrFamily):
     def bootstrap(cls,session) -> DApp:
         return cls()
 
-    def startup(self,session)  -> list[nodes.Node]:
-        dnodes = self.register_schema(session)
+    def startup(self,session,schemaNetwork)  -> list[nodes.Node]:
+        dnodes = self.register_schema(session,schemaNetwork)
         return dnodes
 
-    def register_schema(self,session) -> list[nodes.Node]:
+    def register_schema(self,session,schemaNetwork) -> list[nodes.Node]:
         transaction = session.get_or_create_transaction()
         dnodes = []
         for schemakey,schema in self.get_schemas().items():
@@ -104,6 +104,7 @@ class DApp(DAppOrFamily):
                 # give world schema_read access
                 consents = permissions.Consents(consents=[permissions.Consent(grantedTo=[principals.AllPrincipal],withModes={permissions.AccessMode.schema_read})])
                 dnode = DAppNode(owner=self.owner,schema=schema,dapp=self,consents=consents)
+                schemaNetwork.network.add_node(dnode)
                 keydirectory.NodeRegistry[schemakey] = dnode
                 # now insert our schema into the parent's:
                 schemaref = schemas.SchemaReference.create_from_key(self.__class__.__name__,ddhkey=schemakey)
@@ -121,6 +122,13 @@ class DApp(DAppOrFamily):
 class DAppNode(nodes.ExecutableNode):
     """ node managed by a DApp """
     dapp : DApp
+
+    def __hash__(self):
+        return hash(self.dapp.id)
+
+    def __eq__(self,other):
+        return (self.dapp.id == other.dapp.id) if isinstance(other,DAppNode) else False
+
 
 
     def execute(self, op: nodes.Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):

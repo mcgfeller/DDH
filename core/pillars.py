@@ -23,6 +23,12 @@ class Executor(NoCopyBaseModel):
 class ClearingHouse(NoCopyBaseModel):
     ...
 
+class _SchemaNetwork():
+
+    def __init__(self):
+        self.network = networkx.DiGraph()
+
+SchemaNetwork = _SchemaNetwork()
 
 class _DAppManager(NoCopyBaseModel):
     """ Provisional DAppManager, loads modules and instantiates DApps.
@@ -46,20 +52,16 @@ class _DAppManager(NoCopyBaseModel):
                 else:
                     self.DAppsById[dapp.id] = dapp
                     try:
-                        dnode = dapp.startup(session)
+                        dnode = dapp.startup(session,SchemaNetwork)
                         logger.info(f'DApp {dapp!r} initialized at {dnode!s}.')
                     except Exception as e:
                         logger.error(f'DApp {dapp!r} startup error: {e}')
                     
         return
 
+
+
+
+
 DAppManager = _DAppManager()
-DAppManager.bootstrap()
-
-class _SchemaNetwork():
-
-    def __init__(self):
-        self.network = networkx.DiGraph()
-
-    
-SchemaNetwork = _SchemaNetwork()
+DAppManager.bootstrap()   
