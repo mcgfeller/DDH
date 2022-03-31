@@ -81,10 +81,10 @@ class DApp(DAppOrFamily):
         return cls()
 
     def startup(self,session)  -> list[nodes.Node]:
-        dnodes = self.check_registry(session)
+        dnodes = self.register_schema(session)
         return dnodes
 
-    def check_registry(self,session) -> list[nodes.Node]:
+    def register_schema(self,session) -> list[nodes.Node]:
         transaction = session.get_or_create_transaction()
         dnodes = []
         for schemakey,schema in self.get_schemas().items():

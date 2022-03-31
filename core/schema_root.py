@@ -10,7 +10,7 @@ from core import keys,permissions,schemas,nodes,dapp,keydirectory,principals
 from frontend import sessions
 logger = logging.getLogger(__name__)
 
-def check_registry() -> nodes.SchemaNode:
+def register_schema() -> nodes.SchemaNode:
     """ Register root schema at root node. 
         This is preliminary, as the schema is hard-coded.
     """
@@ -61,4 +61,4 @@ def descend_schema(tree : list,parents=()) -> pydantic.BaseModel:
     s = pydantic.create_model('_'.join(key), __base__=schemas.SchemaElement, **elements) # create a model with subtree elements
     return s
 
-check_registry()
+register_schema()

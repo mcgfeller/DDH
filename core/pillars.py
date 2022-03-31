@@ -13,6 +13,8 @@ from utils import import_modules
 import DApps
 from utils.pydantic_utils import NoCopyBaseModel
 
+import networkx
+
 
 class Executor(NoCopyBaseModel):
     ...
@@ -53,4 +55,11 @@ class _DAppManager(NoCopyBaseModel):
 
 DAppManager = _DAppManager()
 DAppManager.bootstrap()
+
+class _SchemaNetwork():
+
+    def __init__(self):
+        self.network = networkx.DiGraph()
+
     
+SchemaNetwork = _SchemaNetwork()
