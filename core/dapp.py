@@ -4,7 +4,7 @@ from abc import abstractmethod
 import typing
 import pydantic
 
-from core import keys,permissions,schemas,nodes,keydirectory,policies,errors,transactions,principals,relationships
+from core import keys,permissions,schemas,nodes,keydirectory,policies,errors,transactions,principals,relationships,pillars
 from utils.pydantic_utils import NoCopyBaseModel
 
 
@@ -80,12 +80,13 @@ class DApp(DAppOrFamily):
     def bootstrap(cls,session) -> DApp:
         return cls()
 
-    def startup(self,session,schemaNetwork)  -> list[nodes.Node]:
-        dnodes = self.register_schema(session,schemaNetwork)
+    def startup(self,session,pillars : dict)  -> list[nodes.Node]:
+        dnodes = self.register_schema(session,pillars)
         return dnodes
 
-    def register_schema(self,session,schemaNetwork) -> list[nodes.Node]:
+    def register_schema(self,session,pillars : dict) -> list[nodes.Node]:
         transaction = session.get_or_create_transaction()
+        schemaNetwork : pillars.SchemaNetworkClass = pillars['SchemaNetwork']
         dnodes = []
         for schemakey,schema in self.get_schemas().items():
             dnode = keydirectory.NodeRegistry[schemakey].get(nodes.NodeSupports.schema) # need exact location, not up the tree

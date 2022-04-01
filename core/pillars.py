@@ -23,21 +23,21 @@ class Executor(NoCopyBaseModel):
 class ClearingHouse(NoCopyBaseModel):
     ...
 
-class _SchemaNetwork():
+class SchemaNetworkClass():
 
     def __init__(self):
         self.network = networkx.DiGraph()
 
-SchemaNetwork = _SchemaNetwork()
+SchemaNetwork = SchemaNetworkClass()
 
-class _DAppManager(NoCopyBaseModel):
+class DAppManagerClass(NoCopyBaseModel):
     """ Provisional DAppManager, loads modules and instantiates DApps.
         Real Manager would orchestrate DApps in their own container.
 
     """
     DAppsById : dict[principals.DAppId,dapp.DApp] = {} # registry of DApps
 
-    def bootstrap(self) :
+    def bootstrap(self, pillars:dict) :
         session = sessions.get_system_session()
         for module in import_modules.importAllSubPackages(DApps):
             classname = module.__name__.split('.')[-1]
@@ -52,7 +52,7 @@ class _DAppManager(NoCopyBaseModel):
                 else:
                     self.DAppsById[dapp.id] = dapp
                     try:
-                        dnode = dapp.startup(session,SchemaNetwork)
+                        dnode = dapp.startup(session,pillars)
                         logger.info(f'DApp {dapp!r} initialized at {dnode!s}.')
                     except Exception as e:
                         logger.error(f'DApp {dapp!r} startup error: {e}')
@@ -63,5 +63,12 @@ class _DAppManager(NoCopyBaseModel):
 
 
 
-DAppManager = _DAppManager()
-DAppManager.bootstrap()   
+DAppManager = DAppManagerClass()
+
+
+Pillars = {
+    'DAppManager':DAppManager,
+    'SchemaNetwork' : SchemaNetwork,
+    }
+
+DAppManager.bootstrap(Pillars)   
