@@ -46,16 +46,18 @@ class DAppManagerClass(NoCopyBaseModel):
                 logger.error(f'DApp module {module.__name__} has no DApp class named {classname}.')
             else:
                 try:
-                    dapp = cls.bootstrap(session,pillars)
+                    dapps = cls.bootstrap(session,pillars) # one class may generate multiple DApps
                 except Exception as e:
                     logger.error(f'DApp {cls.__name__} bootstrap error: {e}')
                 else:
-                    self.DAppsById[dapp.id] = dapp
-                    try:
-                        dnode = dapp.startup(session,pillars)
-                        logger.info(f'DApp {dapp!r} initialized at {dnode!s}.')
-                    except Exception as e:
-                        logger.error(f'DApp {dapp!r} startup error: {e}')
+                    dapps = utils.ensureTuple(dapps)
+                    for dapp in dapps:
+                        self.DAppsById[dapp.id] = dapp
+                        try:
+                            dnode = dapp.startup(session,pillars)
+                            logger.info(f'DApp {dapp!r} initialized at {dnode!s}.')
+                        except Exception as e:
+                            logger.error(f'DApp {dapp!r} startup error: {e}')
                     
         return
 

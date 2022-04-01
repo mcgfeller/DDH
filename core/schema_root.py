@@ -38,6 +38,9 @@ def build_root_schemas():
             ['p', # personal tree, next level are data models
                 ['family'],
                 ['employment'],
+                    ['salary',
+                        ['statements']
+                    ],
                 ['education'],
                 ['health'],
                 ['living',

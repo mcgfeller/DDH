@@ -49,6 +49,8 @@ class DAppFamily(DAppOrFamily):
 
 
 class DApp(DAppOrFamily):
+    class Config:
+        extra = 'allow' # DApps are free to use their own variables
     
     belongsTo: typing.Optional[DAppFamily] = None
     references : list[relationships.Reference] = []
@@ -80,7 +82,7 @@ class DApp(DAppOrFamily):
 
 
     @classmethod
-    def bootstrap(cls,session,pillars : dict) -> DApp:
+    def bootstrap(cls,session,pillars : dict) -> typing.Union[DApp,tuple[DApp]]:
         return cls()
 
     def startup(self,session,pillars : dict)  -> list[nodes.Node]:
