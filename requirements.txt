@@ -7,3 +7,4 @@ pydantic[email]
 pytest
 httpx
 glom==20.*
+networkx==2.7.*
