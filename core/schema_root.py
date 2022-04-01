@@ -49,6 +49,9 @@ def build_root_schemas():
                     ],
                 ],
                 ['finance'],
+                    ['tax',
+                        ['declaration']
+                    ],
             ],
         ]
     ]
