@@ -77,7 +77,7 @@ class DApp(DAppOrFamily):
 
 
     @classmethod
-    def bootstrap(cls,session) -> DApp:
+    def bootstrap(cls,session,pillars : dict) -> DApp:
         return cls()
 
     def startup(self,session,pillars : dict)  -> list[nodes.Node]:

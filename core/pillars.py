@@ -46,7 +46,7 @@ class DAppManagerClass(NoCopyBaseModel):
                 logger.error(f'DApp module {module.__name__} has no DApp class named {classname}.')
             else:
                 try:
-                    dapp = cls.bootstrap(session)
+                    dapp = cls.bootstrap(session,pillars)
                 except Exception as e:
                     logger.error(f'DApp {cls.__name__} bootstrap error: {e}')
                 else:
@@ -66,7 +66,7 @@ class DAppManagerClass(NoCopyBaseModel):
 DAppManager = DAppManagerClass()
 
 
-Pillars = {
+Pillars = { # collect the singletons so we can pass them to whomever needs them for their initialization
     'DAppManager':DAppManager,
     'SchemaNetwork' : SchemaNetwork,
     }
