@@ -59,6 +59,13 @@ class DApp(DAppOrFamily):
         super().__init__(*a,**kw)
         if self.belongsTo:
             self.belongsTo.members[self.id] = self
+
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __eq__(self,other):
+        return (self.id == other.id) if isinstance(other,DApp) else False
             
 
     def get_schemas(self) -> dict[keys.DDHkey,schemas.Schema]:
@@ -66,14 +73,10 @@ class DApp(DAppOrFamily):
         return {}
 
 
-    def register_schema(self):
-        s = self.get_schemas()
-        self.references.extend(relationships.Reference.defines(s.keys()))
-    
-    @classmethod
-    def get_references(cls):
+   
+    def get_references(self):
         """ return references; can be overwritten """
-        return cls.references
+        return self.references
 
 
     @classmethod
@@ -81,12 +84,25 @@ class DApp(DAppOrFamily):
         return cls()
 
     def startup(self,session,pillars : dict)  -> list[nodes.Node]:
-        dnodes = self.register_schema(session,pillars)
+        schemaNetwork : pillars.SchemaNetworkClass = pillars['SchemaNetwork']
+        self.register_references(schemaNetwork)
+        dnodes = self.register_schema(session)
+
         return dnodes
 
-    def register_schema(self,session,pillars : dict) -> list[nodes.Node]:
+    def register_references(self,schemaNetwork : pillars.SchemaNetworkClass):
+        schemaNetwork.network.add_node(self)
+        for ref in self.get_references():
+            schemaNetwork.network.add_node(ref.target)
+            if ref.relation == relationships.Relation.provides:
+                schemaNetwork.network.add_edge(self,ref.target)
+            elif ref.relation == relationships.Relation.requires:
+                schemaNetwork.network.add_edge(ref.target,self)
+        return
+
+    def register_schema(self,session) -> list[nodes.Node]:
         transaction = session.get_or_create_transaction()
-        schemaNetwork : pillars.SchemaNetworkClass = pillars['SchemaNetwork']
+        
         dnodes = []
         for schemakey,schema in self.get_schemas().items():
             dnode = keydirectory.NodeRegistry[schemakey].get(nodes.NodeSupports.schema) # need exact location, not up the tree
@@ -105,7 +121,6 @@ class DApp(DAppOrFamily):
                 # give world schema_read access
                 consents = permissions.Consents(consents=[permissions.Consent(grantedTo=[principals.AllPrincipal],withModes={permissions.AccessMode.schema_read})])
                 dnode = DAppNode(owner=self.owner,schema=schema,dapp=self,consents=consents)
-                schemaNetwork.network.add_node(dnode)
                 keydirectory.NodeRegistry[schemakey] = dnode
                 # now insert our schema into the parent's:
                 schemaref = schemas.SchemaReference.create_from_key(self.__class__.__name__,ddhkey=schemakey)
@@ -125,10 +140,10 @@ class DAppNode(nodes.ExecutableNode):
     dapp : DApp
 
     def __hash__(self):
-        return hash(self.dapp.id)
+        return hash(self.dapp)
 
     def __eq__(self,other):
-        return (self.dapp.id == other.dapp.id) if isinstance(other,DAppNode) else False
+        return (self.dapp == other.dapp) if isinstance(other,DAppNode) else False
 
 
 

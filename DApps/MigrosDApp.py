@@ -5,7 +5,7 @@ import typing
 
 import pydantic
 
-from core import keys,permissions,schemas,nodes,keydirectory,principals,transactions
+from core import keys,permissions,schemas,nodes,keydirectory,principals,transactions,relationships
 from core import dapp
 
 import pandas # for example
@@ -17,12 +17,17 @@ class MigrosDApp(dapp.DApp):
     schemakey : typing.ClassVar[keys.DDHkey] = keys.DDHkey(key="//org/migros.ch")
     _ddhschema : schemas.SchemaElement = None
 
+    
+
 
 
     def __init__(self,*a,**kw):
         super().__init__(*a,**kw)
         self._ddhschema = MigrosSchema()
-        self.register_transform()
+        transforms_into = keys.DDHkey(key="//p/living/shopping/receipts")
+        self.references = relationships.Reference.provides(self.schemakey)  + \
+            relationships.Reference.provides(transforms_into)
+        self.register_transform(transforms_into)
  
     def get_schemas(self) -> dict[keys.DDHkey,schemas.Schema]:
         """ Obtain initial schema for DApp """
@@ -39,8 +44,7 @@ class MigrosDApp(dapp.DApp):
         return d
 
 
-    def register_transform(self):
-        ddhkey = keys.DDHkey('//p/living/shopping/receipts')
+    def register_transform(self,ddhkey : keys.DDHkey):
         de_node = keydirectory.NodeRegistry[ddhkey].get(nodes.NodeSupports.execute)
         if not de_node:
             de_node = nodes.DelegatedExecutableNode(owner=self.owner)
