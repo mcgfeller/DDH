@@ -1,15 +1,17 @@
 """ Example DApp - fake Migros Cumulus data """
 from __future__ import annotations
+
 import datetime
 import typing
 
+import pandas  # for example
 import pydantic
+from glom import Iter, S, T, glom  # transform
 
-from core import keys,permissions,schemas,nodes,keydirectory,principals,transactions,relationships
-from core import dapp
+from core import (dapp, keydirectory, keys, nodes, permissions, principals,
+                  relationships, schemas, transactions)
 
-import pandas # for example
-from glom import glom,S,T,Iter # transform
+
 
 class MigrosDApp(dapp.DApp):
 
@@ -109,8 +111,3 @@ class MigrosSchema(schemas.SchemaElement):
     def get_data(self, selection: keys.DDHkey,access: permissions.Access, q):
         d = self.get_resolver(selection,access,q)
         return d
-
-
-
-
-

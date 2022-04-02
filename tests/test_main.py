@@ -1,13 +1,13 @@
 """ Test actual FastAPI Server """
 
-import pytest
-import httpx
-import subprocess
 import pathlib
+import subprocess
 
+import httpx
+import pytest
 
 UVICORN_EXE = ".venv\\scripts\\uvicorn.exe"
-PORT = 8048 
+PORT = 8048
 USERPWD = {'username':'mgf','password':'secret'}
 
 def test_get_data(httpx_client):
@@ -73,7 +73,7 @@ async def asgi_client():
 
     """
     url = 'http://localhost:'+str(PORT)
-    from frontend.dapp_api  import app
+    from frontend.dapp_api import app
     async with httpx.AsyncClient(app=app, base_url=url) as client:
         r = await client.post(url+'/token',data=USERPWD)
         r.raise_for_status()
@@ -82,5 +82,5 @@ async def asgi_client():
     client = httpx.AsyncClient(app=app,base_url=url,headers=headers)
     yield client
     # Finalizer:
-    client.close()
+    await client.aclose()
     return 
