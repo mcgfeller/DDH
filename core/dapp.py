@@ -125,7 +125,8 @@ class DApp(DAppOrFamily):
                 dnode = DAppNode(owner=self.owner,schema=schema,dapp=self,consents=consents)
                 keydirectory.NodeRegistry[schemakey] = dnode
                 # now insert our schema into the parent's:
-                schemaref = schemas.SchemaReference.create_from_key(self.__class__.__name__,ddhkey=schemakey)
+                assert self.id
+                schemaref = schemas.SchemaReference.create_from_key(self.id,ddhkey=schemakey)
                 parent.add_fields({schemakey[-1] : (schemaref,None)})
             dnodes.append(dnode)
         return dnodes 
