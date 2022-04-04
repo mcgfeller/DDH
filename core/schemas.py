@@ -1,15 +1,16 @@
 """ DDH Core Schema Models """
 from __future__ import annotations
-import pydantic 
-import datetime
-import typing
+
+
 import enum
-import abc
+import typing
+import  abc
 
-from pydantic.errors import PydanticErrorMixin
+import pydantic
+
 from utils.pydantic_utils import NoCopyBaseModel
-
 from . import keys,permissions,errors,principals
+#from . import errors, keydirectory, keys, nodes, permissions, principals
 from frontend import user_auth
 
 @enum.unique
@@ -216,4 +217,27 @@ SchemaFormats = {
 }
 # corresponding enum: 
 SchemaFormat = enum.Enum('SchemaFormat',[(k,k) for k in SchemaFormats])  # type: ignore # 2nd argument with list form not understood
+
+
+def insert_schema(self,session,schemakey,schema,dappnode):
+    transaction = session.get_or_create_transaction()
+    dnode = keydirectory.NodeRegistry[schemakey].get(nodes.NodeSupports.schema) # need exact location, not up the tree
+    if dnode:
+        dnode = dnode.ensure_loaded(transaction)
+    else:
+        # get a parent scheme to hook into
+        upnode,split = keydirectory.NodeRegistry.get_node(schemakey,nodes.NodeSupports.schema,transaction)
+        pkey = schemakey.up()
+        if not pkey:
+            raise ValueError(f'{schemakey} key is too high {self!r}')
+        upnode = typing.cast(nodes.SchemaNode,upnode)
+        parent = upnode.get_sub_schema(pkey,split)
+        if not parent:
+            raise ValueError(f'No parent schema found for {self!r} with {schemakey} at upnode {upnode}')
+        keydirectory.NodeRegistry[schemakey] = dappnode
+        # now insert our schema into the parent's:
+        schemaref = SchemaReference.create_from_key(schemakey[-1],ddhkey=schemakey)
+        parent.add_fields({schemakey[-1] : (schemaref,None)})
+    return dnode
+
 

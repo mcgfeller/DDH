@@ -39,17 +39,28 @@ class SampleDApps(dapp.DApp):
         apps = (
 
             cls(
+                id='SwisscomRoot', # Owns Swisscom schema
+                owner=principals.User(id='swisscom',name='Swisscom (fake account)'),
+                schemakey = keys.DDHkey(key="//org/swisscom.com"), 
+                ),
+
+            cls(
                 id='SwisscomEmpDApp',
                 owner=principals.User(id='swisscom',name='Swisscom (fake account)'),
-                schemakey = keys.DDHkey(key="//org/swisscom.com"), # TODO: would like to have subkey - but complains that parent doesn't exist
+                schemakey = keys.DDHkey(key="//org/swisscom.com/employees"), 
                 transforms_into = keys.DDHkey(key="//p/employment/salary/statements"),
                 ),
 
+            cls(
+                id='SBBRoot',  # Owns SBB schema
+                owner=principals.User(id='sbb',name='SBB (fake account)'),
+                schemakey = keys.DDHkey(key="//org/sbb.ch"), 
+                ),
 
             cls(
                 id='SBBEmpDApp',
                 owner=principals.User(id='sbb',name='SBB (fake account)'),
-                schemakey = keys.DDHkey(key="//org/sbb.ch"), # TODO: would like to have subkey - but complains that parent doesn't exist
+                schemakey = keys.DDHkey(key="//org/sbb.ch/staff"), 
                 transforms_into = keys.DDHkey(key="//p/employment/salary/statements"),
                 ),
 
@@ -61,5 +72,7 @@ class SampleDApps(dapp.DApp):
         )
         return  apps
 
-class DummySchema(schemas.SchemaElement): ...
+class DummySchema(schemas.SchemaElement):
+    """ Must have some variable to have annotations """
+    name : str = 'Dummy'
 
