@@ -30,8 +30,9 @@ class SchemaNetworkClass():
 
     def plot(self):
         import matplotlib.pyplot as plt
-        labels = {node : str(node) if isinstance(node,keys.DDHkey) else node.id for node in self.network.nodes} # short id for nodes
-        networkx.draw_networkx(self.network,with_labels=True,labels=labels)
+        labels = {node : attrs['id'] for node,attrs in self.network.nodes.items()} # short id for nodes
+        colors = ['blue' if attrs['type'] == 'schema' else 'red' for attrs in self.network.nodes.values()]
+        networkx.draw_networkx(self.network,pos=networkx.circular_layout(self.network),with_labels=True,labels=labels,node_color=colors)
         plt.show()
 
 SchemaNetwork = SchemaNetworkClass()
@@ -66,7 +67,7 @@ class DAppManagerClass(NoCopyBaseModel):
                             logger.error(f'DApp {dapp!r} startup error: {e}',exc_info=True)
                             raise
 
-        # pillars['SchemaNetwork'].plot()
+        pillars['SchemaNetwork'].plot()
         return
 
 

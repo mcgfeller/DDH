@@ -101,13 +101,13 @@ class DApp(DAppOrFamily):
         return dnodes
 
     def register_references(self,schemaNetwork : pillars.SchemaNetworkClass):
-        schemaNetwork.network.add_node(self,id=self.id)
+        schemaNetwork.network.add_node(self,id=self.id,type='dapp')
         for ref in self.get_references():
-            schemaNetwork.network.add_node(ref.target,id=str(ref.target))
+            schemaNetwork.network.add_node(ref.target,id=str(ref.target),type='schema')
             if ref.relation == relationships.Relation.provides:
-                schemaNetwork.network.add_edge(self,ref.target)
+                schemaNetwork.network.add_edge(self,ref.target,type='provides')
             elif ref.relation == relationships.Relation.requires:
-                schemaNetwork.network.add_edge(ref.target,self)
+                schemaNetwork.network.add_edge(ref.target,self,type='requires')
         return
 
     def register_schema(self,session) -> list[nodes.Node]:

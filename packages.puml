@@ -1,0 +1,46 @@
+@startuml packages
+set namespaceSeparator none
+package "core" as core {
+}
+package "core.common_ids" as core.common_ids {
+}
+package "core.contracts" as core.contracts {
+}
+package "core.dapp" as core.dapp {
+}
+package "core.errors" as core.errors {
+}
+package "core.facade" as core.facade {
+}
+package "core.keydirectory" as core.keydirectory {
+}
+package "core.keys" as core.keys {
+}
+package "core.nodes" as core.nodes {
+}
+package "core.permissions" as core.permissions {
+}
+package "core.pillars" as core.pillars {
+}
+package "core.policies" as core.policies {
+}
+package "core.principals" as core.principals {
+}
+package "core.privacyIcons" as core.privacyIcons {
+}
+package "core.relationships" as core.relationships {
+}
+package "core.schema_root" as core.schema_root {
+}
+package "core.schemas" as core.schemas {
+}
+package "core.transactions" as core.transactions {
+}
+core.contracts --> core
+core.dapp --> core
+core.keys --> core
+core.pillars --> core
+core.relationships --> core
+core.schema_root --> core
+core.transactions --> core
+@enduml

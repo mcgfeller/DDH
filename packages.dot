@@ -1,0 +1,29 @@
+digraph "packages" {
+rankdir=BT
+charset="utf-8"
+"core" [color="black", label="core", shape="box", style="solid"];
+"core.common_ids" [color="black", label="core.common_ids", shape="box", style="solid"];
+"core.contracts" [color="black", label="core.contracts", shape="box", style="solid"];
+"core.dapp" [color="black", label="core.dapp", shape="box", style="solid"];
+"core.errors" [color="black", label="core.errors", shape="box", style="solid"];
+"core.facade" [color="black", label="core.facade", shape="box", style="solid"];
+"core.keydirectory" [color="black", label="core.keydirectory", shape="box", style="solid"];
+"core.keys" [color="black", label="core.keys", shape="box", style="solid"];
+"core.nodes" [color="black", label="core.nodes", shape="box", style="solid"];
+"core.permissions" [color="black", label="core.permissions", shape="box", style="solid"];
+"core.pillars" [color="black", label="core.pillars", shape="box", style="solid"];
+"core.policies" [color="black", label="core.policies", shape="box", style="solid"];
+"core.principals" [color="black", label="core.principals", shape="box", style="solid"];
+"core.privacyIcons" [color="black", label="core.privacyIcons", shape="box", style="solid"];
+"core.relationships" [color="black", label="core.relationships", shape="box", style="solid"];
+"core.schema_root" [color="black", label="core.schema_root", shape="box", style="solid"];
+"core.schemas" [color="black", label="core.schemas", shape="box", style="solid"];
+"core.transactions" [color="black", label="core.transactions", shape="box", style="solid"];
+"core.contracts" -> "core" [arrowhead="open", arrowtail="none"];
+"core.dapp" -> "core" [arrowhead="open", arrowtail="none"];
+"core.keys" -> "core" [arrowhead="open", arrowtail="none"];
+"core.pillars" -> "core" [arrowhead="open", arrowtail="none"];
+"core.relationships" -> "core" [arrowhead="open", arrowtail="none"];
+"core.schema_root" -> "core" [arrowhead="open", arrowtail="none"];
+"core.transactions" -> "core" [arrowhead="open", arrowtail="none"];
+}

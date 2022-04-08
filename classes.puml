@@ -1,0 +1,185 @@
+@startuml classes
+set namespaceSeparator none
+class "Access" as core.permissions.Access {
+}
+class "<color:red>AccessError</color>" as core.errors.AccessError {
+}
+class "AccessMode" as core.permissions.AccessMode {
+}
+class "CancellationTerms" as core.contracts.CancellationTerms {
+}
+class "ClearingHouse" as core.pillars.ClearingHouse {
+}
+class "Config" as core.dapp.DAppOrFamily.Config {
+}
+class "Config" as core.dapp.DApp.Config {
+}
+class "Config" as core.principals.Principal.Config {
+}
+class "Config" as core.schemas.SchemaReference.Config {
+}
+class "Consent" as core.permissions.Consent {
+}
+class "Consents" as core.permissions.Consents {
+}
+class "Contract" as core.contracts.Contract {
+}
+class "DApp" as core.dapp.DApp {
+}
+class "<color:red>DAppError</color>" as core.errors.DAppError {
+}
+class "DAppFamily" as core.dapp.DAppFamily {
+}
+class "DAppId" as core.principals.DAppId {
+}
+class "DAppManagerClass" as core.pillars.DAppManagerClass {
+}
+class "DAppNode" as core.dapp.DAppNode {
+}
+class "DAppOrFamily" as core.dapp.DAppOrFamily {
+}
+class "<color:red>DDHerror</color>" as core.errors.DDHerror {
+}
+class "DDHkey" as core.keys.DDHkey {
+}
+class "DataNode" as core.nodes.DataNode {
+}
+class "DelegatedExecutableNode" as core.nodes.DelegatedExecutableNode {
+}
+class "ExecutableNode" as core.nodes.ExecutableNode {
+}
+class "Executor" as core.pillars.Executor {
+}
+class "ForkType" as core.keys.ForkType {
+}
+class "JsonSchema" as core.schemas.JsonSchema {
+}
+class "MultiOwnerConsents" as core.permissions.MultiOwnerConsents {
+}
+class "MultiOwnerNode" as core.nodes.MultiOwnerNode {
+}
+class "Node" as core.nodes.Node {
+}
+class "NodeProxy" as core.nodes.NodeProxy {
+}
+class "NodeSupports" as core.nodes.NodeSupports {
+}
+class "<color:red>NotFound</color>" as core.errors.NotFound {
+}
+class "<color:red>NotSelectable</color>" as core.errors.NotSelectable {
+}
+class "Offer" as core.contracts.Offer {
+}
+class "Operation" as core.permissions.Operation {
+}
+class "Ops" as core.nodes.Ops {
+}
+class "PassingOnToThirdParties" as core.privacyIcons.PassingOnToThirdParties {
+}
+class "Periodicity" as core.contracts.Periodicity {
+}
+class "PlaceOfProcessing" as core.privacyIcons.PlaceOfProcessing {
+}
+class "Policy" as core.policies.Policy {
+}
+class "Price" as core.contracts.Price {
+}
+class "Principal" as core.principals.Principal {
+}
+class "PrivacyIcon" as core.privacyIcons.PrivacyIcon {
+}
+class "PrivacyIcons" as core.privacyIcons.PrivacyIcons {
+}
+class "PurposeOfProcessing" as core.privacyIcons.PurposeOfProcessing {
+}
+class "PySchema" as core.schemas.PySchema {
+}
+class "Quality" as core.relationships.Quality {
+}
+class "Reference" as core.relationships.Reference {
+}
+class "Relation" as core.relationships.Relation {
+}
+class "Schema" as core.schemas.Schema {
+}
+class "SchemaElement" as core.schemas.SchemaElement {
+}
+class "SchemaNetworkClass" as core.pillars.SchemaNetworkClass {
+}
+class "SchemaNode" as core.nodes.SchemaNode {
+}
+class "SchemaReference" as core.schemas.SchemaReference {
+}
+class "Sensitivity" as core.schemas.Sensitivity {
+}
+class "SourceOfPersonalData" as core.privacyIcons.SourceOfPersonalData {
+}
+class "SpecialProcesses" as core.privacyIcons.SpecialProcesses {
+}
+class "SubscriptionPrice" as core.contracts.SubscriptionPrice {
+}
+class "TermsAndConditions" as core.contracts.TermsAndConditions {
+}
+class "Transaction" as core.transactions.Transaction {
+}
+class "TransactionPrice" as core.contracts.TransactionPrice {
+}
+class "<color:red>TrxAccessError</color>" as core.transactions.TrxAccessError {
+}
+class "TypeOfPersonalData" as core.privacyIcons.TypeOfPersonalData {
+}
+class "User" as core.principals.User {
+}
+class "_AnyType" as core.keys._AnyType {
+}
+class "_NodeRegistry" as core.keydirectory._NodeRegistry {
+}
+class "_RootType" as core.keys._RootType {
+}
+core.contracts.SubscriptionPrice --|> core.contracts.Price
+core.contracts.TransactionPrice --|> core.contracts.Price
+core.dapp.DApp --|> core.dapp.DAppOrFamily
+core.dapp.DAppFamily --|> core.dapp.DAppOrFamily
+core.dapp.DAppNode --|> core.nodes.ExecutableNode
+core.errors.AccessError --|> core.errors.DDHerror
+core.errors.DAppError --|> core.errors.DDHerror
+core.errors.NotFound --|> core.errors.DDHerror
+core.errors.NotSelectable --|> core.errors.DDHerror
+core.nodes.DataNode --|> core.nodes.Node
+core.nodes.DelegatedExecutableNode --|> core.nodes.ExecutableNode
+core.nodes.ExecutableNode --|> core.nodes.SchemaNode
+core.nodes.MultiOwnerNode --|> core.nodes.Node
+core.nodes.SchemaNode --|> core.nodes.Node
+core.principals.DAppId --|> core.principals.Principal
+core.principals.User --|> core.principals.Principal
+core.privacyIcons.PassingOnToThirdParties --|> core.privacyIcons.PrivacyIcon
+core.privacyIcons.PlaceOfProcessing --|> core.privacyIcons.PrivacyIcon
+core.privacyIcons.PurposeOfProcessing --|> core.privacyIcons.PrivacyIcon
+core.privacyIcons.SourceOfPersonalData --|> core.privacyIcons.PrivacyIcon
+core.privacyIcons.SpecialProcesses --|> core.privacyIcons.PrivacyIcon
+core.privacyIcons.TypeOfPersonalData --|> core.privacyIcons.PrivacyIcon
+core.schemas.JsonSchema --|> core.schemas.Schema
+core.schemas.PySchema --|> core.schemas.Schema
+core.schemas.SchemaReference --|> core.schemas.SchemaElement
+core.transactions.TrxAccessError --|> core.errors.AccessError
+core.contracts.CancellationTerms --* core.contracts.TermsAndConditions : cancellation_terms
+core.contracts.Offer --* core.contracts.Contract : offer
+core.contracts.Periodicity --* core.contracts.SubscriptionPrice : periodicity
+core.contracts.Price --* core.contracts.Offer : price
+core.contracts.TermsAndConditions --* core.contracts.Offer : tac
+core.dapp.DApp --* core.dapp.DAppNode : dapp
+core.keys.DDHkey --* core.relationships.Reference : target
+core.keys.ForkType --* core.keys.DDHkey : fork
+core.permissions.Consents --* core.contracts.Offer : required_consents
+core.permissions.MultiOwnerConsents --* core.nodes.MultiOwnerNode : consents
+core.permissions.Operation --* core.permissions.Access : op
+core.policies.Policy --* core.dapp.DAppOrFamily : policy
+core.principals.DAppId --* core.contracts.Offer : dapp
+core.principals.Principal --* core.contracts.Contract : acceptor
+core.principals.Principal --* core.nodes.DataNode : owner
+core.principals.Principal --* core.nodes.Node : owner
+core.principals.Principal --* core.permissions.Access : principal
+core.principals.Principal --* core.transactions.Transaction : for_user
+core.privacyIcons.PrivacyIcons --* core.contracts.TermsAndConditions : privacy_icons
+core.relationships.Relation --* core.relationships.Reference : relation
+@enduml
