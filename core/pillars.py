@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from utils import utils
-from core import schema_root,dapp,principals
+from core import schema_root,dapp,principals,keys
 from frontend import sessions
 from utils import import_modules 
 import DApps
@@ -27,6 +27,12 @@ class SchemaNetworkClass():
 
     def __init__(self):
         self.network = networkx.DiGraph()
+
+    def plot(self):
+        import matplotlib.pyplot as plt
+        labels = {node : str(node) if isinstance(node,keys.DDHkey) else node.id for node in self.network.nodes} # short id for nodes
+        networkx.draw_networkx(self.network,with_labels=True,labels=labels)
+        plt.show()
 
 SchemaNetwork = SchemaNetworkClass()
 
@@ -57,8 +63,10 @@ class DAppManagerClass(NoCopyBaseModel):
                             dnode = dapp.startup(session,pillars)
                             logger.info(f'DApp {dapp!r} initialized at {dnode!s}.')
                         except Exception as e:
-                            logger.error(f'DApp {dapp!r} startup error: {e}')
-                    
+                            logger.error(f'DApp {dapp!r} startup error: {e}',exc_info=True)
+                            raise
+
+        # pillars['SchemaNetwork'].plot()
         return
 
 

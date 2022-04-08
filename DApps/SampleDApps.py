@@ -39,26 +39,30 @@ class SampleDApps(dapp.DApp):
         apps = (
 
             cls(
-                id='SwisscomRoot', # Owns Swisscom schema
+                id='SwisscomRoot',
+                description = "Owner of the Swisscom schema",
                 owner=principals.User(id='swisscom',name='Swisscom (fake account)'),
                 schemakey = keys.DDHkey(key="//org/swisscom.com"), 
                 ),
 
             cls(
                 id='SwisscomEmpDApp',
+                description = "Swisscom Employee Data App",
                 owner=principals.User(id='swisscom',name='Swisscom (fake account)'),
                 schemakey = keys.DDHkey(key="//org/swisscom.com/employees"), 
                 transforms_into = keys.DDHkey(key="//p/employment/salary/statements"),
                 ),
 
             cls(
-                id='SBBRoot',  # Owns SBB schema
+                id='SBBroot', 
+                description = "Owner of the SBB schema",
                 owner=principals.User(id='sbb',name='SBB (fake account)'),
                 schemakey = keys.DDHkey(key="//org/sbb.ch"), 
                 ),
 
             cls(
-                id='SBBEmpDApp',
+                id='SBBempDApp',
+                description = "SBB Staff Data App",
                 owner=principals.User(id='sbb',name='SBB (fake account)'),
                 schemakey = keys.DDHkey(key="//org/sbb.ch/staff"), 
                 transforms_into = keys.DDHkey(key="//p/employment/salary/statements"),
@@ -66,9 +70,10 @@ class SampleDApps(dapp.DApp):
 
             cls(
                 id='TaxCalc',
+                description = "A Tax calculator, defines the Tax Declaration Schema",
                 owner=principals.User(id='privatetax',name='Private Tax (fake account)'),
                 schemakey = keys.DDHkey(key="//p/finance/tax/declaration"), 
-                ),
+                ).add_reference(relationships.Reference.requires(keys.DDHkey(key="//p/employment/salary/statements"))),
         )
         return  apps
 

@@ -15,6 +15,7 @@ class DAppOrFamily(NoCopyBaseModel):
         extra = 'ignore'
 
     id : typing.Optional[str]  = None # principals.DAppId causes Pydantic errors - I don't know why
+    description : typing.Optional[str] = None
     owner : typing.ClassVar[principals.Principal] 
     policy: policies.Policy = policies.EmptyPolicy
     dependsOn: set[DAppOrFamily] = set()
@@ -27,6 +28,8 @@ class DAppOrFamily(NoCopyBaseModel):
             https://github.com/samuelcolvin/pydantic/pull/2625
         """
         super().__init__(*a,**kw)
+        if not self.description:
+            self.description = self.id
         if not self.id:
             self.id = typing.cast(principals.DAppId,self.__class__.__name__) 
         self.labels = self.compute_labels()
@@ -80,6 +83,11 @@ class DApp(DAppOrFamily):
         """ return references; can be overwritten """
         return self.references
 
+    def add_reference(self,references: list[relationships.Reference]) -> DApp:
+        """ add a reference and returns self for chaining """
+        self.references.extend(references)
+        return self
+
 
     @classmethod
     def bootstrap(cls,session,pillars : dict) -> typing.Union[DApp,tuple[DApp]]:
@@ -93,9 +101,9 @@ class DApp(DAppOrFamily):
         return dnodes
 
     def register_references(self,schemaNetwork : pillars.SchemaNetworkClass):
-        schemaNetwork.network.add_node(self)
+        schemaNetwork.network.add_node(self,id=self.id)
         for ref in self.get_references():
-            schemaNetwork.network.add_node(ref.target)
+            schemaNetwork.network.add_node(ref.target,id=str(ref.target))
             if ref.relation == relationships.Relation.provides:
                 schemaNetwork.network.add_edge(self,ref.target)
             elif ref.relation == relationships.Relation.requires:
