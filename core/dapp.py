@@ -88,6 +88,15 @@ class DApp(DAppOrFamily):
         self.references.extend(references)
         return self
 
+    def availability_for_user(self,principal: principals.Principal) -> bool:
+        """ Whether this DApp can be obtained by this user, for selection purposes only.
+        """
+        return True
+
+    def cost_for_user(self,principal: principals.Principal) -> float:
+        """ return cost of this DApp for a user, for selection purposes only.
+        """
+        return 0.0
 
     @classmethod
     def bootstrap(cls,session,pillars : dict) -> typing.Union[DApp,tuple[DApp]]:

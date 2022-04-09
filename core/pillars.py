@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from utils import utils
-from core import schema_root,dapp,principals,keys
+from core import schema_network, schema_root,dapp,principals,keys
 from frontend import sessions
 from utils import import_modules 
 import DApps
@@ -23,19 +23,7 @@ class Executor(NoCopyBaseModel):
 class ClearingHouse(NoCopyBaseModel):
     ...
 
-class SchemaNetworkClass():
 
-    def __init__(self):
-        self.network = networkx.DiGraph()
-
-    def plot(self):
-        import matplotlib.pyplot as plt
-        labels = {node : attrs['id'] for node,attrs in self.network.nodes.items()} # short id for nodes
-        colors = ['blue' if attrs['type'] == 'schema' else 'red' for attrs in self.network.nodes.values()]
-        networkx.draw_networkx(self.network,pos=networkx.circular_layout(self.network),with_labels=True,labels=labels,node_color=colors)
-        plt.show()
-
-SchemaNetwork = SchemaNetworkClass()
 
 class DAppManagerClass(NoCopyBaseModel):
     """ Provisional DAppManager, loads modules and instantiates DApps.
@@ -67,7 +55,7 @@ class DAppManagerClass(NoCopyBaseModel):
                             logger.error(f'DApp {dapp!r} startup error: {e}',exc_info=True)
                             raise
 
-        pillars['SchemaNetwork'].plot()
+        # pillars['SchemaNetwork'].plot()
         return
 
 
@@ -79,7 +67,7 @@ DAppManager = DAppManagerClass()
 
 Pillars = { # collect the singletons so we can pass them to whomever needs them for their initialization
     'DAppManager':DAppManager,
-    'SchemaNetwork' : SchemaNetwork,
+    'SchemaNetwork' : schema_network.SchemaNetworkClass(),
     }
 
 DAppManager.bootstrap(Pillars)   
