@@ -13,10 +13,12 @@ import enum
 from core import pillars,dapp
 from core import keys,permissions,schemas,facade,errors,principals
 from frontend import sessions
+from frontend import user_auth # provisional user management
+from market import recommender
 
 app = fastapi.FastAPI()
 
-from frontend import user_auth # provisional user management
+
 
 @app.get("/users/me/", response_model=principals.User)
 async def read_users_me(current_user: user_auth.UserInDB = fastapi.Depends(user_auth.get_current_active_user)):
