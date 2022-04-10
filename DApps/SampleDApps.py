@@ -33,6 +33,10 @@ class SampleDApps(dapp.DApp):
         return d
 
 
+
+
+
+
     @classmethod
     def bootstrap(cls,session,pillars : dict) -> tuple[dapp.DApp]:
         """ Create a series of DApps with network only """
@@ -45,7 +49,7 @@ class SampleDApps(dapp.DApp):
                 schemakey = keys.DDHkey(key="//org/swisscom.com"), 
                 ),
 
-            cls(
+            RestrictedUserDApp(
                 id='SwisscomEmpDApp',
                 description = "Swisscom Employee Data App",
                 owner=principals.User(id='swisscom',name='Swisscom (fake account)'),
@@ -60,7 +64,7 @@ class SampleDApps(dapp.DApp):
                 schemakey = keys.DDHkey(key="//org/sbb.ch"), 
                 ),
 
-            cls(
+            RestrictedUserDApp(
                 id='SBBempDApp',
                 description = "SBB Staff Data App",
                 owner=principals.User(id='sbb',name='SBB (fake account)'),
@@ -76,6 +80,14 @@ class SampleDApps(dapp.DApp):
                 ).add_reference(relationships.Reference.requires(keys.DDHkey(key="//p/employment/salary/statements"))),
         )
         return  apps
+
+class RestrictedUserDApp(SampleDApps):
+
+    def availability_user_dependent(self) -> bool:
+        """ is the availability dependent on the user, e.g., for employee DApps.
+            the concrete availability can be determined by .availability_for_user()
+        """
+        return True 
 
 class DummySchema(schemas.SchemaElement):
     """ Must have some variable to have annotations """

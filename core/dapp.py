@@ -1,6 +1,7 @@
 """ Support for DApps """
 from __future__ import annotations
 from abc import abstractmethod
+import enum
 import typing
 import pydantic
 
@@ -28,10 +29,10 @@ class DAppOrFamily(NoCopyBaseModel):
             https://github.com/samuelcolvin/pydantic/pull/2625
         """
         super().__init__(*a,**kw)
-        if not self.description:
-            self.description = self.id
         if not self.id:
             self.id = typing.cast(principals.DAppId,self.__class__.__name__) 
+        if not self.description:
+            self.description = str(self.id)
         self.labels = self.compute_labels()
 
 
@@ -49,6 +50,17 @@ DAppOrFamily.update_forward_refs()
 class DAppFamily(DAppOrFamily):
     """ A DAppFamily is a collection of DApps that can be subscribed together """
     members : dict[principals.DAppId,DApp] = {}
+
+
+@enum.unique
+class EstimatedCosts(str,enum.Enum):
+    """ Operations """
+
+    free = 'free'
+    low = 'low'
+    medium = 'medium'
+    high = 'high'
+    user = 'user dependent'    
 
 
 class DApp(DAppOrFamily):
@@ -88,10 +100,20 @@ class DApp(DAppOrFamily):
         self.references.extend(references)
         return self
 
+    def availability_user_dependent(self) -> bool:
+        """ is the availability dependent on the user, e.g., for employee DApps.
+            the concrete availability can be determined by .availability_for_user()
+        """
+        return False 
+
     def availability_for_user(self,principal: principals.Principal) -> bool:
         """ Whether this DApp can be obtained by this user, for selection purposes only.
         """
         return True
+
+    def estimated_cost(self) -> EstimatedCosts:
+        """ retrun cost estimate or EstimatedCosts.user if it is user-dependent (e.g., memberships) """
+        return EstimatedCosts.free
 
     def cost_for_user(self,principal: principals.Principal) -> float:
         """ return cost of this DApp for a user, for selection purposes only.
@@ -110,7 +132,8 @@ class DApp(DAppOrFamily):
         return dnodes
 
     def register_references(self,schemaNetwork : pillars.SchemaNetworkClass):
-        schemaNetwork.network.add_node(self,id=self.id,type='dapp')
+        schemaNetwork.network.add_node(self,id=self.id,type='dapp',
+            cost=self.estimated_cost(),availability_user_dependent=self.availability_user_dependent())
         for ref in self.get_references():
             schemaNetwork.network.add_node(ref.target,id=str(ref.target),type='schema')
             if ref.relation == relationships.Relation.provides:
