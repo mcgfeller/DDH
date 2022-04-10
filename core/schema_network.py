@@ -32,5 +32,5 @@ class SchemaNetworkClass():
     def dapps_required(self,dapp : dapp.DApp, principal : principals.Principal) -> typing.Iterable[typing.Iterable[dapp.DApp]]: 
         """ return a sequence of interables of all DApps required by this DApp, highest preference first. 
         """
-        return [[]]
+        return networkx.shortest_path(self.network,dapp)
 

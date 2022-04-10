@@ -40,6 +40,7 @@ async def get_dapps(
     ):
     """ search for DApps or DApp Families """
     dapps = recommender.search_dapps(session,query)
+    dapps = [d.to_DAppOrFamily() for d in dapps] # convert to result model
     return dapps
 
 

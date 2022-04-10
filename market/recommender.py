@@ -13,17 +13,18 @@ from utils.pydantic_utils import NoCopyBaseModel
 
 
 def search_dapps(session,query):
-    dapps = (v.to_DAppOrFamily() for v in pillars.DAppManager.DAppsById.values())
+    dapps = pillars.DAppManager.DAppsById.values()
     if query:
         dapps = search_text(session,dapps,query)
     dapps = order_dapps(session,dapps)
     return dapps
 
 def search_text(session,dapps,query):
-    dapps = [d for d in dapps if query.lower() in d.description.lower()] # TODO: Real search
+    dapps = (d for d in dapps if query.lower() in d.description.lower()) # TODO: Real search
     return dapps
 
 def order_dapps(session,dapps):
     schemaNetwork = pillars.Pillars['SchemaNetwork']
+    dapps = list(dapps) # XXX
     deps = {d:schemaNetwork.dapps_required(d,session.user) for d in dapps if isinstance(d,dapp.DApp)}
-    return dapps
+    return  dapps
