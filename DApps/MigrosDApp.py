@@ -9,7 +9,7 @@ import pydantic
 from glom import Iter, S, T, glom  # transform
 
 from core import (dapp, keydirectory, keys, nodes, permissions, principals,
-                  relationships, schemas, transactions)
+                  relationships, schemas, transactions, common_ids)
 
 
 
@@ -17,6 +17,7 @@ class MigrosDApp(dapp.DApp):
 
     owner : typing.ClassVar[principals.Principal] =  principals.User(id='migros',name='Migros (fake account)')
     schemakey : typing.ClassVar[keys.DDHkey] = keys.DDHkey(key="//org/migros.ch")
+    catalog = common_ids.CatalogCategory.living
     _ddhschema : schemas.SchemaElement = None
 
     

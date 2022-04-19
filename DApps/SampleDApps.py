@@ -2,7 +2,7 @@
 from __future__ import annotations
 import typing
 
-from core import keys,permissions,schemas,nodes,principals,transactions,relationships
+from core import keys,permissions,schemas,nodes,principals,transactions,relationships,common_ids
 from core import dapp
 
 
@@ -47,6 +47,7 @@ class SampleDApps(dapp.DApp):
                 description = "Owner of the Swisscom schema",
                 owner=principals.User(id='swisscom',name='Swisscom (fake account)'),
                 schemakey = keys.DDHkey(key="//org/swisscom.com"), 
+                catalog = common_ids.CatalogCategory.living,
                 ),
 
             RestrictedUserDApp(
@@ -55,6 +56,7 @@ class SampleDApps(dapp.DApp):
                 owner=principals.User(id='swisscom',name='Swisscom (fake account)'),
                 schemakey = keys.DDHkey(key="//org/swisscom.com/employees"), 
                 transforms_into = keys.DDHkey(key="//p/employment/salary/statements"),
+                catalog = common_ids.CatalogCategory.employment,
                 ),
 
             cls(
@@ -62,6 +64,7 @@ class SampleDApps(dapp.DApp):
                 description = "Owner of the SBB schema",
                 owner=principals.User(id='sbb',name='SBB (fake account)'),
                 schemakey = keys.DDHkey(key="//org/sbb.ch"), 
+                catalog = common_ids.CatalogCategory.living,
                 ),
 
             RestrictedUserDApp(
@@ -70,6 +73,7 @@ class SampleDApps(dapp.DApp):
                 owner=principals.User(id='sbb',name='SBB (fake account)'),
                 schemakey = keys.DDHkey(key="//org/sbb.ch/staff"), 
                 transforms_into = keys.DDHkey(key="//p/employment/salary/statements"),
+                catalog = common_ids.CatalogCategory.employment,
                 ),
 
             cls(
@@ -77,6 +81,7 @@ class SampleDApps(dapp.DApp):
                 description = "A Tax calculator, defines the Tax Declaration Schema",
                 owner=principals.User(id='privatetax',name='Private Tax (fake account)'),
                 schemakey = keys.DDHkey(key="//p/finance/tax/declaration"), 
+                catalog = common_ids.CatalogCategory.finance,
                 ).add_reference(relationships.Reference.requires(keys.DDHkey(key="//p/employment/salary/statements"))),
         )
         return  apps

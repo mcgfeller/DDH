@@ -4,7 +4,7 @@ import datetime
 import typing
 
 import pydantic
-from core import keys,permissions,schemas,nodes,keydirectory,principals,transactions,relationships
+from core import keys,permissions,schemas,nodes,keydirectory,principals,transactions,relationships,common_ids
 from core import dapp
 
 
@@ -12,6 +12,7 @@ class CoopDApp(dapp.DApp):
 
     owner : typing.ClassVar[principals.Principal] =  principals.User(id='coop',name='Coop (fake account)')
     schemakey : typing.ClassVar[keys.DDHkey] = keys.DDHkey(key="//org/coop.ch")
+    catalog = common_ids.CatalogCategory.living
 
     def __init__(self,*a,**kw):
         super().__init__(*a,**kw)

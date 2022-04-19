@@ -5,9 +5,8 @@ import enum
 import typing
 import pydantic
 
-from core import keys,permissions,schemas,nodes,keydirectory,policies,errors,transactions,principals,relationships,pillars
+from core import keys,permissions,schemas,nodes,keydirectory,policies,errors,transactions,principals,relationships,pillars,common_ids
 from utils.pydantic_utils import NoCopyBaseModel
-
 
 
 class DAppOrFamily(NoCopyBaseModel):
@@ -19,8 +18,10 @@ class DAppOrFamily(NoCopyBaseModel):
     description : typing.Optional[str] = None
     owner : typing.ClassVar[principals.Principal] 
     policy: policies.Policy = policies.EmptyPolicy
+    catalog : common_ids.CatalogCategory 
     dependsOn: set[DAppOrFamily] = set()
-    labels : dict[str,typing.Any] = {}
+    labels : dict[common_ids.Label,typing.Any] = {}
+
     searchtext : typing.Optional[str] = None
 
     def __init__(self,*a,**kw):
@@ -33,13 +34,17 @@ class DAppOrFamily(NoCopyBaseModel):
             self.id = typing.cast(principals.DAppId,self.__class__.__name__) 
         if not self.description:
             self.description = str(self.id)
+        if not self.searchtext:
+            self.searchtext = self.description.lower()
+        else:
+            self.searchtext = self.searchtext.lower()
         self.labels = self.compute_labels()
 
 
     def compute_labels(self) ->dict:
         """ Compute and assign labels """
         # TODO: Compute labels from other attributes
-        return {'id':self.id}
+        return {common_ids.Label.id:self.id}
     
     def to_DAppOrFamily(self):
         """ convert DApp or DAppFamily to DAppOrFamily, which is the FastAPI ResponseModel  """
