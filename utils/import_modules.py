@@ -42,7 +42,9 @@ def importModules(modulenames,raiseError=False):
     """
     modules = []
     for modulename in modulenames:
-        modules.append(utils.loadModule(modulename,raiseError=raiseError))
+        module = utils.loadModule(modulename,raiseError=raiseError)
+        if module:
+            modules.append(module)
     return modules  
             
         

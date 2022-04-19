@@ -34,7 +34,8 @@ class DAppManagerClass(NoCopyBaseModel):
 
     def bootstrap(self, pillars:dict) :
         session = sessions.get_system_session()
-        for module in import_modules.importAllSubPackages(DApps):
+        for module in import_modules.importAllSubPackages(DApps,raiseError=False):
+            assert module
             classname = module.__name__.split('.')[-1]
             cls = getattr(module,classname,None) # class must have same name as module
             if not cls:
