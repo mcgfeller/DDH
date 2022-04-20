@@ -89,7 +89,7 @@ def test_subscribed(user,session,subscribe_scs_emp,subscribe_migros):
     subscribe_scs_emp,subscribe_migros
     sris = recommender.search_dapps(session,query=None,categories=None,desired_labels=None)
     assert sris
-    assert sris[0].da.id == 'TaxCalc'
+    assert sris[0].da.id == 'TaxCalc',"as we're subscribed to an employee app, the tax calculator is the best recommendation"
     return
 
 
