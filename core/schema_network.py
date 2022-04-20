@@ -26,11 +26,11 @@ class SchemaNetworkClass():
         networkx.draw_networkx(self.network,pos=networkx.circular_layout(self.network),with_labels=True,labels=labels,node_color=colors)
         plt.show()
 
-    def dapps_from(self,from_dapp : dapp.DApp, principal : principals.Principal) -> typing.Iterable[typing.Iterable[dapp.DApp]]: 
-        return [[]]
+    def dapps_from(self,from_dapp : dapp.DApp, principal : principals.Principal) -> typing.Iterable[dapp.DApp]: 
+        return [n for n in networkx.descendants(self.network,from_dapp) if isinstance(n,dapp.DApp)]
 
-    def dapps_required(self,dapp : dapp.DApp, principal : principals.Principal) -> typing.Iterable[typing.Iterable[dapp.DApp]]: 
+    def dapps_required(self,for_dapp : dapp.DApp, principal : principals.Principal) -> typing.Iterable[dapp.DApp]: 
         """ return a sequence of interables of all DApps required by this DApp, highest preference first. 
         """
-        return networkx.shortest_path(self.network,dapp)
+        return [n for n in networkx.ancestors(self.network,for_dapp) if isinstance(n,dapp.DApp)]
 

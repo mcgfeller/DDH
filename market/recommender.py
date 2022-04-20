@@ -1,6 +1,7 @@
 """ Recommender System, used in the Market to recommend Data Apps """
 
 from __future__ import annotations
+from re import sub
 import typing
 import logging
 import operator
@@ -9,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 import pydantic
 from utils import utils
-from core import schema_network, schema_root,dapp,principals,keys,pillars
+from core import schema_network, schema_root,dapp,principals,keys,pillars,common_ids
 from user import subscriptions
 from utils.pydantic_utils import NoCopyBaseModel
 
@@ -34,10 +35,15 @@ def search_dapps(session,query : typing.Optional[str],categories : typing.Option
         dapps = from_subscribed(session,subscribed)
     else: # no input at all - currently, list all DApps - but may raise 413 later 
         dapps = pillars.DAppManager.DAppsById.values()
+    if subscribed:
+        # eliminate already subscribed:
+        dapps = [da for da in dapps if da not in subscribed]
+
+    
     sris = [SearchResultItem(dapp=da) for da in dapps]
     if desired_labels:
         sris = check_labels(session,sris,frozenset(desired_labels))
-    sris = add_costs(session,sris)
+    sris = add_costs(session,sris,subscribed)
     sris = grade_results(session,sris)
 
     return sris
@@ -55,11 +61,11 @@ def search_text(session,dapps,query):
 
 
 
-def from_subscribed(session,dapps : typing.Iterable[dapp.DApp]) -> dict[dapp.DApp,list[dapp.DApp]]:
+def from_subscribed(session,dapps : typing.Iterable[dapp.DApp]) -> typing.Iterable[dapp.DApp]:
     """ all reachable Data Apps from subscribed Data Apps, with cost of reach """
     schemaNetwork = pillars.Pillars['SchemaNetwork']
-    reachs = {d:schemaNetwork.dapps_reachable(d,session.user) for d in dapps if isinstance(d,dapp.DApp)}
-    return {da:[da] for da in dapps}
+    reachable = sum((schemaNetwork.dapps_from(d,session.user) for d in dapps if isinstance(d,dapp.DApp)),[])
+    return reachable
 
 def required(session,dapps : typing.Iterable[dapp.DApp]) -> dict[dapp.DApp,list[dapp.DApp]]:
     """ return all Data Apps that are required by Dapps, per Dapp """
@@ -74,8 +80,20 @@ def check_labels(session,sris : list[SearchResultItem],desired_labels : set[comm
         sri.merit -= len(sri.ignored_labels)
     return sris
 
-def add_costs(session,sris : list[SearchResultItem]) -> list[SearchResultItem]:
-    # TODO
+def add_costs(session,sris : list[SearchResultItem], subscribed  : typing.Iterable[dapp.DApp]) -> list[SearchResultItem]:
+    """ Calculate cost of dapp in sris, including costs of pre-requisites except for those already 
+        subscribed (which get a bonus merit).
+    """
+    schemaNetwork = pillars.Pillars['SchemaNetwork']
+    for sri in sris:
+        requires = schemaNetwork.dapps_required(sri.da,session.user)
+        # sri.requires = requires
+        sri.merit += len(set(requires).intersection(subscribed)) # bonus for those we have
+        # sri.missing = set(requires) - set(subscribed)
+
+
+
+
     return sris
 
 def grade_results(session,sris : list[SearchResultItem]) -> list[SearchResultItem]:
