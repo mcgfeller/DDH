@@ -3,6 +3,7 @@ from core import keys,permissions,facade,errors,principals,common_ids
 from core import pillars
 from frontend import user_auth,sessions
 from market import recommender
+from user import subscriptions
 import pytest
 
 @pytest.fixture(scope="module")
@@ -12,6 +13,22 @@ def user():
 @pytest.fixture(scope="module")
 def session(user):
     return sessions.Session(token_str='test_session',user=user)
+
+@pytest.fixture()
+def subscribe_migros(user):
+    yield subscriptions.add_subscription(user,'MigrosDApp')
+    return subscriptions.delete_subscription(user,'MigrosDApp')
+
+@pytest.fixture()
+def subscribe_scs_emp(user):
+    yield subscriptions.add_subscription(user,'SwisscomEmpDApp')
+    return subscriptions.delete_subscription(user,'SwisscomEmpDApp')
+
+@pytest.fixture()
+def subscribe_tax(user):
+    yield subscriptions.add_subscription(user,'TaxCalc')
+    return subscriptions.delete_subscription(user,'TaxCalc')
+
 
 def test_all(user,session):
     """ Test withhout criteria """
@@ -67,7 +84,14 @@ def test_cat_label(user,session):
     sris = recommender.search_dapps(session,query=None,categories=[common_ids.CatalogCategory.living],desired_labels=[common_ids.Label.anonymous])
     assert sris
 
-pillars.DAppManager.DAppsById
+def test_subscribed(user,session,subscribe_scs_emp,subscribe_migros):
+    """ test with two subscribed apps """
+    subscribe_scs_emp,subscribe_migros
+    sris = recommender.search_dapps(session,query=None,categories=None,desired_labels=None)
+    assert sris
+    assert sris[0].da.id == 'TaxCalc'
+    return
+
 
 if __name__ == '__main__':
     test_all(user,session)
