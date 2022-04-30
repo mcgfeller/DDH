@@ -54,6 +54,9 @@ def build_root_schemas():
                     ['tax',
                         ['declaration']
                     ],
+                    ['holdings',
+                        ['portfolio']
+                    ],
                 ],
             ],
         ]

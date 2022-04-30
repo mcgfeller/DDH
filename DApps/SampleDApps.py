@@ -2,6 +2,8 @@
 from __future__ import annotations
 import typing
 
+import pydantic
+
 from core import keys,permissions,schemas,nodes,principals,transactions,relationships,common_ids
 from core import dapp
 
@@ -20,7 +22,7 @@ class SampleDApps(dapp.DApp):
  
     def get_schemas(self) -> dict[keys.DDHkey,schemas.Schema]:
         """ Obtain initial schema for DApp """
-        return {self.schemakey:schemas.PySchema(schema_element=DummySchema)}
+        return {self.schemakey:schemas.PySchema(schema_element=pydantic.create_model('DummySchema',__base__=schemas.SchemaElement))}
 
 
     def execute(self, op: nodes.Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
@@ -55,7 +57,7 @@ class SampleDApps(dapp.DApp):
                 description = "Swisscom Employee Data App",
                 owner=principals.User(id='swisscom',name='Swisscom (fake account)'),
                 schemakey = keys.DDHkey(key="//org/swisscom.com/employees"), 
-                transforms_into = keys.DDHkey(key="//p/employment/salary/statements"),
+                transforms_into = keys.DDHkey(key="//p/employment/salary"), # 1 higher than needed by TaxCalc
                 catalog = common_ids.CatalogCategory.employment,
                 ),
 
@@ -82,7 +84,57 @@ class SampleDApps(dapp.DApp):
                 owner=principals.User(id='privatetax',name='Private Tax (fake account)'),
                 schemakey = keys.DDHkey(key="//p/finance/tax/declaration"), 
                 catalog = common_ids.CatalogCategory.finance,
-                ).add_reference(relationships.Reference.requires(keys.DDHkey(key="//p/employment/salary/statements"))),
+                ).add_reference(relationships.Reference.requires(
+                    keys.DDHkey(key="//p/employment/salary/statements"),
+                    keys.DDHkey(key="//p/finance/holdings/portfolio")
+                    )),
+
+            cls(
+                id='CSroot', 
+                description = "Owner of the Credit Suisse schema",
+                owner=principals.User(id='cs',name='Credit Suisse (fake account)'),
+                schemakey = keys.DDHkey(key="//org/credit-suisse.com"), 
+                catalog = common_ids.CatalogCategory.finance,
+                ),
+
+            cls(
+                id='CSportfolio', 
+                description = "Portfolio API",
+                owner=principals.User(id='cs',name='Credit Suisse (fake account)'),
+                schemakey = keys.DDHkey(key="//org/credit-suisse.com/clients/portfolio/account"), 
+                catalog = common_ids.CatalogCategory.finance,
+                ),
+
+
+            cls(
+                id='UBSroot', 
+                description = "Owner of the UBS schema",
+                owner=principals.User(id='ubs',name='UBS (fake account)'),
+                schemakey = keys.DDHkey(key="//org/ubs.com"), 
+                catalog = common_ids.CatalogCategory.finance,
+                ),
+
+            cls(
+                id='UBSaccount', 
+                description = "Portfolio API",
+                owner=principals.User(id='ubs',name='UBS (fake account)'),
+                schemakey = keys.DDHkey(key="//org/ubs.com/switzerland/customer/account"), 
+                transforms_into = keys.DDHkey(key="//p/finance/holdings/portfolio"),
+                catalog = common_ids.CatalogCategory.finance,
+                ),
+
+            cls(
+                id='AccountAggregator',
+                description = "Bank account aggregator, defines holdings",
+                owner=principals.User(id='coolfinance',name='Cool Finance Startup (fake account)'),
+                schemakey = keys.DDHkey(key="//p/finance/holdings"), 
+                catalog = common_ids.CatalogCategory.finance,
+                ).add_reference(relationships.Reference.requires(
+                    keys.DDHkey(key="//org/credit-suisse.com/clients/portfolio/account"),
+                    keys.DDHkey(key="//org/ubs.com/switzerland/customer/account"),
+                    )),
+
+
         )
         return  apps
 
@@ -93,8 +145,4 @@ class RestrictedUserDApp(SampleDApps):
             the concrete availability can be determined by .availability_for_user()
         """
         return True 
-
-class DummySchema(schemas.SchemaElement):
-    """ Must have some variable to have annotations """
-    name : str = 'Dummy'
 
