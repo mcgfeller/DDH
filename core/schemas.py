@@ -10,7 +10,7 @@ import pydantic
 
 from utils.pydantic_utils import NoCopyBaseModel
 from . import keys,permissions,errors,principals
-#from . import errors, keydirectory, keys, nodes, permissions, principals
+from . import keydirectory, nodes
 from frontend import user_auth
 
 @enum.unique
@@ -30,7 +30,7 @@ class SchemaElement(NoCopyBaseModel):
     """ A Pydantic Schema class """
 
     @classmethod 
-    def descend_path(cls,path: keys.DDHkey) -> typing.Optional[typing.Type[SchemaElement]]:
+    def descend_path(cls,path: keys.DDHkey,create: bool =False) -> typing.Optional[typing.Type[SchemaElement]]:
         """ Travel down SchemaElement along path using some Pydantic implementation details.
             If a path segment is not found, return None.
             If a path ends with a simple datatype, we return its parent.  
@@ -38,9 +38,15 @@ class SchemaElement(NoCopyBaseModel):
         current = cls # before we descend path, this cls is at the current level 
         pathit = iter(path) # so we can peek whether we're at end
         for segment in pathit:
+            segment = str(segment)
             mf = current.__fields__.get(str(segment),None) # look up one segment of path, returning ModelField
             if mf is None:
-                return None
+                if create:
+                    new_current = pydantic.create_model(segment, __base__=SchemaElement)
+                    current.add_fields(**{segment:new_current})
+                    current = new_current
+                else:
+                    return None
             else: 
                 assert isinstance(mf,pydantic.fields.ModelField)
                 if issubclass(mf.type_,SchemaElement):
@@ -48,8 +54,11 @@ class SchemaElement(NoCopyBaseModel):
                 else: # we're at a leaf, return
                     if next(pathit,None) is None: # path ends here
                         break 
-                    else: # path continues beyond this point, so this is not found
-                        return None 
+                    else: # path continues beyond this point, so this is not found and not creatable
+                        if create:
+                            raise ValueError(f'Cannot create {segment=} of {path=} at {current}')
+                        else:
+                            return None 
         return current
 
 
@@ -134,8 +143,7 @@ class Schema(NoCopyBaseModel,abc.ABC):
         """ return schema in this class """
         ...
 
-
-    def obtain(self,ddhkey: keys.DDHkey,split: int) -> typing.Optional[Schema]:
+    def obtain(self,ddhkey: keys.DDHkey,split: int,create : bool = False) -> typing.Optional[Schema]:
         return None
 
     def format(self,format : SchemaFormat):
@@ -154,13 +162,13 @@ class PySchema(Schema):
     """ A Schema in Pydantic Python, containing a SchemaElement """ 
     schema_element : typing.Type[SchemaElement]
 
-    def obtain(self,ddhkey: keys.DDHkey,split: int) -> typing.Optional[Schema]:
+    def obtain(self,ddhkey: keys.DDHkey,split: int,create : bool = False) -> typing.Optional[Schema]:
         """ obtain a schema for the ddhkey, which is split into the key holding the schema and
             the remaining path. 
         """
         khere,kremainder = ddhkey.split_at(split)
         if kremainder:
-            schema_element = self.schema_element.descend_path(kremainder)
+            schema_element = self.schema_element.descend_path(kremainder,create=create)
             if schema_element:
                 s = PySchema(schema_element=schema_element)
             else: s = None # not found
@@ -217,6 +225,7 @@ SchemaFormats = {
 }
 # corresponding enum: 
 SchemaFormat = enum.Enum('SchemaFormat',[(k,k) for k in SchemaFormats])  # type: ignore # 2nd argument with list form not understood
+
 
 
 def insert_schema(self,session,schemakey,schema,dappnode):

@@ -162,9 +162,8 @@ class DApp(DAppOrFamily):
                 if not pkey:
                     raise ValueError(f'{schemakey} key is too high {self!r}')
                 upnode = typing.cast(nodes.SchemaNode,upnode)
-                parent = upnode.get_sub_schema(pkey,split)
-                if not parent:
-                    raise ValueError(f'No parent schema found for {self!r} with {schemakey} at upnode {upnode}')
+                parent = upnode.get_sub_schema(pkey,split,create=True) # create missing segments
+                assert parent # must exist because create=True
                 # give world schema_read access
                 consents = permissions.Consents(consents=[permissions.Consent(grantedTo=[principals.AllPrincipal],withModes={permissions.AccessMode.schema_read})])
                 dnode = DAppNode(owner=self.owner,schema=schema,dapp=self,consents=consents)

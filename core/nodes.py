@@ -117,10 +117,10 @@ class SchemaNode(Node,persistable.NonPersistable):
         return s
 
 
-    def get_sub_schema(self, ddhkey: keys.DDHkey,split: int, schema_type : str = 'json') -> typing.Optional[schemas.Schema]:
+    def get_sub_schema(self, ddhkey: keys.DDHkey,split: int, schema_type : str = 'json',create : bool = False) -> tuple[int,typing.Optional[schemas.Schema]]:
         """ return schema based on ddhkey and split """
         s = typing.cast(schemas.Schema,self.nschema)
-        s = s.obtain(ddhkey,split)
+        s = s.obtain(ddhkey,split,create=create)
         return s
 
 class ExecutableNode(SchemaNode):
