@@ -32,8 +32,10 @@ class SchemaElement(NoCopyBaseModel):
     @classmethod 
     def descend_path(cls,path: keys.DDHkey,create: bool =False) -> typing.Optional[typing.Type[SchemaElement]]:
         """ Travel down SchemaElement along path using some Pydantic implementation details.
-            If a path segment is not found, return None.
+            If a path segment is not found, return None, unless create is specified.
+            Create inserts an empty schemaElement and descends further. 
             If a path ends with a simple datatype, we return its parent.  
+
         """ 
         current = cls # before we descend path, this cls is at the current level 
         pathit = iter(path) # so we can peek whether we're at end
@@ -41,7 +43,7 @@ class SchemaElement(NoCopyBaseModel):
             segment = str(segment)
             mf = current.__fields__.get(str(segment),None) # look up one segment of path, returning ModelField
             if mf is None:
-                if create:
+                if create: 
                     new_current = pydantic.create_model(segment, __base__=SchemaElement)
                     current.add_fields(**{segment:new_current})
                     current = new_current
@@ -56,7 +58,7 @@ class SchemaElement(NoCopyBaseModel):
                         break 
                     else: # path continues beyond this point, so this is not found and not creatable
                         if create:
-                            raise ValueError(f'Cannot create {segment=} of {path=} at {current}')
+                            raise ValueError(f'Cannot create {segment=} of {path=} because it {current} is a simple datatype.')
                         else:
                             return None 
         return current
