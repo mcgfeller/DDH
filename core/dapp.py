@@ -162,6 +162,7 @@ class DApp(DAppOrFamily):
                 if not pkey:
                     raise ValueError(f'{schemakey} key is too high {self!r}')
                 upnode = typing.cast(nodes.SchemaNode,upnode)
+                # TODO: We should check some ownership permission here!
                 parent = upnode.get_sub_schema(pkey,split,create=True) # create missing segments
                 assert parent # must exist because create=True
                 # give world schema_read access
