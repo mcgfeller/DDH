@@ -56,7 +56,8 @@ class DAppManagerClass(NoCopyBaseModel):
                             logger.error(f'DApp {dapp!r} startup error: {e}',exc_info=True)
                             raise
 
-        # pillars['SchemaNetwork'].plot()
+        pillars['SchemaNetwork'].complete_graph()
+        # pillars['SchemaNetwork'].plot(layout='shell_layout')
         return
 
 
