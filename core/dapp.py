@@ -41,6 +41,10 @@ class DAppOrFamily(NoCopyBaseModel):
         self.labels = self.compute_labels()
 
 
+    def __repr__(self):
+        """ Normal display is excessively long """
+        return f'{self.__class__.__name__}(id={self.id})'
+
     def compute_labels(self) ->dict:
         """ Compute and assign labels """
         # TODO: Compute labels from other attributes
