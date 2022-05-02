@@ -71,6 +71,13 @@ class EstimatedCosts(str,enum.Enum):
     high = 'high'
     user = 'user dependent'    
 
+CostToWeight = {
+    EstimatedCosts.free: 0.0,
+    EstimatedCosts.low: 1.0,
+    EstimatedCosts.medium: 3.0,
+    EstimatedCosts.high: 5.0,
+}
+
 
 class DApp(DAppOrFamily):
     class Config:
@@ -78,6 +85,7 @@ class DApp(DAppOrFamily):
     
     belongsTo: typing.Optional[DAppFamily] = None
     references : list[relationships.Reference] = []
+    estimatedCosts : EstimatedCosts = EstimatedCosts.free
 
 
     def __init__(self,*a,**kw):
@@ -120,9 +128,13 @@ class DApp(DAppOrFamily):
         """
         return True
 
-    def estimated_cost(self) -> EstimatedCosts:
-        """ retrun cost estimate or EstimatedCosts.user if it is user-dependent (e.g., memberships) """
-        return EstimatedCosts.free
+    def estimated_cost(self) -> float:
+        """ return cost estimate or EstimatedCosts.user if it is user-dependent (e.g., memberships) """
+        if self.estimatedCosts == EstimatedCosts.user:
+            cost = 1.0
+        else:
+            cost = CostToWeight[self.estimatedCosts]
+        return cost
 
     def cost_for_user(self,principal: principals.Principal) -> float:
         """ return cost of this DApp for a user, for selection purposes only.
@@ -146,10 +158,15 @@ class DApp(DAppOrFamily):
         for ref in self.get_references():
             schemaNetwork.network.add_node(ref.target,id=str(ref.target),type='schema')
             if ref.relation == relationships.Relation.provides:
-                schemaNetwork.network.add_edge(self,ref.target,type='provides')
+                schemaNetwork.network.add_edge(self,ref.target,type='provides',weight=self.get_weight())
             elif ref.relation == relationships.Relation.requires:
                 schemaNetwork.network.add_edge(ref.target,self,type='requires')
         return
+
+    def get_weight(self) -> float:
+        """ get weight based on costs """
+        return 1.0 + self.estimated_cost()
+
 
     def register_schema(self,session) -> list[nodes.Node]:
         transaction = session.get_or_create_transaction()
