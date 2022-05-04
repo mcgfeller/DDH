@@ -28,7 +28,7 @@ class MigrosDApp(dapp.DApp):
         super().__init__(*a,**kw)
         self._ddhschema = MigrosSchema()
         transforms_into = keys.DDHkey(key="//p/living/shopping/receipts")
-        self.references = relationships.Reference.provides(self.schemakey)  + \
+        self.references = relationships.Reference.defines(self.schemakey) + relationships.Reference.provides(self.schemakey) + \
             relationships.Reference.provides(transforms_into)
         self.register_transform(transforms_into)
  

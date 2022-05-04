@@ -67,11 +67,6 @@ def from_subscribed(session,dapps : typing.Iterable[dapp.DApp]) -> typing.Iterab
     reachable = sum((schemaNetwork.dapps_from(d,session.user) for d in dapps if isinstance(d,dapp.DApp)),[])
     return reachable
 
-def required(session,dapps : typing.Iterable[dapp.DApp]) -> dict[dapp.DApp,list[dapp.DApp]]:
-    """ return all Data Apps that are required by Dapps, per Dapp """
-    schemaNetwork = pillars.Pillars['SchemaNetwork']
-    deps = {d:schemaNetwork.dapps_required(d,session.user) for d in dapps if isinstance(d,dapp.DApp)}
-    return deps
 
 def check_labels(session,sris : list[SearchResultItem],desired_labels : set[common_ids.Label]) -> list[SearchResultItem]:
     """ check presence of labels: Mark missing labels and demerit for each missing label  """

@@ -13,10 +13,13 @@ class SampleDApps(dapp.DApp):
     owner : typing.ClassVar[principals.Principal] 
     schemakey : typing.ClassVar[keys.DDHkey] 
     transforms_into : typing.ClassVar[typing.Optional[keys.DDHkey]]= None
+    provides_schema : bool = pydantic.Field(False,description="True if schemakey is not only defined by this DApp, but also provided.")
 
     def __init__(self,*a,**kw):
         super().__init__(*a,**kw)
-        self.references = relationships.Reference.provides(self.schemakey) 
+        self.references = relationships.Reference.defines(self.schemakey) 
+        if self.provides_schema:
+            self.references += relationships.Reference.provides(self.schemakey) 
         if self.transforms_into:
             self.references.extend(relationships.Reference.provides(self.transforms_into))
  
@@ -57,6 +60,7 @@ class SampleDApps(dapp.DApp):
                 description = "Swisscom Employee Data App",
                 owner=principals.User(id='swisscom',name='Swisscom (fake account)'),
                 schemakey = keys.DDHkey(key="//org/swisscom.com/employees"), 
+                provides_schema = True,
                 transforms_into = keys.DDHkey(key="//p/employment/salary"), # 1 higher than needed by TaxCalc
                 catalog = common_ids.CatalogCategory.employment,
                 ),
@@ -74,6 +78,7 @@ class SampleDApps(dapp.DApp):
                 description = "SBB Staff Data App",
                 owner=principals.User(id='sbb',name='SBB (fake account)'),
                 schemakey = keys.DDHkey(key="//org/sbb.ch/staff"), 
+                provides_schema = True,
                 transforms_into = keys.DDHkey(key="//p/employment/salary/statements"),
                 catalog = common_ids.CatalogCategory.employment,
                 ),
@@ -83,6 +88,7 @@ class SampleDApps(dapp.DApp):
                 description = "A Tax calculator, defines the Tax Declaration Schema",
                 owner=principals.User(id='privatetax',name='Private Tax (fake account)'),
                 schemakey = keys.DDHkey(key="//p/finance/tax/declaration"), 
+                provides_schema = True,
                 catalog = common_ids.CatalogCategory.finance,
                 ).add_reference(relationships.Reference.requires(
                     keys.DDHkey(key="//p/employment/salary/statements"),
@@ -102,6 +108,7 @@ class SampleDApps(dapp.DApp):
                 description = "Portfolio API",
                 owner=principals.User(id='cs',name='Credit Suisse (fake account)'),
                 schemakey = keys.DDHkey(key="//org/credit-suisse.com/clients/portfolio/account"), 
+                provides_schema = True,
                 catalog = common_ids.CatalogCategory.finance,
                 ),
 
@@ -119,6 +126,7 @@ class SampleDApps(dapp.DApp):
                 description = "Portfolio API",
                 owner=principals.User(id='ubs',name='UBS (fake account)'),
                 schemakey = keys.DDHkey(key="//org/ubs.com/switzerland/customer/account"), 
+                provides_schema = True,
                 transforms_into = keys.DDHkey(key="//p/finance/holdings/portfolio"),
                 catalog = common_ids.CatalogCategory.finance,
                 ),
@@ -128,6 +136,8 @@ class SampleDApps(dapp.DApp):
                 description = "Bank account aggregator, defines holdings",
                 owner=principals.User(id='coolfinance',name='Cool Finance Startup (fake account)'),
                 schemakey = keys.DDHkey(key="//p/finance/holdings"), 
+                provides_schema = True,
+                estimatedCosts = dapp.EstimatedCosts.medium,
                 catalog = common_ids.CatalogCategory.finance,
                 ).add_reference(relationships.Reference.requires(
                     keys.DDHkey(key="//org/credit-suisse.com/clients/portfolio/account"),
