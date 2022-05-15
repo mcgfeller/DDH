@@ -30,10 +30,11 @@ class SchemaNetworkClass():
     def dapps_from(self,from_dapp : dapp.DApp, principal : principals.Principal) -> typing.Iterable[dapp.DApp]: 
         return [n for n in networkx.descendants(self.network,from_dapp) if isinstance(n,dapp.DApp)]
 
-    def dapps_required(self,for_dapp : dapp.DApp, principal : principals.Principal) -> typing.Iterable[dapp.DApp]: 
-        """ return a sequence of interables of all DApps required by this DApp, highest preference first. 
+    def dapps_required(self,for_dapp : dapp.DApp, principal : principals.Principal) -> dict[dapp.DApp,int]: 
+        """ return an iterable of all DApps required by this DApp, highest preference first. 
         """
-        return [n for n in networkx.ancestors(self.network,for_dapp) if isinstance(n,dapp.DApp)]
+        required = {n: distance for n,distance in networkx.shortest_path_length(self.network, target = for_dapp).items() if distance>0 and isinstance(n,dapp.DApp)}
+        return required
 
     def complete_graph(self):
         """ Finish up the graph after all nodes have been added:

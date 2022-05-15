@@ -129,6 +129,7 @@ class SampleDApps(dapp.DApp):
                 provides_schema = True,
                 transforms_into = keys.DDHkey(key="//p/finance/holdings/portfolio"),
                 catalog = common_ids.CatalogCategory.finance,
+                estimatedCosts = dapp.EstimatedCosts.medium,
                 ),
 
             cls(

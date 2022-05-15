@@ -21,6 +21,8 @@ class SearchResultItem(NoCopyBaseModel):
     cost : float = 0.0
     ignored_labels : typing.Iterable[str] = [] # query labels that have been ignored
     merit : int = pydantic.Field(0,description="Ranking merit, starts at 0")
+    requires : set[dapp.DApp] = set()
+    missing: set[dapp.DApp] = set()
 
 
 
@@ -78,17 +80,16 @@ def check_labels(session,sris : list[SearchResultItem],desired_labels : set[comm
 def add_costs(session,sris : list[SearchResultItem], subscribed  : typing.Iterable[dapp.DApp]) -> list[SearchResultItem]:
     """ Calculate cost of dapp in sris, including costs of pre-requisites except for those already 
         subscribed (which get a bonus merit).
+
+        TODO: Implement one-off dependencies and count only one! 
     """
     schemaNetwork = pillars.Pillars['SchemaNetwork']
     for sri in sris:
         requires = schemaNetwork.dapps_required(sri.da,session.user)
-        # sri.requires = requires
-        sri.merit += len(set(requires).intersection(subscribed)) # bonus for those we have
-        # sri.missing = set(requires) - set(subscribed)
-
-
-
-
+        sri.requires = set(requires)
+        sri.missing = sri.requires - set(subscribed)
+        merits = [da.get_weight() * (-1)**(da in sri.missing) for da in requires.keys()] # pos merit if subscribed
+        sri.merit += sum(merits) # bonus for those we have
     return sris
 
 def grade_results(session,sris : list[SearchResultItem]) -> list[SearchResultItem]:
