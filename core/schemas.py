@@ -1,4 +1,4 @@
-""" DDH Core Schema Models """
+""" DDH Core AbstractSchema Models """
 from __future__ import annotations
 
 
@@ -27,7 +27,7 @@ class Sensitivity(str,enum.Enum):
 #    def __repr__(self): return self.value
 
 class SchemaElement(NoCopyBaseModel): 
-    """ A Pydantic Schema class """
+    """ A Pydantic AbstractSchema class """
 
     @classmethod 
     def descend_path(cls,path: keys.DDHkey,create: bool =False) -> typing.Optional[typing.Type[SchemaElement]]:
@@ -133,19 +133,19 @@ class SchemaReference(SchemaElement):
 
 
 
-class Schema(NoCopyBaseModel,abc.ABC):
+class AbstractSchema(NoCopyBaseModel,abc.ABC):
 
     @abc.abstractmethod
     def to_py_schema(self) -> PySchema:
-        """ return an equivalent Schema as PySchema """
+        """ return an equivalent AbstractSchema as PySchema """
 
     @classmethod
     @abc.abstractmethod   
-    def from_schema(cls,schema: Schema) -> Schema:
+    def from_schema(cls,schema: AbstractSchema) -> AbstractSchema:
         """ return schema in this class """
         ...
 
-    def obtain(self,ddhkey: keys.DDHkey,split: int,create : bool = False) -> typing.Optional[Schema]:
+    def obtain(self,ddhkey: keys.DDHkey,split: int,create : bool = False) -> typing.Optional[AbstractSchema]:
         return None
 
     def format(self,format : SchemaFormat):
@@ -160,11 +160,11 @@ class Schema(NoCopyBaseModel,abc.ABC):
 
 
 
-class PySchema(Schema):
-    """ A Schema in Pydantic Python, containing a SchemaElement """ 
+class PySchema(AbstractSchema):
+    """ A AbstractSchema in Pydantic Python, containing a SchemaElement """ 
     schema_element : typing.Type[SchemaElement]
 
-    def obtain(self,ddhkey: keys.DDHkey,split: int,create : bool = False) -> typing.Optional[Schema]:
+    def obtain(self,ddhkey: keys.DDHkey,split: int,create : bool = False) -> typing.Optional[AbstractSchema]:
         """ obtain a schema for the ddhkey, which is split into the key holding the schema and
             the remaining path. 
         """
@@ -183,7 +183,7 @@ class PySchema(Schema):
         return self
 
     @classmethod
-    def from_schema(cls,schema: Schema) -> PySchema:
+    def from_schema(cls,schema: AbstractSchema) -> PySchema:
         return schema.to_py_schema()
 
     def to_output(self):
@@ -201,12 +201,12 @@ class PySchema(Schema):
         return schemas
 
 
-class JsonSchema(Schema):
+class JsonSchema(AbstractSchema):
     json_schema : pydantic.Json
 
     @classmethod
-    def from_schema(cls,schema: Schema) -> JsonSchema:
-        """ Make a JSON Schema from any Schema """
+    def from_schema(cls,schema: AbstractSchema) -> JsonSchema:
+        """ Make a JSON AbstractSchema from any AbstractSchema """
         if isinstance(schema,cls):
             return typing.cast(JsonSchema,schema)
         else:
@@ -214,7 +214,7 @@ class JsonSchema(Schema):
             return cls(json_schema=pyschema.schema_element.schema_json())
 
     def to_py_schema(self) -> PySchema:
-        """ create Python Schema """
+        """ create Python AbstractSchema """
         raise NotImplementedError('not supported')
 
     def to_output(self):

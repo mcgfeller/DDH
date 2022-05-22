@@ -23,7 +23,7 @@ class SampleDApps(dapp.DApp):
         if self.transforms_into:
             self.references.extend(relationships.Reference.provides(self.transforms_into))
  
-    def get_schemas(self) -> dict[keys.DDHkey,schemas.Schema]:
+    def get_schemas(self) -> dict[keys.DDHkey,schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
         return {self.schemakey:schemas.PySchema(schema_element=pydantic.create_model('DummySchema',__base__=schemas.SchemaElement))}
 
@@ -85,7 +85,7 @@ class SampleDApps(dapp.DApp):
 
             cls(
                 id='TaxCalc',
-                description = "A Tax calculator, defines the Tax Declaration Schema",
+                description = "A Tax calculator, defines the Tax Declaration AbstractSchema",
                 owner=principals.User(id='privatetax',name='Private Tax (fake account)'),
                 schemakey = keys.DDHkey(key="//p/finance/tax/declaration"), 
                 provides_schema = True,

@@ -27,7 +27,7 @@ def _get_consent_node(ddhkey: keys.DDHkey, support: nodes.NodeSupports, node : t
 
 
 def get_schema(access : permissions.Access, session : sessions.Session, schemaformat: schemas.SchemaFormat = schemas.SchemaFormat.json) -> typing.Optional[typing.Any]:
-    """ Service utility to retrieve a Schema and return it in the desired format.
+    """ Service utility to retrieve a AbstractSchema and return it in the desired format.
         Returns None if no schema found.
     """
     access.include_mode(permissions.AccessMode.schema_read)

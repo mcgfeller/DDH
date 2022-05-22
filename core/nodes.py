@@ -105,7 +105,7 @@ class MultiOwnerNode(Node):
 
 class SchemaNode(Node,persistable.NonPersistable):
 
-    nschema : typing.Optional[schemas.Schema] =  pydantic.Field(alias='schema')
+    nschema : typing.Optional[schemas.AbstractSchema] =  pydantic.Field(alias='schema')
 
 
 
@@ -117,9 +117,9 @@ class SchemaNode(Node,persistable.NonPersistable):
         return s
 
 
-    def get_sub_schema(self, ddhkey: keys.DDHkey,split: int, schema_type : str = 'json',create : bool = False) -> tuple[int,typing.Optional[schemas.Schema]]:
+    def get_sub_schema(self, ddhkey: keys.DDHkey,split: int, schema_type : str = 'json',create : bool = False) -> tuple[int,typing.Optional[schemas.AbstractSchema]]:
         """ return schema based on ddhkey and split """
-        s = typing.cast(schemas.Schema,self.nschema)
+        s = typing.cast(schemas.AbstractSchema,self.nschema)
         s = s.obtain(ddhkey,split,create=create)
         return s
 

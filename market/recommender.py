@@ -81,7 +81,7 @@ def add_costs(session,sris : list[SearchResultItem], subscribed  : typing.Iterab
     """ Calculate cost of dapp in sris, including costs of pre-requisites except for those already 
         subscribed (which get a bonus merit).
 
-        TODO: Implement one-off dependencies and count only one! 
+        TODO: Implement one-of dependencies and count only one! 
     """
     schemaNetwork = pillars.Pillars['SchemaNetwork']
     for sri in sris:

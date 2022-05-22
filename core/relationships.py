@@ -1,4 +1,4 @@
-""" Relationship to Schema elements """
+""" Relationship to AbstractSchema elements """
 
 from __future__ import annotations
 import typing

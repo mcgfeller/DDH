@@ -24,7 +24,7 @@ def register_schema() -> nodes.SchemaNode:
         consents = permissions.Consents(consents=[permissions.Consent(grantedTo=[principals.AllPrincipal],withModes={permissions.AccessMode.schema_read})]) 
         root_node = nodes.SchemaNode(owner=principals.RootPrincipal,schema=schema,consents=consents)
         keydirectory.NodeRegistry[root] = root_node
-    logger.info('Schema Root built')
+    logger.info('AbstractSchema Root built')
     return root_node 
 
 def build_root_schemas():

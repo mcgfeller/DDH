@@ -22,7 +22,7 @@ class CoopDApp(dapp.DApp):
             relationships.Reference.provides(transforms_into)
         # self.register_transform(transforms_into)
  
-    def get_schemas(self) -> dict[keys.DDHkey,schemas.Schema]:
+    def get_schemas(self) -> dict[keys.DDHkey,schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
         return {keys.DDHkey(key="//org/coop.ch"):schemas.PySchema(schema_element=CoopSchema)}
 

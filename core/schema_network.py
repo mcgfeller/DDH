@@ -1,4 +1,4 @@
-""" The Network of Schema Relationsships """
+""" The Network of AbstractSchema Relationsships """
 from __future__ import annotations
 import typing
 import logging

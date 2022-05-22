@@ -102,7 +102,7 @@ class DApp(DAppOrFamily):
         return (self.id == other.id) if isinstance(other,DApp) else False
             
 
-    def get_schemas(self) -> dict[keys.DDHkey,schemas.Schema]:
+    def get_schemas(self) -> dict[keys.DDHkey,schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
         return {}
 
