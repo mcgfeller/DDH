@@ -21,8 +21,7 @@ def register_schema() -> nodes.SchemaNode:
     if not root_node:
         schema = build_root_schemas() # obtain static schema
         # for now, give schema read access to everybody
-        consents = permissions.Consents(consents=[permissions.Consent(grantedTo=[principals.AllPrincipal],withModes={permissions.AccessMode.schema_read})]) 
-        root_node = nodes.SchemaNode(owner=principals.RootPrincipal,schema=schema,consents=consents)
+        root_node = nodes.SchemaNode(owner=principals.RootPrincipal,schema=schema,consents=schemas.AbstractSchema.get_schema_consents())
         keydirectory.NodeRegistry[root] = root_node
     logger.info('AbstractSchema Root built')
     return root_node 
@@ -61,16 +60,30 @@ def build_root_schemas():
             ],
         ]
     ]
-    root = schemas.PySchema(schema_element=descend_schema(treetop))
+
+
+    attributes = {
+        ('root', '', 'p', 'employment','salary','statements') : schemas.SchemaAttributes(requires=schemas.Requires.specific),
+        ('root', '', 'p', 'finance','holdings','portfolio') : schemas.SchemaAttributes(requires=schemas.Requires.specific),
+    }
+    root = schemas.PySchema(schema_element=descend_schema(treetop,attributes))
     assert root.schema_element.schema_json()
     return root
 
 
-def descend_schema(tree : list,parents=()) -> pydantic.BaseModel:
+def descend_schema(tree : list,schema_attributes : dict, parents=()) -> type[schemas.SchemaElement]:
     """ Descent on our tree representation, returning model """
     key = parents+(tree[0],) # new key, from parents down
-    elements = {t[0]: (descend_schema(t,parents=key),None) for t in tree[1:]} # descend on subtree, build dict of {head_name  : subtree}
-    s = pydantic.create_model('_'.join(key), __base__=schemas.SchemaElement, **elements) # create a model with subtree elements
-    return s
+    elements = {t[0]: (descend_schema(t,schema_attributes,parents=key),None) for t in tree[1:]} # descend on subtree, build dict of {head_name  : subtree}
+    se = pydantic.create_model('_'.join(key), __base__=schemas.SchemaElement, **elements) # create a model with subtree elements
+    if sa := schema_attributes.get(key):
+        dkey = keys.DDHkey(('','')+key[2:])
+        s = schemas.PySchema(schema_attributes=sa,schema_element=se)
+        snode = nodes.SchemaNode(owner=principals.RootPrincipal,schema=s,consents=schemas.AbstractSchema.get_schema_consents())
+        keydirectory.NodeRegistry[dkey] = snode
+        schemaref = schemas.SchemaReference.create_from_key(str(key),ddhkey=dkey)
+        # parent.add_fields({schemakey[-1] : (schemaref,None)})
+        se = schemaref
+    return se
 
 register_schema()
