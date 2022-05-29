@@ -147,20 +147,26 @@ class DApp(DAppOrFamily):
 
     def startup(self,session,pillars : dict)  -> list[nodes.Node]:
         schemaNetwork : pillars.SchemaNetworkClass = pillars['SchemaNetwork']
-        self.register_references(schemaNetwork)
         dnodes = self.register_schema(session)
+        self.register_references(session,schemaNetwork)
 
         return dnodes
 
-    def register_references(self,schemaNetwork : pillars.SchemaNetworkClass):
+    def register_references(self,session, schemaNetwork : pillars.SchemaNetworkClass):
+        transaction = session.get_or_create_transaction()
         schemaNetwork.network.add_node(self,id=self.id,type='dapp',
             cost=self.estimated_cost(),availability_user_dependent=self.availability_user_dependent())
         for ref in self.get_references():
             schemaNetwork.network.add_node(ref.target,id=str(ref.target),type='schema')
+
+            snode,split = keydirectory.NodeRegistry.get_node(ref.target,nodes.NodeSupports.schema,transaction) # get applicable schema node for attributes
+            sa = snode.nschema.schema_attributes
+            if sa.requires:
+                print(sa)
             if ref.relation == relationships.Relation.provides:
                 schemaNetwork.network.add_edge(self,ref.target,type='provides',weight=self.get_weight())
             elif ref.relation == relationships.Relation.requires:
-                schemaNetwork.network.add_edge(ref.target,self,type='requires')
+                schemaNetwork.network.add_edge(ref.target,self,type='requires',requires=sa.requires)
         return
 
     def get_weight(self) -> float:

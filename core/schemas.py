@@ -189,6 +189,7 @@ class AbstractSchema(NoCopyBaseModel,abc.ABC):
         # now insert our schema into the parent's:
         schemaref = SchemaReference.create_from_key(id,ddhkey=schemakey)
         parent.add_fields({schemakey[-1] : (schemaref,None)})
+        return schemaref
 
     @staticmethod
     def get_schema_consents() -> permissions.Consents:
