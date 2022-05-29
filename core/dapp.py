@@ -177,23 +177,14 @@ class DApp(DAppOrFamily):
             if dnode:
                 dnode = dnode.ensure_loaded(transaction)
             else:
-                # get a parent scheme to hook into
-                upnode,split = keydirectory.NodeRegistry.get_node(schemakey,nodes.NodeSupports.schema,transaction)
-                pkey = schemakey.up()
-                if not pkey:
-                    raise ValueError(f'{schemakey} key is too high {self!r}')
-                upnode = typing.cast(nodes.SchemaNode,upnode)
-                # TODO: We should check some ownership permission here!
-                parent = upnode.get_sub_schema(pkey,split,create=True) # create missing segments
-                assert parent # must exist because create=True
+                # create dnode with our schema:
                 # give world schema_read access
                 consents = permissions.Consents(consents=[permissions.Consent(grantedTo=[principals.AllPrincipal],withModes={permissions.AccessMode.schema_read})])
                 dnode = DAppNode(owner=self.owner,schema=schema,dapp=self,consents=consents)
                 keydirectory.NodeRegistry[schemakey] = dnode
-                # now insert our schema into the parent's:
-                assert self.id
-                schemaref = schemas.SchemaReference.create_from_key(self.id,ddhkey=schemakey)
-                parent.add_fields({schemakey[-1] : (schemaref,None)})
+
+                # hook into parent schema:
+                schemas.AbstractSchema.insert_schema(self.id, schemakey,transaction)
             dnodes.append(dnode)
         return dnodes 
     

@@ -133,7 +133,23 @@ class SchemaReference(SchemaElement):
 
 
 
+@enum.unique
+class Requires(str,enum.Enum):
+    """ Schema Data requirements """
+
+    one = 'one'
+    few = 'few'
+    specific = 'specific'
+    many = 'many'
+
+
+class SchemaAttributes(NoCopyBaseModel):
+    requires : typing.Optional[Requires] = None
+
+
+
 class AbstractSchema(NoCopyBaseModel,abc.ABC):
+    schema_attributes : SchemaAttributes = pydantic.Field(default=SchemaAttributes(),descriptor="Attributes associated with this Schema")
 
     @abc.abstractmethod
     def to_py_schema(self) -> PySchema:
@@ -157,6 +173,22 @@ class AbstractSchema(NoCopyBaseModel,abc.ABC):
 
     def add_fields(self,fields : dict):
         raise NotImplementedError('Field adding not supported in this schema')
+
+    @staticmethod
+    def insert_schema(id, schemakey: keys.DDHkey,transaction):
+        # get a parent scheme to hook into
+        upnode,split = keydirectory.NodeRegistry.get_node(schemakey,nodes.NodeSupports.schema,transaction)
+        pkey = schemakey.up()
+        if not pkey:
+            raise ValueError(f'{schemakey} key is too high {self!r}')
+        upnode = typing.cast(nodes.SchemaNode,upnode)
+        # TODO: We should check some ownership permission here!
+        parent = upnode.get_sub_schema(pkey,split,create=True) # create missing segments
+        assert parent # must exist because create=True
+
+        # now insert our schema into the parent's:
+        schemaref = SchemaReference.create_from_key(id,ddhkey=schemakey)
+        parent.add_fields({schemakey[-1] : (schemaref,None)})
 
 
 
@@ -227,28 +259,3 @@ SchemaFormats = {
 }
 # corresponding enum: 
 SchemaFormat = enum.Enum('SchemaFormat',[(k,k) for k in SchemaFormats])  # type: ignore # 2nd argument with list form not understood
-
-
-
-def insert_schema(self,session,schemakey,schema,dappnode):
-    transaction = session.get_or_create_transaction()
-    dnode = keydirectory.NodeRegistry[schemakey].get(nodes.NodeSupports.schema) # need exact location, not up the tree
-    if dnode:
-        dnode = dnode.ensure_loaded(transaction)
-    else:
-        # get a parent scheme to hook into
-        upnode,split = keydirectory.NodeRegistry.get_node(schemakey,nodes.NodeSupports.schema,transaction)
-        pkey = schemakey.up()
-        if not pkey:
-            raise ValueError(f'{schemakey} key is too high {self!r}')
-        upnode = typing.cast(nodes.SchemaNode,upnode)
-        parent = upnode.get_sub_schema(pkey,split)
-        if not parent:
-            raise ValueError(f'No parent schema found for {self!r} with {schemakey} at upnode {upnode}')
-        keydirectory.NodeRegistry[schemakey] = dappnode
-        # now insert our schema into the parent's:
-        schemaref = SchemaReference.create_from_key(schemakey[-1],ddhkey=schemakey)
-        parent.add_fields({schemakey[-1] : (schemaref,None)})
-    return dnode
-
-
