@@ -190,6 +190,11 @@ class AbstractSchema(NoCopyBaseModel,abc.ABC):
         schemaref = SchemaReference.create_from_key(id,ddhkey=schemakey)
         parent.add_fields({schemakey[-1] : (schemaref,None)})
 
+    @staticmethod
+    def get_schema_consents() -> permissions.Consents:
+        """ Schema world read access consents """
+        return permissions.Consents(consents=[permissions.Consent(grantedTo=[principals.AllPrincipal],withModes={permissions.AccessMode.schema_read})])
+
 
 
 class PySchema(AbstractSchema):

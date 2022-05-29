@@ -178,9 +178,7 @@ class DApp(DAppOrFamily):
                 dnode = dnode.ensure_loaded(transaction)
             else:
                 # create dnode with our schema:
-                # give world schema_read access
-                consents = permissions.Consents(consents=[permissions.Consent(grantedTo=[principals.AllPrincipal],withModes={permissions.AccessMode.schema_read})])
-                dnode = DAppNode(owner=self.owner,schema=schema,dapp=self,consents=consents)
+                dnode = DAppNode(owner=self.owner,schema=schema,dapp=self,consents=schemas.AbstractSchema.get_schema_consents())
                 keydirectory.NodeRegistry[schemakey] = dnode
 
                 # hook into parent schema:
