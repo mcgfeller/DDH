@@ -111,6 +111,17 @@ class SchemaElement(NoCopyBaseModel):
         else: # there is no resolver so far, we cannot grab this without a further segment:
             raise errors.NotFound(f'Incomplete key: {entire_selection}')
 
+    @classmethod
+    def replace_by_schema(cls,ddhkey : keys.DDHkey, schema_attributes : typing.Optional[SchemaAttributes]) -> type[SchemaReference]:
+        """ Replace this SchemaElement by a proper schema with attributes, 
+            and return the SchemaReference to it, which can be used like a SchemaElement.
+        """
+        s = PySchema(schema_attributes=schema_attributes or SchemaAttributes(),schema_element=cls)
+        snode = nodes.SchemaNode(owner=principals.RootPrincipal,schema=s,consents=AbstractSchema.get_schema_consents())
+        keydirectory.NodeRegistry[ddhkey] = snode
+        schemaref = SchemaReference.create_from_key(str(ddhkey),ddhkey=ddhkey)
+        return schemaref
+
 
 class SchemaReference(SchemaElement):
 

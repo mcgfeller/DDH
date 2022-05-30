@@ -61,7 +61,7 @@ def build_root_schemas():
         ]
     ]
 
-
+    # elements with SchemaAttributes:
     attributes = {
         ('root', '', 'p', 'employment','salary','statements') : schemas.SchemaAttributes(requires=schemas.Requires.specific),
         ('root', '', 'p', 'finance','holdings','portfolio') : schemas.SchemaAttributes(requires=schemas.Requires.specific),
@@ -76,14 +76,10 @@ def descend_schema(tree : list,schema_attributes : dict, parents=()) -> type[sch
     key = parents+(tree[0],) # new key, from parents down
     elements = {t[0]: (descend_schema(t,schema_attributes,parents=key),None) for t in tree[1:]} # descend on subtree, build dict of {head_name  : subtree}
     se = pydantic.create_model('_'.join(key), __base__=schemas.SchemaElement, **elements) # create a model with subtree elements
-    if sa := schema_attributes.get(key):
-        dkey = keys.DDHkey(('','')+key[2:])
-        s = schemas.PySchema(schema_attributes=sa,schema_element=se)
-        snode = nodes.SchemaNode(owner=principals.RootPrincipal,schema=s,consents=schemas.AbstractSchema.get_schema_consents())
-        keydirectory.NodeRegistry[dkey] = snode
-        schemaref = schemas.SchemaReference.create_from_key(str(key),ddhkey=dkey)
-        # parent.add_fields({schemakey[-1] : (schemaref,None)})
-        se = schemaref
+    if sa := schema_attributes.get(key): # SchemaAttributes here? 
+        # we need to replace the SchemaElement by a full Schema and a SchemaReference to it
+        dkey = keys.DDHkey(('','')+key[2:]) # 'root' is '' in key
+        se = se.replace_by_schema(dkey,sa)
     return se
 
 register_schema()
