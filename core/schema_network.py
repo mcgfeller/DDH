@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 logger = logging.getLogger(__name__)
 
 from utils import utils
-from core import schema_root,dapp,principals,keys
+from core import schema_root,schemas,dapp,principals,keys
 from utils.pydantic_utils import NoCopyBaseModel
 
 
@@ -30,11 +30,35 @@ class SchemaNetworkClass():
     def dapps_from(self,from_dapp : dapp.DApp, principal : principals.Principal) -> typing.Iterable[dapp.DApp]: 
         return [n for n in networkx.descendants(self.network,from_dapp) if isinstance(n,dapp.DApp)]
 
-    def dapps_required(self,for_dapp : dapp.DApp, principal : principals.Principal) -> dict[dapp.DApp,int]: 
-        """ return an iterable of all DApps required by this DApp, highest preference first. 
+    def dapps_required(self,for_dapp : dapp.DApp, principal : principals.Principal) -> tuple[set[dapp.DApp],set[dapp.DApp]]: 
+        """ return two sets of DApps required by this DApp
+            -   all required 
+            -   required for cost calculation, considering despite schemas.Requires annotations, for which
+                we take only the longest line of requires DApps as a conservative estimate.
+
         """
-        required = {n: distance for n,distance in networkx.shortest_path_length(self.network, target = for_dapp).items() if distance>0 and isinstance(n,dapp.DApp)}
-        return required
+        g = self.network
+        sp = networkx.shortest_path(g, target = for_dapp)
+        
+        lines = [{x for x in l if isinstance(x,dapp.DApp)} for l in sp.values()]
+        suggested = set.union(*lines)
+
+        # node: req if node has any requirement:
+        nodes_with_reqs = {k:req for k in sp.keys() if (nk:=g.nodes[k]) ['type'] == 'schema' and (req:=nk.get('requires'))}
+        if nodes_with_reqs:
+            discard = set() # lines to be discarded, cumulative for all nodes
+            for node in nodes_with_reqs:
+                req = nodes_with_reqs[node]
+                if req in (schemas.Requires.one,schemas.Requires.specific,schemas.Requires.few): # use longest line unless .all
+                    # len, line if attributed schema is in the path:
+                    ll = [(len(v),i) for i,(k,v) in enumerate(sp.items())  if node in v]
+                    retain = max(ll) # longest line (higher index for ties)
+                    discard.update({d[1] for d in ll if retain != d}) # others are to be discarded
+            lines = [l for i,l in enumerate(lines) if i not in discard] # all lines except those discarded
+            calculated = set.union(*lines)
+        else: # no attributes, we use all nodes
+            calculated = suggested
+        return suggested,calculated
 
     def complete_graph(self):
         """ Finish up the graph after all nodes have been added:

@@ -81,14 +81,15 @@ def add_costs(session,sris : list[SearchResultItem], subscribed  : typing.Iterab
     """ Calculate cost of dapp in sris, including costs of pre-requisites except for those already 
         subscribed (which get a bonus merit).
 
-        TODO: Implement one-of dependencies and count only one! 
+        Schemas with schema.Requires attributes except schema.Requires.all get reduced costs. 
+
     """
     schemaNetwork = pillars.Pillars['SchemaNetwork']
     for sri in sris:
-        requires = schemaNetwork.dapps_required(sri.da,session.user)
-        sri.requires = set(requires)
+        requires,calculated = schemaNetwork.dapps_required(sri.da,session.user) # all required despite schema annotations, require for cost calculation
+        sri.requires = requires
         sri.missing = sri.requires - set(subscribed)
-        merits = [da.get_weight() * (-1)**(da in sri.missing) for da in requires.keys()] # pos merit if subscribed
+        merits = [da.get_weight() * (-1)**(da in sri.missing) for da in calculated] # pos merit if subscribed
         sri.merit += sum(merits) # bonus for those we have
     return sris
 
