@@ -9,6 +9,7 @@ import re
 import operator
 
 import pydantic
+import networkx
 
 from utils.pydantic_utils import NoCopyBaseModel
 
@@ -100,3 +101,44 @@ class VersionConstraint(NoCopyBaseModel):
         if ok and self.op2:
             ok = self._vops[self.op2](version,self.v2)
         return ok
+
+    def minimum(self) -> Version:
+        return 
+
+    def maximum(self) -> Version:
+        return        
+
+
+class Upgraders:
+    """ Class to hold upgrade functions for a version upgrade for a specific class (neutral to that class) """
+
+    upgraders : dict[tuple[Version,Version],typing.Callable]
+
+    def __init__(self):
+        self.network = networkx.DiGraph()
+        self.upgraders = {}
+
+    def add_upgrader(self, v_from: Version, v_to: Version, function: typing.Optional[typing.Callable]):
+        """ Add upgrade function between two versions; None if no upgrade needed """
+        if v_from >= v_to:
+            raise ValueError(f'source version {v_from} must be < than target version {v_to}; downgrade not allowed.')
+        else:
+            self.network.add_nodes_from((v_from,v_to))
+            self.network.add_edge(v_from,v_to,function=function)
+
+    def upgrade_path(self, v_from: Version, v_to: Version) -> typing.Sequence[typing.Callable]:
+        if v_from == v_to:
+            return [] # no upgrade required
+        elif v_from > v_to:
+            raise ValueError('downgrade not supported')
+        else:
+            nodes = networkx.shortest_path(self.network,source=v_from,target=v_to)
+            # we need the edges, and their function attributes
+            e = self.network.edges
+            # edges are keyed by pair of nodes they connect
+            functions = [f for i in range(len(nodes)-1) if (f:= e[(nodes[i],nodes[i+1])].get('function')) is not None]
+            return functions
+
+
+
+    
