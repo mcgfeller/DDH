@@ -14,7 +14,15 @@ import networkx
 from utils.pydantic_utils import NoCopyBaseModel
 
 @functools.total_ordering
-class Version(NoCopyBaseModel):
+class Version(NoCopyBaseModel,typing.Hashable):
+    """ Versions are tuples of integers, with a max len.
+        Short Version like 1.0 are equal to longer version with the same prefix, e.g.
+        1.0.1, 1.0.0.1. If you want to be specific, specify the full length, e.g., 1.0.0.0.
+
+        Versions can have an alias, which is ignored, e.g. a fancy name.
+
+        Versions are hashable and totally ordered. 
+    """
 
     Maxparts : typing.ClassVar[int] = 4
 
@@ -32,17 +40,17 @@ class Version(NoCopyBaseModel):
             vtup = tuple(v)
         if not vtup:
             raise ValueError('Empty version')
-        kw['vtup'] = (vtup + (0,)*self.Maxparts)[:self.Maxparts]
+        kw['vtup'] = vtup[:self.Maxparts]
         super().__init__(**kw)
         return
 
     def __eq__(self,other):
+        """ Versions are considered equal if one is short and the sohrt segments match,
+            e.g., 1.0.1 == 1.0
+        """
         if isinstance(other,Version):
-            return self.vtup == other.vtup
-        elif isinstance(other,str): # fishy?
-            try:
-                return self == Version(other)
-            except: return False
+            l = min(len(self.vtup),len(other.vtup))
+            return self.vtup[:l] == other.vtup[:l]
         else:
             return False
 
@@ -62,6 +70,11 @@ class Version(NoCopyBaseModel):
     __repr__ = __str__ = dotted
 
 class VersionConstraint(NoCopyBaseModel):
+    """ Version constraint specifiy upper and lower bounds of acceptable versions.
+        Comparisons can be specified as '==version', '>=version', '>version', and < instead of >.
+        Ranges can be specified by two comparisons such as '<version1,>=version2'.
+        The main method is version in versionConstraint.
+    """
 
     # Pattern for comparator,  version , [comparator, version]
     _vpat : typing.ClassVar[typing.Any] = re.compile(r'([<=>]+)([0-9.]+),?(?:([<=>]+)([0-9.]+))?\Z') 
@@ -102,23 +115,19 @@ class VersionConstraint(NoCopyBaseModel):
             ok = self._vops[self.op2](version,self.v2)
         return ok
 
-    def minimum(self) -> Version:
-        return 
-
-    def maximum(self) -> Version:
-        return        
+class Upgrader(typing.Protocol):
+      def __call__(self, v_from: Version, v_to: Version, *args : list, **kwargs: dict) -> bool: ...
 
 
 class Upgraders:
     """ Class to hold upgrade functions for a version upgrade for a specific class (neutral to that class) """
 
-    upgraders : dict[tuple[Version,Version],typing.Callable]
+    upgraders : dict[tuple[Version,Version],Upgrader]
 
     def __init__(self):
         self.network = networkx.DiGraph()
-        self.upgraders = {}
 
-    def add_upgrader(self, v_from: Version, v_to: Version, function: typing.Optional[typing.Callable]):
+    def add_upgrader(self, v_from: Version, v_to: Version, function: typing.Optional[Upgrader]):
         """ Add upgrade function between two versions; None if no upgrade needed """
         if v_from >= v_to:
             raise ValueError(f'source version {v_from} must be < than target version {v_to}; downgrade not allowed.')
@@ -126,16 +135,19 @@ class Upgraders:
             self.network.add_nodes_from((v_from,v_to))
             self.network.add_edge(v_from,v_to,function=function)
 
-    def upgrade_path(self, v_from: Version, v_to: Version) -> typing.Sequence[typing.Callable]:
+    def upgrade_path(self, v_from: Version, v_to: Version) -> typing.Sequence[Upgrader]:
         if v_from == v_to:
             return [] # no upgrade required
         elif v_from > v_to:
             raise ValueError('downgrade not supported')
         else:
-            nodes = networkx.shortest_path(self.network,source=v_from,target=v_to)
+            try:
+                nodes = networkx.shortest_path(self.network,source=v_from,target=v_to)
+            except networkx.NetworkXException as e:
+                raise ValueError(f'Version {v_from} not upgradeable to {v_to}: {e}')
             # we need the edges, and their function attributes
             e = self.network.edges
-            # edges are keyed by pair of nodes they connect
+            # edges are keyed by pair of nodes they connect (ignore where function is None):
             functions = [f for i in range(len(nodes)-1) if (f:= e[(nodes[i],nodes[i+1])].get('function')) is not None]
             return functions
 
