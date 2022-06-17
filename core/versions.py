@@ -103,9 +103,40 @@ class VersionConstraint(NoCopyBaseModel):
                 raise ValueError(f'Invalid VersionConstraint {c}')
     
         super().__init__(**kw)
+        self.normalize()
         return
 
+    def normalize(self):
+        """ normalize constraint, so > comes before <.
+            May raise errors if there is no version between lower is > upper or if duplicate constraints. 
+        """
+        if self.op1 == '==' and self.op2 or self.op2 == '==' and self.op1:
+            raise ValueError('Only one == constraint allowed')
+        if '<' in self.op1:
+            if self.op2:
+                if '>' in self.op2: # swap constraint
+                    assert self.v2
+                    (self.op1,self.v1,self.op2,self.v2) = (self.op2,self.v2,self.op1,self.v1)
+                    if self.v2 < self.v1:
+                        raise ValueError(f'No valid version in {self}')  
+                elif '<' in self.op2:
+                    raise ValueError('Only one < / <= constraint allowed')
+        if '>' in self.op1:
+            if self.op2:
+                if '<' in self.op2: # check versions
+                    assert self.v2
+                    if self.v2 < self.v1:
+                        raise ValueError(f'No valid version in {self}')  
+                elif '>' in self.op2:
+                    raise ValueError('Only one > / >= constraint allowed')
+        return
+        
+        
+
     def __repr__(self):
+        return f'{self.__class__.__name__}({self!s})'
+
+    def __str__(self):
         return f'{self.op1}{self.v1}' + (f', {self.op2}{self.v2}' if self.op2 else '')
 
     def __contains__(self,version :  Version):
