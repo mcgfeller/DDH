@@ -69,6 +69,19 @@ class Version(NoCopyBaseModel,typing.Hashable):
 
     __repr__ = __str__ = dotted
 
+class _UnspecifiedVersion(Version):
+    def __init__(self,*v,**kw):
+        kw['vtup'] = ()
+        NoCopyBaseModel.__init__(self,**kw)
+        return
+
+    def __eq__(self,other):
+        """ only equal to unspecified """
+        return isinstance(other,_UnspecifiedVersion)
+
+
+Unspecified = _UnspecifiedVersion(alias='unspecified')
+
 class VersionConstraint(NoCopyBaseModel):
     """ Version constraint specifiy upper and lower bounds of acceptable versions.
         Comparisons can be specified as '==version', '>=version', '>version', and < instead of >.
@@ -141,12 +154,15 @@ class VersionConstraint(NoCopyBaseModel):
 
     def __contains__(self,version :  Version):
         """ returns True is version satisfies VersionConstraint """
-        ok = self._vops[self.op1](version,self.v1)
-        if ok and self.op2:
-            ok = self._vops[self.op2](version,self.v2)
+        if isinstance(version,_UnspecifiedVersion): # unspecified satisfies all constraints
+            ok = True
+        else:
+            ok = self._vops[self.op1](version,self.v1)
+            if ok and self.op2:
+                ok = self._vops[self.op2](version,self.v2)
         return ok
 
-NoConstraint = VersionConstraint(op1='>=',v1=Version((0))) # everyting is bigger than 0
+NoConstraint = VersionConstraint(op1='>=',v1=Version((0))) # everything is bigger than 0
 
 class Upgrader(typing.Protocol):
       def __call__(self, v_from: Version, v_to: Version, *args : list, **kwargs: dict) -> bool: ...

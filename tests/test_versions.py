@@ -37,12 +37,18 @@ def test_version_compare():
     assert v0 <=  versions.Version(1,5,6)
 
 def test_version_constraint():
-    versions.VersionConstraint('==4.0')
-    versions.VersionConstraint('>=4.0')
-    versions.VersionConstraint('>=4.0,<=5.0')
-    versions.VersionConstraint('>=4.0,<=5.0')
-    versions.VersionConstraint('>4.0,<5')
+    assert versions.Version('4.0') in versions.VersionConstraint('==4.0')
+    assert versions.Version('4.0') in versions.VersionConstraint('>=4.0')
+    assert versions.Version('4.5') in versions.VersionConstraint('>=4.0,<=5.0')
+    assert versions.Version('4.0') in versions.VersionConstraint('>=4.0,<5.0')
+    assert versions.Version('5.0') not in versions.VersionConstraint('>=4.0,<5.0')
+    assert versions.Version('4.0') not in versions.VersionConstraint('>4.0,<5')
     assert versions.VersionConstraint('>4.0,<5') == versions.VersionConstraint('<5,>4.0') # rearrange
+
+def test_version_noconstraint():
+    assert versions.Version('4.0') in versions.NoConstraint
+    assert versions.Unspecified in versions.NoConstraint
+
 
 def test_version_constraint_bad():
     with pytest.raises(ValueError):
