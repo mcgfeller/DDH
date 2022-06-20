@@ -9,7 +9,7 @@ import  abc
 import pydantic
 
 from utils.pydantic_utils import NoCopyBaseModel
-from . import keys,permissions,errors,principals
+from . import keys,permissions,errors,principals,versions
 from . import keydirectory, nodes
 from frontend import user_auth
 
@@ -126,6 +126,7 @@ class SchemaElement(NoCopyBaseModel):
 class SchemaReference(SchemaElement):
 
     ddhkey : typing.ClassVar[str] 
+    version_required : versions.VersionConstraint = pydantic.Field(default=versions.NoConstraint,description="Constrains the version of the target schema")
 
     class Config:
         @staticmethod
@@ -155,6 +156,7 @@ class Requires(str,enum.Enum):
 
 
 class SchemaAttributes(NoCopyBaseModel):
+    version : versions.Version = pydantic.Field(versions.Unspecified,description="The version of this schema instance")
     requires : typing.Optional[Requires] = None
 
 
