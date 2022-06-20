@@ -27,7 +27,7 @@ class Version(NoCopyBaseModel,typing.Hashable):
     Maxparts : typing.ClassVar[int] = 4
 
 
-    vtup : tuple[int,...] = ()
+    vtup : tuple[pydantic.conint(ge=0,le=100000),...] = ()
     alias : typing.Optional[str] = None
     
     def __init__(self,*v,**kw):
@@ -145,6 +145,8 @@ class VersionConstraint(NoCopyBaseModel):
         if ok and self.op2:
             ok = self._vops[self.op2](version,self.v2)
         return ok
+
+NoConstraint = VersionConstraint(op1='>=',v1=Version((0))) # everyting is bigger than 0
 
 class Upgrader(typing.Protocol):
       def __call__(self, v_from: Version, v_to: Version, *args : list, **kwargs: dict) -> bool: ...
