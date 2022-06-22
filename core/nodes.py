@@ -9,7 +9,7 @@ import enum
 
 
 
-from . import permissions,schemas,transactions,errors,keydirectory,principals,common_ids
+from . import permissions,schemas,transactions,errors,keydirectory,principals,common_ids,versions
 from utils import datautils
 from backend import persistable
 
@@ -106,6 +106,23 @@ class MultiOwnerNode(Node):
 class SchemaNode(Node,persistable.NonPersistable):
 
     nschema : typing.Optional[schemas.AbstractSchema] =  pydantic.Field(alias='schema')
+    schema_by_version : dict[versions.Version,schemas.AbstractSchema] = {}
+
+    def __init__(self,*a,**kw):
+        super().__init__(*a,**kw)
+        if self.nschema:
+            v = self.nschema.schema_attributes.version
+            self.schema_by_version[v] = self.nschema
+
+    def add_schema_version(self,schema : schemas.AbstractSchema ):
+        v = schema.schema_attributes.version
+        self.schema_by_version[v] = schema
+        if self.nschema:
+            if v > self.nschema.schema_attributes.version: # later than current version
+                self.nschema = schema
+        else:
+            self.nschema = schema
+        return 
 
 
 

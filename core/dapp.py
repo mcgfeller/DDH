@@ -179,7 +179,8 @@ class DApp(DAppOrFamily):
         for schemakey,schema in self.get_schemas().items():
             dnode = keydirectory.NodeRegistry[schemakey].get(nodes.NodeSupports.schema) # need exact location, not up the tree
             if dnode:
-                dnode = dnode.ensure_loaded(transaction)
+                dnode = typing.cast(DAppNode,dnode.ensure_loaded(transaction))
+                dnode.add_schema_version(schema)
             else:
                 # create dnode with our schema:
                 dnode = DAppNode(owner=self.owner,schema=schema,dapp=self,consents=schemas.AbstractSchema.get_schema_consents())
