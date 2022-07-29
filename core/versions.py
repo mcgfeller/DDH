@@ -36,8 +36,10 @@ class Version(NoCopyBaseModel,typing.Hashable):
             if not all(x.isdecimal() for x in vt):
                 raise ValueError(f'Invalid version: {v[0]}')
             vtup = tuple(map(int,vt))
-        else:
+        elif v:
             vtup = tuple(v)
+        else:
+            vtup = tuple(kw.get('vtup',()))
         if not vtup:
             raise ValueError('Empty version')
         kw['vtup'] = vtup[:self.Maxparts]
@@ -45,7 +47,7 @@ class Version(NoCopyBaseModel,typing.Hashable):
         return
 
     def __eq__(self,other):
-        """ Versions are considered equal if one is short and the sohrt segments match,
+        """ Versions are considered equal if one is short and the short segments match,
             e.g., 1.0.1 == 1.0
         """
         if isinstance(other,Version):
