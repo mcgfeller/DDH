@@ -43,3 +43,5 @@ class Reference(NoCopyBaseModel):
 
 class Quality(NoCopyBaseModel):
     ...
+
+Reference.update_forward_refs()
