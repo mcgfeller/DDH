@@ -5,6 +5,7 @@ import datetime
 import typing
 import enum
 import abc
+import pydantic.json 
 
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import NoCopyBaseModel
@@ -42,7 +43,6 @@ class ForkType(str,enum.Enum):
 class DDHkey(NoCopyBaseModel):
     """ A key identifying a DDH ressource. DDHkey is decoupled from any permissions, storage, etc.,
     """
-    
     key : tuple
     fork : ForkType = ForkType.data
 
@@ -50,6 +50,11 @@ class DDHkey(NoCopyBaseModel):
     ForkDelimiter : typing.ClassVar[str] = ':'
     Root : typing.ClassVar[_RootType] = _RootType(Delimiter)
     AnyKey : typing.ClassVar[_AnyType] = _AnyType(Delimiter)
+
+    def dict(self,**kw):
+        """ We want a short representation """
+        return {'key':str(self)}
+
 
     def __init__(self,key : typing.Union[tuple,list,str], fork :  typing.Optional[ForkType] = None):
         """ Convert key string into tuple, eliminate empty segments, and set root to self.Root """
