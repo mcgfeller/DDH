@@ -40,8 +40,8 @@ class Version(NoCopyBaseModel,typing.Hashable):
             vtup = tuple(v)
         else:
             vtup = tuple(kw.get('vtup',()))
-        if not vtup:
-            raise ValueError('Empty version')
+        # if not vtup:
+        #     raise ValueError('Empty version')
         kw['vtup'] = vtup[:self.Maxparts]
         super().__init__(**kw)
         return
