@@ -113,13 +113,6 @@ class DAppManagerClass(NoCopyBaseModel):
     """
     DAppsById : dict[principals.DAppId,DAppProxy] = {} # registry of DApps
 
-    # async def register(self,session,running_dapp: dapp_attrs.RunningDApp):
-    #     # transaction = session.get_or_create_transaction()
-    #     client = httpx.AsyncClient(base_url=running_dapp.location)
-    #     proxies = await DAppProxy.from_running(running_dapp)
-    #     self.DAppsById.update({typing.cast(principals.DAppId, proxy.running.id) : proxy for proxy in proxies})
-    #     print('Connect',self,session,running_dapp)
-
     async def register(self,request,session,running_dapp: dapp_attrs.RunningDApp):
         client = httpx.AsyncClient(base_url=running_dapp.location)
         j = await client.get('/app_info')
@@ -132,30 +125,7 @@ class DAppManagerClass(NoCopyBaseModel):
         return 
 
     def bootstrap(self, pillars:dict) :
-        # session = sessions.get_system_session()
-        # for module in import_modules.importAllSubPackages(DApps,raiseError=False):
-        #     assert module
-        #     classname = module.__name__.split('.')[-1]
-        #     cls = getattr(module,classname,None) # class must have same name as module
-        #     if not cls:
-        #         logger.error(f'DApp module {module.__name__} has no DApp class named {classname}.')
-        #     else:
-        #         try:
-        #             dapps = cls.bootstrap(session,pillars) # one class may generate multiple DApps
-        #         except Exception as e:
-        #             logger.error(f'DApp {cls.__name__} bootstrap error: {e}')
-        #         else:
-        #             dapps = utils.ensureTuple(dapps)
-        #             for dapp in dapps:
-        #                 self.DAppsById[dapp.id] = dapp
-        #                 try:
-        #                     dnode = dapp.startup(session,pillars)
-        #                     logger.info(f'DApp {dapp!r} initialized at {dnode!s}.')
-        #                 except Exception as e:
-        #                     logger.error(f'DApp {dapp!r} startup error: {e}',exc_info=True)
-        #                     raise
-
-        # pillars['SchemaNetwork'].complete_graph()
+        pillars['SchemaNetwork'].complete_graph()
         # pillars['SchemaNetwork'].plot(layout='shell_layout')
         return
 
