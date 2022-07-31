@@ -118,7 +118,7 @@ class SchemaNode(Node,persistable.NonPersistable):
         v = schema.schema_attributes.version
         self.schema_by_version[v] = schema
         if self.nschema:
-            if v > self.nschema.schema_attributes.version: # later than current version
+            if v > self.nschema.schema_attributes.version: # higher than current version
                 self.nschema = schema
         else:
             self.nschema = schema
