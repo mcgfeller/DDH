@@ -4,6 +4,7 @@
     - Data App serving a User Interface
 """
 
+from ensurepip import version
 import fastapi
 import fastapi.security
 import typing
@@ -13,7 +14,7 @@ import enum
 
 
 from core import pillars
-from core import keys,permissions,schemas,facade,errors,principals
+from core import keys,permissions,schemas,facade,errors,principals,versions,dapp_proxy,dapp_attrs
 from frontend import sessions
 
 app = fastapi.FastAPI()
@@ -106,4 +107,18 @@ async def reinitialize(
         raise e.to_http()
 
     return {"transaction": trx.trxid}  
+
+
+@app.post("/connect")
+async def connect_dapp(
+    running_dapp : dapp_attrs.RunningDApp,
+    # session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
+    request : fastapi.Request,
+    bg_tasks: fastapi.BackgroundTasks,
+    session = sessions.get_system_session(),
+    ):  
+    # we have to return a response so caller can finish startup, before we issue a request against the caller.
+    # Therefore, add registration as a background task:
+    bg_tasks.add_task(dapp_proxy.DAppManager.register,request,session,running_dapp)
+    return 
 

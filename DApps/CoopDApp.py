@@ -5,10 +5,10 @@ import typing
 
 import pydantic
 from core import keys,permissions,schemas,nodes,keydirectory,principals,transactions,relationships,common_ids
-from core import dapp
+from core import dapp_attrs
 
 
-class CoopDApp(dapp.DApp):
+class CoopDApp(dapp_attrs.DApp):
 
     owner : typing.ClassVar[principals.Principal] =  principals.User(id='coop',name='Coop (fake account)')
     schemakey : typing.ClassVar[keys.DDHkey] = keys.DDHkey(key="//org/coop.ch")

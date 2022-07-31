@@ -2,7 +2,7 @@
 
 import typing
 
-from core import pillars, principals,common_ids,errors,dapp
+from core import dapp_proxy, pillars, principals,common_ids,errors
 
 
 SUBSCRIPTIONS : dict[common_ids.PrincipalId,dict[principals.DAppId,typing.Any]] = {}
@@ -12,7 +12,7 @@ def add_subscription(
     dappid : principals.DAppId,
     ) -> list[principals.DAppId]:
 
-    da = pillars.DAppManager.DAppsById.get(dappid)
+    da = dapp_proxy.DAppManager.DAppsById.get(dappid)
     if not da:
         raise errors.NotFound(f"DApp not found: {dappid}.")
     SUBSCRIPTIONS.setdefault(user,{})[dappid] = {}
@@ -23,7 +23,7 @@ def delete_subscription(
     dappid : principals.DAppId,
     ) -> list[principals.DAppId]:
 
-    da = pillars.DAppManager.DAppsById.get(dappid)
+    da = dapp_proxy.DAppManager.DAppsById.get(dappid)
     if not da:
         raise errors.NotFound(f"DApp not found: {dappid}.")
     SUBSCRIPTIONS.setdefault(user,{}).pop(dappid,None)
@@ -31,7 +31,7 @@ def delete_subscription(
 
 def list_subscriptions(
     user: common_ids.PrincipalId,
-    ) -> list[dapp.DApp]:
+    ) -> list[dapp_proxy.DAppProxy]:
     dappids = SUBSCRIPTIONS.setdefault(user,{}).keys()
-    das = [pillars.DAppManager.DAppsById.get(dappid) for dappid in dappids]
+    das = [dapp_proxy.DAppManager.DAppsById.get(dappid) for dappid in dappids]
     return das

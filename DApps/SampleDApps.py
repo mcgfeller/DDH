@@ -5,10 +5,10 @@ import typing
 import pydantic
 
 from core import keys,permissions,schemas,nodes,principals,transactions,relationships,common_ids
-from core import dapp
+from core import dapp_attrs
 
 
-class SampleDApps(dapp.DApp):
+class SampleDApps(dapp_attrs.DApp):
 
     owner : typing.ClassVar[principals.Principal] 
     schemakey : typing.ClassVar[keys.DDHkey] 
@@ -43,7 +43,7 @@ class SampleDApps(dapp.DApp):
 
 
     @classmethod
-    def bootstrap(cls,session,pillars : dict) -> tuple[dapp.DApp]:
+    def bootstrap(cls,session,pillars : dict) -> tuple[dapp_proxy.DAppProxy]:
         """ Create a series of DApps with network only """
         apps = (
 
@@ -129,7 +129,7 @@ class SampleDApps(dapp.DApp):
                 provides_schema = True,
                 transforms_into = keys.DDHkey(key="//p/finance/holdings/portfolio"),
                 catalog = common_ids.CatalogCategory.finance,
-                estimatedCosts = dapp.EstimatedCosts.medium,
+                estimatedCosts = dapp_proxy.EstimatedCosts.medium,
                 ),
 
             cls(
@@ -138,7 +138,7 @@ class SampleDApps(dapp.DApp):
                 owner=principals.User(id='coolfinance',name='Cool Finance Startup (fake account)'),
                 schemakey = keys.DDHkey(key="//p/finance/holdings"), 
                 provides_schema = True,
-                estimatedCosts = dapp.EstimatedCosts.medium,
+                estimatedCosts = dapp_proxy.EstimatedCosts.medium,
                 catalog = common_ids.CatalogCategory.finance,
                 ).add_reference(relationships.Reference.requires(
                     keys.DDHkey(key="//org/credit-suisse.com/clients/portfolio/account"),

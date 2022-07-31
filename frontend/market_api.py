@@ -10,7 +10,7 @@ import datetime
 import enum
 
 
-from core import pillars,dapp
+from core import dapp_attrs, pillars
 from core import keys,permissions,schemas,facade,errors,principals,common_ids
 from frontend import sessions
 from frontend import user_auth # provisional user management
@@ -46,7 +46,7 @@ async def get_dapps(
     return dapps
 
 
-@app.get("/market/dapp/{dappid:principals.DAppId}",response_model=dapp.DAppOrFamily)
+@app.get("/market/dapp/{dappid:principals.DAppId}",response_model=dapp_attrs.DAppOrFamily)
 async def get_dapp(
     dappid : principals.DAppId,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),

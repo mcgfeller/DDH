@@ -12,7 +12,7 @@ import typing
 import fastapi
 import fastapi.security
 import pydantic
-from core import (dapp, errors, facade, keys, permissions, pillars, principals,
+from core import (dapp_attrs, errors, facade, keys, permissions, pillars, principals,
                   schemas,common_ids)
 from user import subscriptions
 from frontend import sessions
@@ -38,7 +38,7 @@ async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordReque
 
 
 
-@app.post("users/{user}/subscriptions/dapp/{dappid}",response_model=list[dapp.DAppOrFamily])
+@app.post("users/{user}/subscriptions/dapp/{dappid}",response_model=list[dapp_attrs.DAppOrFamily])
 async def create_subscription(
     user: common_ids.PrincipalId,
     dappid : principals.DAppId,
@@ -47,11 +47,11 @@ async def create_subscription(
     """ Create a single subscription for a user """
     if not user == session.user.id:
         raise errors.AccessError('authorized user is not ressource owner')
-    subscriptions.add_subscription(user,dappid)
+    das =subscriptions.add_subscription(user,dappid)
 
-    return [da]
+    return das
     
-@app.get("users/{user}/subscriptions/dapp/",response_model=list[dapp.DAppOrFamily])
+@app.get("users/{user}/subscriptions/dapp/",response_model=list[dapp_attrs.DAppOrFamily])
 async def list_subscription(
     user: common_ids.PrincipalId,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),

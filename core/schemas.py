@@ -156,7 +156,7 @@ class Requires(str,enum.Enum):
 
 
 class SchemaAttributes(NoCopyBaseModel):
-    version : versions.Version = pydantic.Field(versions.Unspecified,description="The version of this schema instance")
+    version : typing.Optional[versions.Version] = pydantic.Field(versions.Unspecified,description="The version of this schema instance")
     requires : typing.Optional[Requires] = None
 
 

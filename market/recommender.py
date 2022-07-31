@@ -10,19 +10,19 @@ logger = logging.getLogger(__name__)
 
 import pydantic
 from utils import utils
-from core import schema_network, schema_root,dapp,principals,keys,pillars,common_ids
+from core import dapp_attrs,dapp_proxy, schema_network, schema_root,principals,keys,pillars,common_ids
 from user import subscriptions
 from utils.pydantic_utils import NoCopyBaseModel
 
 
 class SearchResultItem(NoCopyBaseModel):
     """ a single search result, with some search information """
-    da : dapp.DApp = pydantic.Field(alias='dapp')
+    da : dapp_attrs.DApp = pydantic.Field(alias='dapp')
     cost : float = 0.0
     ignored_labels : typing.Iterable[str] = [] # query labels that have been ignored
     merit : int = pydantic.Field(0,description="Ranking merit, starts at 0")
-    requires : set[dapp.DApp] = set()
-    missing: set[dapp.DApp] = set()
+    requires : set[dapp_attrs.DApp] = set()
+    missing: set[dapp_attrs.DApp] = set()
 
 
 
@@ -36,7 +36,7 @@ def search_dapps(session,query : typing.Optional[str],categories : typing.Option
     elif subscribed: # no input, propose complementing to subscribed
         dapps = from_subscribed(session,subscribed)
     else: # no input at all - currently, list all DApps - but may raise 413 later 
-        dapps = pillars.DAppManager.DAppsById.values()
+        dapps = dapp_proxy.DAppManager.DAppsById.values()
     if subscribed:
         # eliminate already subscribed:
         dapps = [da for da in dapps if da not in subscribed]
@@ -53,9 +53,9 @@ def search_dapps(session,query : typing.Optional[str],categories : typing.Option
 def dapps_in_categories(session,categories):
     if categories:
         categories = frozenset(categories)
-        return (da for da in pillars.DAppManager.DAppsById.values() if da.catalog in categories)
+        return (da for da in dapp_proxy.DAppManager.DAppsById.values() if da.catalog in categories)
     else:
-        return pillars.DAppManager.DAppsById.values()
+        return dapp_proxy.DAppManager.DAppsById.values()
 
 def search_text(session,dapps,query):
     dapps = (d for d in dapps if query.lower() in d.searchtext) # TODO: Real search
@@ -63,10 +63,10 @@ def search_text(session,dapps,query):
 
 
 
-def from_subscribed(session,dapps : typing.Iterable[dapp.DApp]) -> typing.Iterable[dapp.DApp]:
+def from_subscribed(session,dapps : typing.Iterable[dapp_proxy.DAppProxy]) -> typing.Iterable[dapp_proxy.DAppProxy]:
     """ all reachable Data Apps from subscribed Data Apps, with cost of reach """
     schemaNetwork = pillars.Pillars['SchemaNetwork']
-    reachable = sum((schemaNetwork.dapps_from(d,session.user) for d in dapps if isinstance(d,dapp.DApp)),[])
+    reachable = sum((schemaNetwork.dapps_from(d,session.user) for d in dapps if isinstance(d,dapp_proxy.DAppProxy)),[])
     return reachable
 
 
@@ -77,7 +77,7 @@ def check_labels(session,sris : list[SearchResultItem],desired_labels : set[comm
         sri.merit -= len(sri.ignored_labels)
     return sris
 
-def add_costs(session,sris : list[SearchResultItem], subscribed  : typing.Iterable[dapp.DApp]) -> list[SearchResultItem]:
+def add_costs(session,sris : list[SearchResultItem], subscribed  : typing.Iterable[dapp_proxy.DAppProxy]) -> list[SearchResultItem]:
     """ Calculate cost of dapp in sris, including costs of pre-requisites except for those already 
         subscribed (which get a bonus merit).
 

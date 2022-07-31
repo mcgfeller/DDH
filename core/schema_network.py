@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 logger = logging.getLogger(__name__)
 
 from utils import utils
-from core import schema_root,schemas,dapp,principals,keys
+from core import dapp_proxy, schema_root,schemas,principals,keys
 from utils.pydantic_utils import NoCopyBaseModel
 
 
@@ -27,10 +27,10 @@ class SchemaNetworkClass():
         networkx.draw_networkx(self.network,pos=flayout(self.network),with_labels=True,labels=labels,node_color=colors)
         plt.show()
 
-    def dapps_from(self,from_dapp : dapp.DApp, principal : principals.Principal) -> typing.Iterable[dapp.DApp]: 
-        return [n for n in networkx.descendants(self.network,from_dapp) if isinstance(n,dapp.DApp)]
+    def dapps_from(self,from_dapp : dapp_proxy.DAppProxy, principal : principals.Principal) -> typing.Iterable[dapp_proxy.DAppProxy]: 
+        return [n for n in networkx.descendants(self.network,from_dapp) if isinstance(n,dapp_proxy.DAppProxy)]
 
-    def dapps_required(self,for_dapp : dapp.DApp, principal : principals.Principal) -> tuple[set[dapp.DApp],set[dapp.DApp]]: 
+    def dapps_required(self,for_dapp : dapp_proxy.DAppProxy, principal : principals.Principal) -> tuple[set[dapp_proxy.DAppProxy],set[dapp_proxy.DAppProxy]]: 
         """ return two sets of DApps required by this DApp
             -   all required 
             -   required for cost calculation, considering despite schemas.Requires annotations, for which
@@ -40,7 +40,7 @@ class SchemaNetworkClass():
         g = self.network
         sp = networkx.shortest_path(g, target = for_dapp)
         
-        lines = [{x for x in l if isinstance(x,dapp.DApp)} for l in sp.values()]
+        lines = [{x for x in l if isinstance(x,dapp_proxy.DAppProxy)} for l in sp.values()]
         suggested = set.union(*lines)
 
         # node: req if node has any requirement:
