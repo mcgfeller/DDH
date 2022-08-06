@@ -1,5 +1,5 @@
 """ Test Schema manipulations """
-from DApps import MigrosDApp2
+from DApps import MigrosDApp
 import pytest
 
 
@@ -7,7 +7,7 @@ import pytest
 
 def test_schema():
     """ test retrieval of key of test MigrosDApp, and facade.get_schema() """
-    j = MigrosDApp2.MigrosSchema.schema_json()
+    j = MigrosDApp.MigrosSchema.schema_json()
 
     return
 

@@ -6,6 +6,8 @@ import pydantic
 import typing
 import enum
 
+from core import dapp_attrs
+
 
 
 
@@ -154,7 +156,7 @@ class ExecutableNode(SchemaNode):
 
 
     @abstractmethod
-    def execute(self, op: Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
+    def execute(self, req : dapp_attrs.ExecuteRequest):
         return {}
 
 
@@ -163,7 +165,7 @@ class DelegatedExecutableNode(ExecutableNode):
 
     executors : list = []
 
-    def execute(self, op: Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
+    def execute(self, req : dapp_attrs.ExecuteRequest):
         """ obtain data by recursing to schema """
         d = None
         for executor in self.executors:

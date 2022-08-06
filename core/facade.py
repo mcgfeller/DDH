@@ -9,7 +9,7 @@ import json
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import NoCopyBaseModel
 
-from . import permissions, keys, schemas, nodes, keydirectory, transactions, errors
+from . import permissions, keys, schemas, nodes, keydirectory, transactions, errors, dapp_attrs
 from frontend import sessions
 
 
@@ -46,7 +46,7 @@ def get_schema(access : permissions.Access, session : sessions.Session, schemafo
 
     
 
-def ddh_get(access : permissions.Access, session : sessions.Session, q : typing.Optional[str] = None, ) -> typing.Any:
+async def ddh_get(access : permissions.Access, session : sessions.Session, q : typing.Optional[str] = None, ) -> typing.Any:
     """ Service utility to retrieve data and return it in the desired format.
         Returns None if no data found.
 
@@ -88,7 +88,8 @@ def ddh_get(access : permissions.Access, session : sessions.Session, q : typing.
         if e_node:
             e_node = e_node.ensure_loaded(transaction)
             e_node = typing.cast(nodes.ExecutableNode,e_node)
-            data = e_node.execute(nodes.Ops.get,access, transaction, e_key_split, data, q)
+            req = dapp_attrs.ExecuteRequest(op=nodes.Ops.get,access=access,transaction=transaction,key_split=e_key_split,data=data,q=q)
+            data = await e_node.execute(req)
         return data
 
 def ddh_put(access : permissions.Access, session : sessions.Session, data : pydantic.Json, q : typing.Optional[str] = None, ) -> typing.Any:

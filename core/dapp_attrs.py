@@ -5,7 +5,7 @@ import enum
 import typing
 import pydantic
 
-from core import keys,schemas,policies,principals,relationships,common_ids,versions
+from core import keys,schemas,policies,principals,relationships,common_ids,versions,permissions,transactions
 from utils.pydantic_utils import NoCopyBaseModel
 
 
@@ -153,6 +153,15 @@ class RunningDApp(NoCopyBaseModel):
     dapp_version : versions.Version
     schema_version : versions.Version
     location : pydantic.AnyHttpUrl
+
+class ExecuteRequest(NoCopyBaseModel):
+    """ This is the execution request passed between micro services """
+    op : typing.Any # nodes.Ops
+    access : permissions.Access
+    transaction: transactions.Transaction
+    key_split : typing.Optional[int] = None
+    data : typing.Optional[dict] = None
+    q : typing.Optional[str] = None
 
 
 

@@ -35,6 +35,7 @@ class DAppProxy(NoCopyBaseModel):
     async def initialize(self,session,pillars : dict):
         if True: # self.running.schema_version > versions._UnspecifiedVersion:
             j = await(self.client.get('/schemas'))
+            j.raise_for_status()
             js = j.json()
 
             self.schemas = {keys.DDHkey(k):schemas.JsonSchema(json_schema=json.dumps(s),schema_attributes=sa) for k,(sa,s) in js.items()}
@@ -84,8 +85,6 @@ class DAppProxy(NoCopyBaseModel):
             else:
                 # create dnode with our schema:
                 dnode = DAppNode(owner=self.attrs.owner,schema=schema,dapp=self,consents=schemas.AbstractSchema.get_schema_consents())
-                
-
                 # hook into parent schema:
                 schemas.AbstractSchema.insert_schema(self.attrs.id, schemakey,transaction)
                 keydirectory.NodeRegistry[schemakey] = dnode
@@ -101,8 +100,11 @@ class DAppProxy(NoCopyBaseModel):
         return
     
 
-    def execute(self, op: nodes.Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
-        return  data
+    async def execute(self, req: dapp_attrs.ExecuteRequest):
+        data = await self.client.post('execute',data=req.json())
+        data.raise_for_status()
+        return data.json()
+
 
 
 
@@ -115,17 +117,18 @@ class DAppManagerClass(NoCopyBaseModel):
 
     async def register(self,request,session,running_dapp: dapp_attrs.RunningDApp):
         client = httpx.AsyncClient(base_url=running_dapp.location)
-        j = await client.get('/app_info')
+        j = await client.get('/app_info') # get dict of dapp_attrs, one microservice may return multiple DApps
+        j.raise_for_status()
         dattrs = j.json()
         for id,attrs in dattrs.items():
             attrs = dapp_attrs.DApp(**attrs)
             proxy = DAppProxy(id=id,running=running_dapp,attrs=attrs,client=client)
-            await proxy.initialize(session,pillars.Pillars)
+            await proxy.initialize(session,pillars.Pillars) # initialize gets schema and registers everything
             self.DAppsById[typing.cast(principals.DAppId, id)] =  proxy
         return 
 
     def bootstrap(self, pillars:dict) :
-        pillars['SchemaNetwork'].complete_graph()
+        pillars['SchemaNetwork'].complete_graph() # TODO: Call it after each register?
         # pillars['SchemaNetwork'].plot(layout='shell_layout')
         return
 
@@ -149,7 +152,7 @@ class DAppNode(nodes.ExecutableNode):
 
 
 
-    def execute(self, op: nodes.Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
-        r = self.dapp.execute(op,access,transaction, key_split, data, q)
+    async def execute(self, req: dapp_attrs.ExecuteRequest):
+        r = await self.dapp.execute(req)
         return r
  
