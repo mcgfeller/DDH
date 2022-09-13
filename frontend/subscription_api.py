@@ -4,21 +4,24 @@
 
 """
 
-import fastapi
-import fastapi.security
-import typing
-import pydantic
+from curses.ascii import SUB
 import datetime
 import enum
+import typing
 
-
-from core import pillars,dapp
-from core import keys,permissions,schemas,facade,errors,principals
+import fastapi
+import fastapi.security
+import pydantic
+from core import (dapp_attrs, errors, facade, keys, permissions, pillars, principals,
+                  schemas,common_ids)
+from user import subscriptions
 from frontend import sessions
 
 app = fastapi.FastAPI()
 
-from frontend import user_auth # provisional user management
+from frontend import user_auth  # provisional user management
+
+SUBSCRIPTIONS : dict[common_ids.PrincipalId,dict[principals.DAppId,typing.Any]] = {}
 
 @app.get("/users/me/", response_model=principals.User)
 async def read_users_me(current_user: user_auth.UserInDB = fastapi.Depends(user_auth.get_current_active_user)):
@@ -35,13 +38,26 @@ async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordReque
 
 
 
-@app.post("/subscriptions/dapp/{dappid:principals.DAppId}",response_model=list[dapp.DAppOrFamily])
+@app.post("users/{user}/subscriptions/dapp/{dappid}",response_model=list[dapp_attrs.DAppOrFamily])
 async def create_subscription(
+    user: common_ids.PrincipalId,
     dappid : principals.DAppId,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     ):
     """ Create a single subscription for a user """
-    dapp = pillars.DAppManager.DAppsById.get(dappid)
-    if not dapp:
-        raise fastapi.HTTPException(status_code=404, detail=f"DApp not found: {dappid}.")
+    if not user == session.user.id:
+        raise errors.AccessError('authorized user is not ressource owner')
+    das =subscriptions.add_subscription(user,dappid)
+
+    return das
     
+@app.get("users/{user}/subscriptions/dapp/",response_model=list[dapp_attrs.DAppOrFamily])
+async def list_subscription(
+    user: common_ids.PrincipalId,
+    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
+    ):
+    """ List subscriptions for a user """
+    if not user == session.user.id:
+        raise errors.AccessError('authorized user is not ressource owner')
+    das = subscriptions.list_subscriptions(user)    
+    return das

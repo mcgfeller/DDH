@@ -1,88 +1,25 @@
-""" Example DApp - fake Migros Cumulus data _ V2 MICRO SERVICE """
+""" Example DApp - fake Migros Cumulus data 
+    OLD INPROCESS VERSION
+"""
 from __future__ import annotations
-
-import fastapi
-import fastapi.security
-import typing
-import pydantic
-import datetime
-import enum
-import httpx
-
-
-
-from core import dapp_attrs
-from core import keys,permissions,schemas,facade,errors,principals
-from frontend import sessions
 
 import datetime
 import typing
 
 import pandas  # for example
 import pydantic
-import httpx
 from glom import Iter, S, T, glom  # transform
 
-app = fastapi.FastAPI(version="0.0")
-
-from frontend import user_auth # provisional user management
-
+from core import (dapp_proxy, keydirectory, keys, nodes, permissions, principals,
+                  relationships, schemas, transactions, common_ids)
 
 
 
-from core import ( keys, nodes, permissions, principals,
-                  relationships, schemas, transactions, common_ids, versions,dapp_attrs)
+class MigrosDApp(dapp_proxy.DAppProxy):
 
-
-CLIENT = httpx.AsyncClient(timeout=5,base_url='http://localhost:8001') # TODO: Configure or determine URL
-
-@app.on_event("startup")
-async def startup_event():
-    """ Connect ourselves """
-    location = 'http://localhost:8101' # TODO: Find out how to get my URL, or probe servers from registration
-    d = dapp_attrs.RunningDApp(id=MIGROS_DAPP.id,dapp_version=versions.Version(app.version),schema_version=versions.Version('0.0'),location=location)
-    await CLIENT.post('connect',data=d.json())
-
-
-
-@app.on_event("shutdown")
-async def shutdown_event():   
-    return
-
-@app.get("/app_info")
-async def get_app_info():
-    d = {MIGROS_DAPP.id: MIGROS_DAPP.dict()}
-    return d
-
-@app.get("/schemas")
-async def get_schemas() -> dict:
-    s = {str(k): (s.schema_attributes,s.to_output()) for k,s in MIGROS_DAPP.get_schemas().items()}
-    return s
-
-@app.post("/execute")
-async def execute(req : dapp_attrs.ExecuteRequest):
-    return MIGROS_DAPP.execute(req)
-
-
-@app.get("/provide/ddh{docpath:path}")
-async def get_data(
-    docpath: str = fastapi.Path(..., title="The ddh key of the data to get"),
-    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
-    modes: set[permissions.AccessMode] = {permissions.AccessMode.read},
-    q: str = fastapi.Query(None, alias="item-query"),
-    ):
-
-    access = permissions.Access(op = permissions.Operation.get, ddhkey = keys.DDHkey(docpath),principal=session.user, modes = modes, byDApp=session.dappid)
-    try:
-        d = facade.ddh_get(access,session,q)
-    except errors.DDHerror as e:
-        raise e.to_http()
-
-    return {"ddhkey": access.ddhkey, "res": d}
-
-
-class MigrosDApp(dapp_attrs.DApp):
-
+    owner : typing.ClassVar[principals.Principal] =  principals.User(id='migros',name='Migros (fake account)')
+    schemakey : typing.ClassVar[keys.DDHkey] = keys.DDHkey(key="//org/migros.ch")
+    catalog = common_ids.CatalogCategory.living
     _ddhschema : schemas.SchemaElement = None
 
     
@@ -92,9 +29,9 @@ class MigrosDApp(dapp_attrs.DApp):
     def __init__(self,*a,**kw):
         super().__init__(*a,**kw)
         self._ddhschema = MigrosSchema()
-        self.transforms_into = keys.DDHkey(key="//p/living/shopping/receipts")
+        transforms_into = keys.DDHkey(key="//p/living/shopping/receipts")
         self.references = relationships.Reference.defines(self.schemakey) + relationships.Reference.provides(self.schemakey) + \
-            relationships.Reference.provides(self.transforms_into)
+            relationships.Reference.provides(transforms_into)
         # self.register_transform(transforms_into)
  
     def get_schemas(self) -> dict[keys.DDHkey,schemas.AbstractSchema]:
@@ -102,15 +39,14 @@ class MigrosDApp(dapp_attrs.DApp):
         return {keys.DDHkey(key="//org/migros.ch"):schemas.PySchema(schema_element=MigrosSchema)}
 
 
-    def execute(self, req : dapp_attrs.ExecuteRequest):
+    def execute(self, op: nodes.Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
         """ obtain data by recursing to schema """
-        if req.op == nodes.Ops.get:
-            here,selection = req.access.ddhkey.split_at(req.key_split)
-            d = self._ddhschema.get_data(selection,req.access,req.q)
+        if op == nodes.Ops.get:
+            here,selection = access.ddhkey.split_at(key_split)
+            d = self._ddhschema.get_data(selection,access,q)
         else:
-            raise ValueError(f'Unsupported {req.op=}')
+            raise ValueError(f'Unsupported {op=}')
         return d
-
 
 
 
@@ -171,7 +107,3 @@ class MigrosSchema(schemas.SchemaElement):
     def get_data(self, selection: keys.DDHkey,access: permissions.Access, q):
         d = self.get_resolver(selection,access,q)
         return d
-
-MIGROS_DAPP = MigrosDApp(owner=principals.User(id='migros',name='Migros (fake account)'),
-    schemakey=keys.DDHkey(key="//org/migros.ch"),
-    catalog = common_ids.CatalogCategory.living)

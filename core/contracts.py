@@ -9,7 +9,7 @@ import enum
 import decimal
 from utils.pydantic_utils import NoCopyBaseModel
 
-from core import permissions,errors,dapp,privacyIcons,principals
+from core import permissions,errors,privacyIcons,principals
 
 
 

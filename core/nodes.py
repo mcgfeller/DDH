@@ -6,10 +6,12 @@ import pydantic
 import typing
 import enum
 
+from core import dapp_attrs
 
 
 
-from . import permissions,schemas,transactions,errors,keydirectory,principals,common_ids
+
+from . import permissions,schemas,transactions,errors,keydirectory,principals,common_ids,versions
 from utils import datautils
 from backend import persistable
 
@@ -105,7 +107,24 @@ class MultiOwnerNode(Node):
 
 class SchemaNode(Node,persistable.NonPersistable):
 
-    nschema : typing.Optional[schemas.Schema] =  pydantic.Field(alias='schema')
+    nschema : typing.Optional[schemas.AbstractSchema] =  pydantic.Field(alias='schema')
+    schema_by_version : dict[versions.Version,schemas.AbstractSchema] = {}
+
+    def __init__(self,*a,**kw):
+        super().__init__(*a,**kw)
+        if self.nschema:
+            v = self.nschema.schema_attributes.version
+            self.schema_by_version[v] = self.nschema
+
+    def add_schema_version(self,schema : schemas.AbstractSchema ):
+        v = schema.schema_attributes.version
+        self.schema_by_version[v] = schema
+        if self.nschema:
+            if v > self.nschema.schema_attributes.version: # higher than current version
+                self.nschema = schema
+        else:
+            self.nschema = schema
+        return 
 
 
 
@@ -117,10 +136,10 @@ class SchemaNode(Node,persistable.NonPersistable):
         return s
 
 
-    def get_sub_schema(self, ddhkey: keys.DDHkey,split: int, schema_type : str = 'json') -> typing.Optional[schemas.Schema]:
+    def get_sub_schema(self, ddhkey: keys.DDHkey,split: int, schema_type : str = 'json',create : bool = False) -> tuple[int,typing.Optional[schemas.AbstractSchema]]:
         """ return schema based on ddhkey and split """
-        s = typing.cast(schemas.Schema,self.nschema)
-        s = s.obtain(ddhkey,split)
+        s = typing.cast(schemas.AbstractSchema,self.nschema)
+        s = s.obtain(ddhkey,split,create=create)
         return s
 
 class ExecutableNode(SchemaNode):
@@ -137,7 +156,7 @@ class ExecutableNode(SchemaNode):
 
 
     @abstractmethod
-    def execute(self, op: Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
+    def execute(self, req : dapp_attrs.ExecuteRequest):
         return {}
 
 
@@ -146,7 +165,7 @@ class DelegatedExecutableNode(ExecutableNode):
 
     executors : list = []
 
-    def execute(self, op: Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
+    def execute(self, req : dapp_attrs.ExecuteRequest):
         """ obtain data by recursing to schema """
         d = None
         for executor in self.executors:

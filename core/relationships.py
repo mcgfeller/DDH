@@ -1,4 +1,4 @@
-""" Relationship to Schema elements """
+""" Relationship to AbstractSchema elements """
 
 from __future__ import annotations
 import typing
@@ -43,3 +43,5 @@ class Reference(NoCopyBaseModel):
 
 class Quality(NoCopyBaseModel):
     ...
+
+Reference.update_forward_refs()

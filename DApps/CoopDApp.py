@@ -4,24 +4,25 @@ import datetime
 import typing
 
 import pydantic
-from core import keys,permissions,schemas,nodes,keydirectory,principals,transactions,relationships
-from core import dapp
+from core import keys,permissions,schemas,nodes,keydirectory,principals,transactions,relationships,common_ids
+from core import dapp_attrs
 
 
-class CoopDApp(dapp.DApp):
+class CoopDApp(dapp_attrs.DApp):
 
     owner : typing.ClassVar[principals.Principal] =  principals.User(id='coop',name='Coop (fake account)')
     schemakey : typing.ClassVar[keys.DDHkey] = keys.DDHkey(key="//org/coop.ch")
+    catalog = common_ids.CatalogCategory.living
 
     def __init__(self,*a,**kw):
         super().__init__(*a,**kw)
         self._ddhschema = CoopSchema()
         transforms_into = keys.DDHkey(key="//p/living/shopping/receipts")
-        self.references = relationships.Reference.provides(self.schemakey)  + \
+        self.references =  relationships.Reference.defines(self.schemakey) + relationships.Reference.provides(self.schemakey)  + \
             relationships.Reference.provides(transforms_into)
         # self.register_transform(transforms_into)
  
-    def get_schemas(self) -> dict[keys.DDHkey,schemas.Schema]:
+    def get_schemas(self) -> dict[keys.DDHkey,schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
         return {keys.DDHkey(key="//org/coop.ch"):schemas.PySchema(schema_element=CoopSchema)}
 

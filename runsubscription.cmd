@@ -1,0 +1,1 @@
+.venv\\scripts\\uvicorn.exe frontend.subscription_api:app --port 8003 --reload --no-use-colors

@@ -1,1 +1,1 @@
-"C:\Program Files\Python39\scripts\uvicorn" frontend.market_api:app --port 8002 --reload --no-use-colors
+.venv\\scripts\\uvicorn.exe frontend.market_api:app --port 8002 --reload --no-use-colors

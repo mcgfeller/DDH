@@ -10,8 +10,8 @@ import datetime
 import enum
 
 
-from core import pillars,dapp
-from core import keys,permissions,schemas,facade,errors,principals
+from core import dapp_attrs, pillars
+from core import keys,permissions,schemas,facade,errors,principals,common_ids
 from frontend import sessions
 from frontend import user_auth # provisional user management
 from market import recommender
@@ -33,18 +33,20 @@ async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordReque
     access = permissions.Access(ddhkey=keys.DDHkey('/login'),principal=user, modes = {permissions.AccessMode.login},byDApp=dappid)
     return token
 
-@app.get("/market/dapp",response_model=list[dapp.DAppOrFamily])
+@app.get("/market/dapp",response_model=list[recommender.SearchResultItem])
 async def get_dapps(
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     query: str = fastapi.Query(None, min_length=3, max_length=100),
+    categories : typing.Optional[typing.Iterable[common_ids.CatalogCategory]] = None, 
+    labels : typing.Optional[typing.Iterable[common_ids.Label]] = None, 
     ):
     """ search for DApps or DApp Families """
-    dapps = recommender.search_dapps(session,query)
+    dapps = recommender.search_dapps(session,query,categories,labels)
     dapps = [d.to_DAppOrFamily() for d in dapps] # convert to result model
     return dapps
 
 
-@app.get("/market/dapp/{dappid:principals.DAppId}",response_model=dapp.DAppOrFamily)
+@app.get("/market/dapp/{dappid:principals.DAppId}",response_model=dapp_attrs.DAppOrFamily)
 async def get_dapp(
     dappid : principals.DAppId,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
