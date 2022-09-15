@@ -1,6 +1,7 @@
 """ Python Control Program
 """
 from __future__ import annotations
+import abc
 import pydantic
 import argparse
 import psutil
@@ -13,6 +14,7 @@ import os
 import logging
 import pprint
 import time
+import logging
 
 # from pydantic.main import create_model
 
@@ -22,11 +24,10 @@ PARENTDIR = pathlib.Path(__file__).resolve().parents[0]
 sys.path.append(str(PARENTDIR)) # put our parent dir on path
 
 
-from common import get_logger
+logger = logging.getLogger('pcp')
 
 SubclassError = NotImplementedError('must be implemented in subclass')
 NotAvailableError = NotImplementedError('action not available')
-
 
 
 
@@ -52,11 +53,15 @@ class Controllable(pydantic.BaseModel):
         """ Shorthand to get instances """
         return [cls.Instances.get(s,default) for s in k]
 
+    @abc.abstractmethod
     def start(self,args):
-        raise SubclassError
+        pass
+        # raise SubclassError
 
+    @abc.abstractmethod
     def stop(self,args):
-        raise SubclassError     
+        pass
+        # raise SubclassError     
 
     def restart(self,args):
         """ restart, usually stops and starts """
@@ -71,7 +76,7 @@ class Controllable(pydantic.BaseModel):
         return self.getprocess() is not None
 
     def getprocess(self) -> typing.Optional[psutil.Process]: 
-        raise SubclassError  
+        return []
 
     def health(self,args) -> dict:
         """ send a /health probe to the proccess """
@@ -102,13 +107,6 @@ class Controllable(pydantic.BaseModel):
         return 
             
 
-    def _startcmd(self):
-        """ return start parameters """
-        raise SubclassError
-
-    def _processfilter(self,proc : psutil.Process) -> bool:
-        """ return filter to psutils """
-        raise SubclassError
 
 class ProcessGroup(Controllable):
     """ A group of Controllables that can be checked together """
@@ -146,12 +144,13 @@ class Runnable(Controllable):
         env = os.environ
         if args.env:
             env['SERVER_TYPE'] = args.env
-        cmd = self._startcmd()
+        cmd,add_env,param = self._startcmd()
+        env.update(add_env)
         logger.info(f"Starting {self} with {' '.join(cmd)} and serverparam={env.get('SERVER_TYPE','*default*')}")
         if OnWindows:
-            p = subprocess.Popen(cmd,bufsize=-1,cwd=PARENTDIR,env=env,creationflags=subprocess.DETACHED_PROCESS)
+            p = subprocess.Popen(cmd,bufsize=-1,cwd=PARENTDIR,env=env,creationflags=subprocess.DETACHED_PROCESS,**param)
         else:
-            p= subprocess.Popen(cmd,bufsize=-1,cwd=PARENTDIR,env=env,start_new_session=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+            p= subprocess.Popen(cmd,bufsize=-1,cwd=PARENTDIR,env=env,start_new_session=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,**param)
         logger.info(f'{self} started: pid={p.pid}')
 
 
@@ -181,20 +180,34 @@ class Runnable(Controllable):
         return ps
 
 
+    @abc.abstractmethod
+    def _startcmd(self) -> tuple[list,dict[str,str],dict]:
+        """ return start parameters:
+            - list of command line parameters
+            - environment additions
+            - kw parameters to Popen
 
+        """
+        # raise SubclassError
+
+    @abc.abstractmethod
+    def _processfilter(self,proc : psutil.Process) -> bool:
+        """ return filter to psutils """
+        raise SubclassError
 
 
 class AsgiProcess(Runnable):
     """ Process running an ASGI server
         Currently, uvicorn is our ASGI server.
     """
-    uvicorn_exe = r"C:\Program Files\Python39\scripts\uvicorn.exe" if OnWindows else '/entris/picanmix/python-3/bin/uvicorn' 
+    uvicorn_exe = r".venv\scripts\uvicorn" if OnWindows else r'.venv/scripts/uvicorn' 
     app: str
     port: int
 
     def _startcmd(self):
         """ return start parameters """
-        return [self.uvicorn_exe,  self.app, '--port',str(self.port), '--no-use-colors', '--no-access-log']
+        # '--no-access-log'
+        return ([self.uvicorn_exe,  self.app, '--port',str(self.port), '--no-use-colors'],{'port':str(self.port)},{})
 
     def _processfilter(self,proc : psutil.Process) -> bool:
         """ return filter to psutils """
@@ -234,7 +247,7 @@ class PythonProcess(Runnable):
 
     def _startcmd(self):
         """ return start parameters """
-        return [self.python_exe,str(self.module)]+self.args
+        return ([self.python_exe,str(self.module)]+self.args,{},{})
 
     def _processfilter(self,proc : psutil.Process) -> bool:
         """ return filter to psutils """
@@ -293,7 +306,6 @@ def pcp():
     curdir = os.curdir # ensure we go back to current dir
     try:
         os.chdir(PARENTDIR) # ensure this is our current dir
-        logger = get_logger.get_logger('pcp')
         parser=build_parser(Controllable)
         args = parser.parse_args()
         cmdfn = available_functions[args.command]
@@ -313,4 +325,7 @@ def pcp():
     return
 
 
-
+def getargs() -> argparse.Namespace:
+    """ return default args """
+    ns = build_parser(Controllable).parse_args(['start','ddh'])
+    return ns

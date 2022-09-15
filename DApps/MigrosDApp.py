@@ -8,6 +8,7 @@ import pydantic
 import datetime
 import enum
 import httpx
+import os
 
 
 
@@ -39,7 +40,7 @@ CLIENT = httpx.AsyncClient(timeout=5,base_url='http://localhost:8001') # TODO: C
 @app.on_event("startup")
 async def startup_event():
     """ Connect ourselves """
-    location = 'http://localhost:8101' # TODO: Find out how to get my URL, or probe servers from registration
+    location = f"http://localhost:{os.environ.get('port')}" # our own port is in the environment
     d = dapp_attrs.RunningDApp(id=MIGROS_DAPP.id,dapp_version=versions.Version(app.version),schema_version=versions.Version('0.0'),location=location)
     await CLIENT.post('connect',data=d.json())
 

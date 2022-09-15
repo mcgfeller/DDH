@@ -5,9 +5,9 @@ import subprocess
 
 import httpx
 import pytest
+import pcp
 
-UVICORN_EXE = ".venv\\scripts\\uvicorn.exe"
-PORT = 8048
+
 USERPWD = {'username':'mgf','password':'secret'}
 
 def test_get_data(httpx_client):
@@ -45,8 +45,9 @@ def httpx_client():
     """ Start the uvicorn server with the FastAPI app on PORT;
         Finalizer terminated started server.
     """
-    process = start_server(exe=UVICORN_EXE,port=PORT)
-    url = 'http://localhost:'+str(PORT)
+    processes = start_servers()
+    port = processes.get('api')[0].port
+    url = 'http://localhost:'+str(port)
     r = httpx.post(url+'/token',data=USERPWD)
     r.raise_for_status()
     token = r.json()['access_token']
@@ -55,8 +56,14 @@ def httpx_client():
     yield client
     # Finalizer:
     client.close()
-    process.terminate()
+    processes.stop(pcp.getargs())
     return 
+
+
+def start_servers():
+    cwd=pathlib.Path(__file__).parent.parent
+    pcp.ddh.start(pcp.getargs())
+    return pcp.ddh
 
 
 def start_server(exe : str,port : int = 8080, app : str = 'frontend.dapp_api:app',cwd=pathlib.Path(__file__).parent.parent) -> subprocess.Popen:
