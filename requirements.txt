@@ -5,6 +5,7 @@ passlib[bcrypt]
 python-jose[pycryptodome]
 pydantic[email]
 pytest
+pytest-asyncio
 httpx
 glom==20.*
 networkx==2.7.*
