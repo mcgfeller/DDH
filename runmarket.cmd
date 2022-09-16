@@ -1,1 +1,0 @@
-.venv\\scripts\\uvicorn.exe frontend.market_api:app --port 8002 --reload --no-use-colors
