@@ -21,3 +21,5 @@ if os.getenv('_PYTEST_RAISE', '') == "1":
     @pytest.hookimpl(tryfirst=True)
     def pytest_internalerror(excinfo):
         raise excinfo.value
+
+from tests.service_fixtures import * # import all fixtures for services (fixtures have to be declared globally)

@@ -1,0 +1,49 @@
+""" Fixtures for testing with actual microservices """
+
+
+import httpx
+import pytest
+import pcp
+import time
+
+
+@pytest.fixture(scope="session")
+def httpx_processes(wait : float = 1):
+    """ Start the uvicorn server with the FastAPI app on PORT;
+        Finalizer terminated started server.
+    """
+    processes = start_servers()
+    time.sleep(wait) # give a bit time to start
+    yield processes
+    # Finalizer:
+    processes.stop(pcp.getargs())
+    return 
+
+@pytest.fixture(scope="session")
+def user1(httpx_processes):
+    client = get_authorized_client(httpx_processes,{'username':'mgf','password':'secret'})
+    yield client
+    # Finalizer:
+    client.close()
+    return
+
+def get_authorized_client(processes,userpwd) -> httpx.Client:
+    """ return a client with header configured for userpwd """
+    port = processes.get('api')[0].port # get the API server
+    url = 'http://localhost:'+str(port)
+    r = httpx.post(url+'/token',data=userpwd) # obtain token
+    r.raise_for_status()
+    token = r.json()['access_token']
+    headers = httpx.Headers({'Authorization': 'Bearer '+token})
+    client = httpx.Client(base_url=url,headers=headers) # client with token in header
+    return client
+
+def start_servers():
+    """ Start all DDH servers, including DApps """
+    pcp.ddh.start(pcp.getargs())
+    return pcp.ddh
+
+
+
+
+

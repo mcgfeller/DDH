@@ -1,86 +1,50 @@
-""" Set up some Test data """
-from core import keys,permissions,facade,errors,principals
-from core import pillars
-from frontend import user_auth,sessions
-import pytest
-
-@pytest.fixture(scope="module")
-def user():
-    return user_auth.UserInDB.load('mgf')
-
-@pytest.fixture(scope="module")
-def session(user):
-    return sessions.Session(token_str='test_session',user=user)
-
-def test_dapp_schema(user,session):
-    """ test retrieval of key of test MigrosDApp, and facade.get_schema() """
-    ddhkey = keys.DDHkey(key="//org/migros.ch/receipts")
-    user = user_auth.UserInDB.load('mgf')
-    access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.schema_read})
-    jschema = facade.get_schema(access,session)
-    assert isinstance(jschema,dict)
-    assert jschema['title'] == 'Receipt' # type: ignore
-    return
+""" Tests with Schemas and Data from DApps, working with all microservices """
 
 
-def test_complete_schema_org(user,session):
-    ddhkey = keys.DDHkey(key="//org")
-    access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.schema_read})
-    s = facade.get_schema(access,session)
-    assert s
-    return s
-
-def test_complete_schema_p(user,session):
-    ddhkey = keys.DDHkey(key="//p/living/shopping")
-    access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.schema_read})
-    s = facade.get_schema(access,session)
-    assert s
-    return s
 
 
-def test_dapp_read_data(user,session):
-    """ test retrieval of key of test MigrosDApp, and facade.ddh_get() """
-    ddhkey = keys.DDHkey(key="/mgf/org/migros.ch/receipts")
-    access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.read})
-    data = facade.ddh_get(access,session)
+def test_get_data(user1):
+    r = user1.get('/ddh/mgf/org/migros.ch/receipts')
+    r.raise_for_status()
+    d = r.json()
+    assert d['res'],'res is empty'
+    data = d['res']
     assert isinstance(data,dict)
     assert len(data)>0 
     assert isinstance(data['mgf'],list)
     assert len(data['mgf'])>10
     assert all(a in data['mgf'][5] for a in ('Datum_Zeit','Menge','Filiale')) # these keys must be present
-    
     return
 
-def test_dapp_read_data_no_owner(user,session):
-    """ test retrieval of key of test MigrosDApp, and facade.ddh_get() """
-    ddhkey = keys.DDHkey(key="//org/migros.ch/receipts")
-    access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.read})
-    with pytest.raises(errors.NotFound):
-        data = facade.ddh_get(access,session)
+
+
+def test_dapp_read_data_no_owner(user1):
+    """ test retrieval of no-owner key of test MigrosDApp """
+    r = user1.get('/ddh//org/migros.ch/receipts')
+    assert 404 == r.status_code
+    assert r.json()['detail'] == 'key has no owner'
     return
 
-def test_dapp_read_data_unknown(user,session):
+def test_dapp_read_data_unknown(user1):
     """ test retrieval of key of test MigrosDApp, with a user that does not exist """
-    ddhkey = keys.DDHkey(key="/mgf,unknown/org/migros.ch/receipts")
-    access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.read})
-    with pytest.raises(errors.NotFound):
-        data = facade.ddh_get(access,session)
+    r = user1.get('/ddh/mgf,unknown/org/migros.ch/receipts')
+    assert 404 == r.status_code
+    assert r.json()['detail'] == 'User not found unknown'
     return
 
-def test_dapp_read_data_nopermit(user,session):
+def test_dapp_read_data_nopermit(user1):
     """ test retrieval of key of test MigrosDApp, with a user that has no permission """
-    ddhkey = keys.DDHkey(key="/another/org/migros.ch/receipts")
-    assert user_auth.UserInDB.load('another')
-    access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.read})
-    with pytest.raises(errors.AccessError):
-        data = facade.ddh_get(access,session)
+    r = user1.get('/ddh/another/org/migros.ch/receipts')
+    assert 403 == r.status_code
     return
 
-def test_std_read_data(user,session):
-    """ test retrieval of key of test MigrosDApp with transformation to standard, and facade.ddh_get() """
-    ddhkey = keys.DDHkey(key="/mgf/p/living/shopping/receipts")
-    access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.read})
-    data = facade.ddh_get(access,session)
+def test_std_read_data(user1):
+    """ test retrieval of key of test MigrosDApp with transformation to standard """
+    r = user1.get('/ddh/mgf/p/living/shopping/receipts')
+    r.raise_for_status()
+    d = r.json()
+    assert d['res'],'res is empty'
+    data = d['res']
     assert isinstance(data,dict)
     assert len(data)>0 
     assert isinstance(data['items'],list)
@@ -89,5 +53,35 @@ def test_std_read_data(user,session):
     
     return
 
-if __name__ == '__main__':
-    test_std_read_data(user,session)
+
+
+
+def test_dapp_schema(user1):
+    """ test retrieval of key of test MigrosDApp, and facade.get_schema() """
+    r = user1.get('/ddh//org/migros.ch/receipts:schema')
+    r.raise_for_status()
+    d = r.json()
+    assert isinstance(d,dict)
+    assert d['title'] == 'Receipt' # type: ignore
+    return
+
+def test_complete_schema_p(user1):
+    r = user1.get('/ddh//org:schema?schemaformat=json')
+    r.raise_for_status()
+    d = r.json()
+    assert d.get('schema'),'schema is empty'
+    return
+
+def test_p_schema(user1):
+    r = user1.get('/ddh//p/living/shopping:schema')
+    r.raise_for_status()
+    d = r.json()
+    assert d.get('schema'),'schema is empty'
+    return
+
+
+
+
+
+
+
