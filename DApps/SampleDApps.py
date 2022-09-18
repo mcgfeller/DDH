@@ -145,7 +145,7 @@ class SampleDApps(dapp_attrs.DApp):
                 provides_schema = True,
                 transforms_into = keys.DDHkey(key="//p/finance/holdings/portfolio"),
                 catalog = common_ids.CatalogCategory.finance,
-                # estimatedCosts = dapp_proxy.EstimatedCosts.medium,
+                estimatedCosts = dapp_attrs.EstimatedCosts.medium,
                 ),
 
             cls(
@@ -154,7 +154,7 @@ class SampleDApps(dapp_attrs.DApp):
                 owner=principals.User(id='coolfinance',name='Cool Finance Startup (fake account)'),
                 schemakey = keys.DDHkey(key="//p/finance/holdings"), 
                 provides_schema = True,
-                # estimatedCosts = dapp_proxy.EstimatedCosts.medium,
+                estimatedCosts = dapp_attrs.EstimatedCosts.medium,
                 catalog = common_ids.CatalogCategory.finance,
                 ).add_reference(relationships.Reference.requires(
                     keys.DDHkey(key="//org/credit-suisse.com/clients/portfolio/account"),
