@@ -19,10 +19,10 @@ app.include_router(fastapi_dapp.router)
 
 
 
-def get_app() -> dapp_attrs.DApp:
-    return MIGROS_DAPP
+def get_apps() -> tuple[dapp_attrs.DApp]:
+    return (MIGROS_DAPP,)
 
-fastapi_dapp.get_app = get_app
+fastapi_dapp.get_apps = get_apps
 
 class MigrosDApp(dapp_attrs.DApp):
 

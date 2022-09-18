@@ -8,7 +8,7 @@ import time
 
 
 @pytest.fixture(scope="session")
-def httpx_processes(wait : float = 1):
+def httpx_processes(wait : float = 3):
     """ Start the uvicorn server with the FastAPI app on PORT;
         Finalizer terminated started server.
     """

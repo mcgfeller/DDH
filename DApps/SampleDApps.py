@@ -1,14 +1,30 @@
 """ Set up a few fake Data Apps """
 from __future__ import annotations
+
+import datetime
 import typing
 
+import fastapi
+import fastapi.security
 import pydantic
+from core import (common_ids, dapp_attrs, keys, nodes, permissions, principals,
+                  relationships, schemas)
 
-from core import keys,permissions,schemas,nodes,principals,transactions,relationships,common_ids
-from core import dapp_attrs
+from frontend import fastapi_dapp
+app = fastapi.FastAPI()
+app.include_router(fastapi_dapp.router)
+
+
+
+def get_app() -> dapp_attrs.DApp:
+    return COOP_DAPP
+
+fastapi_dapp.get_app = get_app
 
 
 class SampleDApps(dapp_attrs.DApp):
+
+    version = '0.2'
 
     owner : typing.ClassVar[principals.Principal] 
     schemakey : typing.ClassVar[keys.DDHkey] 
@@ -129,7 +145,7 @@ class SampleDApps(dapp_attrs.DApp):
                 provides_schema = True,
                 transforms_into = keys.DDHkey(key="//p/finance/holdings/portfolio"),
                 catalog = common_ids.CatalogCategory.finance,
-                estimatedCosts = dapp_proxy.EstimatedCosts.medium,
+                # estimatedCosts = dapp_proxy.EstimatedCosts.medium,
                 ),
 
             cls(
@@ -138,7 +154,7 @@ class SampleDApps(dapp_attrs.DApp):
                 owner=principals.User(id='coolfinance',name='Cool Finance Startup (fake account)'),
                 schemakey = keys.DDHkey(key="//p/finance/holdings"), 
                 provides_schema = True,
-                estimatedCosts = dapp_proxy.EstimatedCosts.medium,
+                # estimatedCosts = dapp_proxy.EstimatedCosts.medium,
                 catalog = common_ids.CatalogCategory.finance,
                 ).add_reference(relationships.Reference.requires(
                     keys.DDHkey(key="//org/credit-suisse.com/clients/portfolio/account"),
@@ -157,3 +173,8 @@ class RestrictedUserDApp(SampleDApps):
         """
         return True 
 
+def get_apps() -> tuple[dapp_attrs.DApp]:
+    apps = SampleDApps.bootstrap(None,{})
+    return apps
+
+fastapi_dapp.get_apps = get_apps

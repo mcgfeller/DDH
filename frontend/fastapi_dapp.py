@@ -24,11 +24,12 @@ CLIENT = httpx.AsyncClient(timeout=5,base_url='http://localhost:8001') # TODO: C
 @router.on_event("startup")
 async def startup_event():
     """ Connect ourselves """
-    a = get_app()
-    location = f"http://localhost:{os.environ.get('port')}" # our own port is in the environment
-    print(location)
-    d = dapp_attrs.RunningDApp(id=a.id,dapp_version=versions.Version(a.version),schema_version=versions.Version('0.0'),location=location)
-    await CLIENT.post('connect',data=d.json())
+    for a in get_apps():
+        location = f"http://localhost:{os.environ.get('port')}" # our own port is in the environment
+        print(location)
+        d = dapp_attrs.RunningDApp(id=a.id,dapp_version=versions.Version(a.version),schema_version=versions.Version('0.0'),location=location)
+        await CLIENT.post('connect',data=d.json())
+    return
 
 
 
@@ -37,25 +38,26 @@ async def shutdown_event():
     return
 
 
-def get_app() -> dapp_attrs.DApp:
+def get_apps() -> tuple[dapp_attrs.DApp]:
     raise NotImplementedError('must be refined by main module')
 
 
 @router.get("/app_info")
 async def get_app_info():
-    a = get_app()
-    d = {a.id: a.dict()}
+    d = {}
+    for a in get_apps():
+        d[a.id] = a.dict()
     return d
 
 @router.get("/schemas")
 async def get_schemas() -> dict:
-    a = get_app()
+    a = get_apps()[0]
     s = {str(k): (s.schema_attributes,s.to_output()) for k,s in a.get_schemas().items()}
     return s
 
 @router.post("/execute")
 async def execute(req : dapp_attrs.ExecuteRequest):
-    return get_app().execute(req)
+    return get_apps()[0].execute(req)
 
 
 @router.get("/provide/ddh{docpath:path}")
