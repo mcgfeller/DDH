@@ -24,67 +24,28 @@ import pydantic
 import httpx
 from glom import Iter, S, T, glom  # transform
 
-app = fastapi.FastAPI(version="0.0")
 
+
+from frontend import fastapi_dapp 
 from frontend import user_auth # provisional user management
 
-
+app = fastapi.FastAPI()
+app.include_router(fastapi_dapp.router)
 
 
 from core import ( keys, nodes, permissions, principals,
                   relationships, schemas, transactions, common_ids, versions,dapp_attrs)
 
 
-CLIENT = httpx.AsyncClient(timeout=5,base_url='http://localhost:8001') # TODO: Configure or determine URL
+def get_app() -> dapp_attrs.DApp:
+    return MIGROS_DAPP
 
-@app.on_event("startup")
-async def startup_event():
-    """ Connect ourselves """
-    location = f"http://localhost:{os.environ.get('port')}" # our own port is in the environment
-    d = dapp_attrs.RunningDApp(id=MIGROS_DAPP.id,dapp_version=versions.Version(app.version),schema_version=versions.Version('0.0'),location=location)
-    await CLIENT.post('connect',data=d.json())
-
-
-
-@app.on_event("shutdown")
-async def shutdown_event():   
-    return
-
-@app.get("/app_info")
-async def get_app_info():
-    d = {MIGROS_DAPP.id: MIGROS_DAPP.dict()}
-    return d
-
-@app.get("/schemas")
-async def get_schemas() -> dict:
-    s = {str(k): (s.schema_attributes,s.to_output()) for k,s in MIGROS_DAPP.get_schemas().items()}
-    return s
-
-@app.post("/execute")
-async def execute(req : dapp_attrs.ExecuteRequest):
-    return MIGROS_DAPP.execute(req)
-
-
-@app.get("/provide/ddh{docpath:path}")
-async def get_data(
-    docpath: str = fastapi.Path(..., title="The ddh key of the data to get"),
-    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
-    modes: set[permissions.AccessMode] = {permissions.AccessMode.read},
-    q: str = fastapi.Query(None, alias="item-query"),
-    ):
-
-    access = permissions.Access(op = permissions.Operation.get, ddhkey = keys.DDHkey(docpath),principal=session.user, modes = modes, byDApp=session.dappid)
-    try:
-        d = facade.ddh_get(access,session,q)
-    except errors.DDHerror as e:
-        raise e.to_http()
-
-    return {"ddhkey": access.ddhkey, "res": d}
-
+fastapi_dapp.get_app = get_app
 
 class MigrosDApp(dapp_attrs.DApp):
 
     _ddhschema : schemas.SchemaElement = None
+    version = '0.2'
 
     
 
@@ -176,3 +137,8 @@ class MigrosSchema(schemas.SchemaElement):
 MIGROS_DAPP = MigrosDApp(owner=principals.User(id='migros',name='Migros (fake account)'),
     schemakey=keys.DDHkey(key="//org/migros.ch"),
     catalog = common_ids.CatalogCategory.living)
+
+
+
+
+

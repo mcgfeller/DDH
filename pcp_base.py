@@ -23,7 +23,7 @@ OnWindows = sys.platform == 'win32'
 PARENTDIR = pathlib.Path(__file__).resolve().parents[0]
 sys.path.append(str(PARENTDIR)) # put our parent dir on path
 
-
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('pcp')
 
 SubclassError = NotImplementedError('must be implemented in subclass')
