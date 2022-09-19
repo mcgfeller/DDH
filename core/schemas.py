@@ -169,6 +169,11 @@ class AbstractSchema(NoCopyBaseModel,abc.ABC):
         """ return an equivalent AbstractSchema as PySchema """
 
     @classmethod
+    @abc.abstractmethod 
+    def from_str(cls,schema_str: str, schema_attributes : SchemaAttributes) -> AbstractSchema:
+        ...
+
+    @classmethod
     @abc.abstractmethod   
     def from_schema(cls,schema: AbstractSchema) -> AbstractSchema:
         """ return schema in this class """
@@ -214,6 +219,11 @@ class AbstractSchema(NoCopyBaseModel,abc.ABC):
 class PySchema(AbstractSchema):
     """ A AbstractSchema in Pydantic Python, containing a SchemaElement """ 
     schema_element : typing.Type[SchemaElement]
+    
+    @classmethod
+    def from_str(cls,schema_str: str, schema_attributes : SchemaAttributes) -> PySchema:
+        raise NotImplementedError('PySchema cannot be created from string')
+
 
     def obtain(self,ddhkey: keys.DDHkey,split: int,create : bool = False) -> typing.Optional[AbstractSchema]:
         """ obtain a schema for the ddhkey, which is split into the key holding the schema and
@@ -239,7 +249,7 @@ class PySchema(AbstractSchema):
 
     def to_output(self):
         """ dict representation of internal schema """
-        return  self.schema_element.schema()
+        return  self.schema_element.schema_json()
 
     def add_fields(self,fields : dict[str,tuple]):
         """ Add the field in dict """
@@ -254,6 +264,10 @@ class PySchema(AbstractSchema):
 
 class JsonSchema(AbstractSchema):
     json_schema : pydantic.Json
+
+    @classmethod
+    def from_str(cls,schema_str: str, schema_attributes : SchemaAttributes) -> JsonSchema:
+        return cls(json_schema=schema_str,schema_attributes=schema_attributes)
 
     @classmethod
     def from_schema(cls,schema: AbstractSchema) -> JsonSchema:
@@ -272,9 +286,30 @@ class JsonSchema(AbstractSchema):
         """ return naked json schema """
         return  self.json_schema
 
+class XmlSchema(AbstractSchema):
+    xml_schema : str
+
+    @classmethod
+    def from_str(cls,schema_str: str, schema_attributes : SchemaAttributes) -> XmlSchema:
+        return cls(xml_schema=schema_str,schema_attributes=schema_attributes)
+
+
 SchemaFormats = {
     'json': JsonSchema,
     'internal' : PySchema,
 }
 # corresponding enum: 
 SchemaFormat = enum.Enum('SchemaFormat',[(k,k) for k in SchemaFormats])  # type: ignore # 2nd argument with list form not understood
+
+SchemaMimeTimes = {
+    'application/json' : JsonSchema,
+    'application/xml' : XmlSchema,
+}
+
+
+def create_schema(mime_type : str,s: str,sa: SchemaAttributes) -> AbstractSchema:
+    sclass = SchemaMimeTimes.get(mime_type)
+    if not sclass:
+        raise errors.NotFound(f'Unknown schema mime type {mime_type}')
+    schema = sclass.from_str(s,schema_attributes=sa)
+    return schema

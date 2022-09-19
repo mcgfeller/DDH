@@ -26,7 +26,7 @@ async def startup_event():
     """ Connect ourselves """
     for a in get_apps():
         location = f"http://localhost:{os.environ.get('port')}" # our own port is in the environment
-        print(location)
+        print('startup_event',a.id,location)
         d = dapp_attrs.RunningDApp(id=a.id,dapp_version=versions.Version(a.version),schema_version=versions.Version('0.0'),location=location)
         await CLIENT.post('connect',data=d.json())
     return
