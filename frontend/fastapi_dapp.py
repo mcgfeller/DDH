@@ -41,6 +41,9 @@ async def shutdown_event():
 def get_apps() -> tuple[dapp_attrs.DApp]:
     raise NotImplementedError('must be refined by main module')
 
+@router.get("/health")
+async def health():
+    return {'status':'ok'}
 
 @router.get("/app_info")
 async def get_app_info():

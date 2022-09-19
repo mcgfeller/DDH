@@ -16,12 +16,6 @@ app.include_router(fastapi_dapp.router)
 
 
 
-def get_app() -> dapp_attrs.DApp:
-    return COOP_DAPP
-
-fastapi_dapp.get_app = get_app
-
-
 class SampleDApps(dapp_attrs.DApp):
 
     version = '0.2'

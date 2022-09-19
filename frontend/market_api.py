@@ -18,7 +18,9 @@ from market import recommender
 
 app = fastapi.FastAPI()
 
-
+@router.get("/health")
+async def health():
+    return {'status':'ok'}
 
 @app.get("/users/me/", response_model=principals.User)
 async def read_users_me(current_user: user_auth.UserInDB = fastapi.Depends(user_auth.get_current_active_user)):
