@@ -23,7 +23,7 @@ from frontend import user_auth  # provisional user management
 
 SUBSCRIPTIONS : dict[common_ids.PrincipalId,dict[principals.DAppId,typing.Any]] = {}
 
-@router.get("/health")
+@app.get("/health")
 async def health():
     return {'status':'ok'}
 

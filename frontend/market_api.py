@@ -18,7 +18,7 @@ from market import recommender
 
 app = fastapi.FastAPI()
 
-@router.get("/health")
+@app.get("/health")
 async def health():
     return {'status':'ok'}
 

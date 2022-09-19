@@ -18,7 +18,7 @@ for i,module in enumerate(import_modules.listAllSubPackages(DApps)):
     name = module.split('.')[-1]
 
     if name != '__init__':
-        processes.append(AsgiProcess(name='DApp.'+name,app=app,port=portbase+1))
+        processes.append(AsgiProcess(name='DApp.'+name,app=app,port=portbase+i))
 dapps = ProcessGroup(name='DApps',processes=processes)
 
 
