@@ -154,8 +154,15 @@ class Requires(str,enum.Enum):
     specific = 'specific'
     many = 'many'
 
+@enum.unique
+class SchemaFormat(str,enum.Enum): 
+    internal = 'internal'
+    json = 'json'
+    xsd = 'xsd'
+
 
 class SchemaAttributes(NoCopyBaseModel):
+    format : typing.Optional[SchemaFormat] = pydantic.Field(SchemaFormat.json,description="The schema format for this instance")
     version : typing.Optional[versions.Version] = pydantic.Field(versions.Unspecified,description="The version of this schema instance")
     requires : typing.Optional[Requires] = None
 
@@ -294,22 +301,16 @@ class XmlSchema(AbstractSchema):
         return cls(xml_schema=schema_str,schema_attributes=schema_attributes)
 
 
-SchemaFormats = {
-    'json': JsonSchema,
-    'internal' : PySchema,
-}
-# corresponding enum: 
-SchemaFormat = enum.Enum('SchemaFormat',[(k,k) for k in SchemaFormats])  # type: ignore # 2nd argument with list form not understood
-
-SchemaMimeTimes = {
-    'application/json' : JsonSchema,
-    'application/xml' : XmlSchema,
+SchemaFormat2Class = {
+    SchemaFormat.json: JsonSchema,
+     SchemaFormat.internal : PySchema,
+     SchemaFormat.xsd : XmlSchema
 }
 
 
-def create_schema(mime_type : str,s: str,sa: SchemaAttributes) -> AbstractSchema:
-    sclass = SchemaMimeTimes.get(mime_type)
+def create_schema(s: str,sa: SchemaAttributes) -> AbstractSchema:
+    sclass = SchemaFormat2Class.get(sa.format)
     if not sclass:
-        raise errors.NotFound(f'Unknown schema mime type {mime_type}')
+        raise errors.NotFound(f'Unknown schema format {sa.format}')
     schema = sclass.from_str(s,schema_attributes=sa)
     return schema

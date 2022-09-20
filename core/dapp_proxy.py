@@ -1,6 +1,5 @@
 """ Proxy representing DApps in runner  """
 from __future__ import annotations
-from abc import abstractmethod
 import enum
 import typing
 import pydantic
@@ -21,6 +20,7 @@ from utils.pydantic_utils import NoCopyBaseModel
 
 
 class DAppProxy(NoCopyBaseModel):
+    """ This is a Proxy running in the Walled Garden of DApps (running in their own microservices) """
 
     class Config:
         arbitrary_types_allowed = True
@@ -37,8 +37,7 @@ class DAppProxy(NoCopyBaseModel):
             j = await(self.client.get('/schemas'))
             j.raise_for_status()
             js = j.json()
-            ct = j.headers.get('content-type',None)
-            self.schemas =  {keys.DDHkey(k):schemas.create_schema(ct,s,sa) for k,(sa,s) in js.items()}
+            self.schemas =  {keys.DDHkey(k):schemas.create_schema(s,sa) for k,(sa,s) in js.items()}
             print('initialize',self.schemas)
             schemaNetwork : pillars.SchemaNetworkClass = pillars['SchemaNetwork']
             dnodes = self.register_schema(session)
