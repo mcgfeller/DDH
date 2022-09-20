@@ -1,5 +1,8 @@
-""" Set up some Test data """
-from core import keys,permissions,facade,errors,principals,common_ids
+""" Test the recommender, i.e., present a list of recommended DApps based on user input.
+    TODO: Rewrite tu use Microservice to obtain DApps
+"""
+
+from core import keys,permissions,facade,errors,principals,common_ids,dapp_proxy
 from core import pillars
 from frontend import user_auth,sessions
 from market import recommender
@@ -33,7 +36,7 @@ def subscribe_tax(user):
 def test_all(user,session):
     """ Test withhout criteria """
     sris = recommender.search_dapps(session,query=None,categories=None,desired_labels=None)
-    assert len(sris) == len(pillars.DAppManager.DAppsById)
+    assert len(sris) == len(dapp_proxy.DAppManager.DAppsById)
     return
 
 def test_query_1(user,session):

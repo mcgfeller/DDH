@@ -1,4 +1,6 @@
-""" Set up some Test data """
+""" Maintain user subscriptions to DApps. 
+    TODO: Rewrite tu use Microservice to obtain DApps
+"""
 from core import keys,permissions,facade,errors,principals
 from user import subscriptions
 from frontend import user_auth,sessions
