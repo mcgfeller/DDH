@@ -63,18 +63,22 @@ async def execute(req : dapp_attrs.ExecuteRequest):
     return get_apps()[0].execute(req)
 
 
-@router.get("/provide/ddh{docpath:path}")
-async def get_data(
-    docpath: str = fastapi.Path(..., title="The ddh key of the data to get"),
-    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
-    modes: set[permissions.AccessMode] = {permissions.AccessMode.read},
-    q: str = fastapi.Query(None, alias="item-query"),
-    ):
+@router.post("/get_and_transform")
+async def execute(req : dapp_attrs.ExecuteRequest):
+    return get_apps()[0].get_and_transform(req)
 
-    access = permissions.Access(op = permissions.Operation.get, ddhkey = keys.DDHkey(docpath),principal=session.user, modes = modes, byDApp=session.dappid)
-    try:
-        d = facade.ddh_get(access,session,q)
-    except errors.DDHerror as e:
-        raise e.to_http()
+# @router.get("/provide/ddh{docpath:path}")
+# async def get_data(
+#     docpath: str = fastapi.Path(..., title="The ddh key of the data to get"),
+#     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
+#     modes: set[permissions.AccessMode] = {permissions.AccessMode.read},
+#     q: str = fastapi.Query(None, alias="item-query"),
+#     ):
 
-    return {"ddhkey": access.ddhkey, "res": d}
+#     access = permissions.Access(op = permissions.Operation.get, ddhkey = keys.DDHkey(docpath),principal=session.user, modes = modes, byDApp=session.dappid)
+#     try:
+#         d = facade.ddh_get(access,session,q)
+#     except errors.DDHerror as e:
+#         raise e.to_http()
+
+#     return {"ddhkey": access.ddhkey, "res": d}

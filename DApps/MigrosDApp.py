@@ -58,11 +58,11 @@ class MigrosDApp(dapp_attrs.DApp):
 
 
 
-    def get_and_transform(self, access : permissions.Access, key_split: int, q : typing.Optional[str] = None):
+    def get_and_transform(self, req : dapp_attrs.ExecuteRequest):
         """ obtain data by transforming key, then executing, then transforming result """
-        here,selection = access.ddhkey.split_at(key_split)
+        here,selection = req.access.ddhkey.split_at(req.key_split)
         selection2 = keys.DDHkey(('receipts',)) # insert selection
-        d = self._ddhschema.get_data(selection2,access,q) # obtain org-format data
+        d = self._ddhschema.get_data(selection2,req.access,req.q) # obtain org-format data
         # transform with glom: into list of dicts, whereas item key becomes buyer: 
         spec = {
              "items": (

@@ -42,7 +42,8 @@ class DAppProxy(NoCopyBaseModel):
             schemaNetwork : pillars.SchemaNetworkClass = pillars['SchemaNetwork']
             dnodes = self.register_schema(session)
             self.register_references(session,schemaNetwork)
-            self.register_transform(self.attrs.transforms_into)
+            if self.attrs.transforms_into:
+                self.register_transform(self.attrs.transforms_into)
         return
 
 
@@ -96,6 +97,11 @@ class DAppProxy(NoCopyBaseModel):
 
     async def execute(self, req: dapp_attrs.ExecuteRequest):
         data = await self.client.post('execute',data=req.json())
+        data.raise_for_status()
+        return data.json()
+
+    async def get_and_transform(self, req: dapp_attrs.ExecuteRequest):
+        data = await self.client.post('get_and_transform',data=req.json())
         data.raise_for_status()
         return data.json()
 
