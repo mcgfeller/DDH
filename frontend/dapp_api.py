@@ -126,3 +126,6 @@ async def connect_dapp(
     bg_tasks.add_task(dapp_proxy.DAppManager.register,request,session,running_dapp)
     return 
 
+if __name__ == "__main__": # Debugging
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8001)
