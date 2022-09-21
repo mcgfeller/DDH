@@ -309,6 +309,7 @@ SchemaFormat2Class = {
 
 
 def create_schema(s: str,sa: SchemaAttributes) -> AbstractSchema:
+    sa = SchemaAttributes(**sa)
     sclass = SchemaFormat2Class.get(sa.format)
     if not sclass:
         raise errors.NotFound(f'Unknown schema format {sa.format}')

@@ -42,16 +42,10 @@ class DAppProxy(NoCopyBaseModel):
             schemaNetwork : pillars.SchemaNetworkClass = pillars['SchemaNetwork']
             dnodes = self.register_schema(session)
             self.register_references(session,schemaNetwork)
+            self.register_transform(self.attrs.transforms_into)
         return
 
 
-
-    def startup(self,session,pillars : dict)  -> list[nodes.Node]:
-        schemaNetwork : pillars.SchemaNetworkClass = pillars['SchemaNetwork']
-        dnodes = self.register_schema(session)
-        self.register_references(session,schemaNetwork)
-
-        return dnodes
 
     def register_references(self,session, schemaNetwork : pillars.SchemaNetworkClass):
         transaction = session.get_or_create_transaction()
@@ -67,6 +61,7 @@ class DAppProxy(NoCopyBaseModel):
                 schemaNetwork.network.add_edge(attrs,ref.target,type='provides',weight=attrs.get_weight())
             elif ref.relation == relationships.Relation.requires:
                 schemaNetwork.network.add_edge(ref.target,attrs,type='requires')
+
         return
 
 
