@@ -190,7 +190,7 @@ class AbstractSchema(NoCopyBaseModel,abc.ABC):
         return None
 
     def format(self,format : SchemaFormat):
-        dschema = SchemaFormats[format.value].from_schema(self)
+        dschema = SchemaFormat2Class[format.value].from_schema(self)
         return dschema.to_output()
 
     def to_output(self):

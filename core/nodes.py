@@ -165,11 +165,14 @@ class DelegatedExecutableNode(ExecutableNode):
 
     executors : list = []
 
+
     def execute(self, req : dapp_attrs.ExecuteRequest):
         """ obtain data by recursing to schema """
         d = None
         for executor in self.executors:
-            d = executor.get_and_transform(access,key_split, q)
+            d = executor.get_and_transform(req)
+            if d is None:
+                break
         return d
 
 
