@@ -42,13 +42,15 @@ class DAppProxy(NoCopyBaseModel):
             schemaNetwork : pillars.SchemaNetworkClass = pillars['SchemaNetwork']
             dnodes = self.register_schema(session)
             self.register_references(session,schemaNetwork)
-            if self.attrs.transforms_into:
-                self.register_transform(self.attrs.transforms_into)
         return
 
 
 
     def register_references(self,session, schemaNetwork : pillars.SchemaNetworkClass):
+        """ We register: 
+            - DAppNode where our DApp provides or transforms into a DDHkey
+            - DApp as SchemaNetwork node, with edges to provides, transforms and requires 
+        """
         transaction = session.get_or_create_transaction()
         attrs = self.attrs
         schemaNetwork.network.add_node(attrs,id=attrs.id,type='dapp',
@@ -56,19 +58,24 @@ class DAppProxy(NoCopyBaseModel):
         for ref in attrs.references:
             # we want node attributes of, so get the node: 
             snode,split = keydirectory.NodeRegistry.get_node(ref.target,nodes.NodeSupports.schema,transaction) # get applicable schema node for attributes
-            sa = snode.nschema.schema_attributes
+            sa = snode.schemas.current_schema.schema_attributes
             schemaNetwork.network.add_node(ref.target,id=str(ref.target),type='schema',requires=sa.requires)
             if ref.relation == relationships.Relation.provides:
                 schemaNetwork.network.add_edge(attrs,ref.target,type='provides',weight=attrs.get_weight())
             elif ref.relation == relationships.Relation.requires:
                 schemaNetwork.network.add_edge(ref.target,attrs,type='requires')
-
+        if self.attrs.transforms_into:
+            self.register_transform(self.attrs.transforms_into)
         return
 
 
 
 
     def register_schema(self,session) -> list[nodes.Node]:
+        """ We register: 
+            - SchemaNode for the Schemas our node provides
+
+        """
         transaction = session.get_or_create_transaction()
         
         dnodes = []
@@ -76,10 +83,11 @@ class DAppProxy(NoCopyBaseModel):
             dnode = keydirectory.NodeRegistry[schemakey].get(nodes.NodeSupports.schema) # need exact location, not up the tree
             if dnode:
                 dnode = typing.cast(DAppNode,dnode.ensure_loaded(transaction))
-                dnode.add_schema_version(schema)
+                dnode.add_schema(schema)
             else:
                 # create dnode with our schema:
-                dnode = DAppNode(owner=self.attrs.owner,schema=schema,dapp=self,consents=schemas.AbstractSchema.get_schema_consents())
+                dnode = DAppNode(owner=self.attrs.owner,dapp=self,consents=schemas.AbstractSchema.get_schema_consents())
+                dnode.add_schema(schema) # TODO: Separate DAppNode and SchemaNode
                 # hook into parent schema:
                 schemas.AbstractSchema.insert_schema(self.attrs.id, schemakey,transaction)
                 keydirectory.NodeRegistry[schemakey] = dnode

@@ -25,6 +25,14 @@ def json_schema():
     js = ps.to_json_schema()
     return k,js
 
+
+def test_container(json_schema):
+    k,schema = json_schema
+    sc = schemas.SchemaContainer()
+    sc.add(schema)
+    sa = schema.schema_attributes
+    assert schema is sc.get(variant=sa.variant,format=sa.format,version=sa.version)
+
 def test_insert_schema(ensure_root_node,json_schema,transaction):
     assert ensure_root_node
     k,schema = json_schema
@@ -37,7 +45,3 @@ def test_schema(json_schema):
     """ test retrieval of key of test MigrosDApp, and facade.get_schema() """
     assert json_schema
     return
-
-
-if __name__ == '__main__':
-    test_schema()

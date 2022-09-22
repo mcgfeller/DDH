@@ -21,7 +21,8 @@ def register_schema() -> nodes.SchemaNode:
     if not root_node:
         schema = build_root_schemas() # obtain static schema
         # for now, give schema read access to everybody
-        root_node = nodes.SchemaNode(owner=principals.RootPrincipal,schema=schema,consents=schemas.AbstractSchema.get_schema_consents())
+        root_node = nodes.SchemaNode(owner=principals.RootPrincipal,consents=schemas.AbstractSchema.get_schema_consents())
+        root_node.add_schema(schema)
         keydirectory.NodeRegistry[root] = root_node
     logger.info('AbstractSchema Root built')
     return root_node 

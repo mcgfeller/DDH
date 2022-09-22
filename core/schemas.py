@@ -1,5 +1,6 @@
 """ DDH Core AbstractSchema Models """
 from __future__ import annotations
+from distutils.version import Version
 
 
 import enum
@@ -117,7 +118,8 @@ class SchemaElement(NoCopyBaseModel):
             and return the SchemaReference to it, which can be used like a SchemaElement.
         """
         s = PySchema(schema_attributes=schema_attributes or SchemaAttributes(),schema_element=cls)
-        snode = nodes.SchemaNode(owner=principals.RootPrincipal,schema=s,consents=AbstractSchema.get_schema_consents())
+        snode = nodes.SchemaNode(owner=principals.RootPrincipal,consents=AbstractSchema.get_schema_consents())
+        snode.add_schema(s)
         keydirectory.NodeRegistry[ddhkey] = snode
         schemaref = SchemaReference.create_from_key(str(ddhkey),ddhkey=ddhkey)
         return schemaref
@@ -160,10 +162,17 @@ class SchemaFormat(str,enum.Enum):
     json = 'json'
     xsd = 'xsd'
 
+@enum.unique
+class SchemaVariant(str,enum.Enum): 
+    recommended = 'recommended'
+    supported = 'supported'
+    obsolete = 'obsolete'
+
 
 class SchemaAttributes(NoCopyBaseModel):
-    format : typing.Optional[SchemaFormat] = pydantic.Field(SchemaFormat.json,description="The schema format for this instance")
-    version : typing.Optional[versions.Version] = pydantic.Field(versions.Unspecified,description="The version of this schema instance")
+    variant : SchemaVariant = pydantic.Field(SchemaVariant.recommended,description="The schema variant for this instance")
+    format : SchemaFormat = pydantic.Field(SchemaFormat.json,description="The schema format for this instance")
+    version : versions.Version = pydantic.Field(versions.Unspecified,description="The version of this schema instance")
     requires : typing.Optional[Requires] = None
 
 
@@ -301,6 +310,35 @@ SchemaFormat2Class = {
      SchemaFormat.xsd : XmlSchema
 }
 
+class SchemaContainer(NoCopyBaseModel):
+    """ Holds one or more Schemas according to their variant, format, and version """
+
+    schemas_by_variant : dict[SchemaVariant,dict[SchemaFormat,dict[versions.Version,AbstractSchema]]] = {}
+    current_schema : typing.Optional[AbstractSchema] = None 
+
+    def __bool__(self):
+        return self.current_schema is not None
+
+    def add(self,schema: AbstractSchema):
+        """ add a schema, considering its attributes """
+        sa = schema.schema_attributes
+        self.schemas_by_variant.setdefault(sa.variant,{}).setdefault(sa.format,{})[sa.version] = schema
+        self.current_schema = schema
+        if self.current_schema:
+            if sa.version > self.current_schema.schema_attributes.version: # higher than current version
+                self.current_schema = schema
+        else:
+            self.current_schema = schema
+        return schema
+
+    def get(self,variant : SchemaVariant = SchemaVariant.recommended, 
+            format : SchemaFormat = SchemaFormat.internal, 
+            version : versions.Version = versions.Unspecified) -> typing.Optional[AbstractSchema]:
+        """ get a specific schema """
+        return self.schemas_by_variant.get(variant,{}).get(format,{}).get(version)
+
+    
+    
 
 def create_schema(s: str,sa: SchemaAttributes) -> AbstractSchema:
     sa = SchemaAttributes(**sa)

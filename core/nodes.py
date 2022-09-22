@@ -107,23 +107,14 @@ class MultiOwnerNode(Node):
 
 class SchemaNode(Node,persistable.NonPersistable):
 
-    nschema : typing.Optional[schemas.AbstractSchema] =  pydantic.Field(alias='schema')
-    schema_by_version : dict[versions.Version,schemas.AbstractSchema] = {}
+    schemas : schemas.SchemaContainer = schemas.SchemaContainer()
 
     def __init__(self,*a,**kw):
         super().__init__(*a,**kw)
-        if self.nschema:
-            v = self.nschema.schema_attributes.version
-            self.schema_by_version[v] = self.nschema
 
-    def add_schema_version(self,schema : schemas.AbstractSchema ):
-        v = schema.schema_attributes.version
-        self.schema_by_version[v] = schema
-        if self.nschema:
-            if v > self.nschema.schema_attributes.version: # higher than current version
-                self.nschema = schema
-        else:
-            self.nschema = schema
+
+    def add_schema(self,schema : schemas.AbstractSchema ):
+        self.schemas.add(schema)
         return 
 
 
@@ -138,7 +129,7 @@ class SchemaNode(Node,persistable.NonPersistable):
 
     def get_sub_schema(self, ddhkey: keys.DDHkey,split: int, schema_type : str = 'json',create : bool = False) -> tuple[int,typing.Optional[schemas.AbstractSchema]]:
         """ return schema based on ddhkey and split """
-        s = typing.cast(schemas.AbstractSchema,self.nschema)
+        s = typing.cast(schemas.AbstractSchema,self.schemas.current_schema)
         s = s.obtain(ddhkey,split,create=create)
         return s
 
@@ -148,7 +139,7 @@ class ExecutableNode(SchemaNode):
     @property
     def supports(self) -> set[NodeSupports]:
         s =  {NodeSupports.execute}
-        if self.nschema:
+        if self.schemas:
             s.add(NodeSupports.schema)
         if self.consents:
             s.add(NodeSupports.consents)
