@@ -171,30 +171,31 @@ class SchemaAttributes(NoCopyBaseModel):
 class AbstractSchema(NoCopyBaseModel,abc.ABC):
     schema_attributes : SchemaAttributes = pydantic.Field(default=SchemaAttributes(),descriptor="Attributes associated with this Schema")
 
-    @abc.abstractmethod
-    def to_py_schema(self) -> PySchema:
-        """ return an equivalent AbstractSchema as PySchema """
+    def to_json_schema(self) -> JsonSchema:
+        """ Make a JSON Schema from this Schema """
+        raise NotImplemented('conversion to JSON schema not supported')
 
     @classmethod
     @abc.abstractmethod 
     def from_str(cls,schema_str: str, schema_attributes : SchemaAttributes) -> AbstractSchema:
         ...
 
-    @classmethod
-    @abc.abstractmethod   
-    def from_schema(cls,schema: AbstractSchema) -> AbstractSchema:
-        """ return schema in this class """
-        ...
 
     def obtain(self,ddhkey: keys.DDHkey,split: int,create : bool = False) -> typing.Optional[AbstractSchema]:
         return None
 
     def format(self,format : SchemaFormat):
-        dschema = SchemaFormat2Class[format.value].from_schema(self)
-        return dschema.to_output()
+        if format == self.format:
+            return self.to_output()
+        if SchemaFormat2Class[format.value] == JsonSchema:
+            return self.to_json_schema().to_output()
+        else:
+            raise NotImplementedError(f'output format {format} not supported for {self.__class__.__name__}')
 
-    def to_output(self):
-        return self
+    @abc.abstractmethod 
+    def to_output(self) ->str:
+        """ native output represenation """
+        ...
 
     def add_fields(self,fields : dict):
         raise NotImplementedError('Field adding not supported in this schema')
@@ -246,16 +247,13 @@ class PySchema(AbstractSchema):
             s = self
         return s
 
-    def to_py_schema(self) -> PySchema:
-        """ we're a PySchema, so return self """
-        return self
+    def to_json_schema(self) -> JsonSchema:
+        """ Make a JSON Schema from this Schema """
+        return JsonSchema(json_schema=self.schema_element.schema_json(),schema_attributes=self.schema_attributes)
 
-    @classmethod
-    def from_schema(cls,schema: AbstractSchema) -> PySchema:
-        return schema.to_py_schema()
 
     def to_output(self):
-        """ dict representation of internal schema """
+        """ Python schema is output as JSON """
         return  self.schema_element.schema_json()
 
     def add_fields(self,fields : dict[str,tuple]):
@@ -276,18 +274,10 @@ class JsonSchema(AbstractSchema):
     def from_str(cls,schema_str: str, schema_attributes : SchemaAttributes) -> JsonSchema:
         return cls(json_schema=schema_str,schema_attributes=schema_attributes)
 
-    @classmethod
-    def from_schema(cls,schema: AbstractSchema) -> JsonSchema:
-        """ Make a JSON AbstractSchema from any AbstractSchema """
-        if isinstance(schema,cls):
-            return typing.cast(JsonSchema,schema)
-        else:
-            pyschema = schema.to_py_schema()
-            return cls(json_schema=pyschema.schema_element.schema_json())
+    def to_json_schema(self) -> JsonSchema:
+        """ Make a JSON Schema from this Schema """
+        return self
 
-    def to_py_schema(self) -> PySchema:
-        """ create Python AbstractSchema """
-        raise NotImplementedError('not supported')
 
     def to_output(self):
         """ return naked json schema """
@@ -299,6 +289,10 @@ class XmlSchema(AbstractSchema):
     @classmethod
     def from_str(cls,schema_str: str, schema_attributes : SchemaAttributes) -> XmlSchema:
         return cls(xml_schema=schema_str,schema_attributes=schema_attributes)
+
+    def to_output(self):
+        """ return naked XML schema """
+        return  self.xml_schema
 
 
 SchemaFormat2Class = {
