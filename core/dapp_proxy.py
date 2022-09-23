@@ -40,7 +40,7 @@ class DAppProxy(NoCopyBaseModel):
             self.schemas =  {keys.DDHkey(k):schemas.create_schema(s,sa) for k,(sa,s) in js.items()}
             print('initialize',self.schemas)
             schemaNetwork : pillars.SchemaNetworkClass = pillars['SchemaNetwork']
-            dnodes = self.register_schema(session)
+            self.register_schema(session)
             self.register_references(session,schemaNetwork)
         return
 
@@ -52,7 +52,9 @@ class DAppProxy(NoCopyBaseModel):
             - DApp as SchemaNetwork node, with edges to provides, transforms and requires 
         """
         transaction = session.get_or_create_transaction()
+        
         attrs = self.attrs
+        dnode = DAppNode(owner=attrs.owner,dapp=self,consents=schemas.AbstractSchema.get_schema_consents())
         schemaNetwork.network.add_node(attrs,id=attrs.id,type='dapp',
             cost=attrs.estimated_cost(),availability_user_dependent=attrs.availability_user_dependent())
         for ref in attrs.references:
@@ -62,10 +64,10 @@ class DAppProxy(NoCopyBaseModel):
             schemaNetwork.network.add_node(ref.target,id=str(ref.target),type='schema',requires=sa.requires)
             if ref.relation == relationships.Relation.provides:
                 schemaNetwork.network.add_edge(attrs,ref.target,type='provides',weight=attrs.get_weight())
+                # register our node as a provider for (or transformer into) the key:
+                keydirectory.NodeRegistry[ref.target] = dnode
             elif ref.relation == relationships.Relation.requires:
                 schemaNetwork.network.add_edge(ref.target,attrs,type='requires')
-        if self.attrs.transforms_into:
-            self.register_transform(self.attrs.transforms_into)
         return
 
 
@@ -73,45 +75,36 @@ class DAppProxy(NoCopyBaseModel):
 
     def register_schema(self,session) -> list[nodes.Node]:
         """ We register: 
-            - SchemaNode for the Schemas our node provides
+            - SchemaNode for the Schemas our node provides, including transformed-into keys.
 
         """
         transaction = session.get_or_create_transaction()
         
-        dnodes = []
+        snodes = []
         for schemakey,schema in self.schemas.items():
-            dnode = keydirectory.NodeRegistry[schemakey].get(nodes.NodeSupports.schema) # need exact location, not up the tree
-            if dnode:
-                dnode = typing.cast(DAppNode,dnode.ensure_loaded(transaction))
-                dnode.add_schema(schema)
+            snode = keydirectory.NodeRegistry[schemakey].get(nodes.NodeSupports.schema) # need exact location, not up the tree
+            if snode:
+                snode = typing.cast(DAppNode,snode.ensure_loaded(transaction))
+                snode.add_schema(schema)
             else:
-                # create dnode with our schema:
-                dnode = DAppNode(owner=self.attrs.owner,dapp=self,consents=schemas.AbstractSchema.get_schema_consents())
-                dnode.add_schema(schema) # TODO: Separate DAppNode and SchemaNode
+                # create snode with our schema:
+                snode = nodes.SchemaNode(owner=self.attrs.owner,consents=schemas.AbstractSchema.get_schema_consents())
+                snode.add_schema(schema) 
                 # hook into parent schema:
                 schemas.AbstractSchema.insert_schema(self.attrs.id, schemakey,transaction)
-                keydirectory.NodeRegistry[schemakey] = dnode
-            dnodes.append(dnode)
-        return dnodes 
+                keydirectory.NodeRegistry[schemakey] = snode
+                # 
+            snodes.append(snode)
+        return snodes 
 
-    def register_transform(self,ddhkey : keys.DDHkey):
-        de_node = keydirectory.NodeRegistry[ddhkey].get(nodes.NodeSupports.execute)
-        if not de_node:
-            de_node = nodes.DelegatedExecutableNode(owner=self.attrs.owner)
-            de_node.executors.append(self)
-            keydirectory.NodeRegistry[ddhkey] = de_node
-        return
     
 
     async def execute(self, req: dapp_attrs.ExecuteRequest):
+        """ forward execution request to DApp microservice """
         data = await self.client.post('execute',data=req.json())
         data.raise_for_status()
         return data.json()
 
-    async def get_and_transform(self, req: dapp_attrs.ExecuteRequest):
-        data = await self.client.post('get_and_transform',data=req.json())
-        data.raise_for_status()
-        return data.json()
 
 
 

@@ -29,17 +29,13 @@ class MigrosDApp(dapp_attrs.DApp):
     _ddhschema : schemas.SchemaElement = None
     version = '0.2'
 
-    
-
-
-
     def __init__(self,*a,**kw):
         super().__init__(*a,**kw)
         self._ddhschema = MigrosSchema()
         self.transforms_into = keys.DDHkey(key="//p/living/shopping/receipts")
         self.references = relationships.Reference.defines(self.schemakey) + relationships.Reference.provides(self.schemakey) + \
             relationships.Reference.provides(self.transforms_into)
-        # self.register_transform(transforms_into)
+
  
     def get_schemas(self) -> dict[keys.DDHkey,schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
@@ -50,7 +46,11 @@ class MigrosDApp(dapp_attrs.DApp):
         """ obtain data by recursing to schema """
         if req.op == nodes.Ops.get:
             here,selection = req.access.ddhkey.split_at(req.key_split)
-            d = self._ddhschema.get_data(selection,req.access,req.q)
+            # key we transform into?
+            if req.access.ddhkey.without_owner() == self.transforms_into:
+                d = self.get_and_transform(req)
+            else: # key we provide, call schema descent to resolve:
+                d = self._ddhschema.get_data(selection,req.access,req.q)
         else:
             raise ValueError(f'Unsupported {req.op=}')
         return d
