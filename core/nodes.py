@@ -133,38 +133,20 @@ class SchemaNode(Node,persistable.NonPersistable):
         s = s.obtain(ddhkey,split,create=create)
         return s
 
-class ExecutableNode(SchemaNode):
+class ExecutableNode(Node,persistable.NonPersistable):
     """ A node that provides for execution capabilities """
 
     @property
     def supports(self) -> set[NodeSupports]:
         s =  {NodeSupports.execute}
-        if self.schemas:
-            s.add(NodeSupports.schema)
         if self.consents:
             s.add(NodeSupports.consents)
         return s
-
 
     @abstractmethod
     def execute(self, req : dapp_attrs.ExecuteRequest):
         return {}
 
-
-class DelegatedExecutableNode(ExecutableNode):
-    """ A node that delegates executable methods to DApps """
-
-    executors : list = []
-
-
-    def execute(self, req : dapp_attrs.ExecuteRequest):
-        """ obtain data by recursing to schema """
-        d = None
-        for executor in self.executors:
-            d = executor.get_and_transform(req)
-            if d is None:
-                break
-        return d
 
 
 from backend import storage,keyvault

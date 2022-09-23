@@ -32,7 +32,6 @@ class CoopDApp(dapp_attrs.DApp):
         self.transforms_into = keys.DDHkey(key="//p/living/shopping/receipts")
         self.references = relationships.Reference.defines(self.schemakey) + relationships.Reference.provides(self.schemakey) + \
             relationships.Reference.provides(self.transforms_into)
-        # self.register_transform(transforms_into)
  
     def get_schemas(self) -> dict[keys.DDHkey,schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
@@ -43,6 +42,10 @@ class CoopDApp(dapp_attrs.DApp):
         """ obtain data by recursing to schema """
         if req.op == nodes.Ops.get:
             here,selection = req.access.ddhkey.split_at(req.key_split)
+            # key we transform into?
+            if req.access.ddhkey.without_owner() == self.transforms_into:
+                d = self.get_and_transform(req)
+            else: # key we provide, call schema descent to resolve:        
             d = self._ddhschema.get_data(selection,req.access,req.q)
         else:
             raise ValueError(f'Unsupported {req.op=}')
@@ -53,13 +56,6 @@ class CoopDApp(dapp_attrs.DApp):
     catalog = common_ids.CatalogCategory.living
 
 
-    def __init__(self,*a,**kw):
-        super().__init__(*a,**kw)
-        self._ddhschema = CoopSchema()
-        transforms_into = keys.DDHkey(key="//p/living/shopping/receipts")
-        self.references =  relationships.Reference.defines(self.schemakey) + relationships.Reference.provides(self.schemakey)  + \
-            relationships.Reference.provides(transforms_into)
-        # self.register_transform(transforms_into)
  
 
 
