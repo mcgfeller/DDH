@@ -212,10 +212,12 @@ class AbstractSchema(NoCopyBaseModel,abc.ABC):
     @staticmethod
     def insert_schema(id, schemakey: keys.DDHkey,transaction):
         # get a parent scheme to hook into
-        upnode,split = keydirectory.NodeRegistry.get_node(schemakey,nodes.NodeSupports.schema,transaction)
         pkey = schemakey.up()
         if not pkey:
             raise ValueError(f'{schemakey} key is too high {self!r}')
+
+        upnode,split = keydirectory.NodeRegistry.get_node(pkey,nodes.NodeSupports.schema,transaction)
+
         upnode = typing.cast(nodes.SchemaNode,upnode)
         # TODO: We should check some ownership permission here!
         parent = upnode.get_sub_schema(pkey,split,create=True) # create missing segments
@@ -291,6 +293,30 @@ class JsonSchema(AbstractSchema):
     def to_output(self):
         """ return naked json schema """
         return  self.json_schema
+
+    def obtain(self,ddhkey: keys.DDHkey,split: int,create : bool = False) -> typing.Optional[AbstractSchema]:
+        """ obtain a schema for the ddhkey, which is split into the key holding the schema and
+            the remaining path. 
+        """
+        khere,kremainder = ddhkey.split_at(split)
+        if kremainder.key:
+            s = None
+            j_defn = self._descend_path(self.json_schema,kremainder)
+            if j_defn:
+                s = self.__class__.from_definition(j_defn)
+            else: s = None # not found
+        else:
+            s = self
+        return s
+
+    @classmethod
+    def _descend_path(cls,json_schema : pydantic.Json, path: keys.DDHkey):
+        json_schema['properties'].get(path.key[0])
+        return json_schema
+
+    @classmethod
+    def from_definition(cls,json_schema):
+        return cls(json_schema=json_schema)
 
 class XmlSchema(AbstractSchema):
     xml_schema : str

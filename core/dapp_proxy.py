@@ -91,8 +91,9 @@ class DAppProxy(NoCopyBaseModel):
                 snode = nodes.SchemaNode(owner=self.attrs.owner,consents=schemas.AbstractSchema.get_schema_consents())
                 snode.add_schema(schema) 
                 # hook into parent schema:
-                schemas.AbstractSchema.insert_schema(self.attrs.id, schemakey,transaction)
                 keydirectory.NodeRegistry[schemakey] = snode
+                schemas.AbstractSchema.insert_schema(self.attrs.id, schemakey,transaction)
+                
                 # 
             snodes.append(snode)
         return snodes 
