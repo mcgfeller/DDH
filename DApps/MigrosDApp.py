@@ -74,7 +74,12 @@ class MigrosDApp(dapp_attrs.DApp):
         s = glom(d,spec)
         return s
     
-
+class ArtikelDetail(schemas.SchemaElement):
+    produkt_kategorie : str
+    garantie : typing.Optional[str] = None
+    garantie_jahre : typing.Optional[int] = 1
+    beschreibung : str = ''
+    labels : list[str] = []
 
 class Receipt(schemas.SchemaElement):
 
@@ -86,6 +91,7 @@ class Receipt(schemas.SchemaElement):
     Menge:      float = 1
     Aktion:     int = 0
     Umsatz:     float = 0
+    Detail: typing.Optional[ArtikelDetail] = None 
 
     @classmethod
     def resolve(cls,remainder, principals, q):
@@ -104,6 +110,8 @@ class Receipt(schemas.SchemaElement):
         else:
             d = {}
         return d
+
+
 
 
 class MigrosSchema(schemas.SchemaElement):
