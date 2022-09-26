@@ -51,7 +51,7 @@ async def get_schema(
     if not fschema: 
         raise fastapi.HTTPException(status_code=404, detail=f"No schema found at {access.ddhkey}.")
     else:
-        return {"ddhkey": access.ddhkey, 'schema': fschema}
+        return fschema
 
 @app.get("/ddh{docpath:path}")
 async def get_data(

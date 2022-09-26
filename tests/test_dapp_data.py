@@ -65,18 +65,28 @@ def test_dapp_schema(user1):
     assert d['title'] == 'Receipt' # type: ignore
     return
 
+
+def test_dapp_schema(user1):
+    """ test retrieval of key of test MigrosDApp, and facade.get_schema() """
+    r = user1.get('/ddh//org/migros.ch/receipts/Produkt:schema')
+    r.raise_for_status()
+    d = r.json()
+    assert isinstance(d,dict)
+    assert d['title'] == 'Receipt' # type: ignore
+    return
+
 def test_complete_schema_p(user1):
     r = user1.get('/ddh//org:schema?schemaformat=json')
     r.raise_for_status()
     d = r.json()
-    assert d.get('schema'),'schema is empty'
+    assert d.get('title'),'schema is empty'
     return
 
 def test_p_schema(user1):
     r = user1.get('/ddh//p/living/shopping:schema')
     r.raise_for_status()
     d = r.json()
-    assert d.get('schema'),'schema is empty'
+    assert d.get('title'),'schema is empty'
     return
 
 

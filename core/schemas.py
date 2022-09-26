@@ -1,18 +1,19 @@
 """ DDH Core AbstractSchema Models """
 from __future__ import annotations
+
+import abc
+import enum
+import json
+import typing
 from distutils.version import Version
 
-
-import enum
-import typing
-import  abc
-
 import pydantic
-
-from utils.pydantic_utils import NoCopyBaseModel
-from . import keys,permissions,errors,principals,versions
-from . import keydirectory, nodes
 from frontend import user_auth
+from utils.pydantic_utils import NoCopyBaseModel
+
+from . import (errors, keydirectory, keys, nodes, permissions, principals,
+               versions)
+
 
 @enum.unique
 class Sensitivity(str,enum.Enum):
@@ -194,7 +195,7 @@ class AbstractSchema(NoCopyBaseModel,abc.ABC):
         return None
 
     def format(self,format : SchemaFormat):
-        if format == self.format:
+        if format == self.schema_attributes.format:
             return self.to_output()
         if SchemaFormat2Class[format.value] == JsonSchema:
             return self.to_json_schema().to_output()
@@ -265,6 +266,7 @@ class PySchema(AbstractSchema):
 
     def to_output(self):
         """ Python schema is output as JSON """
+        # return self.to_json_schema()
         return  self.schema_element.schema_json()
 
     def add_fields(self,fields : dict[str,tuple]):
@@ -311,12 +313,32 @@ class JsonSchema(AbstractSchema):
 
     @classmethod
     def _descend_path(cls,json_schema : pydantic.Json, path: keys.DDHkey):
-        json_schema['properties'].get(path.key[0])
-        return json_schema
+        definitions = json_schema.get('definitions',{})
+        current = json_schema # before we descend path, this cls is at the current level 
+        pathit = iter(path) # so we can peek whether we're at end
+        for segment in pathit:
+            segment = str(segment)
+            mf = current['properties'].get(str(segment),None) # look up one segment of path, returning ModelField
+            if mf is None:
+                return None
+            else:
+                if (ref:=mf.get('$ref','')).startswith('#/definitions/'):
+                    current = definitions.get(ref[len('#/definitions/'):])
+                elif mf['type'] == 'array' and '$ref' in mf['items']:
+                    if (ref:=mf['items']['$ref']).startswith('#/definitions/'):
+                        current = definitions.get(ref[len('#/definitions/'):])
+
+                else: # we're at a leaf, return
+                    if next(pathit,None) is None: # path ends here
+                        break 
+                    else: # path continues beyond this point, so this is not found and not creatable
+                        return None 
+        return current
 
     @classmethod
     def from_definition(cls,json_schema):
         return cls(json_schema=json_schema)
+        # return cls(json_schema=json.dumps(json_schema))
 
 class XmlSchema(AbstractSchema):
     xml_schema : str
