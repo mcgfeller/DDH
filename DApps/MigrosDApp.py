@@ -132,3 +132,9 @@ MIGROS_DAPP = MigrosDApp(owner=principals.User(id='migros',name='Migros (fake ac
 
 
 
+if __name__ == "__main__": # Debugging
+    import uvicorn
+    import os
+    port = 9001
+    os.environ['port'] = str(port)
+    uvicorn.run(app, host="0.0.0.0", port=port)
