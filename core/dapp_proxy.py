@@ -37,8 +37,7 @@ class DAppProxy(NoCopyBaseModel):
             j = await(self.client.get('/schemas'))
             j.raise_for_status()
             js = j.json()
-            self.schemas =  {keys.DDHkey(k):schemas.create_schema(s,sa) for k,(sa,s) in js.items()}
-            print('initialize',self.schemas)
+            self.schemas =  {keys.DDHkey(k):schemas.create_schema(s,sf,sa) for k,(sa,sf,s) in js.items()}
             schemaNetwork : pillars.SchemaNetworkClass = pillars['SchemaNetwork']
             self.register_schema(session)
             self.register_references(session,schemaNetwork)

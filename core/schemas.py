@@ -172,7 +172,6 @@ class SchemaVariant(str,enum.Enum):
 
 class SchemaAttributes(NoCopyBaseModel):
     variant : SchemaVariant = pydantic.Field(SchemaVariant.recommended,description="The schema variant for this instance")
-    format : SchemaFormat = pydantic.Field(SchemaFormat.json,description="The schema format for this instance")
     version : versions.Version = pydantic.Field(versions.Unspecified,description="The version of this schema instance")
     requires : typing.Optional[Requires] = None
 
@@ -180,6 +179,12 @@ class SchemaAttributes(NoCopyBaseModel):
 
 class AbstractSchema(NoCopyBaseModel,abc.ABC):
     schema_attributes : SchemaAttributes = pydantic.Field(default=SchemaAttributes(),descriptor="Attributes associated with this Schema")
+
+    @property
+    def format(self) ->SchemaFormat:
+        """ Schema format based on class """
+        return Class2SchemaFormat[self.__class__]
+
 
     def to_json_schema(self) -> JsonSchema:
         """ Make a JSON Schema from this Schema """
@@ -194,10 +199,10 @@ class AbstractSchema(NoCopyBaseModel,abc.ABC):
     def obtain(self,ddhkey: keys.DDHkey,split: int,create : bool = False) -> typing.Optional[AbstractSchema]:
         return None
 
-    def format(self,format : SchemaFormat):
-        if format == self.schema_attributes.format:
+    def to_format(self,format : SchemaFormat):
+        if format == self.format:
             return self.to_output()
-        if SchemaFormat2Class[format.value] == JsonSchema:
+        elif SchemaFormat2Class[format.value] == JsonSchema:
             return self.to_json_schema().to_output()
         else:
             raise NotImplementedError(f'output format {format} not supported for {self.__class__.__name__}')
@@ -264,7 +269,7 @@ class PySchema(AbstractSchema):
         return JsonSchema(json_schema=self.schema_element.schema_json(),schema_attributes=self.schema_attributes)
 
 
-    def to_output(self):
+    def to_output(self) -> pydantic.Json:
         """ Python schema is output as JSON """
         # return self.to_json_schema()
         return  self.schema_element.schema_json()
@@ -337,8 +342,8 @@ class JsonSchema(AbstractSchema):
 
     @classmethod
     def from_definition(cls,json_schema):
-        return cls(json_schema=json_schema)
-        # return cls(json_schema=json.dumps(json_schema))
+        # return cls(json_schema=json_schema)
+        return cls(json_schema=json.dumps(json_schema))
 
 class XmlSchema(AbstractSchema):
     xml_schema : str
@@ -358,6 +363,8 @@ SchemaFormat2Class = {
      SchemaFormat.xsd : XmlSchema
 }
 
+Class2SchemaFormat = {c:s for s,c in SchemaFormat2Class.items() }
+
 class SchemaContainer(NoCopyBaseModel):
     """ Holds one or more Schemas according to their variant, format, and version """
 
@@ -370,7 +377,7 @@ class SchemaContainer(NoCopyBaseModel):
     def add(self,schema: AbstractSchema):
         """ add a schema, considering its attributes """
         sa = schema.schema_attributes
-        self.schemas_by_variant.setdefault(sa.variant,{}).setdefault(sa.format,{})[sa.version] = schema
+        self.schemas_by_variant.setdefault(sa.variant,{}).setdefault(schema.format,{})[sa.version] = schema
         self.current_schema = schema
         if self.current_schema:
             if sa.version > self.current_schema.schema_attributes.version: # higher than current version
@@ -388,10 +395,10 @@ class SchemaContainer(NoCopyBaseModel):
     
     
 
-def create_schema(s: str,sa: SchemaAttributes) -> AbstractSchema:
+def create_schema(s: str,format: SchemaFormat, sa: SchemaAttributes) -> AbstractSchema:
     sa = SchemaAttributes(**sa)
-    sclass = SchemaFormat2Class.get(sa.format)
+    sclass = SchemaFormat2Class.get(format)
     if not sclass:
-        raise errors.NotFound(f'Unknown schema format {sa.format}')
+        raise errors.NotFound(f'Unknown schema format {format}')
     schema = sclass.from_str(s,schema_attributes=sa)
     return schema

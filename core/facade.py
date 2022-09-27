@@ -26,7 +26,7 @@ def _get_consent_node(ddhkey: keys.DDHkey, support: nodes.NodeSupports, node : t
     
 
 
-def get_schema(access : permissions.Access, session : sessions.Session, schemaformat: schemas.SchemaFormat = schemas.SchemaFormat.json) -> typing.Optional[typing.Any]:
+def get_schema(access : permissions.Access, session : sessions.Session, schemaformat: schemas.SchemaFormat = schemas.SchemaFormat.json) -> typing.Optional[pydantic.Json]:
     """ Service utility to retrieve a AbstractSchema and return it in the desired format.
         Returns None if no schema found.
     """
@@ -40,7 +40,7 @@ def get_schema(access : permissions.Access, session : sessions.Session, schemafo
         access.raise_permitted(_get_consent_node(access.ddhkey,nodes.NodeSupports.schema,snode,transaction))
         schema = snode.get_sub_schema(access.ddhkey,split)
         if schema:
-            formatted_schema = schema.format(schemaformat)
+            formatted_schema = schema.to_format(schemaformat)
     return formatted_schema
 
 

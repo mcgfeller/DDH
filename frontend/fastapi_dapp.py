@@ -55,7 +55,7 @@ async def get_app_info():
 @router.get("/schemas")
 async def get_schemas() -> dict:
     a = get_apps()[0]
-    s = {str(k): (s.schema_attributes,s.to_output()) for k,s in a.get_schemas().items()}
+    s = {str(k): (s.schema_attributes,'json',s.to_output()) for k,s in a.get_schemas().items()}
     return s
 
 @router.post("/execute")
