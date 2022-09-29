@@ -24,7 +24,7 @@ dapps = ProcessGroup(name='DApps',processes=processes)
 
 
 # groups, referring to processes
-ddh_base = ProcessGroup(name='ddh_base',processes=Controllable.get('api','market'))
+ddh_base = ProcessGroup(name='ddh_base',processes=Controllable.get('api','market','subscription'))
 ddh = ProcessGroup(name='ddh',processes=ddh_base.processes+dapps.processes)
 
 
