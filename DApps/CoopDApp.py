@@ -38,6 +38,7 @@ class CoopDApp(dapp_attrs.DApp):
         return {keys.DDHkey(key="//org/coop.ch"):schemas.PySchema(schema_element=CoopSchema)}
 
 
+
     def execute(self, req : dapp_attrs.ExecuteRequest):
         """ obtain data by recursing to schema """
         if req.op == nodes.Ops.get:
@@ -45,8 +46,8 @@ class CoopDApp(dapp_attrs.DApp):
             # key we transform into?
             if req.access.ddhkey.without_owner() == self.transforms_into:
                 d = self.get_and_transform(req)
-            else: # key we provide, call schema descent to resolve:        
-            d = self._ddhschema.get_data(selection,req.access,req.q)
+            else: # key we provide, call schema descent to resolve:
+                d = self._ddhschema.get_data(selection,req.access,req.q)
         else:
             raise ValueError(f'Unsupported {req.op=}')
         return d
@@ -69,3 +70,10 @@ class CoopSchema(schemas.SchemaElement):
 COOP_DAPP = CoopDApp(owner=principals.User(id='coop',name='Coop (fake account)'),
     schemakey=keys.DDHkey(key="//org/coop.ch"),
     catalog = common_ids.CatalogCategory.living)
+
+if __name__ == "__main__": # Debugging
+    import uvicorn
+    import os
+    port = 9022
+    os.environ['port'] = str(port)
+    uvicorn.run(app, host="0.0.0.0", port=port)
