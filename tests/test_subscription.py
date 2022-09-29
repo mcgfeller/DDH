@@ -1,31 +1,24 @@
 """ Maintain user subscriptions to DApps. 
-    TODO: Rewrite tu use Microservice to obtain DApps
+    Use Microservice to obtain DApps
 """
-from core import keys,permissions,facade,errors,principals
-from user import subscriptions
-from frontend import user_auth,sessions
+from core import errors
 import pytest
 
-@pytest.fixture(scope="module")
-def user():
-    return user_auth.UserInDB.load('mgf')
 
-@pytest.fixture(scope="module")
-def session(user):
-    return sessions.Session(token_str='test_session',user=user)
-
-def test_subscription(user,session):
+def test_subscription(user1_sub):
     """ Test adding a subscription """
-    s = subscriptions.add_subscription(user.id,'MigrosDApp')
-    l = subscriptions.list_subscriptions(user.id)
+    r = user1_sub.post('/users/mgf/subscriptions/dapp/MigrosDApp')
+    r.raise_for_status()
+    d = r.json()
+    assert 'MigrosDApp' in d
     return
 
-def test_bad_app(user,session):
+def test_bad_app(user1_sub):
     """ Test adding a subscription """
-    with pytest.raises(errors.NotFound):
-        s = subscriptions.add_subscription(user.id,'LidlDApp')
+    r = user1_sub.post('/users/mgf/subscriptions/dapp/UnknownDApp')
+    assert r.status_code == 404
     return
 
 
 if __name__ == '__main__':
-    test_subscription(user,session)
+    test_subscription(user1_sub)

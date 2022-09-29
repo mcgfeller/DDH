@@ -21,15 +21,32 @@ def httpx_processes(wait : float = 3):
 
 @pytest.fixture(scope="session")
 def user1(httpx_processes):
-    client = get_authorized_client(httpx_processes,{'username':'mgf','password':'secret'})
+    client = get_authorized_client(httpx_processes,'api',{'username':'mgf','password':'secret'})
     yield client
     # Finalizer:
     client.close()
     return
 
-def get_authorized_client(processes,userpwd) -> httpx.Client:
+
+@pytest.fixture(scope="session")
+def user1_sub(httpx_processes):
+    client = get_authorized_client(httpx_processes,'subscription',{'username':'mgf','password':'secret'})
+    yield client
+    # Finalizer:
+    client.close()
+    return
+
+@pytest.fixture(scope="session")
+def user1_market(httpx_processes):
+    client = get_authorized_client(httpx_processes,'market',{'username':'mgf','password':'secret'})
+    yield client
+    # Finalizer:
+    client.close()
+    return
+
+def get_authorized_client(processes,procid,userpwd) -> httpx.Client:
     """ return a client with header configured for userpwd """
-    port = processes.get('api')[0].port # get the API server
+    port = processes.get(procid)[0].port # get the API server
     url = 'http://localhost:'+str(port)
     r = httpx.post(url+'/token',data=userpwd) # obtain token
     r.raise_for_status()
