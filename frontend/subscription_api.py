@@ -4,18 +4,16 @@
 
 """
 
-from curses.ascii import SUB
-import datetime
-import enum
 import typing
 
 import fastapi
 import fastapi.security
-import pydantic
-from core import (dapp_attrs, errors, facade, keys, permissions, pillars, principals,
-                  schemas,common_ids)
+
+from core import (dapp_attrs, errors, keys, permissions, principals,
+                  common_ids)
 from user import subscriptions
 from frontend import sessions
+import httpx
 
 app = fastapi.FastAPI()
 
@@ -42,20 +40,21 @@ async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordReque
 
 
 
-@app.post("users/{user}/subscriptions/dapp/{dappid}",response_model=list[dapp_attrs.DAppOrFamily])
+@app.post("/users/{user}/subscriptions/dapp/{dappid}",response_model=list[str])
 async def create_subscription(
     user: common_ids.PrincipalId,
-    dappid : principals.DAppId,
+    dappid : str,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     ):
     """ Create a single subscription for a user """
     if not user == session.user.id:
         raise errors.AccessError('authorized user is not ressource owner')
-    das =subscriptions.add_subscription(user,dappid)
+    valid_dappids = await get_dappids(session)
+    das =subscriptions.add_subscription(user,typing.cast(principals.DAppId,dappid),valid_dappids)
 
     return das
     
-@app.get("users/{user}/subscriptions/dapp/",response_model=list[dapp_attrs.DAppOrFamily])
+@app.get("/users/{user}/subscriptions/dapp/",response_model=list[str])
 async def list_subscription(
     user: common_ids.PrincipalId,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
@@ -63,5 +62,20 @@ async def list_subscription(
     """ List subscriptions for a user """
     if not user == session.user.id:
         raise errors.AccessError('authorized user is not ressource owner')
-    das = subscriptions.list_subscriptions(user)    
+    valid_dappids = await get_dappids(session)    
+    das = subscriptions.list_subscriptions(user,valid_dappids)    
     return das
+
+async def get_dappids(session: sessions.Session):
+    client = httpx.AsyncClient(base_url='http://localhost:8001')
+    j = await client.get('/dapp') 
+    j.raise_for_status()
+    d = j.json()
+    return set(d)
+
+if __name__ == "__main__": # Debugging
+    import uvicorn
+    import os
+    port = 8003
+    os.environ['port'] = str(port)
+    uvicorn.run(app, host="0.0.0.0", port=port)

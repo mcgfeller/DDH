@@ -126,6 +126,26 @@ async def connect_dapp(
     bg_tasks.add_task(dapp_proxy.DAppManager.register,request,session,running_dapp)
     return 
 
+@app.get("/dapp")
+async def list_dapps(
+    session: sessions.Session = sessions.get_system_session(), # TODO: Authentication between micro-services
+    ) -> list[principals.DAppId]: 
+    """ return a list of DApps """
+    return list(dapp_proxy.DAppManager.DAppsById.keys())
+
+@app.get("/dapp/{dappids}")
+async def get_dapp(
+    dappids : str,
+    session: sessions.Session = sessions.get_system_session(), # TODO: Authentication between micro-services
+    ) -> list[dapp_attrs.DApp]:
+    """ return attributes of DApps given one or more DAppIds, separated by '+' """
+    dis = dappids.split('+')
+    dapps = [dapp.attrs for dappid in dis if (dapp:=dapp_proxy.DAppManager.DAppsById.get(typing.cast(principals.DAppId,dappid)))]
+    return dapps
+
+
+
+
 if __name__ == "__main__": # Debugging
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
