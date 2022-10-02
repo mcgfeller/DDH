@@ -8,6 +8,7 @@ import typing
 import pydantic
 import datetime
 import enum
+import httpx
 
 
 from core import dapp_attrs, pillars
@@ -43,7 +44,9 @@ async def get_dapps(
     labels : typing.Optional[typing.Iterable[common_ids.Label]] = None, 
     ):
     """ search for DApps or DApp Families """
-    dapps = recommender.search_dapps(session,query,categories,labels)
+    all_dapps = await get_dappids(session)
+    sub_dapps = await get_subscriptions(session)
+    dapps = recommender.search_dapps(session,all_dapps,sub_dapps,query,categories,labels)
     dapps = [d.to_DAppOrFamily() for d in dapps] # convert to result model
     return dapps
 
@@ -54,8 +57,24 @@ async def get_dapp(
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     ):
     """ get a single DApp or DApp Family by its ID """
-    dapp = pillars.DAppManager.DAppsById.get(dappid)
+    dapp = await get_dappids(session,dappid=dappid)
     if dapp:
         return dapp
     else:
         raise fastapi.HTTPException(status_code=404, detail=f"DApp not found: {dappid}.")
+
+async def get_dappids(session: sessions.Session,dappid:typing.Optional[principals.DAppId] = None):
+    client = httpx.AsyncClient(base_url='http://localhost:8001')
+    url = '/dapp'+f'/{dappid}' if dappid else '' 
+    j = await client.get(url,params={'attrs':'True'})
+    j.raise_for_status()
+    d = j.json()
+    return set(d)
+
+async def get_subscriptions(session: sessions.Session):
+    user = session.user.id
+    client = httpx.AsyncClient(base_url='http://localhost:8003')
+    j = await client.get(f'/users/{user}/subscriptions/dapp/') 
+    j.raise_for_status()
+    d = j.json()
+    return set(d)    

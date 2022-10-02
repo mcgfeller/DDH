@@ -2,99 +2,118 @@
     TODO: Rewrite tu use Microservice to obtain DApps
 """
 
-from core import keys,permissions,facade,errors,principals,common_ids,dapp_proxy
-from core import pillars
-from frontend import user_auth,sessions
-from market import recommender
-from user import subscriptions
+from calendar import c
+from core import common_ids
 import pytest
 
-@pytest.fixture(scope="module")
-def user():
-    return user_auth.UserInDB.load('mgf')
 
-@pytest.fixture(scope="module")
-def session(user):
-    return sessions.Session(token_str='test_session',user=user)
 
-@pytest.fixture()
-def subscribe_migros(user):
-    yield subscriptions.add_subscription(user,'MigrosDApp')
-    return subscriptions.delete_subscription(user,'MigrosDApp')
+def subscribe(user,dappid):
+    r = user.post(f'/users/mgf/subscriptions/dapp/{dappid}')
+    r.raise_for_status()
+    d = r.json()
+    return 
 
-@pytest.fixture()
-def subscribe_scs_emp(user):
-    yield subscriptions.add_subscription(user,'SwisscomEmpDApp')
-    return subscriptions.delete_subscription(user,'SwisscomEmpDApp')
+def unsubscribe(user,dappid):
+    r = user.delete(f'/users/mgf/subscriptions/dapp/{dappid}')
+    r.raise_for_status()
+    d = r.json()
+    return 
 
 @pytest.fixture()
-def subscribe_tax(user):
-    yield subscriptions.add_subscription(user,'TaxCalc')
-    return subscriptions.delete_subscription(user,'TaxCalc')
+def subscribe_migros(user1_sub):
+    yield subscribe(user1_sub,'MigrosDApp')
+    return unsubscribe(user1_sub,'MigrosDApp')
+
+@pytest.fixture()
+def subscribe_scs_emp(user1_sub):
+    yield subscribe(user1_sub,'SwisscomEmpDApp')
+    return unsubscribe(user1_sub,'SwisscomEmpDApp')
 
 
-def test_all(user,session):
-    """ Test withhout criteria """
-    sris = recommender.search_dapps(session,query=None,categories=None,desired_labels=None)
-    assert len(sris) == len(dapp_proxy.DAppManager.DAppsById)
+@pytest.fixture()
+def subscribe_tax(user1_sub):
+    yield subscribe(user1_sub,'TaxCalc')
+    return unsubscribe(user1_sub,'TaxCalc')
+
+@pytest.fixture()
+def all_dapps(user1):
+    j = user1.get('/dapp') 
+    j.raise_for_status()
+    d = j.json()
+    return d
+
+
+def search(user1_market,query=None,categories=None,desired_labels=None):
+    params = {'query':query,'categories':categories,'desired_labels':desired_labels,}
+    j = user1_market.get('/market/dapp',params={p:v for p,v in params.items() if v is not None}) 
+    j.raise_for_status()
+    d = j.json()
+    return d
+
+
+def test_all(user1_market,all_dapps):
+    """ Test without criteria """
+    sris = search(user1_market,query=None,categories=None,desired_labels=None)
+    assert len(sris) == len(all_dapps)
     return
 
-def test_query_1(user,session):
+def test_query_1(user1_market):
     """ Test simple text query """
-    sris = recommender.search_dapps(session,query='tax',categories=None,desired_labels=None)
+    sris = search(user1_market,query='tax',categories=None,desired_labels=None)
     assert sris
     return
 
-def test_query_label_1(user,session):
+def test_query_label_1(user1_market):
     """ Simple text + fulfilled label """
-    sris = recommender.search_dapps(session,query='tax',categories=None,desired_labels=[common_ids.Label.free])
+    sris = search(user1_market,query='tax',categories=None,desired_labels=[common_ids.Label.free])
     assert sris
     return
 
-def test_query_label_0(user,session):
+def test_query_label_0(user1_market):
     """  Simple text + non-fulfilled label """
-    sris = recommender.search_dapps(session,query='tax',categories=None,desired_labels=[common_ids.Label.anonymous])
+    sris = search(user1_market,query='tax',categories=None,desired_labels=[common_ids.Label.anonymous])
     assert sris
     assert sris[0].merit < 0
     assert common_ids.Label.anonymous in sris[0].ignored_labels
     return
 
-def test_query_cat_1(user,session):
+def test_query_cat_1(user1_market):
     """ Test simple text query """
-    sris = recommender.search_dapps(session,query='tax',categories=[common_ids.CatalogCategory.finance],desired_labels=None)
+    sris = search(user1_market,query='tax',categories=[common_ids.CatalogCategory.finance],desired_labels=None)
     assert sris
     return
 
-def test_query_cat_label_1(user,session):
+def test_query_cat_label_1(user1_market):
     """ Test simple text query """
-    sris = recommender.search_dapps(session,query='tax',categories=[common_ids.CatalogCategory.finance],desired_labels=[common_ids.Label.free])
+    sris = search(user1_market,query='tax',categories=[common_ids.CatalogCategory.finance],desired_labels=[common_ids.Label.free])
     assert sris
     return
 
-def test_query_cat_0(user,session):
+def test_query_cat_0(user1_market):
     """ Test simple text query """
-    sris = recommender.search_dapps(session,query='tax',categories=[common_ids.CatalogCategory.health],desired_labels=None)
+    sris = search(user1_market,query='tax',categories=[common_ids.CatalogCategory.health],desired_labels=None)
     assert not sris,'tax is not in health'
     return
 
-def test_cat_1(user,session):
+def test_cat_1(user1_market):
     """ Test simple catalog query """
-    sris = recommender.search_dapps(session,query=None,categories=[common_ids.CatalogCategory.living],desired_labels=None)
+    sris = search(user1_market,query=None,categories=[common_ids.CatalogCategory.living],desired_labels=None)
     assert sris
 
-def test_cat_label(user,session):
+def test_cat_label(user1_market):
     """ Test simple catalog query """
-    sris = recommender.search_dapps(session,query=None,categories=[common_ids.CatalogCategory.living],desired_labels=[common_ids.Label.anonymous])
+    sris = search(user1_market,query=None,categories=[common_ids.CatalogCategory.living],desired_labels=[common_ids.Label.anonymous])
     assert sris
 
-def test_subscribed(user,session,subscribe_scs_emp,subscribe_migros):
+def test_subscribed(user1_market,subscribe_scs_emp,subscribe_migros):
     """ test with two subscribed apps """
     subscribe_scs_emp,subscribe_migros
-    sris = recommender.search_dapps(session,query=None,categories=None,desired_labels=None)
+    sris = search(user1_market,query=None,categories=None,desired_labels=None)
     assert sris
     assert sris[0].da.id == 'TaxCalc',"as we're subscribed to an employee app, the tax calculator is the best recommendation"
     return
 
 
 if __name__ == '__main__':
-    test_all(user,session)
+    test_all(user1_market)

@@ -10,8 +10,7 @@ logger = logging.getLogger(__name__)
 
 import pydantic
 from utils import utils
-from core import dapp_attrs,dapp_proxy, schema_network, schema_root,principals,keys,pillars,common_ids
-from user import subscriptions
+from core import dapp_attrs, schema_network, schema_root,principals,keys,pillars,common_ids
 from utils.pydantic_utils import NoCopyBaseModel
 
 
@@ -25,18 +24,21 @@ class SearchResultItem(NoCopyBaseModel):
     missing: set[dapp_attrs.DApp] = set()
 
 
+def list_subscriptions(user,all_dapps,sub_dapps):
+    return sub_dapps
 
-def search_dapps(session,query : typing.Optional[str],categories : typing.Optional[typing.Iterable[common_ids.CatalogCategory]],desired_labels : typing.Optional[typing.Iterable[common_ids.Label]]) -> list[SearchResultItem]:
-    subscribed = subscriptions.list_subscriptions(session.user)
+
+def search_dapps(session,all_dapps: list[dapp_attrs.DAppFamily], sub_dapps: set[str], query : typing.Optional[str], categories : typing.Optional[typing.Iterable[common_ids.CatalogCategory]],desired_labels : typing.Optional[typing.Iterable[common_ids.Label]]) -> list[SearchResultItem]:
+    subscribed = list_subscriptions(session.user,all_dapps,sub_dapps)
     if query:
-        dapps = dapps_in_categories(session,categories)
+        dapps = dapps_in_categories(session,all_dapps,categories)
         dapps = search_text(session,dapps,query)
     elif categories:
-        dapps = dapps_in_categories(session,categories)
+        dapps = dapps_in_categories(session,all_dapps,categories)
     elif subscribed: # no input, propose complementing to subscribed
         dapps = from_subscribed(session,subscribed)
     else: # no input at all - currently, list all DApps - but may raise 413 later 
-        dapps = dapp_proxy.DAppManager.DAppsById.values()
+        dapps = all_dapps
     if subscribed:
         # eliminate already subscribed:
         dapps = [da for da in dapps if da not in subscribed]
@@ -50,12 +52,12 @@ def search_dapps(session,query : typing.Optional[str],categories : typing.Option
 
     return sris
 
-def dapps_in_categories(session,categories):
+def dapps_in_categories(session,all_dapps,categories):
     if categories:
         categories = frozenset(categories)
-        return (da for da in dapp_proxy.DAppManager.DAppsById.values() if da.catalog in categories)
+        return (da for da in all_dapps if da.catalog in categories)
     else:
-        return dapp_proxy.DAppManager.DAppsById.values()
+        return all_dapps
 
 def search_text(session,dapps,query):
     dapps = (d for d in dapps if query.lower() in d.searchtext) # TODO: Real search
@@ -63,10 +65,10 @@ def search_text(session,dapps,query):
 
 
 
-def from_subscribed(session,dapps : typing.Iterable[dapp_proxy.DAppProxy]) -> typing.Iterable[dapp_proxy.DAppProxy]:
+def from_subscribed(session,dapps : typing.Iterable[dapp_attrs.DAppOrFamily]) -> typing.Iterable[dapp_attrs.DAppOrFamily]:
     """ all reachable Data Apps from subscribed Data Apps, with cost of reach """
     schemaNetwork = pillars.Pillars['SchemaNetwork']
-    reachable = sum((schemaNetwork.dapps_from(d,session.user) for d in dapps if isinstance(d,dapp_proxy.DAppProxy)),[])
+    reachable = sum((schemaNetwork.dapps_from(d,session.user) for d in dapps if isinstance(d,dapp_attrs.DAppOrFamily)),[])
     return reachable
 
 
@@ -77,7 +79,7 @@ def check_labels(session,sris : list[SearchResultItem],desired_labels : set[comm
         sri.merit -= len(sri.ignored_labels)
     return sris
 
-def add_costs(session,sris : list[SearchResultItem], subscribed  : typing.Iterable[dapp_proxy.DAppProxy]) -> list[SearchResultItem]:
+def add_costs(session,sris : list[SearchResultItem], subscribed  : typing.Iterable[dapp_attrs.DAppOrFamily]) -> list[SearchResultItem]:
     """ Calculate cost of dapp in sris, including costs of pre-requisites except for those already 
         subscribed (which get a bonus merit).
 

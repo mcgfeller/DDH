@@ -129,9 +129,13 @@ async def connect_dapp(
 @app.get("/dapp")
 async def list_dapps(
     session: sessions.Session = sessions.get_system_session(), # TODO: Authentication between micro-services
-    ) -> list[principals.DAppId]: 
+    attrs : bool = pydantic.Field(False,description='include full attributes'),
+    ) -> typing.Union[list[principals.DAppId],list[dapp_attrs.DAppOrFamily]]: 
     """ return a list of DApps """
-    return list(dapp_proxy.DAppManager.DAppsById.keys())
+    if attrs:
+        return [dp.attrs for dp in dapp_proxy.DAppManager.DAppsById.values()]
+    else:
+        return list(dapp_proxy.DAppManager.DAppsById.keys())
 
 @app.get("/dapp/{dappids}")
 async def get_dapp(
