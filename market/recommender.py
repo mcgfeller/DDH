@@ -48,7 +48,7 @@ def search_dapps(session,all_dapps: list[dapp_attrs.DAppFamily], sub_dapps: set[
         dapps = [da for da in dapps if da not in subscribed]
 
     
-    sris = [SearchResultItem(dapp=da['id']) for da in dapps]
+    sris = [SearchResultItem(dapp=da.id) for da in dapps]
     if desired_labels:
         sris = check_labels(session,sris,frozenset(desired_labels))
     #  sris = add_costs(session,sris,subscribed) # TODO!
@@ -64,13 +64,14 @@ def dapps_in_categories(session,all_dapps,categories):
         return all_dapps
 
 def search_text(session,dapps,query):
-    dapps = (d for d in dapps if query.lower() in d.get('searchtext','')) # TODO: Real search
+    dapps = (d for d in dapps if query.lower() in d.searchtext) # TODO: Real search
     return dapps
 
 
 
 def from_subscribed(session,dapps : typing.Iterable[dapp_attrs.DAppOrFamily]) -> typing.Iterable[dapp_attrs.DAppOrFamily]:
     """ all reachable Data Apps from subscribed Data Apps, with cost of reach """
+    # TODO: Where to keep SchemaNetwork? Access it through API?
     schemaNetwork = pillars.Pillars['SchemaNetwork']
     reachable = sum((schemaNetwork.dapps_from(d,session.user) for d in dapps if isinstance(d,dapp_attrs.DAppOrFamily)),[])
     return reachable

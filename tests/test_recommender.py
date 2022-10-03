@@ -74,8 +74,8 @@ def test_query_label_0(user1_market):
     """  Simple text + non-fulfilled label """
     sris = search(user1_market,query='tax',categories=None,desired_labels=[common_ids.Label.anonymous])
     assert sris
-    assert sris[0].merit < 0
-    assert common_ids.Label.anonymous in sris[0].ignored_labels
+    assert sris[0]['merit'] < 0
+    assert common_ids.Label.anonymous in sris[0]['ignored_labels']
     return
 
 def test_query_cat_1(user1_market):

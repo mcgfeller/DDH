@@ -46,7 +46,7 @@ async def get_dapps(
     labels : typing.Optional[typing.Iterable[common_ids.Label]] = None, 
     ):
     """ search for DApps or DApp Families """
-    all_dapps = await get_dappids(session)
+    all_dapps = await get_all_dapps(session)
     sub_dapps = await get_subscriptions(session)
     sris = recommender.search_dapps(session,all_dapps,sub_dapps,query,categories,labels)
     # dapps = [d.to_DAppOrFamily() for d in dapps] # convert to result model
@@ -59,17 +59,17 @@ async def get_dapp(
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     ):
     """ get a single DApp or DApp Family by its ID """
-    dapp = await get_dappids(session,dappid=dappid)
+    dapp = await get_all_dapps(session,dappid=dappid)
     if dapp:
         return dapp
     else:
         raise fastapi.HTTPException(status_code=404, detail=f"DApp not found: {dappid}.")
 
-async def get_dappids(session: sessions.Session,dappid:typing.Optional[principals.DAppId] = None):
+async def get_all_dapps(session: sessions.Session,dappid:typing.Optional[principals.DAppId] = None):
     url = '/dapp'+(f'/{dappid}' if dappid else '')
     d = await fastapi_utils.submit1_asynch(session,'http://localhost:8001',url,params={'attrs':'True'})
-    # TODO: Must return list of DApps, not list of attr dicts 
-    return list(d)
+    das = [dapp_attrs.DApp(**da) for da in d]
+    return das
 
 async def get_subscriptions(session: sessions.Session):
     user = session.user.id
