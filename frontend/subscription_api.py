@@ -54,6 +54,20 @@ async def create_subscription(
 
     return das
     
+@app.delete("/users/{user}/subscriptions/dapp/{dappid}",response_model=list[str])
+async def delete_subscription(
+    user: common_ids.PrincipalId,
+    dappid : str,
+    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
+    ):
+    """ Create a single subscription for a user """
+    if not user == session.user.id:
+        raise errors.AccessError('authorized user is not ressource owner')
+    valid_dappids = await get_dappids(session)
+    das =subscriptions.delete_subscription(user,typing.cast(principals.DAppId,dappid),valid_dappids)
+
+    return das
+
 @app.get("/users/{user}/subscriptions/dapp/",response_model=list[str])
 async def list_subscription(
     user: common_ids.PrincipalId,

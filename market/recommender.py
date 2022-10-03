@@ -16,19 +16,23 @@ from utils.pydantic_utils import NoCopyBaseModel
 
 class SearchResultItem(NoCopyBaseModel):
     """ a single search result, with some search information """
-    da : dapp_attrs.DApp = pydantic.Field(alias='dapp')
+    da : str  = pydantic.Field(alias='dapp')
+    # dad : dapp_attrs.DApp = pydantic.Field(alias='dapp') # TODO: Pydantic issubclass error   File "pydantic\schema.py", line 921, in pydantic.schema.field_singleton_schema
     cost : float = 0.0
     ignored_labels : typing.Iterable[str] = [] # query labels that have been ignored
     merit : int = pydantic.Field(0,description="Ranking merit, starts at 0")
-    requires : set[dapp_attrs.DApp] = set()
-    missing: set[dapp_attrs.DApp] = set()
+    requires : set[principals.DAppId] = set()
+    missing: set[principals.DAppId] = set()
 
 
 def list_subscriptions(user,all_dapps,sub_dapps):
     return sub_dapps
 
 
-def search_dapps(session,all_dapps: list[dapp_attrs.DAppFamily], sub_dapps: set[str], query : typing.Optional[str], categories : typing.Optional[typing.Iterable[common_ids.CatalogCategory]],desired_labels : typing.Optional[typing.Iterable[common_ids.Label]]) -> list[SearchResultItem]:
+def search_dapps(session,all_dapps: list[dapp_attrs.DAppFamily], sub_dapps: set[str], query : typing.Optional[str], 
+    categories : typing.Optional[typing.Iterable[common_ids.CatalogCategory]],
+    desired_labels : typing.Optional[typing.Iterable[common_ids.Label]]) -> list[SearchResultItem]:
+
     subscribed = list_subscriptions(session.user,all_dapps,sub_dapps)
     if query:
         dapps = dapps_in_categories(session,all_dapps,categories)
@@ -44,10 +48,10 @@ def search_dapps(session,all_dapps: list[dapp_attrs.DAppFamily], sub_dapps: set[
         dapps = [da for da in dapps if da not in subscribed]
 
     
-    sris = [SearchResultItem(dapp=da) for da in dapps]
+    sris = [SearchResultItem(dapp=da['id']) for da in dapps]
     if desired_labels:
         sris = check_labels(session,sris,frozenset(desired_labels))
-    sris = add_costs(session,sris,subscribed)
+    #  sris = add_costs(session,sris,subscribed) # TODO!
     sris = grade_results(session,sris)
 
     return sris
@@ -60,7 +64,7 @@ def dapps_in_categories(session,all_dapps,categories):
         return all_dapps
 
 def search_text(session,dapps,query):
-    dapps = (d for d in dapps if query.lower() in d.searchtext) # TODO: Real search
+    dapps = (d for d in dapps if query.lower() in d.get('searchtext','')) # TODO: Real search
     return dapps
 
 

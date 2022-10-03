@@ -48,9 +48,9 @@ async def get_dapps(
     """ search for DApps or DApp Families """
     all_dapps = await get_dappids(session)
     sub_dapps = await get_subscriptions(session)
-    dapps = recommender.search_dapps(session,all_dapps,sub_dapps,query,categories,labels)
+    sris = recommender.search_dapps(session,all_dapps,sub_dapps,query,categories,labels)
     # dapps = [d.to_DAppOrFamily() for d in dapps] # convert to result model
-    return dapps
+    return sris
 
 
 @app.get("/market/dapp/{dappid:principals.DAppId}",response_model=dapp_attrs.DAppOrFamily)
@@ -68,6 +68,7 @@ async def get_dapp(
 async def get_dappids(session: sessions.Session,dappid:typing.Optional[principals.DAppId] = None):
     url = '/dapp'+(f'/{dappid}' if dappid else '')
     d = await fastapi_utils.submit1_asynch(session,'http://localhost:8001',url,params={'attrs':'True'})
+    # TODO: Must return list of DApps, not list of attr dicts 
     return list(d)
 
 async def get_subscriptions(session: sessions.Session):
