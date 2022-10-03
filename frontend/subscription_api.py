@@ -13,7 +13,7 @@ from core import (dapp_attrs, errors, keys, permissions, principals,
                   common_ids)
 from user import subscriptions
 from frontend import sessions
-import httpx
+from utils import fastapi_utils
 
 app = fastapi.FastAPI()
 
@@ -67,10 +67,7 @@ async def list_subscription(
     return das
 
 async def get_dappids(session: sessions.Session):
-    client = httpx.AsyncClient(base_url='http://localhost:8001')
-    j = await client.get('/dapp') 
-    j.raise_for_status()
-    d = j.json()
+    d = await fastapi_utils.submit1_asynch(session,'http://localhost:8001',f'/dapp')
     return set(d)
 
 if __name__ == "__main__": # Debugging

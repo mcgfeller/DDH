@@ -128,8 +128,8 @@ async def connect_dapp(
 
 @app.get("/dapp")
 async def list_dapps(
-    session: sessions.Session = sessions.get_system_session(), # TODO: Authentication between micro-services
-    attrs : bool = pydantic.Field(False,description='include full attributes'),
+    session:  sessions.Session = fastapi.Depends(user_auth.get_current_session),
+    attrs : bool = False
     ) -> typing.Union[list[principals.DAppId],list[dapp_attrs.DAppOrFamily]]: 
     """ return a list of DApps """
     if attrs:
@@ -140,7 +140,7 @@ async def list_dapps(
 @app.get("/dapp/{dappids}")
 async def get_dapp(
     dappids : str,
-    session: sessions.Session = sessions.get_system_session(), # TODO: Authentication between micro-services
+    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     ) -> list[dapp_attrs.DApp]:
     """ return attributes of DApps given one or more DAppIds, separated by '+' """
     dis = dappids.split('+')
