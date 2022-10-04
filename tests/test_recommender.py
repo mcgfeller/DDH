@@ -1,21 +1,22 @@
 """ Test the recommender, i.e., present a list of recommended DApps based on user input.
-    TODO: Rewrite tu use Microservice to obtain DApps
 """
 
-from calendar import c
 from core import common_ids
 import pytest
 
 
 
-def subscribe(user,dappid):
-    r = user.post(f'/users/mgf/subscriptions/dapp/{dappid}')
+def subscribe(client,dappid):
+    """ subscribe user to dappid """
+    # TODO: Extract user from client
+    r = client.post(f'/users/mgf/subscriptions/dapp/{dappid}')
     r.raise_for_status()
     d = r.json()
     return 
 
-def unsubscribe(user,dappid):
-    r = user.delete(f'/users/mgf/subscriptions/dapp/{dappid}')
+def unsubscribe(client,dappid):
+    """ unsubscribe user from dappid """
+    r = client.delete(f'/users/mgf/subscriptions/dapp/{dappid}')
     r.raise_for_status()
     d = r.json()
     return 

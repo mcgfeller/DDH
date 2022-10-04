@@ -51,7 +51,7 @@ def get_authorized_client(processes,procid,userpwd) -> httpx.Client:
     r = httpx.post(url+'/token',data=userpwd) # obtain token
     r.raise_for_status()
     token = r.json()['access_token']
-    headers = httpx.Headers({'Authorization': 'Bearer '+token})
+    headers = httpx.Headers({'Authorization': 'Bearer '+token,'x-user':userpwd['username']})
     client = httpx.Client(base_url=url,headers=headers) # client with token in header
     return client
 
