@@ -6,11 +6,12 @@ import logging
 import networkx
 import matplotlib.pyplot as plt
 
+
 logger = logging.getLogger(__name__)
 
 from utils import utils
-from core import dapp_proxy, schema_root,schemas,principals,keys
-from utils.pydantic_utils import NoCopyBaseModel
+from core import dapp_proxy,schemas,principals
+
 
 
 
@@ -18,9 +19,11 @@ class SchemaNetworkClass():
 
     def __init__(self):
         self.network = networkx.DiGraph()
+        self.valid = utils.Invalidatable(self.complete_graph)
 
     def plot(self,layout='circular_layout'):
         """ Plot the current network """
+        self.valid.use()
         labels = {node : f"{attrs['type']}:{attrs['id']}" for node,attrs in self.network.nodes.items()} # short id for nodes
         colors = ['blue' if attrs['type'] == 'schema' else 'red' for attrs in self.network.nodes.values()]
         flayout = getattr(networkx,layout)
@@ -28,6 +31,7 @@ class SchemaNetworkClass():
         plt.show()
 
     def dapps_from(self,from_dapp : dapp_proxy.DAppProxy, principal : principals.Principal) -> typing.Iterable[dapp_proxy.DAppProxy]: 
+        self.valid.use()
         return [n for n in networkx.descendants(self.network,from_dapp) if isinstance(n,dapp_proxy.DAppProxy)]
 
     def dapps_required(self,for_dapp : dapp_proxy.DAppProxy, principal : principals.Principal) -> tuple[set[dapp_proxy.DAppProxy],set[dapp_proxy.DAppProxy]]: 
@@ -37,6 +41,7 @@ class SchemaNetworkClass():
                 we take only the longest line of requires DApps as a conservative estimate.
 
         """
+        self.valid.use()
         g = self.network
         sp = networkx.shortest_path(g, target = for_dapp)
         
@@ -81,4 +86,7 @@ class SchemaNetworkClass():
                     self.network.add_edge(up,node,type='provides') # extend provision from up level to node
 
         return
+
+
+
 

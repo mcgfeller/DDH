@@ -1,5 +1,5 @@
 """ Utilities """
-import types,sys,operator,threading,struct,traceback,collections,inspect
+import types,sys,operator,threading,struct,traceback,collections,inspect,typing
 from time import time as _time, sleep as _sleep
 import heapq
 import logging
@@ -193,6 +193,23 @@ class Singleton(object):
         finally:
             Singleton._tlock.release()
         return cls._the_instance
+
+class Invalidatable:
+    """ simple object to keep a valid status and invoke a callable to revalidate """
+
+    def __init__(self, revalidate : typing.Callable):
+        self.revalidate = revalidate 
+        self._valid : bool = False
+
+    def invalidate(self):
+        self._valid = False
+
+    def use(self):
+        """ call before using the parent, used to revalidate if parent is invalid """
+        if not self._valid: 
+            self.revalidate()
+            self._valid = True
+        return
 
 class _DummyContext(object):
     """ A context that does nothing on entry and exit and also offers dummy lock methods """

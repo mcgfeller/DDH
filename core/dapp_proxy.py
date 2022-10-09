@@ -67,6 +67,7 @@ class DAppProxy(NoCopyBaseModel):
                 keydirectory.NodeRegistry[ref.target] = dnode
             elif ref.relation == relationships.Relation.requires:
                 schemaNetwork.network.add_edge(ref.target,attrs,type='requires')
+        schemaNetwork.valid.invalidate() # we have modified the network
         return
 
 
@@ -129,7 +130,6 @@ class DAppManagerClass(NoCopyBaseModel):
         return 
 
     def bootstrap(self, pillars:dict) :
-        pillars['SchemaNetwork'].complete_graph() # TODO: Call it after each register?
         # pillars['SchemaNetwork'].plot(layout='shell_layout')
         return
 

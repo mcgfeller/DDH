@@ -13,8 +13,8 @@ import datetime
 import enum
 
 
-from core import pillars
-from core import keys,permissions,schemas,facade,errors,principals,versions,dapp_proxy,dapp_attrs
+from core import pillars, schema_network
+from core import keys,permissions,schemas,facade,errors,principals,versions,dapp_proxy,dapp_attrs,pillars
 from frontend import sessions
 
 app = fastapi.FastAPI()
@@ -147,6 +147,23 @@ async def get_dapp(
     dapps = [dapp.attrs for dappid in dis if (dapp:=dapp_proxy.DAppManager.DAppsById.get(typing.cast(principals.DAppId,dappid)))]
     return dapps
 
+@app.get("/graph/from/{from_dapp}")
+async def dapps_from(    
+    from_dapp : str,
+    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
+    ) -> typing.Iterable[principals.DAppId]:
+    schema_network = pillars.Pillars['SchemaNetwork']
+    s = schema_network.dapps_from(from_dapp,session.user)
+    return s
+
+@app.get("/graph/to/{for_dapp}")
+async def dapps_required(
+    for_dapp : str,
+    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
+    ) -> tuple[set[principals.DAppId],set[principals.DAppId]]:
+    schema_network = pillars.Pillars['SchemaNetwork']
+    s = schema_network.dapps_required(for_dapp, session.user)
+    return s
 
 
 
