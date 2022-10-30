@@ -67,13 +67,13 @@ def test_query_1(user1_market):
 
 def test_query_label_1(user1_market):
     """ Simple text + fulfilled label """
-    sris = search(user1_market,query='tax',categories=None,desired_labels=[common_ids.Label.free])
+    sris = search(user1_market,query='tax',categories=None,desired_labels=[common_ids.Label.free.value])
     assert sris
     return
 
 def test_query_label_0(user1_market):
     """  Simple text + non-fulfilled label """
-    sris = search(user1_market,query='tax',categories=None,desired_labels=[common_ids.Label.anonymous])
+    sris = search(user1_market,query='tax',categories=None,desired_labels=[common_ids.Label.anonymous.value])
     assert sris
     assert sris[0]['merit'] < 0
     assert common_ids.Label.anonymous in sris[0]['ignored_labels']
@@ -81,30 +81,30 @@ def test_query_label_0(user1_market):
 
 def test_query_cat_1(user1_market):
     """ Test simple text query """
-    sris = search(user1_market,query='tax',categories=[common_ids.CatalogCategory.finance],desired_labels=None)
+    sris = search(user1_market,query='tax',categories=[common_ids.CatalogCategory.finance.value],desired_labels=None)
     assert sris
     return
 
 def test_query_cat_label_1(user1_market):
     """ Test simple text query """
-    sris = search(user1_market,query='tax',categories=[common_ids.CatalogCategory.finance],desired_labels=[common_ids.Label.free])
+    sris = search(user1_market,query='tax',categories=[common_ids.CatalogCategory.finance.value],desired_labels=[common_ids.Label.free.value])
     assert sris
     return
 
 def test_query_cat_0(user1_market):
     """ Test simple text query """
-    sris = search(user1_market,query='tax',categories=[common_ids.CatalogCategory.health],desired_labels=None)
+    sris = search(user1_market,query='tax',categories=[common_ids.CatalogCategory.health.value],desired_labels=None)
     assert not sris,'tax is not in health'
     return
 
 def test_cat_1(user1_market):
     """ Test simple catalog query """
-    sris = search(user1_market,query=None,categories=[common_ids.CatalogCategory.living],desired_labels=None)
+    sris = search(user1_market,query=None,categories=[common_ids.CatalogCategory.living.value],desired_labels=None)
     assert sris
 
 def test_cat_label(user1_market):
     """ Test simple catalog query """
-    sris = search(user1_market,query=None,categories=[common_ids.CatalogCategory.living],desired_labels=[common_ids.Label.anonymous])
+    sris = search(user1_market,query=None,categories=[common_ids.CatalogCategory.living.value],desired_labels=[common_ids.Label.anonymous.value])
     assert sris
 
 def test_subscribed(user1_market,subscribe_scs_emp,subscribe_migros):

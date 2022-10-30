@@ -8,7 +8,7 @@ import pytest
 def test_subscription(user1_sub):
     """ Test adding a subscription """
     user = user1_sub.headers['x-user']
-    r = user1_sub.post('/users/{user}/subscriptions/dapp/MigrosDApp')
+    r = user1_sub.post(f'/users/{user}/subscriptions/dapp/MigrosDApp')
     r.raise_for_status()
     d = r.json()
     assert 'MigrosDApp' in d
@@ -17,7 +17,7 @@ def test_subscription(user1_sub):
 def test_bad_app(user1_sub):
     """ Test adding a subscription """
     user = user1_sub.headers['x-user']
-    r = user1_sub.post('/users/{user}/subscriptions/dapp/UnknownDApp')
+    r = user1_sub.post(f'/users/{user}/subscriptions/dapp/UnknownDApp')
     assert r.status_code == 404
     return
 

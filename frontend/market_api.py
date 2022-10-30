@@ -42,13 +42,13 @@ async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordReque
 async def get_dapps(
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     query: str = fastapi.Query(None, min_length=3, max_length=100),
-    categories : typing.Optional[typing.Iterable[common_ids.CatalogCategory]] = None, 
-    labels : typing.Optional[typing.Iterable[common_ids.Label]] = None, 
+    categories : typing.Optional[list[common_ids.CatalogCategory]] = fastapi.Query(None), 
+    desired_labels : typing.Optional[list[common_ids.Label]] = fastapi.Query(None), 
     ):
     """ search for DApps or DApp Families """
     all_dapps = await get_all_dapps(session)
     sub_dapps = await get_subscriptions(session)
-    sris = recommender.search_dapps(session,all_dapps,sub_dapps,query,categories,labels)
+    sris = await recommender.search_dapps(session,all_dapps,sub_dapps,query,categories,desired_labels)
     # dapps = [d.to_DAppOrFamily() for d in dapps] # convert to result model
     return sris
 
@@ -65,16 +65,16 @@ async def get_dapp(
     else:
         raise fastapi.HTTPException(status_code=404, detail=f"DApp not found: {dappid}.")
 
-async def get_all_dapps(session: sessions.Session,dappid:typing.Optional[principals.DAppId] = None):
+async def get_all_dapps(session: sessions.Session,dappid:typing.Optional[principals.DAppId] = None) -> typing.Sequence[dapp_attrs.DApp]:
     url = '/dapp'+(f'/{dappid}' if dappid else '')
     d = await fastapi_utils.submit1_asynch(session,'http://localhost:8001',url,params={'attrs':'True'})
     das = [dapp_attrs.DApp(**da) for da in d]
     return das
 
-async def get_subscriptions(session: sessions.Session):
+async def get_subscriptions(session: sessions.Session) -> frozenset[str]:
     user = session.user.id
     d = await fastapi_utils.submit1_asynch(session,'http://localhost:8003',f'/users/{user}/subscriptions/dapp/')
-    return set(d)    
+    return frozenset(d)    
 
 
 if __name__ == "__main__": # Debugging

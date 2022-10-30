@@ -147,22 +147,25 @@ async def get_dapp(
     dapps = [dapp.attrs for dappid in dis if (dapp:=dapp_proxy.DAppManager.DAppsById.get(typing.cast(principals.DAppId,dappid)))]
     return dapps
 
-@app.get("/graph/from/{from_dapp}")
+@app.get("/graph/from/{from_dapps}")
 async def dapps_from(    
-    from_dapp : str,
+    from_dapps : str,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     ) -> typing.Iterable[principals.DAppId]:
     schema_network = pillars.Pillars['SchemaNetwork']
-    s = schema_network.dapps_from(from_dapp,session.user)
+    dis = from_dapps.split('+')
+    print(f'dapps_from: {dis=}')
+    s = [schema_network.dapps_from(from_dapp,session.user) for from_dapp in dis]
     return s
 
-@app.get("/graph/to/{for_dapp}")
+@app.get("/graph/to/{for_dapps}")
 async def dapps_required(
-    for_dapp : str,
+    for_dapps : str,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
-    ) -> tuple[set[principals.DAppId],set[principals.DAppId]]:
+    ) -> list[tuple[set[principals.DAppId],set[principals.DAppId]]]:
     schema_network = pillars.Pillars['SchemaNetwork']
-    s = schema_network.dapps_required(for_dapp, session.user)
+    dis = for_dapps.split('+')
+    s = [schema_network.dapps_required(for_dapp, session.user) for for_dapp in dis]
     return s
 
 
