@@ -50,12 +50,8 @@ class User(Principal):
 
 SystemUser = User(id='root',name='root')
 
-
-
-class DAppId(Principal):
-    """ The identification of a DApp. We use a Principal for now. """
-
-    name : str
+ # The identification of a DApp. We use a str for now, instead of subclass of Principal (which cannot be used in place of a str):
+DAppId = typing.NewType('DAppId',str)
 
 # Collect all common principals
 CommonPrincipals = {p.id : p for p in (AllPrincipal,RootPrincipal,SystemUser)}

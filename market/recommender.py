@@ -21,10 +21,9 @@ class SearchResultItem(NoCopyBaseModel):
     cost : float = 0.0
     ignored_labels : frozenset[str] = frozenset() # query labels that have been ignored
     merit : int = pydantic.Field(default=0,description="Ranking merit, starts at 0")
-    # requires : set[principals.DAppId] = set() # TODO: DAppId must be synonym of str
-    # missing: set[principals.DAppId] = set()
-    requires : set[str] = set()
-    missing: set[str] = set()
+    requires : set[principals.DAppId] = set() 
+    missing: set[principals.DAppId] = set()
+
 
     def __init__(self,*a,**kw):
         """ Because .da is declared as Any, it is not converted; so do it here. 
