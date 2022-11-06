@@ -112,7 +112,7 @@ def test_subscribed(user1_market,subscribe_scs_emp,subscribe_migros):
     subscribe_scs_emp,subscribe_migros
     sris = search(user1_market,query=None,categories=None,desired_labels=None)
     assert sris
-    assert sris[0].da.id == 'TaxCalc',"as we're subscribed to an employee app, the tax calculator is the best recommendation"
+    assert sris[0]['dapp']['id'] == 'TaxCalc',"as we're subscribed to an employee app, the tax calculator is the best recommendation"
     return
 
 

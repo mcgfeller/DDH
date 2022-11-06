@@ -38,7 +38,6 @@ async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordReque
     return token
 
 @app.get("/market/dapp",response_model=list[recommender.SearchResultItem])
-#@app.get("/market/dapp",response_model=dapp_attrs.DAppOrFamily)
 async def get_dapps(
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     query: str = fastapi.Query(None, min_length=3, max_length=100),
@@ -49,7 +48,6 @@ async def get_dapps(
     all_dapps = await get_all_dapps(session)
     sub_dapps = await get_subscriptions(session)
     sris = await recommender.search_dapps(session,all_dapps,sub_dapps,query,categories,desired_labels)
-    # dapps = [d.to_DAppOrFamily() for d in dapps] # convert to result model
     return sris
 
 

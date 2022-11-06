@@ -21,8 +21,18 @@ class SearchResultItem(NoCopyBaseModel):
     cost : float = 0.0
     ignored_labels : frozenset[str] = frozenset() # query labels that have been ignored
     merit : int = pydantic.Field(default=0,description="Ranking merit, starts at 0")
-    requires : set[principals.DAppId] = set()
-    missing: set[principals.DAppId] = set()
+    # requires : set[principals.DAppId] = set() # TODO: DAppId must be synonym of str
+    # missing: set[principals.DAppId] = set()
+    requires : set[str] = set()
+    missing: set[str] = set()
+
+    def __init__(self,*a,**kw):
+        """ Because .da is declared as Any, it is not converted; so do it here. 
+        """
+        super().__init__(*a,**kw)
+        if isinstance(self.da,dict):
+            self.da = dapp_attrs.DApp(**self.da)
+        return
 
 
 def list_subscriptions(user,all_dapps,sub_dapps) -> typing.Sequence[dapp_attrs.DAppOrFamily]:
@@ -54,8 +64,11 @@ async def search_dapps(session,all_dapps: typing.Sequence[dapp_attrs.DAppOrFamil
 
     if desired_labels:
         sris = check_labels(session,sris,frozenset(desired_labels))
-    #  sris = await add_costs(session,sris,subscribed) # TODO!
-    sris = grade_results(session,sris)
+
+    if sris:
+        sris = await add_costs(session,sris,subscribed) # TODO!
+        sris = grade_results(session,sris)
+    print('search_dapps',sris)
 
     return sris
 
@@ -76,7 +89,7 @@ async def from_subscribed(session,dapps : typing.Iterable[dapp_attrs.DAppOrFamil
     """ all reachable Data Apps from subscribed Data Apps, with cost of reach """
     dappids = [str(d.id) for d in dapps if isinstance(d,dapp_attrs.DAppOrFamily)]
     if dappids:
-        r = await fastapi_utils.submit1_asynch(session, 'http://localhost:8001','/graph/from/'+'+'.join(dappids))
+        r = await fastapi_utils.submit1_asynch(session, 'http://localhost:8001','/graph/from/'+'+'.join(dappids)+'?details=True')
         reachable = sum(r,[])
     else:
         reachable = []
@@ -99,14 +112,16 @@ async def add_costs(session,sris : list[SearchResultItem], subscribed  : typing.
 
     """
     schemaNetwork = pillars.Pillars['SchemaNetwork']
-    dappids = [sri.da for sri in sris]
-    to_r = await fastapi_utils.submit1_asynch(session, 'http://localhost:8001','/graph/to/'+'+'.join(dappids))
+    
+    dappids = [sri.da.id for sri in sris]
+    to_r = await fastapi_utils.submit1_asynch(session, 'http://localhost:8001','/graph/to/'+'+'.join(dappids)+'?include_weights=True')
 
-    for sri,(requires,calculated) in zip(sris,to_r):
+    for sri,(requires,calculated, weights) in zip(sris,to_r):
         # requires,calculated = schemaNetwork.dapps_required(sri.da,session.user) # all required despite schema annotations, require for cost calculation
-        sri.requires = requires
+        print(f'add_costs: {sri=}, {requires=}, {calculated=}, {weights=}')
+        sri.requires = set(requires)
         sri.missing = sri.requires - set(subscribed)
-        merits = [da.get_weight() * (-1)**(da in sri.missing) for da in calculated] # pos merit if subscribed
+        merits = [weights[da] * (-1)**(da in sri.missing) for da in calculated] # pos merit if subscribed
         sri.merit += sum(merits) # bonus for those we have
     return sris
 
