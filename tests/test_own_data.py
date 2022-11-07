@@ -1,5 +1,5 @@
 """ Set up some Test data """
-from core import keys,permissions,facade,errors, transactions
+from core import keys,permissions,facade,errors, transactions, principals
 from core import pillars
 from frontend import user_auth,sessions
 import pytest
@@ -99,7 +99,8 @@ def test_write_data_with_consent(user,user2):
   
     return
 
-def test_read_and_write_data(user,user2):
+@pytest.mark.asyncio
+async def test_read_and_write_data(user,user2):
     session = get_session(user)
     # first, set up some data:
     test_write_data_with_consent(user,user2)
@@ -109,12 +110,12 @@ def test_read_and_write_data(user,user2):
 
     ddhkey1 = keys.DDHkey(key="/mgf/org/private/documents/doc1")
     access = permissions.Access(ddhkey=ddhkey1,principal=user,modes={permissions.AccessMode.read})
-    facade.ddh_get(access,session)
+    await facade.ddh_get(access,session)
 
     # we have grant to read:
     ddhkey2 = keys.DDHkey(key="/another/org/private/documents/doc2")
     access = permissions.Access(ddhkey=ddhkey2,principal=user,modes={permissions.AccessMode.read})
-    facade.ddh_get(access,session)
+    await facade.ddh_get(access,session)
 
     # we can write both docs to user
     ddhkeyW1 = keys.DDHkey(key="/mgf/org/private/documents/docnew")
@@ -130,7 +131,8 @@ def test_read_and_write_data(user,user2):
         facade.ddh_put(access,session,data)   
     return 
 
-def test_read_and_write_data2(user,user2):
+@pytest.mark.asyncio
+async def test_read_and_write_data2(user,user2):
     session = get_session(user)
     # first, set up some data:
     test_write_data_with_consent(user,user2)
@@ -139,13 +141,13 @@ def test_read_and_write_data2(user,user2):
 
     ddhkey1 = keys.DDHkey(key="/mgf/org/private/documents/doc1")
     access = permissions.Access(ddhkey=ddhkey1,principal=user,modes={permissions.AccessMode.read})
-    facade.ddh_get(access,session)
-
+    await facade.ddh_get(access,session)
+    assert principals.AllPrincipal.id not in trx.read_consentees,'we have read object which does not have universal access'
 
     # we have grant to read:
     ddhkey2 = keys.DDHkey(key="/another/org/private/documents/doc2")
     access = permissions.Access(ddhkey=ddhkey2,principal=user2,modes={permissions.AccessMode.read})
-    facade.ddh_get(access,session)
+    await facade.ddh_get(access,session)
 
     trx = session.new_transaction(for_user=user2)
 
