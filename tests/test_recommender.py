@@ -8,15 +8,16 @@ import pytest
 
 def subscribe(client,dappid):
     """ subscribe user to dappid """
-    # TODO: Extract user from client
-    r = client.post(f'/users/mgf/subscriptions/dapp/{dappid}')
+    user = client.headers['x-user']
+    r = client.post(f'/users/{user}/subscriptions/dapp/{dappid}')
     r.raise_for_status()
     d = r.json()
     return 
 
 def unsubscribe(client,dappid):
     """ unsubscribe user from dappid """
-    r = client.delete(f'/users/mgf/subscriptions/dapp/{dappid}')
+    user = client.headers['x-user']
+    r = client.delete(f'/users/{user}/subscriptions/dapp/{dappid}')
     r.raise_for_status()
     d = r.json()
     return 

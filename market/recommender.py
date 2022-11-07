@@ -65,9 +65,8 @@ async def search_dapps(session,all_dapps: typing.Sequence[dapp_attrs.DAppOrFamil
         sris = check_labels(session,sris,frozenset(desired_labels))
 
     if sris:
-        sris = await add_costs(session,sris,subscribed) # TODO!
+        sris = await add_costs(session,sris,subscribed) 
         sris = grade_results(session,sris)
-    print('search_dapps',sris)
 
     return sris
 
@@ -100,7 +99,6 @@ def check_labels(session,sris : list[SearchResultItem],desired_labels : frozense
     for sri in sris:
         sri.ignored_labels = desired_labels.difference(sri.da.labels)
         sri.merit -= len(sri.ignored_labels)
-    print(f'check_labels: {desired_labels=}, {sris=}')
     return sris
 
 async def add_costs(session,sris : list[SearchResultItem], subscribed  : typing.Iterable[dapp_attrs.DAppOrFamily]) -> list[SearchResultItem]:
