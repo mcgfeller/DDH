@@ -180,6 +180,8 @@ class SchemaAttributes(NoCopyBaseModel):
 class AbstractSchema(NoCopyBaseModel,abc.ABC):
     schema_attributes : SchemaAttributes = pydantic.Field(default=SchemaAttributes(),descriptor="Attributes associated with this Schema")
 
+    # TODO: Call to update schema_attributes based on schema. In __init__()?
+
     @property
     def format(self) ->SchemaFormat:
         """ Schema format based on class """
