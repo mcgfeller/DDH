@@ -40,7 +40,7 @@ async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordReque
 
 
 
-@app.post("/users/{user}/subscriptions/dapp/{dappid}",response_model=list[str])
+@app.post("/users/{user}/subscriptions/dapp/{dappid}",response_model=list[principals.DAppId])
 async def create_subscription(
     user: common_ids.PrincipalId,
     dappid : str,
@@ -54,13 +54,13 @@ async def create_subscription(
 
     return das
     
-@app.delete("/users/{user}/subscriptions/dapp/{dappid}",response_model=list[str])
+@app.delete("/users/{user}/subscriptions/dapp/{dappid}",response_model=list[principals.DAppId])
 async def delete_subscription(
     user: common_ids.PrincipalId,
     dappid : str,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     ):
-    """ Create a single subscription for a user """
+    """ Delete an existing single subscription for a user """
     if not user == session.user.id:
         raise errors.AccessError('authorized user is not ressource owner')
     valid_dappids = await get_dappids(session)
@@ -68,7 +68,7 @@ async def delete_subscription(
 
     return das
 
-@app.get("/users/{user}/subscriptions/dapp/",response_model=list[str])
+@app.get("/users/{user}/subscriptions/dapp/",response_model=list[principals.DAppId])
 async def list_subscription(
     user: common_ids.PrincipalId,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
