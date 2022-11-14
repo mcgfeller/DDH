@@ -92,7 +92,7 @@ async def ddh_get(access : permissions.Access, session : sessions.Session, q : t
             data = await e_node.execute(req)
         return data
 
-def ddh_put(access : permissions.Access, session : sessions.Session, data : pydantic.Json, q : typing.Optional[str] = None, ) -> typing.Any:
+async def ddh_put(access : permissions.Access, session : sessions.Session, data : pydantic.Json, q : typing.Optional[str] = None, ) -> typing.Any:
     """ Service utility to store data.
         
     """

@@ -24,53 +24,57 @@ def get_session(user):
 
 
 
-
-def test_write_data(user):
+@pytest.mark.asyncio
+async def test_write_data(user):
     """ test write through facade.ddh_put() """
     session = get_session(user)
     ddhkey = keys.DDHkey(key="/mgf/org/private/documents/doc1")
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.write})
     data = json.dumps({'document':'not much'})
-    facade.ddh_put(access,session,data)
+    await facade.ddh_put(access,session,data)
 
     
     return
 
-def test_write_data_other_owner(user):
+@pytest.mark.asyncio
+async def test_write_data_other_owner(user):
     """ test write through facade.ddh_put() using another owner"""
     session = get_session(user)
     ddhkey = keys.DDHkey(key="/another/org/private/documents/doc1")
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.write})
     data = json.dumps({'document':'not much'})
     with pytest.raises(errors.AccessError):
-        facade.ddh_put(access,session,data)
+        await facade.ddh_put(access,session,data)
     return
 
-def test_set_consent_top(user,user2):
+@pytest.mark.asyncio
+async def test_set_consent_top(user,user2):
     """ test set consent at top """
     session = get_session(user)
     ddhkey = keys.DDHkey(key="/mgf:consents")
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.write})
     consents=permissions.Consents(consents=[permissions.Consent(grantedTo=[user2])])
-    facade.ddh_put(access,session,consents.json())
+    await facade.ddh_put(access,session,consents.json())
 
-def test_set_consent_deep(user,user2,user3):
+@pytest.mark.asyncio
+async def test_set_consent_deep(user,user2,user3):
     """ test set consent deeper in tree """
     session = get_session(user)
     # first set at top:
     ddhkey = keys.DDHkey(key="/mgf:consents")
     access = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.write})
     consents=permissions.Consents(consents=[permissions.Consent(grantedTo=[user2])])
-    facade.ddh_put(access,session,consents.json())
+    await facade.ddh_put(access,session,consents.json())
 
     # now withdraw access for user2 to a specific document, but give user3 access:
     ddhkey2 = keys.DDHkey(key="/mgf/org/private/documents:consents")
     access2 = permissions.Access(ddhkey=ddhkey,principal=user,modes={permissions.AccessMode.write})
     consents2 =permissions.Consents(consents=[permissions.Consent(grantedTo=[user3])])
-    facade.ddh_put(access2,session,consents2.json())    
+    await facade.ddh_put(access2,session,consents2.json())    
 
 
-def test_write_data_with_consent(user,user2):
+@pytest.mark.asyncio
+async def test_write_data_with_consent(user,user2):
     """ test write through facade.ddh_put() with three objects:
         - mgf/.../doc1
         - another/.../doc2 with read grant to user
@@ -80,22 +84,22 @@ def test_write_data_with_consent(user,user2):
     ddhkey1 = keys.DDHkey(key="/mgf/org/private/documents/doc1")
     access = permissions.Access(ddhkey=ddhkey1,principal=user,modes={permissions.AccessMode.write})
     data = json.dumps({'document':'not much'})
-    facade.ddh_put(access,session,data)
+    await facade.ddh_put(access,session,data)
 
     ddhkey2 = keys.DDHkey(key="/another/org/private/documents/doc2")
     access = permissions.Access(ddhkey=ddhkey2,principal=user2,modes={permissions.AccessMode.write})
     data = json.dumps({'document':'not much'})
-    facade.ddh_put(access,session,data)
+    await facade.ddh_put(access,session,data)
     # grant read access to user1
     consents = permissions.Consent.single(grantedTo=[user],withModes={permissions.AccessMode.read})
     ddhkey2f = ddhkey2 ; ddhkey2f.fork = keys.ForkType.consents
     access = permissions.Access(ddhkey=ddhkey2f,principal=user2,modes={permissions.AccessMode.consent_write})
-    facade.ddh_put(access,session,consents.json())
+    await facade.ddh_put(access,session,consents.json())
 
     ddhkey3 = keys.DDHkey(key="/another/org/private/documents/doc3")
     access = permissions.Access(ddhkey=ddhkey3,principal=user2,modes={permissions.AccessMode.write})
     data = json.dumps({'document':'not much more'})
-    facade.ddh_put(access,session,data)
+    await facade.ddh_put(access,session,data)
   
     return
 
@@ -121,14 +125,14 @@ async def test_read_and_write_data(user,user2):
     ddhkeyW1 = keys.DDHkey(key="/mgf/org/private/documents/docnew")
     access = permissions.Access(ddhkey=ddhkeyW1,principal=user,modes={permissions.AccessMode.write})
     data = json.dumps({'document':'no need to be related'})
-    facade.ddh_put(access,session,data)    
+    await facade.ddh_put(access,session,data)    
 
     # but not to user2 as user:
     ddhkeyW2 = keys.DDHkey(key="/another/org/private/documents/docnew")
     access = permissions.Access(ddhkey=ddhkeyW2,principal=user,modes={permissions.AccessMode.write})
     data = json.dumps({'document':'no need to be related'})
     with pytest.raises(errors.AccessError):
-        facade.ddh_put(access,session,data)   
+        await facade.ddh_put(access,session,data)   
     return 
 
 @pytest.mark.asyncio
@@ -156,17 +160,17 @@ async def test_read_and_write_data2(user,user2):
     data = json.dumps({'document':'no need to be related'})
     access = permissions.Access(ddhkey=ddhkeyW2,principal=user2,modes={permissions.AccessMode.write})
     with pytest.raises(transactions.TrxAccessError):
-        facade.ddh_put(access,session,data)  
+        await facade.ddh_put(access,session,data)  
 
     # even with a new transaction
     session.new_transaction()
     access = permissions.Access(ddhkey=ddhkeyW2,principal=user2,modes={permissions.AccessMode.write})
     with pytest.raises(transactions.TrxAccessError):
-        facade.ddh_put(access,session,data)    
+        await facade.ddh_put(access,session,data)    
 
     # but with a reinit
     session.reinit()
     session.new_transaction(for_user=user2)
     access = permissions.Access(ddhkey=ddhkeyW2,principal=user2,modes={permissions.AccessMode.write})
-    facade.ddh_put(access,session,data)    
+    await facade.ddh_put(access,session,data)    
     return
