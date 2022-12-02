@@ -174,13 +174,33 @@ class SchemaAttributes(NoCopyBaseModel):
     variant : SchemaVariant = pydantic.Field(SchemaVariant.recommended,description="The schema variant for this instance")
     version : versions.Version = pydantic.Field(versions.Unspecified,description="The version of this schema instance")
     requires : typing.Optional[Requires] = None
+    mimetype : typing.Optional[str] = pydantic.Field(default=None,description='Mimetype - taken from Schema if not provided.')
 
-
+    @classmethod
+    def amend_key_with_mimetype(cls, ddhkey : keys.DDHkey) -> keys.DDHkey:
+        # TODO: Check against headers
+        return ddhkey
 
 class AbstractSchema(NoCopyBaseModel,abc.ABC):
     schema_attributes : SchemaAttributes = pydantic.Field(default=SchemaAttributes(),descriptor="Attributes associated with this Schema")
-
+    mimetype : typing.ClassVar[typing.Optional[str]] = None
     # TODO: Call to update schema_attributes based on schema. In __init__()?
+
+    def __init__(self,*a,**kw):
+        super().__init__(*a,**kw)
+        self.update_schema_attributes()
+
+    def update_schema_attributes(self):
+        """ update .schema_attributes based on schema.
+            updates mimetype by default, but can be refined. 
+        """
+        self.update_mimetype()
+
+    def update_mimetype(self):
+        """ Take mimetype from Schema if provided and absent in schema_attributes """
+        if not self.schema_attributes.mimetype and self.mimetype: 
+            self.schema_attributes.mimetype = self.mimetype
+
 
     @property
     def format(self) ->SchemaFormat:
@@ -288,6 +308,7 @@ class PySchema(AbstractSchema):
 
 
 class JsonSchema(AbstractSchema):
+    mimetype : typing.ClassVar[str] = 'application/json'
     json_schema : pydantic.Json
 
     @classmethod
@@ -348,6 +369,7 @@ class JsonSchema(AbstractSchema):
         return cls(json_schema=json.dumps(json_schema))
 
 class XmlSchema(AbstractSchema):
+    mimetype : typing.ClassVar[str] = 'application/json'
     xml_schema : str
 
     @classmethod
