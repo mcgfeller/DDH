@@ -169,12 +169,17 @@ class SchemaVariant(str,enum.Enum):
     supported = 'supported'
     obsolete = 'obsolete'
 
+class MimeTypes(NoCopyBaseModel):
+    of_schema : typing.Optional[str] = pydantic.Field(default=None,description='Mimetype of the schema - taken from Schema if not provided.')
+    of_data : typing.Optional[str] = pydantic.Field(default=None,description='Mimetype of data - taken from Schema if not provided.')
+
+
 
 class SchemaAttributes(NoCopyBaseModel):
     variant : SchemaVariant = pydantic.Field(SchemaVariant.recommended,description="The schema variant for this instance")
     version : versions.Version = pydantic.Field(versions.Unspecified,description="The version of this schema instance")
     requires : typing.Optional[Requires] = None
-    mimetype : typing.Optional[str] = pydantic.Field(default=None,description='Mimetype - taken from Schema if not provided.')
+    mimetypes : typing.Optional[MimeTypes] = None
 
     @classmethod
     def amend_key_with_mimetype(cls, ddhkey : keys.DDHkey) -> keys.DDHkey:
@@ -183,8 +188,7 @@ class SchemaAttributes(NoCopyBaseModel):
 
 class AbstractSchema(NoCopyBaseModel,abc.ABC):
     schema_attributes : SchemaAttributes = pydantic.Field(default=SchemaAttributes(),descriptor="Attributes associated with this Schema")
-    mimetype : typing.ClassVar[typing.Optional[str]] = None
-    # TODO: Call to update schema_attributes based on schema. In __init__()?
+    mimetypes : typing.ClassVar[typing.Optional[MimeTypes]] = None
 
     def __init__(self,*a,**kw):
         super().__init__(*a,**kw)
@@ -198,8 +202,8 @@ class AbstractSchema(NoCopyBaseModel,abc.ABC):
 
     def update_mimetype(self):
         """ Take mimetype from Schema if provided and absent in schema_attributes """
-        if not self.schema_attributes.mimetype and self.mimetype: 
-            self.schema_attributes.mimetype = self.mimetype
+        if not self.schema_attributes.mimetypes and self.mimetypes: 
+            self.schema_attributes.mimetypes = self.mimetypes
 
 
     @property
@@ -308,7 +312,7 @@ class PySchema(AbstractSchema):
 
 
 class JsonSchema(AbstractSchema):
-    mimetype : typing.ClassVar[str] = 'application/json'
+    mimetypes : typing.ClassVar[MimeTypes] = MimeTypes(of_schema='application/openapi',of_data='application/json')
     json_schema : pydantic.Json
 
     @classmethod
@@ -369,7 +373,7 @@ class JsonSchema(AbstractSchema):
         return cls(json_schema=json.dumps(json_schema))
 
 class XmlSchema(AbstractSchema):
-    mimetype : typing.ClassVar[str] = 'application/json'
+    mimetypes : typing.ClassVar[MimeTypes] = MimeTypes(of_schema='application/xsd',of_data='application/xml')
     xml_schema : str
 
     @classmethod
