@@ -69,3 +69,5 @@ def test_version():
 
     with pytest.raises(ValueError):
         keys.DDHkey(key='norooted/subkey:::4.x')  # invalid version
+
+    d = str(ddhkey1),str(ddhkey1a),str(ddhkey1b),str(ddhkey1c),str(ddhkey2),str(ddhkey3),str(ddhkey4)

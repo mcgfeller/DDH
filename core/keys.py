@@ -42,6 +42,8 @@ class ForkType(str, enum.Enum):
 
     def __repr__(self): return self.value
 
+    __str__ = __repr__
+
     @classmethod
     def make_with_default(cls, v: str|None) -> ForkType:
         return cls(v) if v else cls.data
@@ -49,6 +51,7 @@ class ForkType(str, enum.Enum):
 
 VariantType = typing.NewType('VariantType', str)
 DefaultVariant = VariantType('recommended')
+Default_specifiers = [ForkType.data, DefaultVariant, versions.Unspecified]
 
 
 def variant_with_default(v: str|None) -> VariantType:
@@ -72,7 +75,7 @@ class DDHkey(NoCopyBaseModel):
         """ We want a short representation """
         return {'key': str(self)}
 
-    def __init__(self, key: typing.Union[tuple, list, str], specifiers: tuple = (), fork:  typing.Optional[ForkType] = None, variant: typing.Optional[str] = None, version:  typing.Optional[versions.Version] = None):
+    def __init__(self, key: typing.Union[tuple, list, str], specifiers: typing.Sequence = (), fork:  typing.Optional[ForkType] = None, variant: typing.Optional[str] = None, version:  typing.Optional[versions.Version] = None):
         """ Convert key string into tuple, eliminate empty segments, set root to self.Root, and extract specifiers """
         if isinstance(key, str):
             key = key.strip().split(self.Delimiter)
@@ -88,18 +91,17 @@ class DDHkey(NoCopyBaseModel):
         # remove empty segments and make tuple:
         key = tuple(filter(None, key))
 
-        default_specifiers = [ForkType.data, DefaultVariant, versions.Unspecified]
         specifier_types = [ForkType.make_with_default,
                            variant_with_default, versions.Version.make_with_default]
         # supplied + defaults
         # extend to cover all specifiers
-        specifiers = list(specifiers) + [None]*(len(default_specifiers)-len(specifiers))
+        specifiers = list(specifiers) + [None]*(len(Default_specifiers)-len(specifiers))
         for i, v in enumerate((fork, variant, version)):  # add extra arguments
             if v:
                 specifiers[i] = v
 
         if key and self.SpecDelimiter in key[-1]:  # specifiers are only allowed in last segment
-            lk, *kspecs = key[-1].split(self.SpecDelimiter, len(default_specifiers))  # type:ignore
+            lk, *kspecs = key[-1].split(self.SpecDelimiter, len(Default_specifiers))  # type:ignore
             kspecs = kspecs + [None]*(len(specifiers)-len(kspecs))
             key = key[:-1] + (lk,) if lk else ()  # reassemble key
         else:
@@ -111,7 +113,7 @@ class DDHkey(NoCopyBaseModel):
             elif k:
                 kspecs[i] = specifier_types[i](k)
             else:
-                kspecs[i] = default_specifiers[i]
+                kspecs[i] = Default_specifiers[i]
         fork, variant, version = kspecs
 
         super().__init__(key=key, fork=fork, variant=variant, version=version)  # type:ignore
@@ -131,16 +133,11 @@ class DDHkey(NoCopyBaseModel):
             return False
 
     def __str__(self) -> str:
+        """ str representation, omitting defaults and truncating trailing ':' """
         s = self.Delimiter.join(map(str, self.key))
-        sp = self.specifiers
-        # TODO: Handle omitted cases
-        if sp[0] != ForkType.data:
-            s += self.SpecDelimiter+self.fork.value
-        if sp[1] != DefaultVariant:
-            s += self.SpecDelimiter+self.variant
-        if sp[2] != versions.Unspecified:
-            s += self.SpecDelimiter+str(self.version)
-        return s
+        specs = ['' if s == d else str(s) for s,d in zip(self.specifiers,Default_specifiers)]
+        p = self.SpecDelimiter+self.SpecDelimiter.join(specs)
+        return s+p.rstrip(self.SpecDelimiter)
 
     def __repr__(self) -> str:
         return f'DDHkey({self.__str__()})'
@@ -163,10 +160,11 @@ class DDHkey(NoCopyBaseModel):
 
     def split_at(self, split: int) -> typing.Tuple[DDHkey, DDHkey]:
         """ split the key into two DDHkeys at split """
-        return self.__class__(self.key[:split]), self.__class__(self.key[split:])
+        # TODO: Why does trailing segment not need specifiers? --> test_str_read_data fails
+        return self.__class__(self.key[:split]), self.__class__(self.key[split:]) 
 
     def ensure_rooted(self) -> DDHkey:
-        """ return a DHHkey that is rooted """
+        """ return a DDHkey that is rooted """
         if len(self.key) < 1 or self.key[0] != self.Root:
             return self.__class__((self.Root,)+self.key, specifiers=self.specifiers)
         else:
