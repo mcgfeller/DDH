@@ -43,7 +43,7 @@ class ForkType(str, enum.Enum):
     def __repr__(self): return self.value
 
     @classmethod
-    def make_with_default(cls, v: typing.Optional[str]) -> ForkType:
+    def make_with_default(cls, v: str|None) -> ForkType:
         return cls(v) if v else cls.data
 
 
@@ -51,7 +51,7 @@ VariantType = typing.NewType('VariantType', str)
 DefaultVariant = VariantType('recommended')
 
 
-def variant_with_default(v: typing.Optional[str]) -> VariantType:
+def variant_with_default(v: str|None) -> VariantType:
     return VariantType(v) if v else DefaultVariant
 
 
@@ -64,7 +64,7 @@ class DDHkey(NoCopyBaseModel):
     version: versions.Version = versions.Unspecified
 
     Delimiter: typing.ClassVar[str] = '/'
-    ForkDelimiter: typing.ClassVar[str] = ':'
+    SpecDelimiter: typing.ClassVar[str] = ':'
     Root: typing.ClassVar[_RootType] = _RootType(Delimiter)
     AnyKey: typing.ClassVar[_AnyType] = _AnyType(Delimiter)
 
@@ -93,15 +93,15 @@ class DDHkey(NoCopyBaseModel):
                            variant_with_default, versions.Version.make_with_default]
         # supplied + defaults
         # extend to cover all specifiers
-        specifiers: list = list(specifiers) + [None]*(len(default_specifiers)-len(specifiers))
+        specifiers = list(specifiers) + [None]*(len(default_specifiers)-len(specifiers))
         for i, v in enumerate((fork, variant, version)):  # add extra arguments
             if v:
                 specifiers[i] = v
 
-        if key and self.ForkDelimiter in key[-1]:  # specifiers are only allowed in last segment
-            lk, *kspecs = key[-1].split(self.ForkDelimiter, len(default_specifiers))  # type:ignore
+        if key and self.SpecDelimiter in key[-1]:  # specifiers are only allowed in last segment
+            lk, *kspecs = key[-1].split(self.SpecDelimiter, len(default_specifiers))  # type:ignore
             kspecs = kspecs + [None]*(len(specifiers)-len(kspecs))
-            key = key[:-1] + (lk,) if lk else ()
+            key = key[:-1] + (lk,) if lk else ()  # reassemble key
         else:
             kspecs = [None]*len(specifiers)
 
@@ -135,11 +135,11 @@ class DDHkey(NoCopyBaseModel):
         sp = self.specifiers
         # TODO: Handle omitted cases
         if sp[0] != ForkType.data:
-            s += self.ForkDelimiter+self.fork.value
+            s += self.SpecDelimiter+self.fork.value
         if sp[1] != DefaultVariant:
-            s += self.ForkDelimiter+self.variant
+            s += self.SpecDelimiter+self.variant
         if sp[2] != versions.Unspecified:
-            s += self.ForkDelimiter+str(self.version)
+            s += self.SpecDelimiter+str(self.version)
         return s
 
     def __repr__(self) -> str:
@@ -153,7 +153,7 @@ class DDHkey(NoCopyBaseModel):
         """ get part of key, str if ix is integer, tuple if slice """
         return self.key.__getitem__(ix)
 
-    def up(self) -> typing.Optional[DDHkey]:
+    def up(self) -> DDHkey|None:
         """ return key up one level, or None if at top """
         upkey = self.key[:-1]
         if upkey:
