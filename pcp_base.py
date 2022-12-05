@@ -35,7 +35,8 @@ NotAvailableError = NotImplementedError('action not available')
 class Controllable(pydantic.BaseModel):
     """ A thing that is controlled by this program and that can be started, stopped and checked. """
 
-    Instances : typing.ClassVar[dict[str,'Controllable']] = {}
+    # Instances : typing.ClassVar[dict[str,'Controllable']] = {}
+    Instances : typing.ClassVar[dict[str,typing.Any]] = {} # https://github.com/pydantic/pydantic/issues/3679#issuecomment-1337575645
     name : str
 
     def __init__(self,*a,**d):

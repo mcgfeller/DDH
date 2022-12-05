@@ -29,7 +29,8 @@ class Transaction(NoCopyBaseModel):
     read_consentees : set[common_ids.PrincipalId] = DefaultReadConsentees # with nothing read, the world has access
     initial_read_consentees :  set[common_ids.PrincipalId] = DefaultReadConsentees # same as read_consentees, but not modified during transaction
 
-    Transactions : typing.ClassVar[dict[common_ids.TrxId,'Transaction']] = {}
+    Transactions : typing.ClassVar[dict[common_ids.TrxId,typing.Any]] = {}  # https://github.com/pydantic/pydantic/issues/3679#issuecomment-1337575645 
+    # Transactions : typing.ClassVar[dict[common_ids.TrxId,'Transaction']] = {}
     TTL : typing.ClassVar[datetime.timedelta] = datetime.timedelta(seconds=30) # max duration of a transaction in seconds
 
     def __init__(self,**kw):
