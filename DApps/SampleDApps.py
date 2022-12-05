@@ -22,7 +22,7 @@ class SampleDApps(dapp_attrs.DApp):
 
     owner : typing.ClassVar[principals.Principal] 
     schemakey : typing.ClassVar[keys.DDHkey] 
-    transforms_into : typing.ClassVar[typing.Optional[keys.DDHkey]]= None
+    transforms_into : typing.ClassVar[keys.DDHkey|None]= None
     provides_schema : bool = pydantic.Field(False,description="True if schemakey is not only defined by this DApp, but also provided.")
 
     def __init__(self,*a,**kw):
@@ -38,7 +38,7 @@ class SampleDApps(dapp_attrs.DApp):
         return {self.schemakey:schemas.PySchema(schema_element=pydantic.create_model('DummySchema',__base__=schemas.SchemaElement))}
 
 
-    def execute(self, op: nodes.Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
+    def execute(self, op: nodes.Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : dict|None = None, q : str|None = None):
         """ obtain data by recursing to schema """
         if op == nodes.Ops.get:
             here,selection = access.ddhkey.split_at(key_split)

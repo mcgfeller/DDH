@@ -40,7 +40,7 @@ class _NodeRegistry:
     def __getitem__(self,key : keys.DDHkey) -> dict[nodes.NodeSupports,persistable.PersistableProxy]:
         return self.nodes_by_key.get(key.key,{}) 
 
-    def get_next_proxy(self,key : typing.Optional[keys.DDHkey], support: nodes.NodeSupports) -> typing.Iterator[typing.Tuple[nodes.NodeOrProxy,int]]:
+    def get_next_proxy(self,key : keys.DDHkey|None, support: nodes.NodeSupports) -> typing.Iterator[typing.Tuple[nodes.NodeOrProxy,int]]:
         """ Generator getting next node walking up the tree from key.
             Also indicates at which point the keys.DDHkey is to be split so the first part is the
             path leading to the Node, the 2nd the rest. 
@@ -56,13 +56,13 @@ class _NodeRegistry:
         else:
             return
 
-    def get_proxy(self,key : keys.DDHkey,support : nodes.NodeSupports) -> typing.Tuple[typing.Optional[nodes.NodeOrProxy],int]:
+    def get_proxy(self,key : keys.DDHkey,support : nodes.NodeSupports) -> typing.Tuple[nodes.NodeOrProxy|None,int]:
         """ get closest (upward-bound) node which has nonzero attribute """
         nop,split = next(( (node,split) for node,split in self.get_next_proxy(key, support) ),(None,-1))
         return nop,split
 
     def get_node(self,key : keys.DDHkey,support : nodes.NodeSupports, transaction: transactions.Transaction, 
-                condition : typing.Optional[typing.Callable] = None) -> typing.Tuple[typing.Optional[nodes.Node],int]:
+                condition : typing.Callable|None = None) -> typing.Tuple[nodes.Node|None,int]:
         """ get a node that supports support, walking up the tree.
             ProxyNodes are loaded. 
             If the Node doesn't meet condition, the search goes up the tree looking for a Node. 

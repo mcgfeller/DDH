@@ -51,7 +51,7 @@ class CancellationTerms(NoCopyBaseModel):
 
     runs_until_cancelled : bool = True
     cancellation_days : int = 1
-    auto_expires_in_days : typing.Optional[int] = None
+    auto_expires_in_days : int|None = None
 
 
 

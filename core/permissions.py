@@ -218,12 +218,12 @@ class Access(NoCopyBaseModel):
     op:        Operation = Operation.get
     ddhkey:    DDHkey # type: ignore
     principal: principals.Principal
-    byDApp:    typing.Optional[principals.DAppId] = None
+    byDApp:    principals.DAppId|None = None
     modes:     set[AccessMode]  = {AccessMode.read}
     time:      datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow) # defaults to now
-    granted:   typing.Optional[bool] = None
+    granted:   bool|None = None
     byConsents: list[Consent] = []
-    explanation: typing.Optional[str] = None
+    explanation: str|None = None
 
     def __init__(self,*a,**kw):
         super().__init__(*a,**kw)
@@ -233,7 +233,7 @@ class Access(NoCopyBaseModel):
         """ ensure that mode is included in access modes """
         self.modes.add(mode)
 
-    def permitted(self,node : typing.Optional[nodes.Node], owner : typing.Optional[principals.Principal] = None, record_access : bool = True) -> tuple[bool,list[Consent],set[Principal],str]:
+    def permitted(self,node : nodes.Node|None, owner : principals.Principal|None = None, record_access : bool = True) -> tuple[bool,list[Consent],set[Principal],str]:
         """ checks whether access is permitted, returning (bool,required flags,applicable consent,explanation text)
             if record_access is set, the result is recorded into self.
         """
@@ -270,7 +270,7 @@ class Access(NoCopyBaseModel):
             self.byConsents = used_consents
         return  ok,used_consents,consentees,msg
 
-    def raise_permitted(self,node : typing.Optional[nodes.Node], owner : typing.Optional[principals.Principal] = None, record_access : bool = True):
+    def raise_permitted(self,node : nodes.Node|None, owner : principals.Principal|None = None, record_access : bool = True):
         ok,used_consents,msg,consentees = self.permitted(node)
         if not ok:
             raise errors.AccessError(msg)

@@ -14,15 +14,15 @@ class DAppOrFamily(NoCopyBaseModel):
     class Config:
         extra = 'ignore'
 
-    id : typing.Optional[str]  = None # principals.DAppId causes Pydantic errors - I don't know why
-    description : typing.Optional[str] = None
+    id : str|None  = None # principals.DAppId causes Pydantic errors - I don't know why
+    description : str|None = None
     owner : typing.ClassVar[principals.Principal] 
     policy: policies.Policy = policies.EmptyPolicy
     catalog : common_ids.CatalogCategory 
     dependsOn: set[DAppOrFamily] = set()
     labels : dict[common_ids.Label,typing.Any] = {}
 
-    searchtext : typing.Optional[str] = None
+    searchtext : str|None = None
 
     def __init__(self,*a,**kw):
         """ Calculate labels; would like a computed and cached property,
@@ -83,9 +83,9 @@ class DApp(DAppOrFamily):
     class Config:
         extra = 'allow' # DApps are free to use their own variables
     
-    belongsTo: typing.Optional[DAppFamily] = None
+    belongsTo: DAppFamily|None = None
     references : list[relationships.Reference] = []
-    transforms_into : typing.Optional[keys.DDHkey] = None
+    transforms_into : keys.DDHkey|None = None
     estimatedCosts : EstimatedCosts = EstimatedCosts.free
 
 
@@ -149,7 +149,7 @@ class DApp(DAppOrFamily):
 DApp.update_forward_refs()
 
 class RunningDApp(NoCopyBaseModel):
-    id : typing.Optional[str]  = None # principals.DAppId causes Pydantic errors - I don't know why
+    id : str|None  = None # principals.DAppId causes Pydantic errors - I don't know why
     dapp_version : versions.Version
     schema_version : versions.Version
     location : pydantic.AnyHttpUrl
@@ -159,9 +159,9 @@ class ExecuteRequest(NoCopyBaseModel):
     op : typing.Any # nodes.Ops
     access : permissions.Access
     transaction: transactions.Transaction
-    key_split : typing.Optional[int] = None
-    data : typing.Optional[dict] = None
-    q : typing.Optional[str] = None
+    key_split : int|None = None
+    data : dict|None = None
+    q : str|None = None
 
 
 

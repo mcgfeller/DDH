@@ -42,7 +42,7 @@ async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordReque
 async def get_schema(
     docpath: str = fastapi.Path(..., title="The ddh key of the schema to get"),
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
-    dapp : typing.Optional[principals.DAppId] = None,
+    dapp : principals.DAppId|None = None,
     schemaformat: schemas.SchemaFormat = schemas.SchemaFormat.json, # type: ignore # dynamic
     q: str = fastapi.Query(None, alias="item-query"),
     ):
@@ -89,7 +89,7 @@ async def put_data(
 async def create_transaction(
     for_user : principals.Principal,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
-    dapp : typing.Optional[principals.DAppId] = None,
+    dapp : principals.DAppId|None = None,
 
     ):    
     try:

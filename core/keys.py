@@ -75,7 +75,7 @@ class DDHkey(NoCopyBaseModel):
         """ We want a short representation """
         return {'key': str(self)}
 
-    def __init__(self, key: typing.Union[tuple, list, str], specifiers: typing.Sequence = (), fork:  typing.Optional[ForkType] = None, variant: typing.Optional[str] = None, version:  typing.Optional[versions.Version] = None):
+    def __init__(self, key: typing.Union[tuple, list, str], specifiers: typing.Sequence = (), fork:  ForkType|None = None, variant: str|None = None, version:  versions.Version|None = None):
         """ Convert key string into tuple, eliminate empty segments, set root to self.Root, and extract specifiers """
         if isinstance(key, str):
             key = key.strip().split(self.Delimiter)

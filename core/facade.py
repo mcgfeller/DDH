@@ -13,7 +13,7 @@ from . import permissions, keys, schemas, nodes, keydirectory, transactions, err
 from frontend import sessions
 
 
-def _get_consent_node(ddhkey: keys.DDHkey, support: nodes.NodeSupports, node : typing.Optional[nodes.Node], transaction : transactions.Transaction) -> typing.Optional[nodes.Node]:
+def _get_consent_node(ddhkey: keys.DDHkey, support: nodes.NodeSupports, node : nodes.Node|None, transaction : transactions.Transaction) -> nodes.Node|None:
     """ get consents, from current node or from its parent """
     if node and node.has_consents():
         cnode = node
@@ -26,7 +26,7 @@ def _get_consent_node(ddhkey: keys.DDHkey, support: nodes.NodeSupports, node : t
     
 
 
-def get_schema(access : permissions.Access, session : sessions.Session, schemaformat: schemas.SchemaFormat = schemas.SchemaFormat.json) -> typing.Optional[pydantic.Json]:
+def get_schema(access : permissions.Access, session : sessions.Session, schemaformat: schemas.SchemaFormat = schemas.SchemaFormat.json) -> pydantic.Json|None:
     """ Service utility to retrieve a AbstractSchema and return it in the desired format.
         Returns None if no schema found.
     """
@@ -46,7 +46,7 @@ def get_schema(access : permissions.Access, session : sessions.Session, schemafo
 
     
 
-async def ddh_get(access : permissions.Access, session : sessions.Session, q : typing.Optional[str] = None, ) -> typing.Any:
+async def ddh_get(access : permissions.Access, session : sessions.Session, q : str|None = None, ) -> typing.Any:
     """ Service utility to retrieve data and return it in the desired format.
         Returns None if no data found.
 
@@ -92,7 +92,7 @@ async def ddh_get(access : permissions.Access, session : sessions.Session, q : t
             data = await e_node.execute(req)
         return data
 
-async def ddh_put(access : permissions.Access, session : sessions.Session, data : pydantic.Json, q : typing.Optional[str] = None, ) -> typing.Any:
+async def ddh_put(access : permissions.Access, session : sessions.Session, data : pydantic.Json, q : str|None = None, ) -> typing.Any:
     """ Service utility to store data.
         
     """

@@ -7,14 +7,14 @@ import enum
 class Model1(pydantic.BaseModel):
 
 	i: int
-	k : typing.Optional[str] = 'default'
+	k : str|None = 'default'
 
 class Model2(Model1):
 	e : float
 
 class ModelCollection(pydantic.BaseModel):
 	m1 : Model1
-	m2 : typing.Optional[Model2] = Model2(i=1,e=3.1415)
+	m2 : Model2|None = Model2(i=1,e=3.1415)
 
 
 def build():

@@ -32,7 +32,7 @@ class SchemaElement(NoCopyBaseModel):
     """ A Pydantic AbstractSchema class """
 
     @classmethod
-    def descend_path(cls, path: keys.DDHkey, create: bool = False) -> typing.Optional[typing.Type[SchemaElement]]:
+    def descend_path(cls, path: keys.DDHkey, create: bool = False) -> typing.Type[SchemaElement|None]:
         """ Travel down SchemaElement along path using some Pydantic implementation details.
             If a path segment is not found, return None, unless create is specified.
             Create inserts an empty schemaElement and descends further. 
@@ -116,7 +116,7 @@ class SchemaElement(NoCopyBaseModel):
             raise errors.NotFound(f'Incomplete key: {entire_selection}')
 
     @classmethod
-    def replace_by_schema(cls, ddhkey: keys.DDHkey, schema_attributes: typing.Optional[SchemaAttributes]) -> type[SchemaReference]:
+    def replace_by_schema(cls, ddhkey: keys.DDHkey, schema_attributes: SchemaAttributes|None) -> type[SchemaReference]:
         """ Replace this SchemaElement by a proper schema with attributes, 
             and return the SchemaReference to it, which can be used like a SchemaElement.
         """
@@ -176,9 +176,9 @@ class SchemaVariant(str, enum.Enum):
 
 
 class MimeTypes(NoCopyBaseModel):
-    of_schema: typing.Optional[str] = pydantic.Field(
+    of_schema: str|None = pydantic.Field(
         default=None, description='Mimetype of the schema - taken from Schema if not provided.')
-    of_data: typing.Optional[str] = pydantic.Field(
+    of_data: str|None = pydantic.Field(
         default=None, description='Mimetype of data - taken from Schema if not provided.')
 
 
@@ -187,8 +187,8 @@ class SchemaAttributes(NoCopyBaseModel):
         SchemaVariant.recommended, description="The schema variant for this instance")
     version: versions.Version = pydantic.Field(
         versions.Unspecified, description="The version of this schema instance")
-    requires: typing.Optional[Requires] = None
-    mimetypes: typing.Optional[MimeTypes] = None
+    requires: Requires|None = None
+    mimetypes: MimeTypes|None = None
 
     @classmethod
     def amend_key_with_mimetype(cls, ddhkey: keys.DDHkey) -> keys.DDHkey:
@@ -199,7 +199,7 @@ class SchemaAttributes(NoCopyBaseModel):
 class AbstractSchema(NoCopyBaseModel, abc.ABC):
     schema_attributes: SchemaAttributes = pydantic.Field(
         default=SchemaAttributes(), descriptor="Attributes associated with this Schema")
-    mimetypes: typing.ClassVar[typing.Optional[MimeTypes]] = None
+    mimetypes: typing.ClassVar[MimeTypes|None] = None
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
@@ -230,7 +230,7 @@ class AbstractSchema(NoCopyBaseModel, abc.ABC):
     def from_str(cls, schema_str: str, schema_attributes: SchemaAttributes) -> AbstractSchema:
         ...
 
-    def obtain(self, ddhkey: keys.DDHkey, split: int, create: bool = False) -> typing.Optional[AbstractSchema]:
+    def obtain(self, ddhkey: keys.DDHkey, split: int, create: bool = False) -> AbstractSchema|None:
         return None
 
     def to_format(self, format: SchemaFormat):
@@ -284,7 +284,7 @@ class PySchema(AbstractSchema):
     def from_str(cls, schema_str: str, schema_attributes: SchemaAttributes) -> PySchema:
         raise NotImplementedError('PySchema cannot be created from string')
 
-    def obtain(self, ddhkey: keys.DDHkey, split: int, create: bool = False) -> typing.Optional[AbstractSchema]:
+    def obtain(self, ddhkey: keys.DDHkey, split: int, create: bool = False) -> AbstractSchema|None:
         """ obtain a schema for the ddhkey, which is split into the key holding the schema and
             the remaining path. 
         """
@@ -337,7 +337,7 @@ class JsonSchema(AbstractSchema):
         """ return naked json schema """
         return self.json_schema
 
-    def obtain(self, ddhkey: keys.DDHkey, split: int, create: bool = False) -> typing.Optional[AbstractSchema]:
+    def obtain(self, ddhkey: keys.DDHkey, split: int, create: bool = False) -> AbstractSchema|None:
         """ obtain a schema for the ddhkey, which is split into the key holding the schema and
             the remaining path. 
         """
@@ -411,7 +411,7 @@ class SchemaContainer(NoCopyBaseModel):
 
     schemas_by_variant: dict[SchemaVariant,
                              dict[SchemaFormat, dict[versions.Version, AbstractSchema]]] = {}
-    current_schema: typing.Optional[AbstractSchema] = None
+    current_schema: AbstractSchema|None = None
 
     def __bool__(self):
         return self.current_schema is not None
@@ -431,7 +431,7 @@ class SchemaContainer(NoCopyBaseModel):
 
     def get(self, variant: SchemaVariant = SchemaVariant.recommended,
             format: SchemaFormat = SchemaFormat.internal,
-            version: versions.Version = versions.Unspecified) -> typing.Optional[AbstractSchema]:
+            version: versions.Version = versions.Unspecified) -> AbstractSchema|None:
         """ get a specific schema """
         return self.schemas_by_variant.get(variant, {}).get(format, {}).get(version)
 

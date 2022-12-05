@@ -105,7 +105,7 @@ class PrincipalKeyVaultClass(NoCopyBaseModel):
 
     key_by_principal : dict[str,PrincipalKey] = {}
 
-    def key_for_principal(self, principal : principals.Principal) -> typing.Optional[PrincipalKey]:
+    def key_for_principal(self, principal : principals.Principal) -> PrincipalKey|None:
         return self.key_by_principal.get(principal.id)
 
     def create(self,principal : principals.Principal) -> PrincipalKey:

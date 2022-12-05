@@ -75,7 +75,7 @@ class Controllable(pydantic.BaseModel):
         """ Check whether process is running by external means """
         return self.getprocess() is not None
 
-    def getprocess(self) -> typing.Optional[psutil.Process]:
+    def getprocess(self) -> psutil.Process|None:
         return []
 
     def health(self, args) -> dict:
@@ -175,7 +175,7 @@ class Runnable(Controllable):
                 return False
         return True
 
-    def getprocess(self) -> typing.Optional[psutil.Process]:
+    def getprocess(self) -> psutil.Process|None:
         """ return one single process or None """
         ps = next((proc for proc in psutil.process_iter(
             ['pid', 'name'], ad_value=None) if self._processfilter(proc)), None)
@@ -242,7 +242,7 @@ class PythonProcess(Runnable):
 
     python_exe = r"C:\Program Files\Python39\python.exe" if OnWindows else "python3"
     module: pathlib.Path
-    healthprocess: typing.Optional[AsgiProcess] = None
+    healthprocess: AsgiProcess|None = None
     args: list[str] = []
 
     def _startcmd(self):

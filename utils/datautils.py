@@ -20,7 +20,7 @@ def extract_data(data : dict,subkey : keys.DDHkey,default=missing,raise_error=Ke
         raise raise_error(subkey)
     return data
 
-def insert_data(data : dict,subkey : keys.DDHkey, newdata : dict,raise_error=KeyError, missing : typing.Optional[typing.Callable] = None) -> dict:
+def insert_data(data : dict,subkey : keys.DDHkey, newdata : dict,raise_error=KeyError, missing : typing.Callable|None = None) -> dict:
     """ insert newdata into data at subkey """
     glom.glom(data,glom.Assign('.'.join(subkey.key),newdata,missing=missing))
     return data

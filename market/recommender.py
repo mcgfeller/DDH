@@ -39,9 +39,9 @@ def list_subscriptions(user,all_dapps,sub_dapps) -> typing.Sequence[dapp_attrs.D
     return subscribed
 
 
-async def search_dapps(session,all_dapps: typing.Sequence[dapp_attrs.DAppOrFamily], sub_dapp_ids: frozenset[str], query : typing.Optional[str], 
-    categories : typing.Optional[typing.Iterable[common_ids.CatalogCategory]],
-    desired_labels : typing.Optional[typing.Iterable[common_ids.Label]]) -> list[SearchResultItem]:
+async def search_dapps(session,all_dapps: typing.Sequence[dapp_attrs.DAppOrFamily], sub_dapp_ids: frozenset[str], query : str|None, 
+    categories : typing.Iterable[common_ids.CatalogCategory|None],
+    desired_labels : typing.Iterable[common_ids.Label|None]) -> list[SearchResultItem]:
 
     subscribed = list_subscriptions(session.user,all_dapps,sub_dapp_ids)
     if query:

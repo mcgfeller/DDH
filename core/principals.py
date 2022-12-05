@@ -45,7 +45,7 @@ class User(Principal):
     """ Concrete user, may login """
        
     name : str 
-    email : typing.Optional[pydantic.EmailStr] = None
+    email : pydantic.EmailStr|None = None
     created_at : datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow) # defaults to now
 
 SystemUser = User(id='root',name='root')

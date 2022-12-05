@@ -64,7 +64,7 @@ class CoopDApp(dapp_attrs.DApp):
 
 class CoopSchema(schemas.SchemaElement):
 
-    supercard : typing.Optional[int] = pydantic.Field(None,sensitivity=schemas.Sensitivity.qi)
+    supercard : int|None = pydantic.Field(None,sensitivity=schemas.Sensitivity.qi)
     #receipts: list[Receipt] = []
 
 COOP_DAPP = CoopDApp(owner=principals.User(id='coop',name='Coop (fake account)'),

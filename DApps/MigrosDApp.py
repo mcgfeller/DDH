@@ -76,8 +76,8 @@ class MigrosDApp(dapp_attrs.DApp):
     
 class ProduktDetail(schemas.SchemaElement):
     produkt_kategorie : str
-    garantie : typing.Optional[str] = None
-    garantie_jahre : typing.Optional[int] = 1
+    garantie : str|None = None
+    garantie_jahre : int|None = 1
     beschreibung : str = ''
     labels : list[str] = []
 
@@ -91,7 +91,7 @@ class Receipt(schemas.SchemaElement):
     Menge:      float = 1
     Aktion:     int = 0
     Umsatz:     float = 0
-    Produkt: typing.Optional[ProduktDetail] = None 
+    Produkt: ProduktDetail|None = None 
 
     @classmethod
     def resolve(cls,remainder, principals, q):
@@ -116,7 +116,7 @@ class Receipt(schemas.SchemaElement):
 
 class MigrosSchema(schemas.SchemaElement):
 
-    cumulus : typing.Optional[int] = pydantic.Field(None,sensitivity=schemas.Sensitivity.qi)
+    cumulus : int|None = pydantic.Field(None,sensitivity=schemas.Sensitivity.qi)
     receipts: list[Receipt] = []
 
 

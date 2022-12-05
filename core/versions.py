@@ -28,7 +28,7 @@ class Version(NoCopyBaseModel, typing.Hashable):
     Maxparts: typing.ClassVar[int] = 4
 
     vtup: tuple[pydantic.conint(ge=0, le=100000), ...] = ()
-    alias: typing.Optional[str] = None
+    alias: str|None = None
 
     def __init__(self, *v, **kw):
         if v and isinstance(v[0], str):
@@ -47,7 +47,7 @@ class Version(NoCopyBaseModel, typing.Hashable):
         return
 
     @classmethod
-    def make_with_default(cls, v: typing.Optional[str]) -> Version:
+    def make_with_default(cls, v: str|None) -> Version:
         return cls(v) if v and not v == 'unspecified' else Unspecified
 
     def __eq__(self, other):
@@ -103,8 +103,8 @@ class VersionConstraint(NoCopyBaseModel):
 
     v1: Version
     op1:  str
-    v2: typing.Optional[Version] = None
-    op2:  typing.Optional[str] = None
+    v2: Version|None = None
+    op2:  str|None = None
 
     @pydantic.validator('op1', 'op2')
     def v_op1(cls, v):
@@ -186,7 +186,7 @@ class Upgraders:
     def __init__(self):
         self.network = networkx.DiGraph()
 
-    def add_upgrader(self, v_from: Version, v_to: Version, function: typing.Optional[Upgrader]):
+    def add_upgrader(self, v_from: Version, v_to: Version, function: Upgrader|None):
         """ Add upgrade function between two versions; None if no upgrade needed """
         if v_from >= v_to:
             raise ValueError(

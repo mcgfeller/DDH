@@ -49,8 +49,8 @@ class NodeProxy(persistable.PersistableProxy):
 class Node(pydantic.BaseModel):
 
     owner: principals.Principal
-    consents : typing.Optional[permissions.Consents] = permissions.DefaultConsents
-    key : typing.Optional[keys.DDHkey] = None
+    consents : permissions.Consents|None = permissions.DefaultConsents
+    key : keys.DDHkey|None = None
 
     @property
     def supports(self) -> set[NodeSupports]:
@@ -127,7 +127,7 @@ class SchemaNode(Node,persistable.NonPersistable):
         return s
 
 
-    def get_sub_schema(self, ddhkey: keys.DDHkey,split: int, schema_type : str = 'json',create : bool = False) -> tuple[int,typing.Optional[schemas.AbstractSchema]]:
+    def get_sub_schema(self, ddhkey: keys.DDHkey,split: int, schema_type : str = 'json',create : bool = False) -> tuple[int,schemas.AbstractSchema|None]:
         """ return schema based on ddhkey and split """
         s = typing.cast(schemas.AbstractSchema,self.schemas.current_schema)
         s = s.obtain(ddhkey,split,create=create)
@@ -163,8 +163,8 @@ class DataNode(Node,persistable.Persistable):
 
     format : persistable.DataFormat = persistable.DataFormat.dict
     data : typing.Any        
-    storage_loc : typing.Optional[common_ids.PersistId] = None
-    access_key: typing.Optional[keyvault.AccessKey] = None
+    storage_loc : common_ids.PersistId|None = None
+    access_key: keyvault.AccessKey|None = None
     sub_nodes : dict[keys.DDHkey,keys.DDHkey] = {}
 
     @property
@@ -194,7 +194,7 @@ class DataNode(Node,persistable.Persistable):
 
 
 
-    def execute(self, op: Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : typing.Optional[dict] = None, q : typing.Optional[str] = None):
+    def execute(self, op: Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : dict|None = None, q : str|None = None):
         if key_split:
             top,remainder = access.ddhkey.split_at(key_split)
             if self.format != persistable.DataFormat.dict:
