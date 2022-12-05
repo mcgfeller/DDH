@@ -70,7 +70,7 @@ class Node(pydantic.BaseModel):
         """ get one or multiple owners """
         return (self.owner,)
 
-    def get_proxy(self) -> typing.Union[Node,NodeProxy]:
+    def get_proxy(self) -> Node|NodeProxy:
         """ get a loadable proxy for us; idempotent. Reverse .ensureLoaded() """
         if isinstance(self,persistable.Persistable):
             return NodeProxy(supports=self.supports,id=self.id,classname=self.__class__.__name__)
@@ -81,12 +81,12 @@ class Node(pydantic.BaseModel):
 
 from . import keys # avoid circle
 Node.update_forward_refs() # Now Node is known, update before it's derived
-NodeOrProxy = typing.Union[Node,persistable.PersistableProxy]
+NodeOrProxy = Node|persistable.PersistableProxy
 
 class MultiOwnerNode(Node):
 
     all_owners : tuple[principals.Principal,...]
-    consents : typing.Union[permissions.Consents,permissions.MultiOwnerConsents] = permissions.DefaultConsents
+    consents : permissions.Consents|permissions.MultiOwnerConsents = permissions.DefaultConsents
 
     def __init__(self,**data):
         data['owner'] = data.get('all_owners',(None,))[0] # first owner, will complain in super
