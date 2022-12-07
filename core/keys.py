@@ -50,12 +50,15 @@ class ForkType(str, enum.Enum):
 
 
 VariantType = typing.NewType('VariantType', str)
-DefaultVariant = VariantType('recommended')
+DefaultVariant = VariantType('')
 Default_specifiers = [ForkType.data, DefaultVariant, versions.Unspecified]
-
 
 def variant_with_default(v: str|None) -> VariantType:
     return VariantType(v) if v else DefaultVariant
+Specifier_types = [ForkType.make_with_default,
+            variant_with_default, versions.Version.make_with_default]
+
+
 
 
 class DDHkey(NoCopyBaseModel):
@@ -91,8 +94,7 @@ class DDHkey(NoCopyBaseModel):
         # remove empty segments and make tuple:
         key = tuple(filter(None, key))
 
-        specifier_types = [ForkType.make_with_default,
-                           variant_with_default, versions.Version.make_with_default]
+
         # supplied + defaults
         # extend to cover all specifiers
         specifiers = list(specifiers) + [None]*(len(Default_specifiers)-len(specifiers))
@@ -111,7 +113,7 @@ class DDHkey(NoCopyBaseModel):
             if s:
                 kspecs[i] = s
             elif k:
-                kspecs[i] = specifier_types[i](k)
+                kspecs[i] = Specifier_types[i](k)
             else:
                 kspecs[i] = Default_specifiers[i]
         fork, variant, version = kspecs
