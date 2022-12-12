@@ -31,7 +31,7 @@ def test_container(json_schema):
     sc = schemas.SchemaContainer()
     sc.add(schema)
     sa = schema.schema_attributes
-    assert schema is sc.get(variant=sa.variant,format=schema.format,version=sa.version)
+    assert schema is sc.get(variant=sa.variant,version=sa.version)
 
 def test_insert_schema(ensure_root_node,json_schema,transaction):
     assert ensure_root_node

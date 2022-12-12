@@ -129,7 +129,7 @@ class SchemaNode(Node,persistable.NonPersistable):
 
     def get_sub_schema(self, ddhkey: keys.DDHkey,split: int, schema_type : str = 'json',create : bool = False) -> tuple[int,schemas.AbstractSchema|None]:
         """ return schema based on ddhkey and split """
-        s = typing.cast(schemas.AbstractSchema,self.schemas.current_schema)
+        s = typing.cast(schemas.AbstractSchema,self.schemas.default_schema)
         s = s.obtain(ddhkey,split,create=create)
         return s
 
