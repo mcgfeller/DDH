@@ -49,8 +49,13 @@ def test_variant():
 
 def test_version():
     ddhkey1 = keys.DDHkey(key='norooted:data::unspecified')
+    assert str(ddhkey1) == 'norooted'
     ddhkey2 = keys.DDHkey(key='norooted/subkey:data::unspecified')
+    assert str(ddhkey2) == 'norooted/subkey'
     assert ddhkey1 == ddhkey2.up()
+
+    ddhkey1v = keys.DDHkey(key='norooted/subkey:schema:spec:1.0')
+    assert str(ddhkey1v) == 'norooted/subkey:schema:spec:1.0'
 
     ddhkey1a = keys.DDHkey(key='norooted:data::unspecified')
     ddhkey1b = keys.DDHkey(key='norooted:::unspecified')
@@ -60,12 +65,13 @@ def test_version():
     assert ddhkey1 == ddhkey1c
 
     ddhkey3 = keys.DDHkey(key='norooted/subkey:::4.0')
+    assert str(ddhkey3) == 'norooted/subkey:::4.0'
     assert ddhkey1 != ddhkey3.up()  # versions don't match
 
     ddhkey4 = keys.DDHkey(key='norooted/subkey:data::5.0')
+    assert str(ddhkey4) == 'norooted/subkey:::5.0'
     assert ddhkey3 != ddhkey4
 
     with pytest.raises(ValueError):
         keys.DDHkey(key='norooted/subkey:::4.x')  # invalid version
 
-    d = str(ddhkey1),str(ddhkey1a),str(ddhkey1b),str(ddhkey1c),str(ddhkey2),str(ddhkey3),str(ddhkey4)
