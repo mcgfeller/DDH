@@ -273,7 +273,7 @@ class AbstractSchema(NoCopyBaseModel, abc.ABC):
     @staticmethod
     def get_schema_consents() -> permissions.Consents:
         """ Schema world read access consents """
-        return permissions.Consents(consents=[permissions.Consent(grantedTo=[principals.AllPrincipal], withModes={permissions.AccessMode.schema_read})])
+        return permissions.Consents(consents=[permissions.Consent(grantedTo=[principals.AllPrincipal], withModes={permissions.AccessMode.read})])
 
 
 class PySchema(AbstractSchema):

@@ -93,7 +93,7 @@ async def test_write_data_with_consent(user,user2):
     # grant read access to user1
     consents = permissions.Consent.single(grantedTo=[user],withModes={permissions.AccessMode.read})
     ddhkey2f = ddhkey2 ; ddhkey2f.fork = keys.ForkType.consents
-    access = permissions.Access(ddhkey=ddhkey2f,principal=user2,modes={permissions.AccessMode.consent_write})
+    access = permissions.Access(ddhkey=ddhkey2f,principal=user2,modes={permissions.AccessMode.write})
     await facade.ddh_put(access,session,consents.json())
 
     ddhkey3 = keys.DDHkey(key="/another/org/private/documents/doc3")

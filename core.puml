@@ -121,7 +121,7 @@ enum core.permissions.AccessMode {
   schema_read: schema_read {static}
   schema_write: schema_write {static}
   consent_read: consent_read {static}
-  consent_write: consent_write {static}
+  write: write {static}
   login: login {static}
 }
 class core.permissions.Consent {

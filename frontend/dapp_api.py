@@ -44,23 +44,6 @@ async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordReque
     return token
 
 
-@app.get("/ddh{docpath:path}:schema")
-async def get_schema(
-    docpath: str = fastapi.Path(..., title="The ddh key of the schema to get"),
-    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
-    dapp: principals.DAppId | None = None,
-    schemaformat: schemas.SchemaFormat = schemas.SchemaFormat.json,  # type: ignore # dynamic
-    q: str = fastapi.Query(None, alias="item-query"),
-):
-    access = permissions.Access(ddhkey=keys.DDHkey(docpath), principal=session.user, modes={
-                                permissions.AccessMode.schema_read}, byDApp=dapp)
-    fschema = facade.get_schema(access, session, schemaformat)
-    if not fschema:
-        raise fastapi.HTTPException(status_code=404, detail=f"No schema found at {access.ddhkey}.")
-    else:
-        return fschema
-
-
 @app.get("/ddh{docpath:path}")
 async def get_data(
     docpath: str = fastapi.Path(..., title="The ddh key of the data to get"),

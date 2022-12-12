@@ -14,7 +14,7 @@ def register_schema() -> nodes.SchemaNode:
     """ Register root schema at root node. 
         This is preliminary, as the schema is hard-coded.
     """
-    root = keys.DDHkey(keys.DDHkey.Root)
+    root = keys.DDHkey(keys.DDHkey.Root,fork=keys.ForkType.schema)
     session = sessions.get_system_session()
     transaction = session.get_or_create_transaction()
     root_node,split = keydirectory.NodeRegistry.get_node(root,nodes.NodeSupports.schema,transaction)
@@ -79,7 +79,7 @@ def descend_schema(tree : list,schema_attributes : dict, parents=()) -> type[sch
     se = pydantic.create_model('_'.join(key), __base__=schemas.SchemaElement, **elements) # create a model with subtree elements
     if sa := schema_attributes.get(key): # SchemaAttributes here? 
         # we need to replace the SchemaElement by a full Schema and a SchemaReference to it
-        dkey = keys.DDHkey(('','')+key[2:]) # 'root' is '' in key
+        dkey = keys.DDHkey(('','')+key[2:],fork=keys.ForkType.schema) # 'root' is '' in key
         se = se.replace_by_schema(dkey,sa)
     return se
 

@@ -25,10 +25,6 @@ class AccessMode(str,enum.Enum):
     aggregated = 'aggregated'
     differential = 'differential' # differential privacy aggregation
     confidential = 'confidential' # confidential computing
-    schema_read = 'schema_read'
-    schema_write = 'schema_write'    
-    consent_read = 'consent_read'
-    consent_write = 'consent_write'
     login = 'login'
 
     def __repr__(self) -> str:

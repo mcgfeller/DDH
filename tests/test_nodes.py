@@ -41,7 +41,7 @@ def test_schema_node():
     assert node_s.schemas.current_schema is schema
     assert node_s.get_sub_schema(ddhkey, split) is None
     access = permissions.Access(ddhkey=ddhkey, principal=user, modes=[
-                                permissions.AccessMode.schema_read])
+                                permissions.AccessMode.read])
 
     assert facade.get_schema(access, session) is None  # this should be same in one go.
 

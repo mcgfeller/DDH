@@ -62,7 +62,8 @@ def test_dapp_schema(user1):
     r.raise_for_status()
     d = r.json()
     assert isinstance(d,dict)
-    assert d['title'] == 'Receipt' # type: ignore
+    assert d
+    assert d['res']['title'] == 'Receipt' # type: ignore
     return
 
 
@@ -71,22 +72,22 @@ def test_dapp_schema_2(user1):
     r = user1.get('/ddh//org/migros.ch/receipts/Produkt:schema')
     r.raise_for_status()
     d = r.json()
-    assert isinstance(d,dict)
-    assert d['title'] == 'ProduktDetail' # type: ignore
+    assert 'res' in d
+    assert d['res']['title'] == 'ProduktDetail' # type: ignore
     return
 
 def test_complete_schema_p(user1):
-    r = user1.get('/ddh//org:schema?schemaformat=json')
+    r = user1.get('/ddh//org:schema')
     r.raise_for_status()
     d = r.json()
-    assert d.get('title'),'schema is empty'
+    assert d['res'].get('title'),'schema is empty'
     return
 
 def test_p_schema(user1):
     r = user1.get('/ddh//p/living/shopping:schema')
     r.raise_for_status()
     d = r.json()
-    assert d.get('title'),'schema is empty'
+    assert d['res'].get('title'),'schema is empty'
     return
 
 

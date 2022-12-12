@@ -30,14 +30,14 @@ def get_schema(access : permissions.Access, session : sessions.Session, schemafo
     """ Service utility to retrieve a AbstractSchema and return it in the desired format.
         Returns None if no schema found.
     """
-    access.include_mode(permissions.AccessMode.schema_read)
+    access.include_mode(permissions.AccessMode.read)
     transaction = session.get_or_create_transaction(for_user=access.principal)
     transaction.add_and_validate(access)
     formatted_schema = None # in case of not found. 
     snode,split = keydirectory.NodeRegistry.get_node(access.ddhkey,nodes.NodeSupports.schema,transaction) # get applicable schema nodes
    
     if snode:
-        access.raise_permitted(_get_consent_node(access.ddhkey,nodes.NodeSupports.schema,snode,transaction))
+        access.raise_permitted(_get_consent_node(access.ddhkey.without_variant_version(),nodes.NodeSupports.schema,snode,transaction))
         schema = snode.get_sub_schema(access.ddhkey,split)
         if schema:
             formatted_schema = schema.to_format(schemaformat)
@@ -69,7 +69,7 @@ async def ddh_get(access : permissions.Access, session : sessions.Session, q : s
         data_node,d_key_split = keydirectory.NodeRegistry.get_node(access.ddhkey,nodes.NodeSupports.data,transaction)
         if data_node:
             if access.ddhkey.fork == keys.ForkType.consents:
-                access.include_mode(permissions.AccessMode.consent_read)
+                access.include_mode(permissions.AccessMode.read)
                 *d,consentees = access.raise_permitted(data_node)
                 return data_node.consents
             else:
@@ -130,7 +130,7 @@ async def ddh_put(access : permissions.Access, session : sessions.Session, data 
             data_node.execute(nodes.Ops.put,access, transaction, d_key_split, data, q)
 
     elif access.ddhkey.fork == keys.ForkType.consents:
-        access.include_mode(permissions.AccessMode.consent_write)
+        access.include_mode(permissions.AccessMode.write)
         access.raise_permitted(data_node)
         consents = permissions.Consents.parse_raw(data)
         data_node.update_consents(access, transaction, remainder,consents)
