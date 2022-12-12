@@ -43,7 +43,7 @@ def test_schema_node():
     access = permissions.Access(ddhkey=ddhkey, principal=user, modes=[
                                 permissions.AccessMode.read])
 
-    assert facade.get_schema(access, session) is None  # this should be same in one go.
+    assert facade.get_schema(access, transaction) is None  # this should be same in one go.
 
 
 if __name__ == '__main__':
