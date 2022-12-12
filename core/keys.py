@@ -172,13 +172,21 @@ class DDHkey(NoCopyBaseModel):
         else:
             return self
 
-    def without_owner(self):
+    def without_owner(self) -> DDHkey:
         """ return key without owner """
         rooted_key = self.ensure_rooted()
         if len(rooted_key.key) > 1 and rooted_key.key != self.AnyKey:
             return self.__class__((self.Root, self.AnyKey)+rooted_key.key[2:], specifiers=rooted_key.specifiers)
         else:
             return rooted_key
+
+    def without_variant_version(self) -> DDHkey:
+        """ return key with fork, but without schema variant and version, typically used for access control """
+        if self.version == versions.Unspecified and self.variant == DefaultVariant:
+            k = self
+        else:
+            k = self.__class__(self.key,fork=self.fork,variant=DefaultVariant,version=versions.Unspecified)
+        return k
 
     @property
     def owners(self) -> common_ids.PrincipalId:

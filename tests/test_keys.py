@@ -75,3 +75,9 @@ def test_version():
     with pytest.raises(ValueError):
         keys.DDHkey(key='norooted/subkey:::4.x')  # invalid version
 
+def test_without_variant_version():
+    ddhkey1 = keys.DDHkey(key='norooted/subkey:schema:spec:1.0')
+    ddh_wvv = ddhkey1.without_variant_version()
+    assert ddh_wvv.fork == keys.ForkType.schema
+    assert ddh_wvv.variant == keys.DefaultVariant
+    assert ddh_wvv.version == keys.versions.Unspecified
