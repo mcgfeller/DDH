@@ -407,7 +407,10 @@ Class2SchemaFormat = {c: s for s, c in SchemaFormat2Class.items()}
 
 
 class SchemaContainer(NoCopyBaseModel):
-    """ Holds one or more Schemas according to their variant, format, and version """
+    """ Holds one or more Schemas according to their variant and version,
+        keeps latest version in versions.Unspecified per variant
+        and overall (in .default_schema)
+    """
 
     schemas_by_variant: dict[SchemaVariant,
                              dict[versions.Version, AbstractSchema]] = {}
@@ -419,12 +422,12 @@ class SchemaContainer(NoCopyBaseModel):
     def add(self, schema: AbstractSchema):
         """ add a schema, considering its attributes """
         sa = schema.schema_attributes
-        self.schemas_by_variant.setdefault(sa.variant, {})[sa.version] = schema
-        if sa.variant == SchemaVariant.recommended:  # latest recommended schema becomes default
-            if self.default_schema:
-                if sa.version > self.default_schema.schema_attributes.version:  # higher than current version
-                    self.default_schema = schema
-            else:
+        sbv =  self.schemas_by_variant.setdefault(sa.variant, {})
+        sbv[sa.version] = schema
+        default_version = sbv.get(versions.Unspecified)
+        if not(default_version and sa.version < default_version.schema_attributes.version): # nothing yet or newer:
+            sbv[versions.Unspecified] = schema # new default version
+            if sa.variant == SchemaVariant.recommended:  # latest recommended schema becomes default
                 self.default_schema = schema
         return schema
 
