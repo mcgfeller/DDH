@@ -169,13 +169,19 @@ class SchemaFormat(str, enum.Enum):
 
 
 @enum.unique
-class SchemaVariant(str, enum.Enum):
+class SchemaVariantUsage(str, enum.Enum):
+    """ How a Schema should be used, allows management of alternate schemas and defaults. """
     recommended = 'recommended'
     supported = 'supported'
     obsolete = 'obsolete'
 
 
+# Schema name in case of multiple schemas in the same space, e.g., ISO-20022 and Swift MT.
+SchemaVariant = pydantic.constr(strip_whitespace=True, max_length=30, regex='[a-zA-Z0-9_-]+')
+
+
 class MimeTypes(NoCopyBaseModel):
+    """ Mime Types both for the schema itself and data conforming to the schema """
     of_schema: str | None = pydantic.Field(
         default=None, description='Mimetype of the schema - taken from Schema if not provided.')
     of_data: str | None = pydantic.Field(
@@ -183,8 +189,11 @@ class MimeTypes(NoCopyBaseModel):
 
 
 class SchemaAttributes(NoCopyBaseModel):
-    variant: SchemaVariant = pydantic.Field(
-        SchemaVariant.recommended, description="The schema variant for this instance")
+    """ Attribbutes of the Schema, but not part of the Schema itself. """
+    variant: SchemaVariant | None = pydantic.Field(
+        default=None, description='Name of the variant, in case of multiple schemas in the same space, e.g., ISO-20022 and Swift MT')
+    variant_usage: SchemaVariantUsage = pydantic.Field(
+        SchemaVariantUsage.recommended, description="How this variant is used.")
     version: versions.Version = pydantic.Field(
         versions.Unspecified, description="The version of this schema instance")
     requires: Requires | None = None
@@ -207,8 +216,11 @@ class AbstractSchema(NoCopyBaseModel, abc.ABC):
 
     def update_schema_attributes(self):
         """ update .schema_attributes based on schema.
-            updates mimetype by default, but can be refined. 
+            updates .variant and mimetype by default, but can be refined. 
+            The .variant name defaults to the name of the schema class.
         """
+        if not self.schema_attributes.variant:  # variant name default is class name
+            self.schema_attributes.variant = self.__class__.__name__
         self.update_mimetype()
 
     def update_mimetype(self):
@@ -234,6 +246,9 @@ class AbstractSchema(NoCopyBaseModel, abc.ABC):
         return None
 
     def to_format(self, format: SchemaFormat):
+        """ migrate schema to another format. 
+            TODO: Do we really need or want this?
+        """
         if format == self.format:
             return self.to_output()
         elif SchemaFormat2Class[format.value] == JsonSchema:
@@ -244,7 +259,7 @@ class AbstractSchema(NoCopyBaseModel, abc.ABC):
 
     @abc.abstractmethod
     def to_output(self) -> str:
-        """ native output represenation """
+        """ native output representation """
         ...
 
     def add_fields(self, fields: dict):
@@ -409,10 +424,10 @@ Class2SchemaFormat = {c: s for s, c in SchemaFormat2Class.items()}
 class SchemaContainer(NoCopyBaseModel):
     """ Holds one or more Schemas according to their variant and version,
         keeps latest version in versions.Unspecified per variant
-        and overall (in .default_schema)
+        and recommended latest schema in .default_schema.
     """
 
-    schemas_by_variant: dict[SchemaVariant,
+    schemas_by_variant: dict[SchemaVariantUsage,
                              dict[versions.Version, AbstractSchema]] = {}
     default_schema: AbstractSchema | None = None
 
@@ -422,16 +437,17 @@ class SchemaContainer(NoCopyBaseModel):
     def add(self, schema: AbstractSchema):
         """ add a schema, considering its attributes """
         sa = schema.schema_attributes
-        sbv =  self.schemas_by_variant.setdefault(sa.variant, {})
+        sbv = self.schemas_by_variant.setdefault(sa.variant, {})
         sbv[sa.version] = schema
         default_version = sbv.get(versions.Unspecified)
-        if not(default_version and sa.version < default_version.schema_attributes.version): # nothing yet or newer:
-            sbv[versions.Unspecified] = schema # new default version
-            if sa.variant == SchemaVariant.recommended:  # latest recommended schema becomes default
+        # nothing yet or newer:
+        if not (default_version and sa.version < default_version.schema_attributes.version):
+            sbv[versions.Unspecified] = schema  # new default version
+            if sa.variant_usage == SchemaVariantUsage.recommended:  # latest recommended schema becomes default
                 self.default_schema = schema
         return schema
 
-    def get(self, variant: SchemaVariant = SchemaVariant.recommended,
+    def get(self, variant: SchemaVariantUsage = SchemaVariantUsage.recommended,
             version: versions.Version = versions.Unspecified) -> AbstractSchema | None:
         """ get a specific schema """
         return self.schemas_by_variant.get(variant, {}).get(version)

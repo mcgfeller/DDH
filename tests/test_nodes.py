@@ -14,10 +14,10 @@ def test_nodes():
     node_s.add_schema(schema)
     node_d = nodes.DataNode(consents=permissions.Consents(
         consents=[permissions.Consent(grantedTo=[user2])]), owner=user)
-    keydirectory.NodeRegistry[keys.DDHkey(key='//p/health')] = node_s
+    keydirectory.NodeRegistry[keys.DDHkey(key='//p/health:schema')] = node_s
     keydirectory.NodeRegistry[keys.DDHkey(key='/mgf/p/health')] = node_d
     ddhkey = keys.DDHkey(key='/mgf/p/health/bmi/weight')
-    ddhkey_s = keys.DDHkey('//p/health/bmi/weight')
+    ddhkey_s = keys.DDHkey('//p/health/bmi/weight:schema')
     assert next(keydirectory.NodeRegistry.get_next_proxy(
         ddhkey, nodes.NodeSupports.data))[0] == node_d.get_proxy()
     assert keydirectory.NodeRegistry.get_node(ddhkey_s, nodes.NodeSupports.schema, transaction)[
