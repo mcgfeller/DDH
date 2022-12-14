@@ -429,7 +429,7 @@ class SchemaContainer(NoCopyBaseModel):
 
     schemas_by_variant: dict[SchemaVariant,
                              dict[versions.Version, AbstractSchema]] = {}
-    default_schema: AbstractSchema | None = None
+    default_schema: AbstractSchema | None = None # TODO: Still useful?
 
     def __bool__(self):
         return self.default_schema is not None
@@ -443,8 +443,10 @@ class SchemaContainer(NoCopyBaseModel):
         # nothing yet or newer:
         if not (default_version and sa.version < default_version.schema_attributes.version):
             sbv[versions.Unspecified] = schema  # new default version
-            if sa.variant_usage == SchemaVariantUsage.recommended:  # latest recommended schema becomes default
-                self.default_schema = schema
+
+        if sa.variant_usage == SchemaVariantUsage.recommended:  # latest recommended schema becomes default
+            self.schemas_by_variant[''] = sbv
+            self.default_schema = sbv[versions.Unspecified]
         return schema
 
     def get(self, variant: SchemaVariant, version: versions.Version = versions.Unspecified) -> AbstractSchema | None:
