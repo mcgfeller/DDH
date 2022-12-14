@@ -427,7 +427,7 @@ class SchemaContainer(NoCopyBaseModel):
         and recommended latest schema in .default_schema.
     """
 
-    schemas_by_variant: dict[SchemaVariantUsage,
+    schemas_by_variant: dict[SchemaVariant,
                              dict[versions.Version, AbstractSchema]] = {}
     default_schema: AbstractSchema | None = None
 
@@ -447,10 +447,23 @@ class SchemaContainer(NoCopyBaseModel):
                 self.default_schema = schema
         return schema
 
-    def get(self, variant: SchemaVariantUsage = SchemaVariantUsage.recommended,
-            version: versions.Version = versions.Unspecified) -> AbstractSchema | None:
+    def get(self, variant: SchemaVariant, version: versions.Version = versions.Unspecified) -> AbstractSchema | None:
         """ get a specific schema """
         return self.schemas_by_variant.get(variant, {}).get(version)
+
+    @classmethod
+    def get_schema_key(cls, ddhkey: keys.DDHkey,transaction) -> tuple[AbstractSchema,keys.DDHkey]:
+        """ for a ddhkey, get its schema and the fully qualified schema key """
+        snode, split = keydirectory.NodeRegistry.get_node(ddhkey, nodes.NodeSupports.schema, transaction)
+        if snode:
+            assert isinstance(snode,nodes.SchemaNode)
+            schema = snode.schemas.get(ddhkey.variant,ddhkey.version)
+            if schema:
+                fqkey = keys.DDHkey(ddhkey.key,specifiers=(ddhkey.fork,schema.schema_attributes.variant,schema.schema_attributes.version))
+                return (schema,fqkey)
+        raise errors.NotFound(f'No schema found for {ddhkey}')
+
+
 
 
 def create_schema(s: str, format: SchemaFormat, sa: SchemaAttributes) -> AbstractSchema:
