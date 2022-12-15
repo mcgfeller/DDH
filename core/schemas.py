@@ -424,12 +424,11 @@ Class2SchemaFormat = {c: s for s, c in SchemaFormat2Class.items()}
 class SchemaContainer(NoCopyBaseModel):
     """ Holds one or more Schemas according to their variant and version,
         keeps latest version in versions.Unspecified per variant
-        and recommended latest schema in .default_schema.
+        and recommended as variant ''.
     """
 
     schemas_by_variant: dict[SchemaVariant,
                              dict[versions.Version, AbstractSchema]] = {}
-    default_schema: AbstractSchema | None = None # TODO: Still useful?
 
     def __bool__(self):
         return self.default_schema is not None
@@ -446,26 +445,37 @@ class SchemaContainer(NoCopyBaseModel):
 
         if sa.variant_usage == SchemaVariantUsage.recommended:  # latest recommended schema becomes default
             self.schemas_by_variant[''] = sbv
-            self.default_schema = sbv[versions.Unspecified]
         return schema
 
-    def get(self, variant: SchemaVariant, version: versions.Version = versions.Unspecified) -> AbstractSchema | None:
+    def get(self, variant: SchemaVariant = '', version: versions.Version = versions.Unspecified) -> AbstractSchema | None:
         """ get a specific schema """
         return self.schemas_by_variant.get(variant, {}).get(version)
 
-    @classmethod
-    def get_schema_key(cls, ddhkey: keys.DDHkey,transaction) -> tuple[AbstractSchema,keys.DDHkey]:
-        """ for a ddhkey, get its schema and the fully qualified schema key """
-        snode, split = keydirectory.NodeRegistry.get_node(ddhkey, nodes.NodeSupports.schema, transaction)
+    @property
+    def default_schema(self):
+        """ return default variant and latest version """
+        return self.get()
+
+    @staticmethod
+    def get_node_schema_key(ddhkey: keys.DDHkey, transaction) -> tuple[AbstractSchema, keys.DDHkey]:
+        """ for a ddhkey, get the node, then get its schema and the fully qualified schema key """
+        snode, split = keydirectory.NodeRegistry.get_node(
+            ddhkey, nodes.NodeSupports.schema, transaction)
         if snode:
-            assert isinstance(snode,nodes.SchemaNode)
-            schema = snode.schemas.get(ddhkey.variant,ddhkey.version)
-            if schema:
-                fqkey = keys.DDHkey(ddhkey.key,specifiers=(ddhkey.fork,schema.schema_attributes.variant,schema.schema_attributes.version))
-                return (schema,fqkey)
-        raise errors.NotFound(f'No schema found for {ddhkey}')
+            assert isinstance(snode, nodes.SchemaNode)
+            return snode.schemas.get_schema_key(ddhkey)
+        else:
+            raise errors.NotFound(f'No schema node found for {ddhkey}')
 
-
+    def get_schema_key(self, ddhkey: keys.DDHkey) -> tuple[AbstractSchema, keys.DDHkey]:
+        """ for a ddhkey, get its schema and the fully qualified schema key """
+        schema = self.get(ddhkey.variant, ddhkey.version)
+        if schema:
+            fqkey = keys.DDHkey(ddhkey.key, specifiers=(
+                ddhkey.fork, schema.schema_attributes.variant, schema.schema_attributes.version))
+            return (schema, fqkey)
+        else:
+            raise errors.NotFound(f'No schema variant and version found for {ddhkey}')
 
 
 def create_schema(s: str, format: SchemaFormat, sa: SchemaAttributes) -> AbstractSchema:

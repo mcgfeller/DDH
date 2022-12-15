@@ -21,7 +21,7 @@ def test_nodes():
     assert next(keydirectory.NodeRegistry.get_next_proxy(
         ddhkey, nodes.NodeSupports.data))[0] == node_d.get_proxy()
     assert keydirectory.NodeRegistry.get_node(ddhkey_s, nodes.NodeSupports.schema, transaction)[
-        0].schemas.default_schema is schema
+        0].schemas.get() is schema
     return
 
 
@@ -38,13 +38,12 @@ def test_schema_node():
     ddhkey = keys.DDHkey(key='//p/health/bmi/weight')  # does not exist
     node_s, split = keydirectory.NodeRegistry.get_node(
         ddhkey, nodes.NodeSupports.schema, transaction)
-    assert node_s.schemas.default_schema is schema
+    assert node_s.schemas.get() is schema
     assert node_s.get_sub_schema(ddhkey, split) is None
     access = permissions.Access(ddhkey=ddhkey, principal=user, modes=[
                                 permissions.AccessMode.read])
 
     assert facade.get_schema(access, transaction) is None  # this should be same in one go.
-
 
 
 if __name__ == '__main__':

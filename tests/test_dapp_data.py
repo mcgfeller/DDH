@@ -1,21 +1,19 @@
 """ Tests with Schemas and Data from DApps, working with all microservices """
 
 
-
-
 def test_get_data(user1):
     r = user1.get('/ddh/mgf/org/migros.ch/receipts')
     r.raise_for_status()
     d = r.json()
-    assert d['res'],'res is empty'
+    assert d['res'], 'res is empty'
     data = d['res']
-    assert isinstance(data,dict)
-    assert len(data)>0 
-    assert isinstance(data['mgf'],list)
-    assert len(data['mgf'])>10
-    assert all(a in data['mgf'][5] for a in ('Datum_Zeit','Menge','Filiale')) # these keys must be present
+    assert isinstance(data, dict)
+    assert len(data) > 0
+    assert isinstance(data['mgf'], list)
+    assert len(data['mgf']) > 10
+    assert all(a in data['mgf'][5]
+               for a in ('Datum_Zeit', 'Menge', 'Filiale'))  # these keys must be present
     return
-
 
 
 def test_dapp_read_data_no_owner(user1):
@@ -25,6 +23,7 @@ def test_dapp_read_data_no_owner(user1):
     assert r.json()['detail'] == 'key has no owner'
     return
 
+
 def test_dapp_read_data_unknown(user1):
     """ test retrieval of key of test MigrosDApp, with a user that does not exist """
     r = user1.get('/ddh/mgf,unknown/org/migros.ch/receipts')
@@ -32,28 +31,29 @@ def test_dapp_read_data_unknown(user1):
     assert r.json()['detail'] == 'User not found unknown'
     return
 
+
 def test_dapp_read_data_nopermit(user1):
     """ test retrieval of key of test MigrosDApp, with a user that has no permission """
     r = user1.get('/ddh/another/org/migros.ch/receipts')
     assert 403 == r.status_code
     return
 
+
 def test_std_read_data(user1):
     """ test retrieval of key of test MigrosDApp with transformation to standard """
     r = user1.get('/ddh/mgf/p/living/shopping/receipts')
     r.raise_for_status()
     d = r.json()
-    assert d['res'],'res is empty'
+    assert d['res'], 'res is empty'
     data = d['res']
-    assert isinstance(data,dict)
-    assert len(data)>0 
-    assert isinstance(data['items'],list)
-    assert len(data['items'])>10
-    assert all(a in data['items'][5] for a in ('article','quantity','buyer')) # these keys must be present
-    
+    assert isinstance(data, dict)
+    assert len(data) > 0
+    assert isinstance(data['items'], list)
+    assert len(data['items']) > 10
+    assert all(a in data['items'][5]
+               for a in ('article', 'quantity', 'buyer'))  # these keys must be present
+
     return
-
-
 
 
 def test_dapp_schema(user1):
@@ -61,9 +61,9 @@ def test_dapp_schema(user1):
     r = user1.get('/ddh//org/migros.ch/receipts:schema')
     r.raise_for_status()
     d = r.json()
-    assert isinstance(d,dict)
+    assert isinstance(d, dict)
     assert d
-    assert d['res']['title'] == 'Receipt' # type: ignore
+    assert d['res']['title'] == 'Receipt'  # type: ignore
     return
 
 
@@ -73,26 +73,21 @@ def test_dapp_schema_2(user1):
     r.raise_for_status()
     d = r.json()
     assert 'res' in d
-    assert d['res']['title'] == 'ProduktDetail' # type: ignore
+    assert d['res']['title'] == 'ProduktDetail'  # type: ignore
     return
+
 
 def test_complete_schema_p(user1):
     r = user1.get('/ddh//org:schema')
     r.raise_for_status()
     d = r.json()
-    assert d['res'].get('title'),'schema is empty'
+    assert d['res'].get('title'), 'schema is empty'
     return
+
 
 def test_p_schema(user1):
     r = user1.get('/ddh//p/living/shopping:schema')
     r.raise_for_status()
     d = r.json()
-    assert d['res'].get('title'),'schema is empty'
+    assert d['res'].get('title'), 'schema is empty'
     return
-
-
-
-
-
-
-
