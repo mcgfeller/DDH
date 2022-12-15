@@ -45,3 +45,4 @@ def test_schema(json_schema):
     """ test retrieval of key of test MigrosDApp, and facade.get_schema() """
     assert json_schema
     return
+
