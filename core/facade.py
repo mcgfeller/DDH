@@ -54,6 +54,11 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
     transaction = session.get_or_create_transaction(for_user=access.principal)
     transaction.add_and_validate(access)
 
+    # fork-independent checks:
+
+    # get schema and key with specifiers:
+    schema,access.ddhkey = schemas.SchemaContainer.get_node_schema_key(access.ddhkey,transaction)
+
     # if we ask for schema, we don't need an owner:
     if access.ddhkey.fork == keys.ForkType.schema:
         return get_schema(access, transaction, schemaformat=schemas.SchemaFormat.json)

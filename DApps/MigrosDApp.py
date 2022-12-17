@@ -47,7 +47,7 @@ class MigrosDApp(dapp_attrs.DApp):
         if req.op == nodes.Ops.get:
             here,selection = req.access.ddhkey.split_at(req.key_split)
             # key we transform into?
-            if req.access.ddhkey.without_owner() == self.transforms_into:
+            if req.access.ddhkey.without_owner().without_variant_version() == self.transforms_into:
                 d = self.get_and_transform(req)
             else: # key we provide, call schema descent to resolve:
                 d = self._ddhschema.get_data(selection,req.access,req.q)

@@ -161,9 +161,10 @@ class DDHkey(NoCopyBaseModel):
             return None
 
     def split_at(self, split: int) -> typing.Tuple[DDHkey, DDHkey]:
-        """ split the key into two DDHkeys at split """
-        # TODO: Why does trailing segment not need specifiers? --> test_str_read_data fails
-        return self.__class__(self.key[:split]), self.__class__(self.key[split:]) 
+        """ split the key into two DDHkeys at split
+            The specifiers go onto the leading segment.
+        """
+        return self.__class__(self.key[:split],specifiers=self.specifiers), self.__class__(self.key[split:]) 
 
     def ensure_rooted(self) -> DDHkey:
         """ return a DDHkey that is rooted """

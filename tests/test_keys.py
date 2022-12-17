@@ -81,3 +81,10 @@ def test_without_variant_version():
     assert ddh_wvv.fork == keys.ForkType.schema
     assert ddh_wvv.variant == keys.DefaultVariant
     assert ddh_wvv.version == keys.versions.Unspecified
+
+def test__split():
+    """ Test key split """
+    ddhkey1 = keys.DDHkey("/mgf/p/living/shopping/receipts::PySchema")
+    k0,k1 = ddhkey1.split_at(5)
+    assert str(k0) == "/mgf/p/living/shopping::PySchema"
+    assert str(k1) == "receipts"
