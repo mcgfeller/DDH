@@ -34,9 +34,11 @@ class CoopDApp(dapp_attrs.DApp):
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
         self._ddhschema = CoopSchema()
+        
         self.transforms_into = keys.DDHkey(key="//p/living/shopping/receipts")
-        self.references = relationships.Reference.defines(self.schemakey) + relationships.Reference.provides(self.schemakey) + \
-            relationships.Reference.provides(self.transforms_into)
+        self.references = relationships.Reference.defines(self.schemakey) + relationships.Reference.provides(self.schemakey) \
+            # TODO: Must not register transform unless provided:
+            # + relationships.Reference.provides(self.transforms_into)
 
     def get_schemas(self) -> dict[keys.DDHkey, schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
@@ -64,6 +66,9 @@ class CoopSchema(schemas.SchemaElement):
 
     supercard: int | None = pydantic.Field(None, sensitivity=schemas.Sensitivity.qi)
     #receipts: list[Receipt] = []
+
+    # def get_data(self, selection: keys.DDHkey, access: permissions.Access, q):
+    #     return None
 
 
 COOP_DAPP = CoopDApp(owner=principals.User(id='coop', name='Coop (fake account)'),
