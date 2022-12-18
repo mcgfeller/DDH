@@ -4,15 +4,14 @@
 def test_get_data(user1):
     r = user1.get('/ddh/mgf/org/migros.ch/receipts')
     r.raise_for_status()
-    d = r.json()
-    assert d['res'], 'res is empty'
-    data = d['res']
+    data = r.json()
     assert isinstance(data, dict)
     assert len(data) > 0
     assert isinstance(data['mgf'], list)
     assert len(data['mgf']) > 10
     assert all(a in data['mgf'][5]
                for a in ('Datum_Zeit', 'Menge', 'Filiale'))  # these keys must be present
+    assert r.headers['content-location'] == str(user1.base_url)+'/ddh/mgf/org/migros.ch/receipts::PySchema'
     return
 
 
@@ -43,9 +42,7 @@ def test_std_read_data(user1):
     """ test retrieval of key of test MigrosDApp with transformation to standard """
     r = user1.get('/ddh/mgf/p/living/shopping/receipts')
     r.raise_for_status()
-    d = r.json()
-    assert d['res'], 'res is empty'
-    data = d['res']
+    data = r.json()
     assert isinstance(data, dict)
     assert len(data) > 0
     assert isinstance(data['items'], list)
@@ -63,7 +60,7 @@ def test_dapp_schema(user1):
     d = r.json()
     assert isinstance(d, dict)
     assert d
-    assert d['res']['title'] == 'Receipt'  # type: ignore
+    assert d['title'] == 'Receipt'  # type: ignore
     return
 
 
@@ -72,8 +69,7 @@ def test_dapp_schema_2(user1):
     r = user1.get('/ddh//org/migros.ch/receipts/Produkt:schema')
     r.raise_for_status()
     d = r.json()
-    assert 'res' in d
-    assert d['res']['title'] == 'ProduktDetail'  # type: ignore
+    assert d['title'] == 'ProduktDetail'  # type: ignore
     return
 
 
@@ -81,7 +77,7 @@ def test_complete_schema_p(user1):
     r = user1.get('/ddh//org:schema')
     r.raise_for_status()
     d = r.json()
-    assert d['res'].get('title'), 'schema is empty'
+    assert d.get('title'), 'schema is empty'
     return
 
 
@@ -89,5 +85,5 @@ def test_p_schema(user1):
     r = user1.get('/ddh//p/living/shopping:schema')
     r.raise_for_status()
     d = r.json()
-    assert d['res'].get('title'), 'schema is empty'
+    assert d.get('title'), 'schema is empty'
     return

@@ -46,8 +46,11 @@ async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordReque
 
 @app.get("/ddh{docpath:path}")
 async def get_data(
+    response: fastapi.Response,
+    request: fastapi.Request,
     docpath: str = fastapi.Path(..., title="The ddh key of the data to get"),
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
+    accept: list[str] | None = fastapi.Header(default=None),
     modes: set[permissions.AccessMode] = {permissions.AccessMode.read},
     q: str = fastapi.Query(None, alias="item-query"),
 ):
@@ -59,7 +62,9 @@ async def get_data(
     except errors.DDHerror as e:
         raise e.to_http()
 
-    return {"ddhkey": access.ddhkey, "res": d}
+    # TODO: Content location needs full url
+    response.headers['Content-Location'] = f'{request.url.scheme}://{request.url.netloc}/ddh{str(access.ddhkey)}'
+    return d
 
 
 @app.put("/ddh{docpath:path}")
