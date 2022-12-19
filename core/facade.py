@@ -6,8 +6,6 @@ import typing
 import json
 import accept_types
 
-from pydantic.errors import PydanticErrorMixin
-from utils.pydantic_utils import NoCopyBaseModel
 
 from . import permissions, keys, schemas, nodes, keydirectory, transactions, errors, dapp_attrs
 from frontend import sessions
