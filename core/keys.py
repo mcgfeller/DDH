@@ -9,7 +9,7 @@ import pydantic.json
 
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import NoCopyBaseModel
-from core import common_ids, versions
+from core import common_ids, versions, errors
 
 
 class _RootType(str):
@@ -180,6 +180,10 @@ class DDHkey(NoCopyBaseModel):
             return self.__class__((self.Root, self.AnyKey)+rooted_key.key[2:], specifiers=rooted_key.specifiers)
         else:
             return rooted_key
+
+    def raise_if_no_owner(self):
+        if self.owners is self.AnyKey:
+            raise errors.NotFound('key has no owner')   
 
     def without_variant_version(self) -> DDHkey:
         """ return key with fork, but without schema variant and version, typically used for access control """
