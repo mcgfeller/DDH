@@ -4,7 +4,7 @@ from __future__ import annotations
 import pydantic
 import typing
 import json
-
+import accept_types
 
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import NoCopyBaseModel
@@ -42,7 +42,7 @@ def get_schema(access: permissions.Access, transaction: transactions.Transaction
     return formatted_schema
 
 
-async def ddh_get(access: permissions.Access, session: sessions.Session, q: str | None = None, ) -> typing.Any:
+async def ddh_get(access: permissions.Access, session: sessions.Session, q: str | None = None, accept_header : list[str] | None = None) -> typing.Any:
     """ Service utility to retrieve data and return it in the desired format.
         Returns None if no data found.
 
@@ -58,6 +58,7 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
 
     # get schema and key with specifiers:
     schema,access.ddhkey = schemas.SchemaContainer.get_node_schema_key(access.ddhkey,transaction)
+    check_mimetype_schema(access.ddhkey,schema,accept_header)
 
     # if we ask for schema, we don't need an owner:
     if access.ddhkey.fork == keys.ForkType.schema:
@@ -141,3 +142,16 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
         consents = permissions.Consents.parse_raw(data)
         data_node.update_consents(access, transaction, remainder, consents)
     return data
+
+def check_mimetype_schema(ddhkey: keys.DDHkey, schema : schemas.AbstractSchema ,accept_header: list[str] | None):
+    """ raise error if schema mimetype is not acceptable in accept_header """
+    if accept_header:
+        mt = schema.schema_attributes.mimetypes
+        assert mt
+        smt = mt.for_fork(ddhkey.fork)
+        amt = ', '.join(accept_header)
+        if not accept_types.get_best_match(amt,[smt]):
+            raise errors.NotAcceptable(f'The mime type {smt} of the selected schema variant {schema.schema_attributes.variant} ' +
+                f'does not correspond to the Accept header media types {amt}; try an alternate schema variant.')
+    return
+

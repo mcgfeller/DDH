@@ -19,6 +19,10 @@ class NotSelectable(DDHerror):
     """ This key cannot be selected because ressource has no subpported substructure. """
     http_status = 406
 
+class NotAcceptable(DDHerror):
+    """ This schema does not correspond to the Accept header medial types. """
+    http_status = 406
+
 class DAppError(DDHerror): pass
 
 

@@ -14,3 +14,4 @@ cryptography
 matplotlib
 numpy
 pandas
+accept_types==0.4.*

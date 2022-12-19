@@ -14,6 +14,13 @@ def test_get_data(user1):
     assert r.headers['content-location'] == str(user1.base_url)+'/ddh/mgf/org/migros.ch/receipts::PySchema'
     return
 
+def test_get_data_wrong_mimetype(user1):
+    r = user1.get('/ddh/mgf/org/migros.ch/receipts',headers={'Accept':'application/xml'})
+    assert 406 == r.status_code
+    msg = r.json()['detail']
+    assert msg
+    return
+
 
 def test_dapp_read_data_no_owner(user1):
     """ test retrieval of no-owner key of test MigrosDApp """

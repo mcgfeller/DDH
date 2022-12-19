@@ -58,11 +58,10 @@ async def get_data(
     access = permissions.Access(op=permissions.Operation.get, ddhkey=keys.DDHkey(
         docpath), principal=session.user, modes=modes, byDApp=session.dappid)
     try:
-        d = await facade.ddh_get(access, session, q)
+        d = await facade.ddh_get(access, session, q, accept)
     except errors.DDHerror as e:
         raise e.to_http()
 
-    # TODO: Content location needs full url
     response.headers['Content-Location'] = f'{request.url.scheme}://{request.url.netloc}/ddh{str(access.ddhkey)}'
     return d
 

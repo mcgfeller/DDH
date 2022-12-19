@@ -182,10 +182,23 @@ SchemaVariant = pydantic.constr(strip_whitespace=True, max_length=30, regex='[a-
 
 class MimeTypes(NoCopyBaseModel):
     """ Mime Types both for the schema itself and data conforming to the schema """
-    of_schema: str | None = pydantic.Field(
-        default=None, description='Mimetype of the schema - taken from Schema if not provided.')
-    of_data: str | None = pydantic.Field(
-        default=None, description='Mimetype of data - taken from Schema if not provided.')
+    of_schema: str  = pydantic.Field(
+        description='Mimetype of the schema - taken from Schema if not provided.')
+    of_data: str = pydantic.Field(
+        description='Mimetype of data - taken from Schema if not provided.')
+
+    def for_fork(self,fork:keys.ForkType) -> str: 
+        """ return mimetype for a fork """
+        match fork:
+            case keys.ForkType.data:
+                mt = self.of_data
+            case keys.ForkType.consents:
+                mt ='application/json'
+            case keys.ForkType.schema:
+                mt = self.of_schema
+            case _:
+                mt = '*/*'
+        return mt
 
 
 class SchemaAttributes(NoCopyBaseModel):
@@ -198,11 +211,6 @@ class SchemaAttributes(NoCopyBaseModel):
         versions.Unspecified, description="The version of this schema instance")
     requires: Requires | None = None
     mimetypes: MimeTypes | None = None
-
-    @classmethod
-    def amend_key_with_mimetype(cls, ddhkey: keys.DDHkey) -> keys.DDHkey:
-        # TODO: Check against headers
-        return ddhkey
 
 
 class AbstractSchema(NoCopyBaseModel, abc.ABC):
@@ -294,6 +302,8 @@ class AbstractSchema(NoCopyBaseModel, abc.ABC):
 class PySchema(AbstractSchema):
     """ A AbstractSchema in Pydantic Python, containing a SchemaElement """
     schema_element: typing.Type[SchemaElement]
+    mimetypes: typing.ClassVar[MimeTypes] = MimeTypes(
+        of_schema='application/openapi', of_data='application/json')
 
     @classmethod
     def from_str(cls, schema_str: str, schema_attributes: SchemaAttributes) -> PySchema:
