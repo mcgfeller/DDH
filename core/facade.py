@@ -48,7 +48,7 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
     return data
 
 
-async def ddh_put(access: permissions.Access, session: sessions.Session, data: pydantic.Json, q: str | None = None, ) -> typing.Any:
+async def ddh_put(access: permissions.Access, session: sessions.Session, data: pydantic.Json, q: str | None = None, accept_header: list[str] | None = None) -> typing.Any:
     """ Service utility to store data.
 
     """
@@ -60,21 +60,38 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
     data_node, d_key_split, remainder = get_or_create_dnode(access, transaction)
     access.raise_if_not_permitted(data_node)
 
+
+
     match access.ddhkey.fork:
         case keys.ForkType.schema:
             schema = typing.cast(schemas.AbstractSchema,data)
             put_schema(access, transaction, schema)
 
-        case keys.ForkType.consents:
-            consents = permissions.Consents.parse_raw(data)
-            data_node.update_consents(access, transaction, remainder, consents)
+        case keys.ForkType.consents | keys.ForkType.data:
+            schema, access.ddhkey = schemas.SchemaContainer.get_node_schema_key(access.ddhkey, transaction)
+            check_mimetype_schema(access.ddhkey, schema, accept_header)
 
-        case keys.ForkType.data:
-            data = json.loads(data)  # make dict
-            # first e_node to transform data:
-            data = await get_enode(nodes.Ops.put, access, transaction, data, q)
-            if data:
-                data_node.execute(nodes.Ops.put, access, transaction, d_key_split, data, q)
+            match access.ddhkey.fork:
+                case keys.ForkType.consents:
+                    consents = permissions.Consents.parse_raw(data)
+                    data_node.update_consents(access, transaction, remainder, consents)
+
+
+                case keys.ForkType.data:
+            
+                    data = json.loads(data)  # make dict
+                    # TODO:
+                    # Data checks:
+                    # Get schema
+                    # Data can only be put when schema exists
+                    # Data version must correspond to a schema version
+                    # non-latest version data cannot be put unless upgrade exists
+                    # data under schema reference only if schema reprs are compatible
+
+                    # first e_node to transform data:
+                    data = await get_enode(nodes.Ops.put, access, transaction, data, q)
+                    if data:
+                        data_node.execute(nodes.Ops.put, access, transaction, d_key_split, data, q)
 
     return data
 
@@ -150,20 +167,26 @@ def get_schema(access: permissions.Access, transaction: transactions.Transaction
     return formatted_schema
 
 def put_schema(access: permissions.Access, transaction: transactions.Transaction, schema: schemas.AbstractSchema):
-    """ Service utility to retrieve a Schema and return it in the desired format.
-        Returns None if no schema found.
-    """
-    formatted_schema = None  # in case of not found.
+    """ Service utility to store a Schema.
+        TODO: WIP
+    """ 
     snode, split = keydirectory.NodeRegistry.get_node(
         access.ddhkey, nodes.NodeSupports.schema, transaction)  # get applicable schema nodes
+
+    # TODO:
+    # Schema checks:
+    # No shadowing - cannot insert into an existing schema, including into refs
+    # Reference update
+    #   ref -> update referenced
+    #   schema update -> ref
+    #   uniform schema tree - all references must be in same schema repr
+
 
     if snode:
         access.raise_if_not_permitted(_get_consent_node(
             access.ddhkey.without_variant_version(), nodes.NodeSupports.schema, snode, transaction))
         schema = snode.get_sub_schema(access.ddhkey, split)
-        if schema:
-            formatted_schema = schema.to_format(schemaformat)
-    return formatted_schema
+    return 
 
 
 def check_mimetype_schema(ddhkey: keys.DDHkey, schema: schemas.AbstractSchema, accept_header: list[str] | None):
