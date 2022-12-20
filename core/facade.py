@@ -56,12 +56,14 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
     transaction = session.get_or_create_transaction(for_user=access.principal)
     transaction.add_and_validate(access)
 
+    # We need a data node, even for a schema, as it carries the consents:
     data_node, d_key_split, remainder = get_or_create_dnode(access, transaction)
-    access.raise_permitted(data_node)
+    access.raise_if_not_permitted(data_node)
 
     match access.ddhkey.fork:
         case keys.ForkType.schema:
-            raise NotImplementedError()
+            schema = typing.cast(schemas.AbstractSchema,data)
+            put_schema(access, transaction, schema)
 
         case keys.ForkType.consents:
             consents = permissions.Consents.parse_raw(data)
@@ -84,15 +86,15 @@ async def get_data(access: permissions.Access, transaction: transactions.Transac
     if data_node:
         if access.ddhkey.fork == keys.ForkType.consents:
             access.include_mode(permissions.AccessMode.read)
-            *d, consentees = access.raise_permitted(data_node)
+            *d, consentees = access.raise_if_not_permitted(data_node)
             return data_node.consents
         else:
             data_node = data_node.ensure_loaded(transaction)
             data_node = typing.cast(nodes.DataNode, data_node)
-            *d, consentees = access.raise_permitted(data_node)
+            *d, consentees = access.raise_if_not_permitted(data_node)
             data = data_node.execute(nodes.Ops.get, access, transaction, d_key_split, None, q)
     else:
-        *d, consentees = access.raise_permitted(_get_consent_node(
+        *d, consentees = access.raise_if_not_permitted(_get_consent_node(
             access.ddhkey, nodes.NodeSupports.data, None, transaction))
         data = {}
     transaction.add_read_consentees({c.id for c in consentees})
@@ -140,7 +142,23 @@ def get_schema(access: permissions.Access, transaction: transactions.Transaction
         access.ddhkey, nodes.NodeSupports.schema, transaction)  # get applicable schema nodes
 
     if snode:
-        access.raise_permitted(_get_consent_node(
+        access.raise_if_not_permitted(_get_consent_node(
+            access.ddhkey.without_variant_version(), nodes.NodeSupports.schema, snode, transaction))
+        schema = snode.get_sub_schema(access.ddhkey, split)
+        if schema:
+            formatted_schema = schema.to_format(schemaformat)
+    return formatted_schema
+
+def put_schema(access: permissions.Access, transaction: transactions.Transaction, schema: schemas.AbstractSchema):
+    """ Service utility to retrieve a Schema and return it in the desired format.
+        Returns None if no schema found.
+    """
+    formatted_schema = None  # in case of not found.
+    snode, split = keydirectory.NodeRegistry.get_node(
+        access.ddhkey, nodes.NodeSupports.schema, transaction)  # get applicable schema nodes
+
+    if snode:
+        access.raise_if_not_permitted(_get_consent_node(
             access.ddhkey.without_variant_version(), nodes.NodeSupports.schema, snode, transaction))
         schema = snode.get_sub_schema(access.ddhkey, split)
         if schema:
