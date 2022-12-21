@@ -13,7 +13,7 @@ import jose.jwt
 import passlib.context
 from utils.pydantic_utils import NoCopyBaseModel
 
-from core import errors,principals
+from core import errors,principals,users
 from frontend import sessions
 
 
@@ -69,7 +69,7 @@ class TokenData(NoCopyBaseModel):
     id: str
 
 
-class UserInDB(principals.User):
+class UserInDB(users.User):
     hashed_password: str # type: ignore
 
     @classmethod
@@ -81,9 +81,9 @@ class UserInDB(principals.User):
         else:
             raise errors.NotFound(f'User not found {id}')
 
-    def as_user(self) -> principals.User:
+    def as_user(self) -> users.User:
         """ return user only """
-        return principals.User(**self.dict(include=principals.User.__fields__.keys()))
+        return users.User(**self.dict(include=users.User.__fields__.keys()))
 
 
 

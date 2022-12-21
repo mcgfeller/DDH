@@ -7,7 +7,7 @@ import typing
 import fastapi
 import fastapi.security
 import pydantic
-from core import (common_ids, dapp_attrs, keys, nodes, permissions, principals,
+from core import (common_ids, dapp_attrs, keys, nodes, permissions, principals,users,
                   relationships, schemas)
 
 from frontend import fastapi_dapp
@@ -60,7 +60,7 @@ class SampleDApps(dapp_attrs.DApp):
             cls(
                 id='SwisscomRoot',
                 description = "Owner of the Swisscom schema",
-                owner=principals.User(id='swisscom',name='Swisscom (fake account)'),
+                owner=users.User(id='swisscom',name='Swisscom (fake account)'),
                 schemakey = keys.DDHkey(key="//org/swisscom.com"), 
                 catalog = common_ids.CatalogCategory.living,
                 ),
@@ -68,7 +68,7 @@ class SampleDApps(dapp_attrs.DApp):
             RestrictedUserDApp(
                 id='SwisscomEmpDApp',
                 description = "Swisscom Employee Data App",
-                owner=principals.User(id='swisscom',name='Swisscom (fake account)'),
+                owner=users.User(id='swisscom',name='Swisscom (fake account)'),
                 schemakey = keys.DDHkey(key="//org/swisscom.com/employees"), 
                 provides_schema = True,
                 transforms_into = keys.DDHkey(key="//p/employment/salary"), # 1 higher than needed by TaxCalc
@@ -78,7 +78,7 @@ class SampleDApps(dapp_attrs.DApp):
             cls(
                 id='SBBroot', 
                 description = "Owner of the SBB schema",
-                owner=principals.User(id='sbb',name='SBB (fake account)'),
+                owner=users.User(id='sbb',name='SBB (fake account)'),
                 schemakey = keys.DDHkey(key="//org/sbb.ch"), 
                 catalog = common_ids.CatalogCategory.living,
                 ),
@@ -86,7 +86,7 @@ class SampleDApps(dapp_attrs.DApp):
             RestrictedUserDApp(
                 id='SBBempDApp',
                 description = "SBB Staff Data App",
-                owner=principals.User(id='sbb',name='SBB (fake account)'),
+                owner=users.User(id='sbb',name='SBB (fake account)'),
                 schemakey = keys.DDHkey(key="//org/sbb.ch/staff"), 
                 provides_schema = True,
                 transforms_into = keys.DDHkey(key="//p/employment/salary/statements"),
@@ -96,7 +96,7 @@ class SampleDApps(dapp_attrs.DApp):
             cls(
                 id='TaxCalc',
                 description = "A Tax calculator, defines the Tax Declaration AbstractSchema",
-                owner=principals.User(id='privatetax',name='Private Tax (fake account)'),
+                owner=users.User(id='privatetax',name='Private Tax (fake account)'),
                 schemakey = keys.DDHkey(key="//p/finance/tax/declaration"), 
                 provides_schema = True,
                 catalog = common_ids.CatalogCategory.finance,
@@ -108,7 +108,7 @@ class SampleDApps(dapp_attrs.DApp):
             cls(
                 id='CSroot', 
                 description = "Owner of the Credit Suisse schema",
-                owner=principals.User(id='cs',name='Credit Suisse (fake account)'),
+                owner=users.User(id='cs',name='Credit Suisse (fake account)'),
                 schemakey = keys.DDHkey(key="//org/credit-suisse.com"), 
                 catalog = common_ids.CatalogCategory.finance,
                 ),
@@ -116,7 +116,7 @@ class SampleDApps(dapp_attrs.DApp):
             cls(
                 id='CSportfolio', 
                 description = "Portfolio API",
-                owner=principals.User(id='cs',name='Credit Suisse (fake account)'),
+                owner=users.User(id='cs',name='Credit Suisse (fake account)'),
                 schemakey = keys.DDHkey(key="//org/credit-suisse.com/clients/portfolio/account"), 
                 provides_schema = True,
                 catalog = common_ids.CatalogCategory.finance,
@@ -126,7 +126,7 @@ class SampleDApps(dapp_attrs.DApp):
             cls(
                 id='UBSroot', 
                 description = "Owner of the UBS schema",
-                owner=principals.User(id='ubs',name='UBS (fake account)'),
+                owner=users.User(id='ubs',name='UBS (fake account)'),
                 schemakey = keys.DDHkey(key="//org/ubs.com"), 
                 catalog = common_ids.CatalogCategory.finance,
                 ),
@@ -134,7 +134,7 @@ class SampleDApps(dapp_attrs.DApp):
             cls(
                 id='UBSaccount', 
                 description = "Portfolio API",
-                owner=principals.User(id='ubs',name='UBS (fake account)'),
+                owner=users.User(id='ubs',name='UBS (fake account)'),
                 schemakey = keys.DDHkey(key="//org/ubs.com/switzerland/customer/account"), 
                 provides_schema = True,
                 transforms_into = keys.DDHkey(key="//p/finance/holdings/portfolio"),
@@ -145,7 +145,7 @@ class SampleDApps(dapp_attrs.DApp):
             cls(
                 id='AccountAggregator',
                 description = "Bank account aggregator, defines holdings",
-                owner=principals.User(id='coolfinance',name='Cool Finance Startup (fake account)'),
+                owner=users.User(id='coolfinance',name='Cool Finance Startup (fake account)'),
                 schemakey = keys.DDHkey(key="//p/finance/holdings"), 
                 provides_schema = True,
                 estimatedCosts = dapp_attrs.EstimatedCosts.medium,

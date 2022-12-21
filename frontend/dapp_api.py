@@ -14,7 +14,7 @@ import enum
 
 
 from core import pillars, schema_network
-from core import keys, permissions, schemas, facade, errors, principals, versions, dapp_proxy, dapp_attrs, pillars
+from core import keys, permissions, schemas, facade, errors, principals, versions, dapp_proxy, dapp_attrs, pillars, users
 from frontend import sessions
 
 app = fastapi.FastAPI()
@@ -27,7 +27,7 @@ async def health():
     return {'status': 'ok'}
 
 
-@app.get("/users/me/", response_model=principals.User)
+@app.get("/users/me/", response_model=users.User)
 async def read_users_me(current_user: user_auth.UserInDB = fastapi.Depends(user_auth.get_current_active_user)):
     """ return my user """
     return current_user.as_user()

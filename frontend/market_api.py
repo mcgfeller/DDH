@@ -12,7 +12,7 @@ import httpx
 
 
 from core import dapp_attrs, pillars
-from core import keys,permissions,schemas,facade,errors,principals,common_ids
+from core import keys,permissions,schemas,facade,errors,principals,common_ids,users
 from frontend import sessions
 from frontend import user_auth # provisional user management
 from market import recommender
@@ -24,7 +24,7 @@ app = fastapi.FastAPI()
 async def health():
     return {'status':'ok'}
 
-@app.get("/users/me/", response_model=principals.User)
+@app.get("/users/me/", response_model=users.User)
 async def read_users_me(current_user: user_auth.UserInDB = fastapi.Depends(user_auth.get_current_active_user)):
     """ return my user """
     return current_user.as_user()

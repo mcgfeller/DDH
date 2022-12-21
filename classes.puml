@@ -128,7 +128,7 @@ class "<color:red>TrxAccessError</color>" as core.transactions.TrxAccessError {
 }
 class "TypeOfPersonalData" as core.privacyIcons.TypeOfPersonalData {
 }
-class "User" as core.principals.User {
+class "User" as core.users.User {
 }
 class "_AnyType" as core.keys._AnyType {
 }
@@ -151,7 +151,7 @@ core.nodes.ExecutableNode --|> core.nodes.SchemaNode
 core.nodes.MultiOwnerNode --|> core.nodes.Node
 core.nodes.SchemaNode --|> core.nodes.Node
 core.principals.DAppId --|> core.principals.Principal
-core.principals.User --|> core.principals.Principal
+core.users.User --|> core.principals.Principal
 core.privacyIcons.PassingOnToThirdParties --|> core.privacyIcons.PrivacyIcon
 core.privacyIcons.PlaceOfProcessing --|> core.privacyIcons.PrivacyIcon
 core.privacyIcons.PurposeOfProcessing --|> core.privacyIcons.PrivacyIcon

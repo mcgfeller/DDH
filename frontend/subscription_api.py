@@ -9,7 +9,7 @@ import typing
 import fastapi
 import fastapi.security
 
-from core import (dapp_attrs, errors, keys, permissions, principals,
+from core import (dapp_attrs, errors, keys, permissions, principals,users,
                   common_ids)
 from user import subscriptions
 from frontend import sessions
@@ -25,7 +25,7 @@ SUBSCRIPTIONS : dict[common_ids.PrincipalId,dict[principals.DAppId,typing.Any]] 
 async def health():
     return {'status':'ok'}
 
-@app.get("/users/me/", response_model=principals.User)
+@app.get("/users/me/", response_model=users.User)
 async def read_users_me(current_user: user_auth.UserInDB = fastapi.Depends(user_auth.get_current_active_user)):
     """ return my user """
     return current_user.as_user()

@@ -160,7 +160,7 @@ class core.principals.Principal {
   id: common_ids.PrincipalId {static}
   Delim: typing.ClassVar[str] {static}
 }
-class core.principals.User {
+class core.users.User {
   name: str {static}
   email: typing.Optional[pydantic.EmailStr] {static}
   created_at: datetime.datetime {static}
@@ -215,7 +215,7 @@ core.nodes.SchemaNode <|-- core.nodes.ExecutableNode
 core.nodes.Node <|-- core.nodes.MultiOwnerNode
 core.nodes.Node <|-- core.nodes.SchemaNode
 core.principals.Principal <|-- core.principals.DAppId
-core.principals.Principal <|-- core.principals.User
+core.principals.Principal <|-- core.users.User
 core.schemas.Schema <|-- core.schemas.JsonSchema
 core.schemas.Schema <|-- core.schemas.PySchema
 core.schemas.SchemaElement <|-- core.schemas.SchemaReference

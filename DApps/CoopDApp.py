@@ -7,7 +7,7 @@ import typing
 import fastapi
 import fastapi.security
 import pydantic
-from core import (common_ids, dapp_attrs, keys, nodes, permissions, principals,
+from core import (common_ids, dapp_attrs, keys, nodes, permissions, principals,users,
                   relationships, schemas)
 
 from frontend import fastapi_dapp
@@ -26,7 +26,7 @@ class CoopDApp(dapp_attrs.DApp):
 
     _ddhschema: schemas.SchemaElement = None
     version = '0.2'
-    owner: typing.ClassVar[principals.Principal] = principals.User(
+    owner: typing.ClassVar[principals.Principal] = users.User(
         id='coop', name='Coop (fake account)')
     schemakey: typing.ClassVar[keys.DDHkey] = keys.DDHkey(key="//org/coop.ch")
     catalog = common_ids.CatalogCategory.living
@@ -71,7 +71,7 @@ class CoopSchema(schemas.SchemaElement):
     #     return None
 
 
-COOP_DAPP = CoopDApp(owner=principals.User(id='coop', name='Coop (fake account)'),
+COOP_DAPP = CoopDApp(owner=users.User(id='coop', name='Coop (fake account)'),
                      schemakey=keys.DDHkey(key="//org/coop.ch"),
                      catalog=common_ids.CatalogCategory.living)
 

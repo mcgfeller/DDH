@@ -65,7 +65,7 @@ charset="utf-8"
 "core.contracts.TransactionPrice" [color="black", fontcolor="black", label="{TransactionPrice|\l|}", shape="record", style="solid"];
 "core.transactions.TrxAccessError" [color="black", fontcolor="red", label="{TrxAccessError|\l|}", shape="record", style="solid"];
 "core.privacyIcons.TypeOfPersonalData" [color="black", fontcolor="black", label="{TypeOfPersonalData|name\l|}", shape="record", style="solid"];
-"core.principals.User" [color="black", fontcolor="black", label="{User|created_at : datetime\lemail : Optional[typing.Optional[pydantic.EmailStr]]\lname : str\l|}", shape="record", style="solid"];
+"core.users.User" [color="black", fontcolor="black", label="{User|created_at : datetime\lemail : Optional[typing.Optional[pydantic.EmailStr]]\lname : str\l|}", shape="record", style="solid"];
 "core.keys._AnyType" [color="black", fontcolor="black", label="{_AnyType|\l|}", shape="record", style="solid"];
 "core.keydirectory._NodeRegistry" [color="black", fontcolor="black", label="{_NodeRegistry|nodes_by_key : dict\lnodes_by_key : dict[tuple, dict[nodes.NodeSupports, nodes.NodeProxy]]\l|get_next_proxy(key: typing.Optional[keys.DDHkey], support: nodes.NodeSupports): typing.Iterator[typing.Tuple[nodes.NodeOrProxy, int]]\lget_node(key: keys.DDHkey, support: nodes.NodeSupports, transaction: transactions.Transaction, condition: typing.Optional[typing.Callable]): typing.Tuple[typing.Optional[nodes.Node], int]\lget_proxy(key: keys.DDHkey, support: nodes.NodeSupports): typing.Tuple[typing.Optional[nodes.NodeOrProxy], int]\l}", shape="record", style="solid"];
 "core.keys._RootType" [color="black", fontcolor="black", label="{_RootType|\l|}", shape="record", style="solid"];
@@ -84,7 +84,7 @@ charset="utf-8"
 "core.nodes.MultiOwnerNode" -> "core.nodes.Node" [arrowhead="empty", arrowtail="none"];
 "core.nodes.SchemaNode" -> "core.nodes.Node" [arrowhead="empty", arrowtail="none"];
 "core.principals.DAppId" -> "core.principals.Principal" [arrowhead="empty", arrowtail="none"];
-"core.principals.User" -> "core.principals.Principal" [arrowhead="empty", arrowtail="none"];
+"core.users.User" -> "core.principals.Principal" [arrowhead="empty", arrowtail="none"];
 "core.privacyIcons.PassingOnToThirdParties" -> "core.privacyIcons.PrivacyIcon" [arrowhead="empty", arrowtail="none"];
 "core.privacyIcons.PlaceOfProcessing" -> "core.privacyIcons.PrivacyIcon" [arrowhead="empty", arrowtail="none"];
 "core.privacyIcons.PurposeOfProcessing" -> "core.privacyIcons.PrivacyIcon" [arrowhead="empty", arrowtail="none"];

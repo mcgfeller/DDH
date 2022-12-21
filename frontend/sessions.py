@@ -8,7 +8,7 @@ import pydantic
 from utils.pydantic_utils import NoCopyBaseModel
 
 
-from core import errors,transactions,principals,common_ids
+from core import errors,transactions,principals,common_ids,users
 
 
 
@@ -18,7 +18,7 @@ from core import errors,transactions,principals,common_ids
 class Session(NoCopyBaseModel):
     """ The session is currently identified by its JWT token """
     token_str : str
-    user: principals.User
+    user: users.User
     dappid: principals.DAppId|None = None
     trxs_for_user: dict[principals.Principal,transactions.Transaction] = pydantic.Field(default_factory=dict)
     current_trx : transactions.Transaction|None = None
@@ -71,4 +71,4 @@ class Session(NoCopyBaseModel):
 
 def get_system_session() -> Session:
     """ get a session for system purposes """
-    return Session(token_str='system_session',user=principals.SystemUser)
+    return Session(token_str='system_session',user=users.SystemUser)

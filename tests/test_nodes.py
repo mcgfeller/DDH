@@ -1,4 +1,4 @@
-from core import keys, nodes, permissions, schemas, facade, keydirectory, transactions, principals
+from core import keys, nodes, permissions, schemas, facade, keydirectory, transactions, users
 from frontend import sessions
 
 
@@ -7,8 +7,8 @@ class DummyElement(schemas.SchemaElement): ...
 
 def test_nodes():
     schema = schemas.PySchema(schema_element=DummyElement)
-    user = principals.User(id='1', name='martin', email='martin.gfeller@swisscom.com')
-    user2 = principals.User(id='2', name='roman', email='roman.stoessel@swisscom.com')
+    user = users.User(id='1', name='martin', email='martin.gfeller@swisscom.com')
+    user2 = users.User(id='2', name='roman', email='roman.stoessel@swisscom.com')
     transaction = transactions.Transaction.create(user)
     node_s = nodes.SchemaNode(owner=user)
     node_s.add_schema(schema)
@@ -29,7 +29,7 @@ def test_schema_node():
     """ Retrieval of schema and application of get_sub_schema() 
     """
     schema = schemas.PySchema(schema_element=DummyElement)
-    user = principals.User(id='1', name='martin', email='martin.gfeller@swisscom.com')
+    user = users.User(id='1', name='martin', email='martin.gfeller@swisscom.com')
     session = sessions.Session(token_str='test_session', user=user)
     transaction = session.get_or_create_transaction(for_user=user)
     node_s = nodes.SchemaNode(owner=user)

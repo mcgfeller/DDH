@@ -8,7 +8,7 @@ import fastapi
 import fastapi.security
 import pandas  # for example
 import pydantic
-from core import (common_ids, dapp_attrs, keys, nodes, permissions, principals,
+from core import (common_ids, dapp_attrs, keys, nodes, permissions,users,
                   relationships, schemas)
 
 from glom import Iter, S, T, glom  # transform
@@ -124,7 +124,7 @@ class MigrosSchema(schemas.SchemaElement):
         d = self.get_resolver(selection,access,q)
         return d
 
-MIGROS_DAPP = MigrosDApp(owner=principals.User(id='migros',name='Migros (fake account)'),
+MIGROS_DAPP = MigrosDApp(owner=users.User(id='migros',name='Migros (fake account)'),
     schemakey=keys.DDHkey(key="//org/migros.ch"),
     catalog = common_ids.CatalogCategory.living)
 

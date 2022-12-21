@@ -1,7 +1,7 @@
 """ Test Schema manipulations """
 
 import pytest
-from core import keys, nodes, schemas, keydirectory, principals, versions
+from core import keys, nodes, schemas, keydirectory, users, versions
 from frontend import sessions
 
 
@@ -31,7 +31,7 @@ def test_schema_multiple_versions():
         variant='alt', variant_usage=schemas.SchemaVariantUsage.supported, version=versions.Version(2)))
     schema_a4 = schemas.PySchema(schema_element=DummyElement, schema_attributes=schemas.SchemaAttributes(
         variant='alt', variant_usage=schemas.SchemaVariantUsage.supported, version=versions.Version(4)))
-    user = principals.User(id='1', name='martin', email='martin.gfeller@swisscom.com')
+    user = users.User(id='1', name='martin', email='martin.gfeller@swisscom.com')
 
     session = sessions.Session(token_str='test_session', user=user)
     transaction = session.get_or_create_transaction(for_user=user)
