@@ -3,11 +3,12 @@ from __future__ import annotations
 import typing
 
 import logging
+from standard_schemas import schema_root
 
 logger = logging.getLogger(__name__)
 
 from utils import utils
-from core import dapp_proxy, schema_network, schema_root,principals,keys
+from core import dapp_proxy, schema_network, principals,keys
 from frontend import sessions
 from utils import import_modules 
 import DApps

@@ -132,6 +132,7 @@ class SchemaElement(NoCopyBaseModel):
 class SchemaReference(SchemaElement):
 
     ddhkey: typing.ClassVar[str]
+    # variant: SchemaVariant = ''
     version_required: versions.VersionConstraint = pydantic.Field(
         default=versions.NoConstraint, description="Constrains the version of the target schema")
 

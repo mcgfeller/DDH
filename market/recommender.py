@@ -6,12 +6,14 @@ import typing
 import logging
 import operator
 
+from standard_schemas import schema_root
+
 logger = logging.getLogger(__name__)
 
 import pydantic
 from utils import utils
 from utils import fastapi_utils
-from core import dapp_attrs, schema_network, schema_root,principals,keys,pillars,common_ids
+from core import dapp_attrs, schema_network, principals,keys,pillars,common_ids
 from utils.pydantic_utils import NoCopyBaseModel
 
 
@@ -115,7 +117,7 @@ async def add_costs(session,sris : list[SearchResultItem], subscribed  : typing.
 
     for sri,(requires,calculated, weights) in zip(sris,to_r):
         # requires,calculated = schemaNetwork.dapps_required(sri.da,session.user) # all required despite schema annotations, require for cost calculation
-        print(f'add_costs: {sri=}, {requires=}, {calculated=}, {weights=}')
+        # print(f'add_costs: {sri=}, {requires=}, {calculated=}, {weights=}')
         sri.requires = set(requires)
         sri.missing = sri.requires - set(subscribed)
         merits = [weights[da] * (-1)**(da in sri.missing) for da in calculated] # pos merit if subscribed

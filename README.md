@@ -39,7 +39,9 @@ These abstractions are restricted to within the framework.
 
 ## Key Services
 
-#### DDHApi
+#### DDH API
+
+This is both the API from the outside to read DDH data and the API that Data Apps use to read and write data. 
 
 #### Market
 

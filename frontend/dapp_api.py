@@ -187,7 +187,7 @@ async def dapps_required(
                          {x.id: x.get_weight() for x in x2}))
             else:
                 s.append(({x.id for x in x1}, {x.id for x in x2}))
-    print(f'dapps_required {for_dapps=}, {s=}')
+    #print(f'dapps_required {for_dapps=}, {s=}')
     return s
 
 
