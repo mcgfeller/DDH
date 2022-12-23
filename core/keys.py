@@ -173,6 +173,13 @@ class DDHkey(NoCopyBaseModel):
         else:
             return self
 
+    def ensure_fork(self, fork:  ForkType) -> typing.Self:
+        """ ensure that key has the given fork """
+        if self.fork != fork: # create new key with correct fork
+            return DDHkey(key=self.key,fork=fork,variant=self.variant,version=self.version)
+        else:
+            return self
+
     def without_owner(self) -> DDHkey:
         """ return key without owner """
         rooted_key = self.ensure_rooted()
