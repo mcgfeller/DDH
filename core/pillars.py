@@ -3,15 +3,16 @@ from __future__ import annotations
 import typing
 
 import logging
-from standard_schemas import schema_root
+
 
 logger = logging.getLogger(__name__)
 
 from utils import utils
-from core import dapp_proxy, schema_network, principals,keys
+from core import dapp_proxy, schema_network, principals,keys,schema_root
 from frontend import sessions
 from utils import import_modules 
 import DApps
+import standard_schemas
 from utils.pydantic_utils import NoCopyBaseModel
 
 import networkx
@@ -25,6 +26,8 @@ class ClearingHouse(NoCopyBaseModel):
     ...
 
 
+def load_standard_schemas():
+    import_modules.importAllSubPackages(standard_schemas)
 
 
 Pillars = { # collect the singletons so we can pass them to whomever needs them for their initialization
@@ -33,3 +36,5 @@ Pillars = { # collect the singletons so we can pass them to whomever needs them 
     }
 
 dapp_proxy.DAppManager.bootstrap(Pillars)   
+load_standard_schemas()
+

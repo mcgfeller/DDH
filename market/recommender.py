@@ -6,14 +6,13 @@ import typing
 import logging
 import operator
 
-from standard_schemas import schema_root
 
 logger = logging.getLogger(__name__)
 
 import pydantic
 from utils import utils
 from utils import fastapi_utils
-from core import dapp_attrs, schema_network, principals,keys,pillars,common_ids
+from core import dapp_attrs, schema_network, principals,keys,pillars,common_ids,schema_root
 from utils.pydantic_utils import NoCopyBaseModel
 
 

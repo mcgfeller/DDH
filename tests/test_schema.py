@@ -1,9 +1,9 @@
 """ Test Schema manipulations """
 
 import pytest
-from core import  keys,schemas,keydirectory,nodes
+from core import  keys,schemas,keydirectory,nodes,schema_root
 from frontend import sessions
-from standard_schemas import schema_root
+
 
 @pytest.fixture
 def transaction():
