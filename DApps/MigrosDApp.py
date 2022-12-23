@@ -116,7 +116,7 @@ class Receipt(schemas.SchemaElement):
 
 class MigrosSchema(schemas.SchemaElement):
 
-    cumulus : int|None = pydantic.Field(None,sensitivity=schemas.Sensitivity.qi)
+    cumulus : int|None = pydantic.Field(None,sensitivity=schemas.Sensitivity.qid)
     receipts: list[Receipt] = []
 
 

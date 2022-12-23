@@ -20,8 +20,8 @@ class Sensitivity(str, enum.Enum):
     """ Sensitivity, according to Fung et al., of use in export restrictions and anonymization.
     """
 
-    ei = 'explicit id'
-    qi = 'quasi id'
+    eid = 'explicit id'
+    qid = 'quasi id'
     sa = 'sensitive attribute'
     nsa = 'non-sensitive attribute'
 

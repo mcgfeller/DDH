@@ -64,7 +64,7 @@ class CoopDApp(dapp_attrs.DApp):
 
 class CoopSchema(schemas.SchemaElement):
 
-    supercard: int | None = pydantic.Field(None, sensitivity=schemas.Sensitivity.qi)
+    supercard: int | None = pydantic.Field(None, sensitivity=schemas.Sensitivity.qid)
     #receipts: list[Receipt] = []
 
     # def get_data(self, selection: keys.DDHkey, access: permissions.Access, q):
