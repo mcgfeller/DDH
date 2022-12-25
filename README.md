@@ -39,9 +39,13 @@ These abstractions are restricted to within the framework.
 
 ## Key Services
 
+#### Walled Garden
+
+The Walled Garden is the user environment for DApps. The environment provides isolation between apps and from the outside. 
+
 #### DDH API
 
-This is both the API from the outside to read DDH data and the API that Data Apps use to read and write data. 
+This is both the API from the outside to read DDH data and the API that Data Apps use (within the Walled Garden) to read and write data. 
 
 #### Market
 

@@ -203,7 +203,7 @@ class MimeTypes(NoCopyBaseModel):
 
 
 class SchemaAttributes(NoCopyBaseModel):
-    """ Attribbutes of the Schema, but not part of the Schema itself. """
+    """ Attributes of the Schema, but not part of the Schema itself. """
     variant: SchemaVariant | None = pydantic.Field(
         default=None, description='Name of the variant, in case of multiple schemas in the same space, e.g., ISO-20022 and Swift MT')
     variant_usage: SchemaVariantUsage = pydantic.Field(
