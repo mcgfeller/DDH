@@ -16,7 +16,7 @@ class "Config" as core.dapp.DApp.Config {
 }
 class "Config" as core.principals.Principal.Config {
 }
-class "Config" as core.py_schema.SchemaReference.Config {
+class "Config" as core.py_schema.PySchemaReference.Config {
 }
 class "Consent" as core.permissions.Consent {
 }
@@ -102,13 +102,13 @@ class "Relation" as core.relationships.Relation {
 }
 class "Schema" as core.schemas.Schema {
 }
-class "SchemaElement" as core.py_schema.SchemaElement {
+class "PySchemaElement" as core.py_schema.PySchemaElement {
 }
 class "SchemaNetworkClass" as core.pillars.SchemaNetworkClass {
 }
 class "SchemaNode" as core.nodes.SchemaNode {
 }
-class "SchemaReference" as core.py_schema.SchemaReference {
+class "PySchemaReference" as core.py_schema.PySchemaReference {
 }
 class "Sensitivity" as core.schemas.Sensitivity {
 }
@@ -160,7 +160,7 @@ core.privacyIcons.SpecialProcesses --|> core.privacyIcons.PrivacyIcon
 core.privacyIcons.TypeOfPersonalData --|> core.privacyIcons.PrivacyIcon
 core.schemas.JsonSchema --|> core.schemas.Schema
 core.py_schema.PySchema --|> core.schemas.Schema
-core.py_schema.SchemaReference --|> core.py_schema.SchemaElement
+core.py_schema.PySchemaReference --|> core.py_schema.PySchemaElement
 core.transactions.TrxAccessError --|> core.errors.AccessError
 core.contracts.CancellationTerms --* core.contracts.TermsAndConditions : cancellation_terms
 core.contracts.Offer --* core.contracts.Contract : offer

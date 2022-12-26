@@ -27,7 +27,6 @@ class Sensitivity(str, enum.Enum):
 #    def __repr__(self): return self.value
 
 
-
 @enum.unique
 class Requires(str, enum.Enum):
     """ Schema Data requirements """
@@ -156,8 +155,6 @@ class AbstractSchema(NoCopyBaseModel, abc.ABC):
     def add_fields(self, fields: dict):
         raise NotImplementedError('Field adding not supported in this schema')
 
-
-
     @staticmethod
     def get_schema_consents() -> permissions.Consents:
         """ Schema world read access consents """
@@ -167,6 +164,13 @@ class AbstractSchema(NoCopyBaseModel, abc.ABC):
 SchemaFormat2Class = {}
 Class2SchemaFormat = {}
 
+
+class SchemaReference(NoCopyBaseModel):
+    # TODO: Make version_required part of key
+    ddhkey: typing.ClassVar[str]
+    # variant: SchemaVariant = ''
+    version_required: versions.VersionConstraint = pydantic.Field(
+        default=versions.NoConstraint, description="Constrains the version of the target schema")
 
 
 class SchemaContainer(NoCopyBaseModel):

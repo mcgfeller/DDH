@@ -169,17 +169,17 @@ class core.schemas.JsonSchema {
   json_schema: pydantic.Json {static}
 }
 class core.py_schema.PySchema {
-  schema_element: typing.Type[SchemaElement] {static}
+  schema_element: typing.Type[PySchemaElement] {static}
 }
 class core.schemas.Schema {
 }
-class core.py_schema.SchemaElement {
+class core.py_schema.PySchemaElement {
 }
 enum core.schemas.SchemaFormat {
   json: json {static}
   internal: internal {static}
 }
-class core.py_schema.SchemaReference {
+class core.py_schema.PySchemaReference {
   ddhkey: typing.ClassVar[str] {static}
 }
 enum core.schemas.Sensitivity {
@@ -218,7 +218,7 @@ core.principals.Principal <|-- core.principals.DAppId
 core.principals.Principal <|-- core.users.User
 core.schemas.Schema <|-- core.schemas.JsonSchema
 core.schemas.Schema <|-- core.py_schema.PySchema
-core.py_schema.SchemaElement <|-- core.py_schema.SchemaReference
+core.py_schema.PySchemaElement <|-- core.py_schema.PySchemaReference
 core.errors.AccessError <|-- core.transactions.TrxAccessError
 @enduml
 

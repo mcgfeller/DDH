@@ -7,7 +7,7 @@ import typing
 import fastapi
 import fastapi.security
 import pydantic
-from core import (common_ids, dapp_attrs, keys, nodes, permissions, principals,users,
+from core import (common_ids, dapp_attrs, keys, nodes, permissions, principals, users,
                   relationships, schemas)
 from schema_formats import py_schema
 from frontend import fastapi_dapp
@@ -15,149 +15,145 @@ app = fastapi.FastAPI()
 app.include_router(fastapi_dapp.router)
 
 
-
 class SampleDApps(dapp_attrs.DApp):
 
     version = '0.2'
 
-    owner : typing.ClassVar[principals.Principal] 
-    schemakey : typing.ClassVar[keys.DDHkey] 
-    transforms_into : typing.ClassVar[keys.DDHkey|None]= None
-    provides_schema : bool = pydantic.Field(False,description="True if schemakey is not only defined by this DApp, but also provided.")
+    owner: typing.ClassVar[principals.Principal]
+    schemakey: typing.ClassVar[keys.DDHkey]
+    transforms_into: typing.ClassVar[keys.DDHkey | None] = None
+    provides_schema: bool = pydantic.Field(
+        False, description="True if schemakey is not only defined by this DApp, but also provided.")
 
-    def __init__(self,*a,**kw):
-        super().__init__(*a,**kw)
-        self.references = relationships.Reference.defines(self.schemakey) 
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self.references = relationships.Reference.defines(self.schemakey)
         if self.provides_schema:
-            self.references += relationships.Reference.provides(self.schemakey) 
+            self.references += relationships.Reference.provides(self.schemakey)
         if self.transforms_into:
             self.references.extend(relationships.Reference.provides(self.transforms_into))
- 
-    def get_schemas(self) -> dict[keys.DDHkey,schemas.AbstractSchema]:
+
+    def get_schemas(self) -> dict[keys.DDHkey, schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
-        return {self.schemakey:py_schema.PySchema(schema_element=pydantic.create_model('DummySchema',__base__=py_schema.SchemaElement))}
+        return {self.schemakey: py_schema.PySchema(schema_element=pydantic.create_model('DummySchema', __base__=py_schema.PySchemaElement))}
 
-
-    def execute(self, op: nodes.Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : dict|None = None, q : str|None = None):
+    def execute(self, op: nodes.Ops, access: permissions.Access, transaction: transactions.Transaction, key_split: int, data: dict | None = None, q: str | None = None):
         """ obtain data by recursing to schema """
         if op == nodes.Ops.get:
-            here,selection = access.ddhkey.split_at(key_split)
+            here, selection = access.ddhkey.split_at(key_split)
             d = {}
         else:
             raise ValueError(f'Unsupported {op=}')
         return d
 
-
-
-
-
-
     @classmethod
-    def bootstrap(cls,session,pillars : dict) -> tuple[dapp_proxy.DAppProxy]:
+    def bootstrap(cls, session, pillars: dict) -> tuple[dapp_proxy.DAppProxy]:
         """ Create a series of DApps with network only """
         apps = (
 
             cls(
                 id='SwisscomRoot',
-                description = "Owner of the Swisscom schema",
-                owner=users.User(id='swisscom',name='Swisscom (fake account)'),
-                schemakey = keys.DDHkey(key="//org/swisscom.com"), 
-                catalog = common_ids.CatalogCategory.living,
-                ),
+                description="Owner of the Swisscom schema",
+                owner=users.User(id='swisscom', name='Swisscom (fake account)'),
+                schemakey=keys.DDHkey(key="//org/swisscom.com"),
+                catalog=common_ids.CatalogCategory.living,
+            ),
 
             RestrictedUserDApp(
                 id='SwisscomEmpDApp',
-                description = "Swisscom Employee Data App",
-                owner=users.User(id='swisscom',name='Swisscom (fake account)'),
-                schemakey = keys.DDHkey(key="//org/swisscom.com/employees"), 
-                provides_schema = True,
-                transforms_into = keys.DDHkey(key="//p/employment/salary"), # 1 higher than needed by TaxCalc
-                catalog = common_ids.CatalogCategory.employment,
-                ),
+                description="Swisscom Employee Data App",
+                owner=users.User(id='swisscom', name='Swisscom (fake account)'),
+                schemakey=keys.DDHkey(key="//org/swisscom.com/employees"),
+                provides_schema=True,
+                # 1 higher than needed by TaxCalc
+                transforms_into=keys.DDHkey(key="//p/employment/salary"),
+                catalog=common_ids.CatalogCategory.employment,
+            ),
 
             cls(
-                id='SBBroot', 
-                description = "Owner of the SBB schema",
-                owner=users.User(id='sbb',name='SBB (fake account)'),
-                schemakey = keys.DDHkey(key="//org/sbb.ch"), 
-                catalog = common_ids.CatalogCategory.living,
-                ),
+                id='SBBroot',
+                description="Owner of the SBB schema",
+                owner=users.User(id='sbb', name='SBB (fake account)'),
+                schemakey=keys.DDHkey(key="//org/sbb.ch"),
+                catalog=common_ids.CatalogCategory.living,
+            ),
 
             RestrictedUserDApp(
                 id='SBBempDApp',
-                description = "SBB Staff Data App",
-                owner=users.User(id='sbb',name='SBB (fake account)'),
-                schemakey = keys.DDHkey(key="//org/sbb.ch/staff"), 
-                provides_schema = True,
-                transforms_into = keys.DDHkey(key="//p/employment/salary/statements"),
-                catalog = common_ids.CatalogCategory.employment,
-                ),
+                description="SBB Staff Data App",
+                owner=users.User(id='sbb', name='SBB (fake account)'),
+                schemakey=keys.DDHkey(key="//org/sbb.ch/staff"),
+                provides_schema=True,
+                transforms_into=keys.DDHkey(key="//p/employment/salary/statements"),
+                catalog=common_ids.CatalogCategory.employment,
+            ),
 
             cls(
                 id='TaxCalc',
-                description = "A Tax calculator, defines the Tax Declaration AbstractSchema",
-                owner=users.User(id='privatetax',name='Private Tax (fake account)'),
-                schemakey = keys.DDHkey(key="//p/finance/tax/declaration"), 
-                provides_schema = True,
-                catalog = common_ids.CatalogCategory.finance,
-                ).add_reference(relationships.Reference.requires(
-                    keys.DDHkey(key="//p/employment/salary/statements"),
-                    keys.DDHkey(key="//p/finance/holdings/portfolio")
-                    )),
+                description="A Tax calculator, defines the Tax Declaration AbstractSchema",
+                owner=users.User(id='privatetax', name='Private Tax (fake account)'),
+                schemakey=keys.DDHkey(key="//p/finance/tax/declaration"),
+                provides_schema=True,
+                catalog=common_ids.CatalogCategory.finance,
+            ).add_reference(relationships.Reference.requires(
+                keys.DDHkey(key="//p/employment/salary/statements"),
+                keys.DDHkey(key="//p/finance/holdings/portfolio")
+            )),
 
             cls(
-                id='CSroot', 
-                description = "Owner of the Credit Suisse schema",
-                owner=users.User(id='cs',name='Credit Suisse (fake account)'),
-                schemakey = keys.DDHkey(key="//org/credit-suisse.com"), 
-                catalog = common_ids.CatalogCategory.finance,
-                ),
+                id='CSroot',
+                description="Owner of the Credit Suisse schema",
+                owner=users.User(id='cs', name='Credit Suisse (fake account)'),
+                schemakey=keys.DDHkey(key="//org/credit-suisse.com"),
+                catalog=common_ids.CatalogCategory.finance,
+            ),
 
             cls(
-                id='CSportfolio', 
-                description = "Portfolio API",
-                owner=users.User(id='cs',name='Credit Suisse (fake account)'),
-                schemakey = keys.DDHkey(key="//org/credit-suisse.com/clients/portfolio/account"), 
-                provides_schema = True,
-                catalog = common_ids.CatalogCategory.finance,
-                ),
+                id='CSportfolio',
+                description="Portfolio API",
+                owner=users.User(id='cs', name='Credit Suisse (fake account)'),
+                schemakey=keys.DDHkey(key="//org/credit-suisse.com/clients/portfolio/account"),
+                provides_schema=True,
+                catalog=common_ids.CatalogCategory.finance,
+            ),
 
 
             cls(
-                id='UBSroot', 
-                description = "Owner of the UBS schema",
-                owner=users.User(id='ubs',name='UBS (fake account)'),
-                schemakey = keys.DDHkey(key="//org/ubs.com"), 
-                catalog = common_ids.CatalogCategory.finance,
-                ),
+                id='UBSroot',
+                description="Owner of the UBS schema",
+                owner=users.User(id='ubs', name='UBS (fake account)'),
+                schemakey=keys.DDHkey(key="//org/ubs.com"),
+                catalog=common_ids.CatalogCategory.finance,
+            ),
 
             cls(
-                id='UBSaccount', 
-                description = "Portfolio API",
-                owner=users.User(id='ubs',name='UBS (fake account)'),
-                schemakey = keys.DDHkey(key="//org/ubs.com/switzerland/customer/account"), 
-                provides_schema = True,
-                transforms_into = keys.DDHkey(key="//p/finance/holdings/portfolio"),
-                catalog = common_ids.CatalogCategory.finance,
-                estimatedCosts = dapp_attrs.EstimatedCosts.medium,
-                ),
+                id='UBSaccount',
+                description="Portfolio API",
+                owner=users.User(id='ubs', name='UBS (fake account)'),
+                schemakey=keys.DDHkey(key="//org/ubs.com/switzerland/customer/account"),
+                provides_schema=True,
+                transforms_into=keys.DDHkey(key="//p/finance/holdings/portfolio"),
+                catalog=common_ids.CatalogCategory.finance,
+                estimatedCosts=dapp_attrs.EstimatedCosts.medium,
+            ),
 
             cls(
                 id='AccountAggregator',
-                description = "Bank account aggregator, defines holdings",
-                owner=users.User(id='coolfinance',name='Cool Finance Startup (fake account)'),
-                schemakey = keys.DDHkey(key="//p/finance/holdings"), 
-                provides_schema = True,
-                estimatedCosts = dapp_attrs.EstimatedCosts.medium,
-                catalog = common_ids.CatalogCategory.finance,
-                ).add_reference(relationships.Reference.requires(
-                    keys.DDHkey(key="//org/credit-suisse.com/clients/portfolio/account"),
-                    keys.DDHkey(key="//org/ubs.com/switzerland/customer/account"),
-                    )),
+                description="Bank account aggregator, defines holdings",
+                owner=users.User(id='coolfinance', name='Cool Finance Startup (fake account)'),
+                schemakey=keys.DDHkey(key="//p/finance/holdings"),
+                provides_schema=True,
+                estimatedCosts=dapp_attrs.EstimatedCosts.medium,
+                catalog=common_ids.CatalogCategory.finance,
+            ).add_reference(relationships.Reference.requires(
+                keys.DDHkey(key="//org/credit-suisse.com/clients/portfolio/account"),
+                keys.DDHkey(key="//org/ubs.com/switzerland/customer/account"),
+            )),
 
 
         )
-        return  apps
+        return apps
+
 
 class RestrictedUserDApp(SampleDApps):
 
@@ -165,10 +161,12 @@ class RestrictedUserDApp(SampleDApps):
         """ is the availability dependent on the user, e.g., for employee DApps.
             the concrete availability can be determined by .availability_for_user()
         """
-        return True 
+        return True
+
 
 def get_apps() -> tuple[dapp_attrs.DApp]:
-    apps = SampleDApps.bootstrap(None,{})
+    apps = SampleDApps.bootstrap(None, {})
     return apps
+
 
 fastapi_dapp.get_apps = get_apps

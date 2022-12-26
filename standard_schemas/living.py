@@ -6,11 +6,12 @@ import typing
 
 import pydantic
 
-from core import schemas,keys,nodes, principals, keydirectory, errors
-from frontend import sessions 
+from core import schemas, keys, nodes, principals, keydirectory, errors
+from frontend import sessions
 from schema_formats import py_schema
 
-class Receipt(py_schema.SchemaElement):
+
+class Receipt(py_schema.PySchemaElement):
 
     buyer: str = pydantic.Field(sensitivity=schemas.Sensitivity.eid)
     article: str
@@ -20,11 +21,10 @@ class Receipt(py_schema.SchemaElement):
     where: str = pydantic.Field(sensitivity=schemas.Sensitivity.sa)
 
 
-
-def install_schema(transaction, ddhkey : keys.DDHkey, sel: typing.Type[py_schema.SchemaElement],schema_attributes: schemas.SchemaAttributes | None = None):
+def install_schema(transaction, ddhkey: keys.DDHkey, sel: typing.Type[py_schema.PySchemaElement], schema_attributes: schemas.SchemaAttributes | None = None):
     ddhkey = ddhkey.ensure_fork(keys.ForkType.schema)
-    schemaref = sel.replace_by_schema(ddhkey,schema_attributes=schema_attributes)
-    pkey = ddhkey.up() 
+    schemaref = sel.replace_by_schema(ddhkey, schema_attributes=schema_attributes)
+    pkey = ddhkey.up()
     if not pkey:
         raise errors.NotFound('no parent node')
     upnode, split = keydirectory.NodeRegistry.get_node(
@@ -38,12 +38,13 @@ def install_schema(transaction, ddhkey : keys.DDHkey, sel: typing.Type[py_schema
     # now insert our schema into the parent's:
     parent.add_fields({ddhkey[-1]: (schemaref, None)})
 
-
     return parent
+
 
 def install():
     session = sessions.get_system_session()
     transaction = session.get_or_create_transaction()
-    return install_schema(transaction,keys.DDHkey('//p/living/shopping/receipts'),Receipt)
+    return install_schema(transaction, keys.DDHkey('//p/living/shopping/receipts'), Receipt)
+
 
 install()

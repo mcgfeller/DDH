@@ -7,12 +7,13 @@ from utils.pydantic_utils import NoCopyBaseModel
 from core import schemas, keys, versions, errors, principals, permissions, nodes, keydirectory
 from frontend import user_auth
 
-class SchemaElement(NoCopyBaseModel):
+
+class PySchemaElement(NoCopyBaseModel):
     """ A Pydantic AbstractSchema class """
 
     @classmethod
-    def descend_path(cls, path: keys.DDHkey, create: bool = False) -> typing.Type[SchemaElement] | None:
-        """ Travel down SchemaElement along path using some Pydantic implementation details.
+    def descend_path(cls, path: keys.DDHkey, create: bool = False) -> typing.Type[PySchemaElement] | None:
+        """ Travel down PySchemaElement along path using some Pydantic implementation details.
             If a path segment is not found, return None, unless create is specified.
             Create inserts an empty schemaElement and descends further. 
             If a path ends with a simple datatype, we return its parent.  
@@ -26,14 +27,14 @@ class SchemaElement(NoCopyBaseModel):
             mf = current.__fields__.get(str(segment), None)
             if mf is None:
                 if create:
-                    new_current = pydantic.create_model(segment, __base__=SchemaElement)
+                    new_current = pydantic.create_model(segment, __base__=PySchemaElement)
                     current.add_fields(**{segment: new_current})
                     current = new_current
                 else:
                     return None
             else:
                 assert isinstance(mf, pydantic.fields.ModelField)
-                if issubclass(mf.type_, SchemaElement):
+                if issubclass(mf.type_, PySchemaElement):
                     current = mf.type_  # this is the next Pydantic class
                 else:  # we're at a leaf, return
                     if next(pathit, None) is None:  # path ends here
@@ -57,7 +58,7 @@ class SchemaElement(NoCopyBaseModel):
         sub = typing.get_type_hints(cls).get(str(subname))
         if sub is None:
             return (None, None, None)
-        if isinstance(sub, SchemaElement):
+        if isinstance(sub, PySchemaElement):
             return (sub, None, None)
         elif isinstance(sub, typing.GenericAlias) and sub.__origin__ is list and sub.__args__:
             innerclass = sub.__args__[0]
@@ -95,29 +96,25 @@ class SchemaElement(NoCopyBaseModel):
             raise errors.NotFound(f'Incomplete key: {entire_selection}')
 
     @classmethod
-    def replace_by_schema(cls, ddhkey: keys.DDHkey, schema_attributes: schemas.SchemaAttributes | None) -> type[SchemaReference]:
-        """ Replace this SchemaElement by a proper schema with attributes, 
-            and return the SchemaReference to it, which can be used like a SchemaElement.
+    def replace_by_schema(cls, ddhkey: keys.DDHkey, schema_attributes: schemas.SchemaAttributes | None) -> type[PySchemaReference]:
+        """ Replace this PySchemaElement by a proper schema with attributes, 
+            and return the PySchemaReference to it, which can be used like a PySchemaElement.
         """
-        s = PySchema(schema_attributes=schema_attributes or schemas.SchemaAttributes(), schema_element=cls)
+        s = PySchema(schema_attributes=schema_attributes or schemas.SchemaAttributes(),
+                     schema_element=cls)
         snode = nodes.SchemaNode(owner=principals.RootPrincipal,
                                  consents=schemas.AbstractSchema.get_schema_consents())
         snode.add_schema(s)
         keydirectory.NodeRegistry[ddhkey] = snode
-        schemaref = SchemaReference.create_from_key(str(ddhkey), ddhkey=ddhkey)
+        schemaref = PySchemaReference.create_from_key(str(ddhkey), ddhkey=ddhkey)
         return schemaref
 
 
-class SchemaReference(SchemaElement):
-
-    ddhkey: typing.ClassVar[str]
-    # variant: SchemaVariant = ''
-    version_required: versions.VersionConstraint = pydantic.Field(
-        default=versions.NoConstraint, description="Constrains the version of the target schema")
+class PySchemaReference(schemas.SchemaReference, PySchemaElement):
 
     class Config:
         @staticmethod
-        def schema_extra(schema: dict[str, typing.Any], model: typing.Type[SchemaReference]) -> None:
+        def schema_extra(schema: dict[str, typing.Any], model: typing.Type[PySchemaReference]) -> None:
             schema['properties']['dep'] = {'$ref': model.getURI()}
             return
 
@@ -126,15 +123,14 @@ class SchemaReference(SchemaElement):
         return typing.cast(pydantic.AnyUrl, str(cls.__fields__['ddhkey'].default))
 
     @classmethod
-    def create_from_key(cls, name: str, ddhkey: keys.DDHkey) -> typing.Type[SchemaReference]:
+    def create_from_key(cls, name: str, ddhkey: keys.DDHkey) -> typing.Type[PySchemaReference]:
         m = pydantic.create_model(name, __base__=cls, ddhkey=(keys.DDHkey, ddhkey))
-        return typing.cast(typing.Type[SchemaReference], m)
-
+        return typing.cast(typing.Type[PySchemaReference], m)
 
 
 class PySchema(schemas.AbstractSchema):
-    """ A AbstractSchema in Pydantic Python, containing a SchemaElement """
-    schema_element: typing.Type[SchemaElement]
+    """ A AbstractSchema in Pydantic Python, containing a PySchemaElement """
+    schema_element: typing.Type[PySchemaElement]
     mimetypes: typing.ClassVar[schemas.MimeTypes] = schemas.MimeTypes(
         of_schema='application/openapi', of_data='application/json')
 
@@ -173,15 +169,15 @@ class PySchema(schemas.AbstractSchema):
     def add_empty_schemas(self, names: list[str]) -> list[PySchema]:
         """ Add a sequence of empty models, returing them as a list """
         schemas = [PySchema(schema_element=pydantic.create_model(
-            name, __base__=SchemaElement)) for name in names]
+            name, __base__=PySchemaElement)) for name in names]
         self.add_fields({name: (schema.schema_element, None)
                         for name, schema in zip(names, schemas)})
         return schemas
 
     @staticmethod
     def insert_schema(id, schemakey: keys.DDHkey, transaction):
-        # get a parent scheme to hook into 
-        # TODO:#5 This should be more abstract
+        # get a parent scheme to hook into
+        # TODO:#6 This should be more abstract
         pkey = schemakey.up()
         if not pkey:
             raise ValueError(f'{schemakey} key is too high')
@@ -195,6 +191,6 @@ class PySchema(schemas.AbstractSchema):
         assert parent  # must exist because create=True
 
         # now insert our schema into the parent's:
-        schemaref = SchemaReference.create_from_key(id, ddhkey=schemakey)
+        schemaref = PySchemaReference.create_from_key(id, ddhkey=schemakey)
         parent.add_fields({schemakey[-1]: (schemaref, None)})
         return schemaref

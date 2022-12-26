@@ -5,7 +5,7 @@ import pytest
 from schema_formats import py_schema
 
 
-class DummyElement(py_schema.SchemaElement): ...
+class DummyElement(py_schema.PySchemaElement): ...
 
 
 class DummyNode(nodes.Node, persistable.NonPersistable):
@@ -86,11 +86,11 @@ def ddhkey_setup(users7):
                                            permissions.Consent(
                                                grantedTo=[users7[3]], withModes={AM.write}),
                                            permissions.Consent(grantedTo=[users7[4]], withModes={
-                                                               AM.read, AM.write, AM.protected}),
+                                               AM.read, AM.write, AM.protected}),
                                            permissions.Consent(grantedTo=[users7[5]], withModes={
-                                                               AM.read, AM.write, permissions.AccessMode.anonymous}),
+                                               AM.read, AM.write, permissions.AccessMode.anonymous}),
                                            permissions.Consent(grantedTo=[users7[6]], withModes={
-                                                               AM.read, AM.write, AM.protected, permissions.AccessMode.pseudonym}),
+                                               AM.read, AM.write, AM.protected, permissions.AccessMode.pseudonym}),
                                        ]),
                                        users7[1]: permissions.Consents(consents=[
                                            permissions.Consent(grantedTo=[users7[2]]),

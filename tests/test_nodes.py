@@ -3,7 +3,7 @@ from frontend import sessions
 from schema_formats import py_schema
 
 
-class DummyElement(py_schema.SchemaElement): ...
+class DummyElement(py_schema.PySchemaElement): ...
 
 
 def test_nodes():

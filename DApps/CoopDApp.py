@@ -25,7 +25,7 @@ fastapi_dapp.get_apps = get_apps
 
 class CoopDApp(dapp_attrs.DApp):
 
-    _ddhschema: py_schema.SchemaElement = None
+    _ddhschema: py_schema.PySchemaElement = None
     version = '0.2'
     owner: typing.ClassVar[principals.Principal] = users.User(
         id='coop', name='Coop (fake account)')
@@ -63,7 +63,7 @@ class CoopDApp(dapp_attrs.DApp):
         return
 
 
-class CoopSchema(py_schema.SchemaElement):
+class CoopSchema(py_schema.PySchemaElement):
 
     supercard: int | None = pydantic.Field(None, sensitivity=schemas.Sensitivity.qid)
     #receipts: list[Receipt] = []
