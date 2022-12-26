@@ -1,7 +1,7 @@
 """ Test Schema manipulations """
 
 import pytest
-from core import  keys,schemas,keydirectory,nodes,schema_root
+from core import  keys,schemas,pillars,keydirectory,nodes,schema_root
 from frontend import sessions
 
 

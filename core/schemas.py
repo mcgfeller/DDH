@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import abc
 import enum
-import json
 import typing
 from distutils.version import Version
 
@@ -183,18 +182,18 @@ SchemaVariant = pydantic.constr(strip_whitespace=True, max_length=30, regex='[a-
 
 class MimeTypes(NoCopyBaseModel):
     """ Mime Types both for the schema itself and data conforming to the schema """
-    of_schema: str  = pydantic.Field(
+    of_schema: str = pydantic.Field(
         description='Mimetype of the schema - taken from Schema if not provided.')
     of_data: str = pydantic.Field(
         description='Mimetype of data - taken from Schema if not provided.')
 
-    def for_fork(self,fork:keys.ForkType) -> str: 
+    def for_fork(self, fork: keys.ForkType) -> str:
         """ return mimetype for a fork """
         match fork:
             case keys.ForkType.data:
                 mt = self.of_data
             case keys.ForkType.consents:
-                mt ='application/json'
+                mt = 'application/json'
             case keys.ForkType.schema:
                 mt = self.of_schema
             case _:
@@ -215,6 +214,7 @@ class SchemaAttributes(NoCopyBaseModel):
 
 
 class AbstractSchema(NoCopyBaseModel, abc.ABC):
+    format_designator: typing.ClassVar[SchemaFormat] = SchemaFormat.internal
     schema_attributes: SchemaAttributes = pydantic.Field(
         default=SchemaAttributes(), descriptor="Attributes associated with this Schema")
     mimetypes: typing.ClassVar[MimeTypes | None] = None
@@ -222,6 +222,11 @@ class AbstractSchema(NoCopyBaseModel, abc.ABC):
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
         self.update_schema_attributes()
+
+    @classmethod
+    def __init_subclass__(cls):
+        SchemaFormat2Class[cls.format_designator] = cls
+        Class2SchemaFormat[cls] = cls.format_designator
 
     def update_schema_attributes(self):
         """ update .schema_attributes based on schema.
@@ -242,7 +247,7 @@ class AbstractSchema(NoCopyBaseModel, abc.ABC):
         """ Schema format based on class """
         return Class2SchemaFormat[self.__class__]
 
-    def to_json_schema(self) -> JsonSchema:
+    def to_json_schema(self):
         """ Make a JSON Schema from this Schema """
         raise NotImplemented('conversion to JSON schema not supported')
 
@@ -260,7 +265,7 @@ class AbstractSchema(NoCopyBaseModel, abc.ABC):
         """
         if format == self.format:
             return self.to_output()
-        elif SchemaFormat2Class[format.value] == JsonSchema:
+        elif format.value == SchemaFormat.json:
             return self.to_json_schema().to_output()
         else:
             raise NotImplementedError(
@@ -300,6 +305,10 @@ class AbstractSchema(NoCopyBaseModel, abc.ABC):
         return permissions.Consents(consents=[permissions.Consent(grantedTo=[principals.AllPrincipal], withModes={permissions.AccessMode.read})])
 
 
+SchemaFormat2Class = {}
+Class2SchemaFormat = {}
+
+
 class PySchema(AbstractSchema):
     """ A AbstractSchema in Pydantic Python, containing a SchemaElement """
     schema_element: typing.Type[SchemaElement]
@@ -324,9 +333,10 @@ class PySchema(AbstractSchema):
             s = self
         return s
 
-    def to_json_schema(self) -> JsonSchema:
+    def to_json_schema(self):
         """ Make a JSON Schema from this Schema """
-        return JsonSchema(json_schema=self.schema_element.schema_json(), schema_attributes=self.schema_attributes)
+        jcls = SchemaFormat2Class[SchemaFormat.json]
+        return jcls(json_schema=self.schema_element.schema_json(), schema_attributes=self.schema_attributes)
 
     def to_output(self) -> pydantic.Json:
         """ Python schema is output as JSON """
@@ -344,92 +354,6 @@ class PySchema(AbstractSchema):
         self.add_fields({name: (schema.schema_element, None)
                         for name, schema in zip(names, schemas)})
         return schemas
-
-
-class JsonSchema(AbstractSchema):
-    mimetypes: typing.ClassVar[MimeTypes] = MimeTypes(
-        of_schema='application/openapi', of_data='application/json')
-    json_schema: pydantic.Json
-
-    @classmethod
-    def from_str(cls, schema_str: str, schema_attributes: SchemaAttributes) -> JsonSchema:
-        return cls(json_schema=schema_str, schema_attributes=schema_attributes)
-
-    def to_json_schema(self) -> JsonSchema:
-        """ Make a JSON Schema from this Schema """
-        return self
-
-    def to_output(self):
-        """ return naked json schema """
-        return self.json_schema
-
-    def obtain(self, ddhkey: keys.DDHkey, split: int, create: bool = False) -> AbstractSchema | None:
-        """ obtain a schema for the ddhkey, which is split into the key holding the schema and
-            the remaining path. 
-        """
-        khere, kremainder = ddhkey.split_at(split)
-        if kremainder.key:
-            s = None
-            j_defn = self._descend_path(self.json_schema, kremainder)
-            if j_defn:
-                s = self.__class__.from_definition(j_defn)
-            else: s = None  # not found
-        else:
-            s = self
-        return s
-
-    @classmethod
-    def _descend_path(cls, json_schema: pydantic.Json, path: keys.DDHkey):
-        definitions = json_schema.get('definitions', {})
-        current = json_schema  # before we descend path, this cls is at the current level
-        pathit = iter(path)  # so we can peek whether we're at end
-        for segment in pathit:
-            segment = str(segment)
-            # look up one segment of path, returning ModelField
-            mf = current['properties'].get(str(segment), None)
-            if mf is None:
-                return None
-            else:
-                if (ref := mf.get('$ref', '')).startswith('#/definitions/'):
-                    current = definitions.get(ref[len('#/definitions/'):])
-                elif mf['type'] == 'array' and '$ref' in mf['items']:
-                    if (ref := mf['items']['$ref']).startswith('#/definitions/'):
-                        current = definitions.get(ref[len('#/definitions/'):])
-
-                else:  # we're at a leaf, return
-                    if next(pathit, None) is None:  # path ends here
-                        break
-                    else:  # path continues beyond this point, so this is not found and not creatable
-                        return None
-        return current
-
-    @classmethod
-    def from_definition(cls, json_schema):
-        # return cls(json_schema=json_schema)
-        return cls(json_schema=json.dumps(json_schema))
-
-
-class XmlSchema(AbstractSchema):
-    mimetypes: typing.ClassVar[MimeTypes] = MimeTypes(
-        of_schema='application/xsd', of_data='application/xml')
-    xml_schema: str
-
-    @classmethod
-    def from_str(cls, schema_str: str, schema_attributes: SchemaAttributes) -> XmlSchema:
-        return cls(xml_schema=schema_str, schema_attributes=schema_attributes)
-
-    def to_output(self):
-        """ return naked XML schema """
-        return self.xml_schema
-
-
-SchemaFormat2Class = {
-    SchemaFormat.json: JsonSchema,
-    SchemaFormat.internal: PySchema,
-    SchemaFormat.xsd: XmlSchema
-}
-
-Class2SchemaFormat = {c: s for s, c in SchemaFormat2Class.items()}
 
 
 class SchemaContainer(NoCopyBaseModel):
