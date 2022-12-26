@@ -10,7 +10,7 @@ import pandas  # for example
 import pydantic
 from core import (common_ids, dapp_attrs, keys, nodes, permissions,users,
                   relationships, schemas)
-
+from schema_formats import py_schema
 from glom import Iter, S, T, glom  # transform
 
 from frontend import fastapi_dapp
@@ -26,7 +26,7 @@ fastapi_dapp.get_apps = get_apps
 
 class MigrosDApp(dapp_attrs.DApp):
 
-    _ddhschema : schemas.SchemaElement = None
+    _ddhschema : py_schema.SchemaElement = None
     version = '0.2'
 
     def __init__(self,*a,**kw):
@@ -39,7 +39,7 @@ class MigrosDApp(dapp_attrs.DApp):
  
     def get_schemas(self) -> dict[keys.DDHkey,schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
-        return {keys.DDHkey(key="//org/migros.ch"):schemas.PySchema(schema_element=MigrosSchema)}
+        return {keys.DDHkey(key="//org/migros.ch"):py_schema.PySchema(schema_element=MigrosSchema)}
 
 
     def execute(self, req : dapp_attrs.ExecuteRequest):
@@ -74,14 +74,14 @@ class MigrosDApp(dapp_attrs.DApp):
         s = glom(d,spec)
         return s
     
-class ProduktDetail(schemas.SchemaElement):
+class ProduktDetail(py_schema.SchemaElement):
     produkt_kategorie : str
     garantie : str|None = None
     garantie_jahre : int|None = 1
     beschreibung : str = ''
     labels : list[str] = []
 
-class Receipt(schemas.SchemaElement):
+class Receipt(py_schema.SchemaElement):
 
     Datum_Zeit: datetime.datetime = pydantic.Field(sensitivity= schemas.Sensitivity.sa)
     Filiale:    str = pydantic.Field(sensitivity= schemas.Sensitivity.sa)
@@ -114,7 +114,7 @@ class Receipt(schemas.SchemaElement):
 
 
 
-class MigrosSchema(schemas.SchemaElement):
+class MigrosSchema(py_schema.SchemaElement):
 
     cumulus : int|None = pydantic.Field(None,sensitivity=schemas.Sensitivity.qid)
     receipts: list[Receipt] = []

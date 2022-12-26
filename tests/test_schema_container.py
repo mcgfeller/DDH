@@ -3,14 +3,14 @@
 import pytest
 from core import keys, nodes, schemas, keydirectory, users, versions, pillars
 from frontend import sessions
+from schema_formats import py_schema
 
-
-class DummyElement(schemas.SchemaElement): ...
+class DummyElement(py_schema.SchemaElement): ...
 
 def test_container():
     sa = schemas.SchemaAttributes(
         variant='rec', variant_usage=schemas.SchemaVariantUsage.recommended, version=versions.Version(0))
-    schema = schemas.PySchema(schema_element=DummyElement, schema_attributes=sa)
+    schema = py_schema.PySchema(schema_element=DummyElement, schema_attributes=sa)
     sc = schemas.SchemaContainer()
     sc.add(schema)
     sa = schema.schema_attributes
@@ -20,16 +20,16 @@ def test_container():
 
 
 def test_schema_multiple_versions():
-    schema_r0 = schemas.PySchema(schema_element=DummyElement, schema_attributes=schemas.SchemaAttributes(
+    schema_r0 = py_schema.PySchema(schema_element=DummyElement, schema_attributes=schemas.SchemaAttributes(
         variant='rec', variant_usage=schemas.SchemaVariantUsage.recommended, version=versions.Version(0)))
-    schema_r1 = schemas.PySchema(schema_element=DummyElement, schema_attributes=schemas.SchemaAttributes(
+    schema_r1 = py_schema.PySchema(schema_element=DummyElement, schema_attributes=schemas.SchemaAttributes(
         variant='rec', variant_usage=schemas.SchemaVariantUsage.recommended, version=versions.Version(1)))
-    schema_r3 = schemas.PySchema(schema_element=DummyElement, schema_attributes=schemas.SchemaAttributes(
+    schema_r3 = py_schema.PySchema(schema_element=DummyElement, schema_attributes=schemas.SchemaAttributes(
         variant='rec', variant_usage=schemas.SchemaVariantUsage.recommended, version=versions.Version(3)))
 
-    schema_a2 = schemas.PySchema(schema_element=DummyElement, schema_attributes=schemas.SchemaAttributes(
+    schema_a2 = py_schema.PySchema(schema_element=DummyElement, schema_attributes=schemas.SchemaAttributes(
         variant='alt', variant_usage=schemas.SchemaVariantUsage.supported, version=versions.Version(2)))
-    schema_a4 = schemas.PySchema(schema_element=DummyElement, schema_attributes=schemas.SchemaAttributes(
+    schema_a4 = py_schema.PySchema(schema_element=DummyElement, schema_attributes=schemas.SchemaAttributes(
         variant='alt', variant_usage=schemas.SchemaVariantUsage.supported, version=versions.Version(4)))
     user = users.User(id='1', name='martin', email='martin.gfeller@swisscom.com')
 

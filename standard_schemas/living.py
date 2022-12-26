@@ -8,9 +8,9 @@ import pydantic
 
 from core import schemas,keys,nodes, principals, keydirectory, errors
 from frontend import sessions 
+from schema_formats import py_schema
 
-
-class Receipt(schemas.SchemaElement):
+class Receipt(py_schema.SchemaElement):
 
     buyer: str = pydantic.Field(sensitivity=schemas.Sensitivity.eid)
     article: str
@@ -21,7 +21,7 @@ class Receipt(schemas.SchemaElement):
 
 
 
-def install_schema(transaction, ddhkey : keys.DDHkey, sel: typing.Type[schemas.SchemaElement],schema_attributes: schemas.SchemaAttributes | None = None):
+def install_schema(transaction, ddhkey : keys.DDHkey, sel: typing.Type[py_schema.SchemaElement],schema_attributes: schemas.SchemaAttributes | None = None):
     ddhkey = ddhkey.ensure_fork(keys.ForkType.schema)
     schemaref = sel.replace_by_schema(ddhkey,schema_attributes=schema_attributes)
     pkey = ddhkey.up() 

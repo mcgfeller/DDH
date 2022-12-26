@@ -7,6 +7,7 @@ import typing
 import logging
 
 from core import  keys,schemas,nodes,keydirectory,principals
+from schema_formats import py_schema
 from frontend import sessions
 logger = logging.getLogger(__name__)
 
@@ -67,16 +68,16 @@ def build_root_schemas():
         ('root', '', 'p', 'employment','salary','statements') : schemas.SchemaAttributes(requires=schemas.Requires.specific),
         ('root', '', 'p', 'finance','holdings','portfolio') : schemas.SchemaAttributes(requires=schemas.Requires.specific),
     }
-    root = schemas.PySchema(schema_element=descend_schema(treetop,attributes))
+    root = py_schema.PySchema(schema_element=descend_schema(treetop,attributes))
     assert root.schema_element.schema_json()
     return root
 
 
-def descend_schema(tree : list,schema_attributes : dict, parents=()) -> type[schemas.SchemaElement]:
+def descend_schema(tree : list,schema_attributes : dict, parents=()) -> type[py_schema.SchemaElement]:
     """ Descent on our tree representation, returning model """
     key = parents+(tree[0],) # new key, from parents down
     elements = {t[0]: (descend_schema(t,schema_attributes,parents=key),None) for t in tree[1:]} # descend on subtree, build dict of {head_name  : subtree}
-    se = pydantic.create_model('_'.join(key), __base__=schemas.SchemaElement, **elements) # create a model with subtree elements
+    se = pydantic.create_model('_'.join(key), __base__=py_schema.SchemaElement, **elements) # create a model with subtree elements
     if sa := schema_attributes.get(key): # SchemaAttributes here? 
         # we need to replace the SchemaElement by a full Schema and a SchemaReference to it
         dkey = keys.DDHkey(('','')+key[2:],fork=keys.ForkType.schema) # 'root' is '' in key

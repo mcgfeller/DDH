@@ -9,7 +9,7 @@ charset="utf-8"
 "core.dapp.DAppOrFamily.Config" [color="black", fontcolor="black", label="{Config|extra : str\l|}", shape="record", style="solid"];
 "core.dapp.DApp.Config" [color="black", fontcolor="black", label="{Config|extra : str\l|}", shape="record", style="solid"];
 "core.principals.Principal.Config" [color="black", fontcolor="black", label="{Config|extra\l|}", shape="record", style="solid"];
-"core.schemas.SchemaReference.Config" [color="black", fontcolor="black", label="{Config|\l|schema_extra(schema: dict[str, typing.Any], model: typing.Type[SchemaReference]): None\l}", shape="record", style="solid"];
+"core.py_schema.SchemaReference.Config" [color="black", fontcolor="black", label="{Config|\l|schema_extra(schema: dict[str, typing.Any], model: typing.Type[SchemaReference]): None\l}", shape="record", style="solid"];
 "core.permissions.Consent" [color="black", fontcolor="black", label="{Consent|grantedTo : list[principals.Principal]\lwithApps : set[principals.DAppId]\lwithModes : set[AccessMode]\l|check(access: Access, _principal_checked): tuple[bool, str]\lsingle(): Consents\l}", shape="record", style="solid"];
 "core.permissions.Consents" [color="black", fontcolor="black", label="{Consents|consents : list[Consent]\l|applicable_consents(principal: principals.Principal): list[Consent]\lchanges(new_consents: Consents): tuple\lcheck(owners: typing.Iterable[principals.Principal], access: Access): tuple[bool, list[Consent], str]\lconsentees(): set[principals.Principal]\lconsentees_with_mode(mode: AccessMode): set[principals.Principal]\l}", shape="record", style="solid"];
 "core.contracts.Contract" [color="black", fontcolor="black", label="{Contract|acceptor\loffer\lofferer\l|}", shape="record", style="solid"];
@@ -47,15 +47,15 @@ charset="utf-8"
 "core.privacyIcons.PrivacyIcon" [color="black", fontcolor="black", label="{PrivacyIcon|name\l|}", shape="record", style="solid"];
 "core.privacyIcons.PrivacyIcons" [color="black", fontcolor="black", label="{PrivacyIcons|excluded : set[PrivacyIcon]\lincluded : set[PrivacyIcon]\l|}", shape="record", style="solid"];
 "core.privacyIcons.PurposeOfProcessing" [color="black", fontcolor="black", label="{PurposeOfProcessing|name\l|}", shape="record", style="solid"];
-"core.schemas.PySchema" [color="black", fontcolor="black", label="{PySchema|schema_element : typing.Type[SchemaElement]\l|add_empty_schemas(names: list[str]): list[PySchema]\ladd_fields(fields: dict[str, tuple])\lfrom_schema(schema: Schema): PySchema\lobtain(ddhkey: keys.DDHkey, split: int): typing.Optional[Schema]\lto_output()\lto_py_schema(): PySchema\l}", shape="record", style="solid"];
+"core.py_schema.PySchema" [color="black", fontcolor="black", label="{PySchema|schema_element : typing.Type[SchemaElement]\l|add_empty_schemas(names: list[str]): list[PySchema]\ladd_fields(fields: dict[str, tuple])\lfrom_schema(schema: Schema): PySchema\lobtain(ddhkey: keys.DDHkey, split: int): typing.Optional[Schema]\lto_output()\lto_py_schema(): PySchema\l}", shape="record", style="solid"];
 "core.relationships.Quality" [color="black", fontcolor="black", label="{Quality|\l|}", shape="record", style="solid"];
 "core.relationships.Reference" [color="black", fontcolor="black", label="{Reference|qualities : set[Quality]\lrelation\ltarget\l|defines()\lmultiple(relation: Relation): list['Reference']\lprovides()\lrequires()\l}", shape="record", style="solid"];
 "core.relationships.Relation" [color="black", fontcolor="black", label="{Relation|name\l|}", shape="record", style="solid"];
 "core.schemas.Schema" [color="black", fontcolor="black", label="{Schema|\l|add_fields(fields: dict)\lformat(format: SchemaFormat)\lfrom_schema(schema: Schema): Schema\lobtain(ddhkey: keys.DDHkey, split: int): typing.Optional[Schema]\lto_output()\lto_py_schema(): PySchema\l}", shape="record", style="solid"];
-"core.schemas.SchemaElement" [color="black", fontcolor="black", label="{SchemaElement|\l|descend_path(path: keys.DDHkey): typing.Optional[typing.Type[SchemaElement]]\lget_resolver(selection: keys.DDHkey, access: permissions.Access, q)\lget_subschema_class(subname): typing.Tuple\l}", shape="record", style="solid"];
+"core.py_schema.SchemaElement" [color="black", fontcolor="black", label="{SchemaElement|\l|descend_path(path: keys.DDHkey): typing.Optional[typing.Type[SchemaElement]]\lget_resolver(selection: keys.DDHkey, access: permissions.Access, q)\lget_subschema_class(subname): typing.Tuple\l}", shape="record", style="solid"];
 "core.pillars.SchemaNetworkClass" [color="black", fontcolor="black", label="{SchemaNetworkClass|network\l|}", shape="record", style="solid"];
 "core.nodes.SchemaNode" [color="black", fontcolor="black", label="{SchemaNode|nschema : typing.Optional[schemas.Schema]\lsupports\l|get_sub_schema(ddhkey: keys.DDHkey, split: int, schema_type: str): typing.Optional[schemas.Schema]\l}", shape="record", style="solid"];
-"core.schemas.SchemaReference" [color="black", fontcolor="black", label="{SchemaReference|ddhkey : typing.ClassVar[str]\l|create_from_key(name: str, ddhkey: keys.DDHkey): typing.Type[SchemaReference]\lgetURI(): pydantic.AnyUrl\l}", shape="record", style="solid"];
+"core.py_schema.SchemaReference" [color="black", fontcolor="black", label="{SchemaReference|ddhkey : typing.ClassVar[str]\l|create_from_key(name: str, ddhkey: keys.DDHkey): typing.Type[SchemaReference]\lgetURI(): pydantic.AnyUrl\l}", shape="record", style="solid"];
 "core.schemas.Sensitivity" [color="black", fontcolor="black", label="{Sensitivity|name\l|}", shape="record", style="solid"];
 "core.privacyIcons.SourceOfPersonalData" [color="black", fontcolor="black", label="{SourceOfPersonalData|name\l|}", shape="record", style="solid"];
 "core.privacyIcons.SpecialProcesses" [color="black", fontcolor="black", label="{SpecialProcesses|name\l|}", shape="record", style="solid"];
@@ -92,8 +92,8 @@ charset="utf-8"
 "core.privacyIcons.SpecialProcesses" -> "core.privacyIcons.PrivacyIcon" [arrowhead="empty", arrowtail="none"];
 "core.privacyIcons.TypeOfPersonalData" -> "core.privacyIcons.PrivacyIcon" [arrowhead="empty", arrowtail="none"];
 "core.schemas.JsonSchema" -> "core.schemas.Schema" [arrowhead="empty", arrowtail="none"];
-"core.schemas.PySchema" -> "core.schemas.Schema" [arrowhead="empty", arrowtail="none"];
-"core.schemas.SchemaReference" -> "core.schemas.SchemaElement" [arrowhead="empty", arrowtail="none"];
+"core.py_schema.PySchema" -> "core.schemas.Schema" [arrowhead="empty", arrowtail="none"];
+"core.py_schema.SchemaReference" -> "core.py_schema.SchemaElement" [arrowhead="empty", arrowtail="none"];
 "core.transactions.TrxAccessError" -> "core.errors.AccessError" [arrowhead="empty", arrowtail="none"];
 "core.contracts.CancellationTerms" -> "core.contracts.TermsAndConditions" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="cancellation_terms", style="solid"];
 "core.contracts.Offer" -> "core.contracts.Contract" [arrowhead="diamond", arrowtail="none", fontcolor="green", label="offer", style="solid"];

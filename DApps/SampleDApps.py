@@ -9,7 +9,7 @@ import fastapi.security
 import pydantic
 from core import (common_ids, dapp_attrs, keys, nodes, permissions, principals,users,
                   relationships, schemas)
-
+from schema_formats import py_schema
 from frontend import fastapi_dapp
 app = fastapi.FastAPI()
 app.include_router(fastapi_dapp.router)
@@ -35,7 +35,7 @@ class SampleDApps(dapp_attrs.DApp):
  
     def get_schemas(self) -> dict[keys.DDHkey,schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
-        return {self.schemakey:schemas.PySchema(schema_element=pydantic.create_model('DummySchema',__base__=schemas.SchemaElement))}
+        return {self.schemakey:py_schema.PySchema(schema_element=pydantic.create_model('DummySchema',__base__=py_schema.SchemaElement))}
 
 
     def execute(self, op: nodes.Ops, access : permissions.Access, transaction: transactions.Transaction, key_split : int, data : dict|None = None, q : str|None = None):

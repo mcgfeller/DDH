@@ -3,7 +3,7 @@
 import pytest
 from core import  keys,schemas,pillars,keydirectory,nodes,schema_root
 from frontend import sessions
-
+from schema_formats import py_schema
 
 @pytest.fixture
 def transaction():
@@ -38,7 +38,7 @@ def test_insert_schema(ensure_root_node,json_schema,transaction):
     assert ensure_root_node
     k,schema = json_schema
     # replace_by_schema --> by with JsonSchema
-    schemas.AbstractSchema.insert_schema('Migros',k,transaction)
+    py_schema.PySchema.insert_schema('Migros',k,transaction)
 
 
 

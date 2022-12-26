@@ -7,9 +7,10 @@ import typing
 import fastapi
 import fastapi.security
 import pydantic
-from core import (common_ids, dapp_attrs, keys, nodes, permissions, principals,users,
+from core import (common_ids, dapp_attrs, keys, nodes, permissions, principals, users,
                   relationships, schemas)
 
+from schema_formats import py_schema
 from frontend import fastapi_dapp
 app = fastapi.FastAPI()
 app.include_router(fastapi_dapp.router)
@@ -24,7 +25,7 @@ fastapi_dapp.get_apps = get_apps
 
 class CoopDApp(dapp_attrs.DApp):
 
-    _ddhschema: schemas.SchemaElement = None
+    _ddhschema: py_schema.SchemaElement = None
     version = '0.2'
     owner: typing.ClassVar[principals.Principal] = users.User(
         id='coop', name='Coop (fake account)')
@@ -34,15 +35,15 @@ class CoopDApp(dapp_attrs.DApp):
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
         self._ddhschema = CoopSchema()
-        
+
         self.transforms_into = keys.DDHkey(key="//p/living/shopping/receipts")
         self.references = relationships.Reference.defines(self.schemakey) + relationships.Reference.provides(self.schemakey) \
             # TODO: Must not register transform unless provided:
-            # + relationships.Reference.provides(self.transforms_into)
+        # + relationships.Reference.provides(self.transforms_into)
 
     def get_schemas(self) -> dict[keys.DDHkey, schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
-        return {keys.DDHkey(key="//org/coop.ch"): schemas.PySchema(schema_element=CoopSchema)}
+        return {keys.DDHkey(key="//org/coop.ch"): py_schema.PySchema(schema_element=CoopSchema)}
 
     def execute(self, req: dapp_attrs.ExecuteRequest):
         """ obtain data by recursing to schema """
@@ -62,7 +63,7 @@ class CoopDApp(dapp_attrs.DApp):
         return
 
 
-class CoopSchema(schemas.SchemaElement):
+class CoopSchema(py_schema.SchemaElement):
 
     supercard: int | None = pydantic.Field(None, sensitivity=schemas.Sensitivity.qid)
     #receipts: list[Receipt] = []

@@ -1,12 +1,13 @@
 from core import keys, nodes, permissions, schemas, facade, keydirectory, transactions, users
 from frontend import sessions
+from schema_formats import py_schema
 
 
-class DummyElement(schemas.SchemaElement): ...
+class DummyElement(py_schema.SchemaElement): ...
 
 
 def test_nodes():
-    schema = schemas.PySchema(schema_element=DummyElement)
+    schema = py_schema.PySchema(schema_element=DummyElement)
     user = users.User(id='1', name='martin', email='martin.gfeller@swisscom.com')
     user2 = users.User(id='2', name='roman', email='roman.stoessel@swisscom.com')
     transaction = transactions.Transaction.create(user)
@@ -28,7 +29,7 @@ def test_nodes():
 def test_schema_node():
     """ Retrieval of schema and application of get_sub_schema() 
     """
-    schema = schemas.PySchema(schema_element=DummyElement)
+    schema = py_schema.PySchema(schema_element=DummyElement)
     user = users.User(id='1', name='martin', email='martin.gfeller@swisscom.com')
     session = sessions.Session(token_str='test_session', user=user)
     transaction = session.get_or_create_transaction(for_user=user)

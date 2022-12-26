@@ -15,6 +15,7 @@ from utils import utils
 # from frontend import sessions
 from core import keys,permissions,schemas,nodes,keydirectory,policies,errors,transactions,principals,relationships,pillars,common_ids,dapp_attrs,versions
 from utils.pydantic_utils import NoCopyBaseModel
+from schema_formats import py_schema
 
 
 
@@ -92,7 +93,7 @@ class DAppProxy(NoCopyBaseModel):
                 snode.add_schema(schema) 
                 # hook into parent schema:
                 keydirectory.NodeRegistry[schemakey] = snode
-                schemas.AbstractSchema.insert_schema(self.attrs.id, schemakey,transaction)
+                py_schema.PySchema.insert_schema(self.attrs.id, schemakey,transaction)
                 
                 # 
             snodes.append(snode)
