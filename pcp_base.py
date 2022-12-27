@@ -29,13 +29,14 @@ logger = logging.getLogger('pcp')
 SubclassError = NotImplementedError('must be implemented in subclass')
 NotAvailableError = NotImplementedError('action not available')
 
+# https://github.com/pydantic/pydantic/issues/3679#issuecomment-1337575645
+Controllable = typing.ForwardRef('Controllable')  # type:ignore # resolved problem
+
 
 class Controllable(pydantic.BaseModel):
     """ A thing that is controlled by this program and that can be started, stopped and checked. """
 
-    # Instances : typing.ClassVar[dict[str,'Controllable']] = {}
-    # https://github.com/pydantic/pydantic/issues/3679#issuecomment-1337575645
-    Instances: typing.ClassVar[dict[str, typing.Any]] = {}
+    Instances: typing.ClassVar[dict[str, 'Controllable']] = {}
     name: str
 
     def __init__(self, *a, **d):
@@ -75,7 +76,7 @@ class Controllable(pydantic.BaseModel):
         """ Check whether process is running by external means """
         return self.getprocess() is not None
 
-    def getprocess(self) -> psutil.Process|None:
+    def getprocess(self) -> psutil.Process | None:
         return []
 
     def health(self, args) -> dict:
@@ -175,7 +176,7 @@ class Runnable(Controllable):
                 return False
         return True
 
-    def getprocess(self) -> psutil.Process|None:
+    def getprocess(self) -> psutil.Process | None:
         """ return one single process or None """
         ps = next((proc for proc in psutil.process_iter(
             ['pid', 'name'], ad_value=None) if self._processfilter(proc)), None)
@@ -242,7 +243,7 @@ class PythonProcess(Runnable):
 
     python_exe = r"C:\Program Files\Python39\python.exe" if OnWindows else "python3"
     module: pathlib.Path
-    healthprocess: AsgiProcess|None = None
+    healthprocess: AsgiProcess | None = None
     args: list[str] = []
 
     def _startcmd(self):
