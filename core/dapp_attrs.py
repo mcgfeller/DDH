@@ -82,10 +82,15 @@ CostToWeight = {
 
 
 @enum.unique
-class Priviledges(str, enum.Enum):
-    """ Priviledges a DApp may enjoy """
+class Privileges(str, enum.Enum):
+    """ Privileges a DApp may enjoy 
+        TODO: 
+        - I think these privileges must be parametrized, e.g., system_service(storage)
+        - Move into own module
+        - Who to grant requested privileges? Review workflow?
+    """
 
-    system = 'system'  # System DApp, aka root
+    system = 'system'  # System DApp, aka root -- Perhaps not, only specific services
     incoming_http = 'incoming_http'
     outgoing_http = 'outgoing_http'
     sensitive_data_read = 'sensitive_data_read'  # may read data that is designated sensitive in Schema
@@ -99,16 +104,16 @@ class DApp(DAppOrFamily):
     references: list[relationships.Reference] = []
     transforms_into: keys.DDHkey | None = None
     estimatedCosts: EstimatedCosts = EstimatedCosts.free
-    requested_priviledges: set[Priviledges] = set()
-    granted_priviledges: set[Priviledges] = pydantic.Field(
-        default=set(), const=True, description="priviledges actually granted, cannot be set")
+    requested_privileges: set[Privileges] = set()
+    granted_privileges: set[Privileges] = pydantic.Field(
+        default=set(), const=True, description="privileges actually granted, cannot be set")
 
     def __init__(self, *a, **kw):
         """ Add to family as member """
         super().__init__(*a, **kw)
         if self.belongsTo:
             self.belongsTo.members[self.id] = self
-        self.granted_priviledges = self.requested_priviledges
+        self.granted_privileges = self.requested_privileges
 
     def __hash__(self):
         return hash(self.id)
