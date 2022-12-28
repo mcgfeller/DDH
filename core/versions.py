@@ -11,11 +11,11 @@ import operator
 import pydantic
 import networkx
 
-from utils.pydantic_utils import NoCopyBaseModel
+from utils.pydantic_utils import DDHbaseModel
 
 
 @functools.total_ordering
-class Version(NoCopyBaseModel, typing.Hashable):
+class Version(DDHbaseModel, typing.Hashable):
     """ Versions are tuples of integers, with a max len.
         Short Version like 1.0 are equal to longer version with the same prefix, e.g.
         1.0.1, 1.0.0.1. If you want to be specific, specify the full length, e.g., 1.0.0.0.
@@ -28,7 +28,7 @@ class Version(NoCopyBaseModel, typing.Hashable):
     Maxparts: typing.ClassVar[int] = 4
 
     vtup: tuple[pydantic.conint(ge=0, le=100000), ...] = ()
-    alias: str|None = None
+    alias: str | None = None
 
     def __init__(self, *v, **kw):
         if v and isinstance(v[0], str):
@@ -47,7 +47,7 @@ class Version(NoCopyBaseModel, typing.Hashable):
         return
 
     @classmethod
-    def make_with_default(cls, v: str|None) -> Version:
+    def make_with_default(cls, v: str | None) -> Version:
         return cls(v) if v and not v == 'unspecified' else Unspecified
 
     def __eq__(self, other):
@@ -78,7 +78,7 @@ class Version(NoCopyBaseModel, typing.Hashable):
 class _UnspecifiedVersion(Version):
     def __init__(self, *v, **kw):
         kw['vtup'] = ()
-        NoCopyBaseModel.__init__(self, **kw)
+        DDHbaseModel.__init__(self, **kw)
         return
 
     def __eq__(self, other):
@@ -89,7 +89,7 @@ class _UnspecifiedVersion(Version):
 Unspecified = _UnspecifiedVersion(alias='unspecified')
 
 
-class VersionConstraint(NoCopyBaseModel):
+class VersionConstraint(DDHbaseModel):
     """ Version constraint specifiy upper and lower bounds of acceptable versions.
         Comparisons can be specified as '==version', '>=version', '>version', and < instead of >.
         Ranges can be specified by two comparisons such as '<version1,>=version2'.
@@ -103,8 +103,8 @@ class VersionConstraint(NoCopyBaseModel):
 
     v1: Version
     op1:  str
-    v2: Version|None = None
-    op2:  str|None = None
+    v2: Version | None = None
+    op2:  str | None = None
 
     @pydantic.validator('op1', 'op2')
     def v_op1(cls, v):
@@ -186,7 +186,7 @@ class Upgraders:
     def __init__(self):
         self.network = networkx.DiGraph()
 
-    def add_upgrader(self, v_from: Version, v_to: Version, function: Upgrader|None):
+    def add_upgrader(self, v_from: Version, v_to: Version, function: Upgrader | None):
         """ Add upgrade function between two versions; None if no upgrade needed """
         if v_from >= v_to:
             raise ValueError(

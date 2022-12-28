@@ -5,7 +5,7 @@ import pydantic
 import typing
 
 
-class NoCopyBaseModel(pydantic.BaseModel):
+class DDHbaseModel(pydantic.BaseModel):
     """ Default Model behavior
     """
     class Config:

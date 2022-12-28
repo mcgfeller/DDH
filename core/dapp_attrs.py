@@ -6,10 +6,10 @@ import typing
 import pydantic
 
 from core import keys, schemas, policies, principals, relationships, common_ids, versions, permissions, transactions
-from utils.pydantic_utils import NoCopyBaseModel
+from utils.pydantic_utils import DDHbaseModel
 
 
-class DAppOrFamily(NoCopyBaseModel):
+class DAppOrFamily(DDHbaseModel):
     """ common properties between DApp and DAppFamily """
     class Config:
         extra = 'ignore'
@@ -161,14 +161,14 @@ class DApp(DAppOrFamily):
 DApp.update_forward_refs()
 
 
-class RunningDApp(NoCopyBaseModel):
+class RunningDApp(DDHbaseModel):
     id: str | None = None  # principals.DAppId causes Pydantic errors - I don't know why
     dapp_version: versions.Version
     schema_version: versions.Version
     location: pydantic.AnyHttpUrl
 
 
-class ExecuteRequest(NoCopyBaseModel):
+class ExecuteRequest(DDHbaseModel):
     """ This is the execution request passed between micro services """
     op: typing.Any  # nodes.Ops
     access: permissions.Access

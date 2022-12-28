@@ -4,11 +4,11 @@ from __future__ import annotations
 import pydantic
 import typing
 
-from utils.pydantic_utils import NoCopyBaseModel
+from utils.pydantic_utils import DDHbaseModel
 from . import errors, keys, common_ids
 
 
-class Principal(NoCopyBaseModel):
+class Principal(DDHbaseModel):
     """ Abstract identification of a party """
     class Config:
         extra = pydantic.Extra.ignore  # for parsing of subclass

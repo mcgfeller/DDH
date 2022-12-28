@@ -4,9 +4,10 @@ from __future__ import annotations
 import zlib
 import enum
 
-from core import keys,permissions,nodes,transactions,common_ids
-from utils.pydantic_utils import NoCopyBaseModel
+from core import keys, permissions, nodes, transactions, common_ids
+from utils.pydantic_utils import DDHbaseModel
 from . import persistable
+
 
 @enum.unique
 class Variant(enum.IntEnum):
@@ -15,26 +16,26 @@ class Variant(enum.IntEnum):
     uncompressed = 0
     zlib = 1
 
-class StorageClass(NoCopyBaseModel):
 
-    byId : dict[common_ids.PersistId,StorageBlock] = {}
+class StorageClass(DDHbaseModel):
 
+    byId: dict[common_ids.PersistId, StorageBlock] = {}
 
-    def __contains__(self, id : common_ids.PersistId):
+    def __contains__(self, id: common_ids.PersistId):
         """ does id exist in storage? """
         return id in self.byId
 
-    def store(self,id : common_ids.PersistId, data : bytes, transaction: transactions.Transaction):
-        self.byId[id] = StorageBlock(variant=Variant.uncompressed,blob=data)
+    def store(self, id: common_ids.PersistId, data: bytes, transaction: transactions.Transaction):
+        self.byId[id] = StorageBlock(variant=Variant.uncompressed, blob=data)
         return
 
-    def delete(self,id : common_ids.PersistId, transaction: transactions.Transaction):
+    def delete(self, id: common_ids.PersistId, transaction: transactions.Transaction):
         """ delete from storage, must supply key to verify """
-        self.byId.pop(id,None)
+        self.byId.pop(id, None)
         return
 
-    def load(self,id : common_ids.PersistId, transaction: transactions.Transaction) -> bytes:
-        sb = self.byId.get(id,None)
+    def load(self, id: common_ids.PersistId, transaction: transactions.Transaction) -> bytes:
+        sb = self.byId.get(id, None)
         if not sb:
             raise KeyError(id)
         else:
@@ -42,14 +43,15 @@ class StorageClass(NoCopyBaseModel):
                 data = sb.blob
             elif sb.variant == Variant.zlib:
                 data = zlib.decompress(sb.blob)
-            else: 
+            else:
                 raise ValueError(f'Unknown storage variant {sb.variant}')
             return data
 
+
 Storage = StorageClass()
 
-class StorageBlock(NoCopyBaseModel):
-    """ Elementary block of storage """
-    variant : Variant = Variant.uncompressed
-    blob : bytes
 
+class StorageBlock(DDHbaseModel):
+    """ Elementary block of storage """
+    variant: Variant = Variant.uncompressed
+    blob: bytes

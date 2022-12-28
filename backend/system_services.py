@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import enum
 
-from utils.pydantic_utils import NoCopyBaseModel
+from utils.pydantic_utils import DDHbaseModel
 from core import errors, keys, common_ids, principals
+
 
 @enum.unique
 class SystemServices(str, enum.Enum):
@@ -14,8 +15,7 @@ class SystemServices(str, enum.Enum):
     storage = 'storage'
     recommender = 'recommender'
 
-class ProfiledServices(NoCopyBaseModel):
+
+class ProfiledServices(DDHbaseModel):
 
     system_dapps: dict[SystemServices, principals.DAppId] = {}
-
-    

@@ -7,7 +7,7 @@ import typing
 
 import pydantic
 from frontend import user_auth
-from utils.pydantic_utils import NoCopyBaseModel
+from utils.pydantic_utils import DDHbaseModel
 
 from . import (errors, keydirectory, keys, nodes, permissions, principals,
                versions)
@@ -56,7 +56,7 @@ class SchemaVariantUsage(str, enum.Enum):
 SchemaVariant = pydantic.constr(strip_whitespace=True, max_length=30, regex='[a-zA-Z0-9_-]+')
 
 
-class MimeTypes(NoCopyBaseModel):
+class MimeTypes(DDHbaseModel):
     """ Mime Types both for the schema itself and data conforming to the schema """
     of_schema: str = pydantic.Field(
         description='Mimetype of the schema - taken from Schema if not provided.')
@@ -77,7 +77,7 @@ class MimeTypes(NoCopyBaseModel):
         return mt
 
 
-class SchemaAttributes(NoCopyBaseModel):
+class SchemaAttributes(DDHbaseModel):
     """ Attributes of the Schema, but not part of the Schema itself. """
     variant: SchemaVariant | None = pydantic.Field(
         default=None, description='Name of the variant, in case of multiple schemas in the same space, e.g., ISO-20022 and Swift MT')
@@ -89,7 +89,7 @@ class SchemaAttributes(NoCopyBaseModel):
     mimetypes: MimeTypes | None = None
 
 
-class AbstractSchema(NoCopyBaseModel, abc.ABC):
+class AbstractSchema(DDHbaseModel, abc.ABC):
     format_designator: typing.ClassVar[SchemaFormat] = SchemaFormat.internal
     schema_attributes: SchemaAttributes = pydantic.Field(
         default=SchemaAttributes(), descriptor="Attributes associated with this Schema")
@@ -165,7 +165,7 @@ SchemaFormat2Class = {}
 Class2SchemaFormat = {}
 
 
-class SchemaReference(NoCopyBaseModel):
+class SchemaReference(DDHbaseModel):
     # TODO: Make version_required part of key
     ddhkey: typing.ClassVar[str]
     # variant: SchemaVariant = ''
@@ -173,7 +173,7 @@ class SchemaReference(NoCopyBaseModel):
         default=versions.NoConstraint, description="Constrains the version of the target schema")
 
 
-class SchemaContainer(NoCopyBaseModel):
+class SchemaContainer(DDHbaseModel):
     """ Holds one or more Schemas according to their variant and version,
         keeps latest version in versions.Unspecified per variant
         and recommended as variant ''.

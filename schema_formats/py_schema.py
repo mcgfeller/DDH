@@ -3,12 +3,12 @@ from __future__ import annotations
 import typing
 import pydantic
 
-from utils.pydantic_utils import NoCopyBaseModel
+from utils.pydantic_utils import DDHbaseModel
 from core import schemas, keys, versions, errors, principals, permissions, nodes, keydirectory
 from frontend import user_auth
 
 
-class PySchemaElement(NoCopyBaseModel):
+class PySchemaElement(DDHbaseModel):
     """ A Pydantic AbstractSchema class """
 
     @classmethod

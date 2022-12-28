@@ -11,9 +11,9 @@ import fastapi.security
 import jose
 import jose.jwt
 import passlib.context
-from utils.pydantic_utils import NoCopyBaseModel
+from utils.pydantic_utils import DDHbaseModel
 
-from core import errors,principals,users
+from core import errors, principals, users
 from frontend import sessions
 
 
@@ -26,8 +26,10 @@ SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
+
 def get_password_hash(password):
     return pwd_context.hash(password)
+
 
 FAKE_USERS_DB = {
     "mgf": {
@@ -60,22 +62,22 @@ FAKE_USERS_DB = {
 }
 
 
-class Token(NoCopyBaseModel):
+class Token(DDHbaseModel):
     access_token: str
     token_type: str
 
 
-class TokenData(NoCopyBaseModel):
+class TokenData(DDHbaseModel):
     id: str
 
 
 class UserInDB(users.User):
-    hashed_password: str # type: ignore
+    hashed_password: str  # type: ignore
 
     @classmethod
-    def load(cls,id) -> UserInDB:
+    def load(cls, id) -> UserInDB:
         """ Load user from DB, or raise NotFound """
-        u = FAKE_USERS_DB.get(id,None)
+        u = FAKE_USERS_DB.get(id, None)
         if u:
             return cls(**u)
         else:
@@ -86,8 +88,6 @@ class UserInDB(users.User):
         return users.User(**self.dict(include=users.User.__fields__.keys()))
 
 
-
-
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
@@ -96,11 +96,12 @@ def get_user(db, userid: str):
     if userid in db:
         user_dict = db[userid]
         return UserInDB(**user_dict)
-    else: return None # be explicit
+    else: return None  # be explicit
+
 
 def get_dappid(dappid: str) -> principals.DAppId:
     """ Verify the id of the DApp. This is largely provisional.
-    """ 
+    """
     from core import pillars
     if dappid not in pillars.DAppManager.DAppsById:
         raise fastapi.HTTPException(
@@ -108,7 +109,7 @@ def get_dappid(dappid: str) -> principals.DAppId:
             detail=f"Invalid DApp id {dappid}",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return typing.cast(principals.DAppId,dappid)
+    return typing.cast(principals.DAppId, dappid)
 
 
 def authenticate_user(fake_db, userid: str, password: str):
@@ -120,7 +121,7 @@ def authenticate_user(fake_db, userid: str, password: str):
     return user
 
 
-def create_access_token(data: dict, expires_delta: datetime.timedelta|None = None):
+def create_access_token(data: dict, expires_delta: datetime.timedelta | None = None):
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.datetime.utcnow() + expires_delta
@@ -139,7 +140,7 @@ async def get_current_session(token: str = fastapi.Depends(oauth2_scheme)):
     )
     try:
         payload = jose.jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        userid: str = typing.cast(str,payload.get("sub"))
+        userid: str = typing.cast(str, payload.get("sub"))
         if userid is None:
             raise credentials_exception
         token_data = TokenData(id=userid)
@@ -148,13 +149,12 @@ async def get_current_session(token: str = fastapi.Depends(oauth2_scheme)):
     user = get_user(FAKE_USERS_DB, userid=token_data.id)
     if user is None:
         raise credentials_exception
-    dappid = payload.get('x_dapp') # verified dapp id
-    return sessions.Session(user=user,dappid=dappid,token_str=token)
+    dappid = payload.get('x_dapp')  # verified dapp id
+    return sessions.Session(user=user, dappid=dappid, token_str=token)
 
 
 async def get_current_active_user(current_session: sessions.Session = fastapi.Depends(get_current_session)):
     return current_session.user
-
 
 
 async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordRequestForm):
@@ -171,24 +171,23 @@ async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordReque
     dappid = get_dappid(form_data.client_id) if form_data.client_id else None
     access_token_expires = datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.id,'xdapp':dappid,}, expires_delta=access_token_expires
+        data={"sub": user.id, 'xdapp': dappid, }, expires_delta=access_token_expires
     )
-    return user,dappid, {"access_token": access_token, "token_type": "bearer"}
+    return user, dappid, {"access_token": access_token, "token_type": "bearer"}
+
 
 def get_principals(selection: str) -> list[principals.Principal]:
     """ check string containing one or more Principals, separated by comma,
         return them as Principal.
         First checks CommonPrincipals defined here, then user_auth.UserInDB.
     """
-    
+
     ids = selection.split(principals.Principal.Delim)
     princs = []
     for i in ids:
         p = principals.CommonPrincipals.get(i)
         if not p:
             p = UserInDB.load(id=i)
-            assert p # load must raise error if not found
+            assert p  # load must raise error if not found
         princs.append(p)
     return princs
-
-

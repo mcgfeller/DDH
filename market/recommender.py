@@ -13,10 +13,10 @@ import pydantic
 from utils import utils
 from utils import fastapi_utils
 from core import dapp_attrs, schema_network, principals, keys, pillars, common_ids, schema_root
-from utils.pydantic_utils import NoCopyBaseModel
+from utils.pydantic_utils import DDHbaseModel
 
 
-class SearchResultItem(NoCopyBaseModel):
+class SearchResultItem(DDHbaseModel):
     """ a single search result, with some search information """
     da: dapp_attrs.DApp = pydantic.Field(alias='dapp')
     cost: float = 0.0

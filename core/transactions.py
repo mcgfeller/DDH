@@ -8,7 +8,7 @@ import datetime
 import pydantic
 
 from pydantic.errors import PydanticErrorMixin
-from utils.pydantic_utils import NoCopyBaseModel
+from utils.pydantic_utils import DDHbaseModel
 
 from core import permissions, errors, principals, common_ids
 
@@ -21,7 +21,7 @@ class TrxAccessError(errors.AccessError): ...
 DefaultReadConsentees = {principals.AllPrincipal.id}  # by default, nothing is readable by everybody
 
 
-class Transaction(NoCopyBaseModel):
+class Transaction(DDHbaseModel):
     trxid: common_ids.TrxId
     for_user: principals.Principal
     accesses: list[permissions.Access] = pydantic.Field(default_factory=list)

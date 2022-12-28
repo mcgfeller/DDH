@@ -5,14 +5,12 @@ import pydantic
 import datetime
 import enum
 
-from utils.pydantic_utils import NoCopyBaseModel
+from utils.pydantic_utils import DDHbaseModel
 from . import errors, keys, common_ids, principals
 from backend import system_services
 
 
-
-
-class Profile(NoCopyBaseModel):
+class Profile(DDHbaseModel):
     """ Profile associated with a user """
     system_services: system_services.ProfiledServices = system_services.ProfiledServices()
 

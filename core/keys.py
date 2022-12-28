@@ -8,7 +8,7 @@ import abc
 import pydantic.json
 
 from pydantic.errors import PydanticErrorMixin
-from utils.pydantic_utils import NoCopyBaseModel
+from utils.pydantic_utils import DDHbaseModel
 from core import common_ids, versions, errors
 
 
@@ -45,7 +45,7 @@ class ForkType(str, enum.Enum):
     __str__ = __repr__
 
     @classmethod
-    def make_with_default(cls, v: str|None) -> ForkType:
+    def make_with_default(cls, v: str | None) -> ForkType:
         return cls(v) if v else cls.data
 
 
@@ -53,15 +53,16 @@ VariantType = typing.NewType('VariantType', str)
 DefaultVariant = VariantType('')
 Default_specifiers = [ForkType.data, DefaultVariant, versions.Unspecified]
 
-def variant_with_default(v: str|None) -> VariantType:
+
+def variant_with_default(v: str | None) -> VariantType:
     return VariantType(v) if v else DefaultVariant
+
+
 Specifier_types = [ForkType.make_with_default,
-            variant_with_default, versions.Version.make_with_default]
+                   variant_with_default, versions.Version.make_with_default]
 
 
-
-
-class DDHkey(NoCopyBaseModel):
+class DDHkey(DDHbaseModel):
     """ A key identifying a DDH ressource. DDHkey is decoupled from any permissions, storage, etc.,
     """
     key: tuple
@@ -78,7 +79,7 @@ class DDHkey(NoCopyBaseModel):
         """ We want a short representation """
         return {'key': str(self)}
 
-    def __init__(self, key: tuple|list|str, specifiers: typing.Sequence = (), fork:  ForkType|None = None, variant: str|None = None, version:  versions.Version|None = None):
+    def __init__(self, key: tuple | list | str, specifiers: typing.Sequence = (), fork:  ForkType | None = None, variant: str | None = None, version:  versions.Version | None = None):
         """ Convert key string into tuple, eliminate empty segments, set root to self.Root, and extract specifiers """
         if isinstance(key, str):
             key = key.strip().split(self.Delimiter)
@@ -93,7 +94,6 @@ class DDHkey(NoCopyBaseModel):
 
         # remove empty segments and make tuple:
         key = tuple(filter(None, key))
-
 
         # supplied + defaults
         # extend to cover all specifiers
@@ -137,7 +137,7 @@ class DDHkey(NoCopyBaseModel):
     def __str__(self) -> str:
         """ str representation, omitting defaults and truncating trailing ':' """
         s = self.Delimiter.join(map(str, self.key))
-        specs = ['' if s == d else str(s) for s,d in zip(self.specifiers,Default_specifiers)]
+        specs = ['' if s == d else str(s) for s, d in zip(self.specifiers, Default_specifiers)]
         p = self.SpecDelimiter+self.SpecDelimiter.join(specs)
         return s+p.rstrip(self.SpecDelimiter)
 
@@ -148,11 +148,11 @@ class DDHkey(NoCopyBaseModel):
         """ Iterate over key """
         return iter(self.key)
 
-    def __getitem__(self, ix) -> tuple|str:
+    def __getitem__(self, ix) -> tuple | str:
         """ get part of key, str if ix is integer, tuple if slice """
         return self.key.__getitem__(ix)
 
-    def up(self) -> DDHkey|None:
+    def up(self) -> DDHkey | None:
         """ return key up one level, or None if at top """
         upkey = self.key[:-1]
         if upkey:
@@ -164,7 +164,7 @@ class DDHkey(NoCopyBaseModel):
         """ split the key into two DDHkeys at split
             The specifiers go onto the leading segment.
         """
-        return self.__class__(self.key[:split],specifiers=self.specifiers), self.__class__(self.key[split:]) 
+        return self.__class__(self.key[:split], specifiers=self.specifiers), self.__class__(self.key[split:])
 
     def ensure_rooted(self) -> DDHkey:
         """ return a DDHkey that is rooted """
@@ -175,8 +175,8 @@ class DDHkey(NoCopyBaseModel):
 
     def ensure_fork(self, fork:  ForkType) -> typing.Self:
         """ ensure that key has the given fork """
-        if self.fork != fork: # create new key with correct fork
-            return DDHkey(key=self.key,fork=fork,variant=self.variant,version=self.version)
+        if self.fork != fork:  # create new key with correct fork
+            return DDHkey(key=self.key, fork=fork, variant=self.variant, version=self.version)
         else:
             return self
 
@@ -190,14 +190,14 @@ class DDHkey(NoCopyBaseModel):
 
     def raise_if_no_owner(self):
         if self.owners is self.AnyKey:
-            raise errors.NotFound('key has no owner')   
+            raise errors.NotFound('key has no owner')
 
     def without_variant_version(self) -> DDHkey:
         """ return key with fork, but without schema variant and version, typically used for access control """
         if self.version == versions.Unspecified and self.variant == DefaultVariant:
             k = self
         else:
-            k = self.__class__(self.key,fork=self.fork,variant=DefaultVariant,version=versions.Unspecified)
+            k = self.__class__(self.key, fork=self.fork, variant=DefaultVariant, version=versions.Unspecified)
         return k
 
     @property
