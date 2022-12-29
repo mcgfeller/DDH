@@ -120,11 +120,11 @@ class SchemaNode(Node, persistable.NonPersistable):
             s.add(NodeSupports.consents)
         return s
 
-    def get_sub_schema(self, ddhkey: keys.DDHkey, split: int, schema_type: str = 'json', create: bool = False) -> schemas.AbstractSchema | None:
+    def get_sub_schema(self, ddhkey: keys.DDHkey, split: int, schema_type: str = 'json', create_intermediate: bool = False) -> schemas.AbstractSchema | None:
         """ return schema based on ddhkey and split """
         s, ddhkey = self.schemas.get_schema_key(ddhkey)
         s = typing.cast(schemas.AbstractSchema, s)
-        s = s.obtain(ddhkey, split, create=create)
+        s = s.obtain(ddhkey, split, create_intermediate=create_intermediate)
         return s
 
 

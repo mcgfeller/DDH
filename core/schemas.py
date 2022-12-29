@@ -89,6 +89,10 @@ class SchemaAttributes(DDHbaseModel):
     mimetypes: MimeTypes | None = None
 
 
+class AbstractSchemaElement(DDHbaseModel, abc.ABC):
+    """ An element within a Schema retrieved by key remainder  """
+
+
 class AbstractSchema(DDHbaseModel, abc.ABC):
     format_designator: typing.ClassVar[SchemaFormat] = SchemaFormat.internal
     schema_attributes: SchemaAttributes = pydantic.Field(
@@ -98,6 +102,17 @@ class AbstractSchema(DDHbaseModel, abc.ABC):
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
         self.update_schema_attributes()
+
+    @abc.abstractmethod
+    def __getitem__(self, key: keys.DDHkey, default=None, create_intermediate: bool = False) -> type[AbstractSchemaElement] | None:
+        """ get Schema element at remainder key (within Schema only)
+            TODO: create_intermediate is used to obtain parent, should be abstracted away by using __setitem__ 
+        """
+        ...
+
+    @abc.abstractmethod
+    def __setitem__(self, key: keys.DDHkey, value: type[AbstractSchemaElement], create_intermediate: bool = True) -> type[AbstractSchemaElement] | None:
+        ...
 
     @classmethod
     def __init_subclass__(cls):
@@ -132,7 +147,7 @@ class AbstractSchema(DDHbaseModel, abc.ABC):
     def from_str(cls, schema_str: str, schema_attributes: SchemaAttributes) -> AbstractSchema:
         ...
 
-    def obtain(self, ddhkey: keys.DDHkey, split: int, create: bool = False) -> AbstractSchema | None:
+    def obtain(self, ddhkey: keys.DDHkey, split: int, create_intermediate: bool = False) -> AbstractSchema | None:
         return None
 
     def to_format(self, format: SchemaFormat):

@@ -32,8 +32,8 @@ def install_schema(transaction, ddhkey: keys.DDHkey, sel: typing.Type[py_schema.
 
     upnode = typing.cast(nodes.SchemaNode, upnode)
     # TODO: We should check some ownership permission here!
-    parent = upnode.get_sub_schema(pkey, split, create=False)  # create missing segments
-    assert parent  # must exist because create=True
+    parent = upnode.get_sub_schema(pkey, split, create_intermediate=False)  # create missing segments
+    assert parent  # must exist because create_intermediate=True
 
     # now insert our schema into the parent's:
     parent.add_fields({ddhkey[-1]: (schemaref, None)})

@@ -8,11 +8,11 @@ from core import schemas, keys, versions, errors, principals, permissions, nodes
 from frontend import user_auth
 
 
-class PySchemaElement(DDHbaseModel):
+class PySchemaElement(schemas.AbstractSchemaElement):
     """ A Pydantic AbstractSchema class """
 
     @classmethod
-    def descend_path(cls, path: keys.DDHkey, create: bool = False) -> typing.Type[PySchemaElement] | None:
+    def descend_path(cls, path: keys.DDHkey, create_intermediate: bool = False) -> typing.Type[PySchemaElement] | None:
         """ Travel down PySchemaElement along path using some Pydantic implementation details.
             If a path segment is not found, return None, unless create is specified.
             Create inserts an empty schemaElement and descends further. 
@@ -26,7 +26,7 @@ class PySchemaElement(DDHbaseModel):
             # look up one segment of path, returning ModelField
             mf = current.__fields__.get(str(segment), None)
             if mf is None:
-                if create:
+                if create_intermediate:
                     new_current = pydantic.create_model(segment, __base__=PySchemaElement)
                     current.add_fields(**{segment: new_current})
                     current = new_current
@@ -40,7 +40,7 @@ class PySchemaElement(DDHbaseModel):
                     if next(pathit, None) is None:  # path ends here
                         break
                     else:  # path continues beyond this point, so this is not found and not creatable
-                        if create:
+                        if create_intermediate:
                             raise ValueError(
                                 f'Cannot create {segment=} of {path=} because it {current} is a simple datatype.')
                         else:
@@ -134,17 +134,26 @@ class PySchema(schemas.AbstractSchema):
     mimetypes: typing.ClassVar[schemas.MimeTypes] = schemas.MimeTypes(
         of_schema='application/openapi', of_data='application/json')
 
+    def __getitem__(self, key: keys.DDHkey, default=None, create_intermediate: bool = False) -> type[PySchemaElement] | None:
+        se = self.schema_element.descend_path(key, create_intermediate=create_intermediate)
+        return default if se is None else se
+
+    def __setitem__(self, key: keys.DDHkey, value: type[PySchemaElement], create_intermediate: bool = True) -> type[PySchemaElement] | None:
+        raise errors.SubClass
+
     @classmethod
     def from_str(cls, schema_str: str, schema_attributes: schemas.SchemaAttributes) -> PySchema:
         raise NotImplementedError('PySchema cannot be created from string')
 
-    def obtain(self, ddhkey: keys.DDHkey, split: int, create: bool = False) -> schemas.AbstractSchema | None:
+    def obtain(self, ddhkey: keys.DDHkey, split: int, create_intermediate: bool = False) -> schemas.AbstractSchema | None:
         """ obtain a schema for the ddhkey, which is split into the key holding the schema and
             the remaining path. 
         """
         khere, kremainder = ddhkey.split_at(split)
         if kremainder:
-            schema_element = self.schema_element.descend_path(kremainder, create=create)
+            # TODO: If __setitem__ is used to insert schema element, create_intermediate
+            # can be retired as False, and a proper indexing can be used.
+            schema_element = self.__getitem__(kremainder, create_intermediate=create_intermediate)
             if schema_element:
                 s = PySchema(schema_element=schema_element)
             else: s = None  # not found
@@ -187,8 +196,8 @@ class PySchema(schemas.AbstractSchema):
 
         upnode = typing.cast(nodes.SchemaNode, upnode)
         # TODO: We should check some ownership permission here!
-        parent = upnode.get_sub_schema(pkey, split, create=True)  # create missing segments
-        assert parent  # must exist because create=True
+        parent = upnode.get_sub_schema(pkey, split, create_intermediate=True)  # create missing segments
+        assert parent  # must exist because create_intermediate=True
 
         # now insert our schema into the parent's:
         schemaref = PySchemaReference.create_from_key(id, ddhkey=schemakey)

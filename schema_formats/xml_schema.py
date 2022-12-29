@@ -4,7 +4,11 @@ import typing
 import pydantic
 
 
-from core import schemas, keys
+from core import schemas, keys, errors
+
+
+class XmlSchemaElement(schemas.AbstractSchemaElement):
+    ...
 
 
 class XmlSchema(schemas.AbstractSchema):
@@ -12,6 +16,12 @@ class XmlSchema(schemas.AbstractSchema):
     mimetypes: typing.ClassVar[schemas.MimeTypes] = schemas.MimeTypes(
         of_schema='application/xsd', of_data='application/xml')
     xml_schema: str
+
+    def __getitem__(self, key: keys.DDHkey, default=None) -> type[XmlSchemaElement] | None:
+        raise errors.SubClass
+
+    def __setitem__(self, key: keys.DDHkey, value: type[XmlSchemaElement], create_intermediate: bool = True) -> type[XmlSchemaElement] | None:
+        raise errors.SubClass
 
     @classmethod
     def from_str(cls, schema_str: str, schema_attributes: schemas.SchemaAttributes) -> XmlSchema:
