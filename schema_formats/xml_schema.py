@@ -8,7 +8,10 @@ from core import schemas, keys, errors
 
 
 class XmlSchemaElement(schemas.AbstractSchemaElement):
-    ...
+
+    @classmethod
+    def to_schema(cls) -> XmlSchema:
+        return XmlSchema(xml_schema=cls)
 
 
 class XmlSchema(schemas.AbstractSchema):

@@ -12,6 +12,10 @@ class PySchemaElement(schemas.AbstractSchemaElement):
     """ A Pydantic AbstractSchema class """
 
     @classmethod
+    def to_schema(cls) -> PySchema:
+        return PySchema(schema_element=cls)
+
+    @classmethod
     def descend_path(cls, path: keys.DDHkey, create_intermediate: bool = False) -> typing.Type[PySchemaElement] | None:
         """ Travel down PySchemaElement along path using some Pydantic implementation details.
             If a path segment is not found, return None, unless create is specified.
@@ -95,22 +99,8 @@ class PySchemaElement(schemas.AbstractSchemaElement):
         else:  # there is no resolver so far, we cannot grab this without a further segment:
             raise errors.NotFound(f'Incomplete key: {entire_selection}')
 
-    @classmethod
-    def replace_by_schema(cls, ddhkey: keys.DDHkey, schema_attributes: schemas.SchemaAttributes | None) -> type[PySchemaReference]:
-        """ Replace this PySchemaElement by a proper schema with attributes, 
-            and return the PySchemaReference to it, which can be used like a PySchemaElement.
-        """
-        s = PySchema(schema_attributes=schema_attributes or schemas.SchemaAttributes(),
-                     schema_element=cls)
-        snode = nodes.SchemaNode(owner=principals.RootPrincipal,
-                                 consents=schemas.AbstractSchema.get_schema_consents())
-        snode.add_schema(s)
-        keydirectory.NodeRegistry[ddhkey] = snode
-        schemaref = PySchemaReference.create_from_key(str(ddhkey), ddhkey=ddhkey)
-        return schemaref
 
-
-class PySchemaReference(schemas.SchemaReference, PySchemaElement):
+class PySchemaReference(schemas.AbstractSchemaReference, PySchemaElement):
 
     class Config:
         @staticmethod
@@ -123,7 +113,8 @@ class PySchemaReference(schemas.SchemaReference, PySchemaElement):
         return typing.cast(pydantic.AnyUrl, str(cls.__fields__['ddhkey'].default))
 
     @classmethod
-    def create_from_key(cls, name: str, ddhkey: keys.DDHkey) -> typing.Type[PySchemaReference]:
+    def create_from_key(cls, ddhkey: keys.DDHkey, name: str | None = None) -> typing.Type[PySchemaReference]:
+        name = name if name else str(ddhkey)
         m = pydantic.create_model(name, __base__=cls, ddhkey=(keys.DDHkey, ddhkey))
         return typing.cast(typing.Type[PySchemaReference], m)
 
@@ -142,6 +133,11 @@ class PySchema(schemas.AbstractSchema):
         raise errors.SubClass
 
     @classmethod
+    def get_reference_class(cls) -> type[PySchemaReference]:
+        """ get class of concrete AbstractSchemaReference associated with this concrete Schema """
+        return PySchemaReference
+
+    @classmethod
     def from_str(cls, schema_str: str, schema_attributes: schemas.SchemaAttributes) -> PySchema:
         raise NotImplementedError('PySchema cannot be created from string')
 
@@ -155,7 +151,7 @@ class PySchema(schemas.AbstractSchema):
             # can be retired as False, and a proper indexing can be used.
             schema_element = self.__getitem__(kremainder, create_intermediate=create_intermediate)
             if schema_element:
-                s = PySchema(schema_element=schema_element)
+                s = schema_element.to_schema()
             else: s = None  # not found
         else:
             s = self
@@ -200,6 +196,6 @@ class PySchema(schemas.AbstractSchema):
         assert parent  # must exist because create_intermediate=True
 
         # now insert our schema into the parent's:
-        schemaref = PySchemaReference.create_from_key(id, ddhkey=schemakey)
+        schemaref = parent.get_reference_class().create_from_key(ddhkey=schemakey)
         parent.add_fields({schemakey[-1]: (schemaref, None)})
         return schemaref

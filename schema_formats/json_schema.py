@@ -9,7 +9,10 @@ from core import schemas, keys, errors
 
 
 class JsonSchemaElement(schemas.AbstractSchemaElement):
-    ...
+
+    @classmethod
+    def to_schema(cls) -> JsonSchema:
+        return JsonSchema(json_schema=cls)
 
 
 class JsonSchema(schemas.AbstractSchema):

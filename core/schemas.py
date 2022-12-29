@@ -9,7 +9,7 @@ import pydantic
 from frontend import user_auth
 from utils.pydantic_utils import DDHbaseModel
 
-from . import (errors, keydirectory, keys, nodes, permissions, principals,
+from . import (errors, keydirectory, keys, nodes, permissions, principals, errors,
                versions)
 
 
@@ -92,6 +92,26 @@ class SchemaAttributes(DDHbaseModel):
 class AbstractSchemaElement(DDHbaseModel, abc.ABC):
     """ An element within a Schema retrieved by key remainder  """
 
+    @classmethod
+    def to_schema(cls) -> AbstractSchema:
+        """ create a Schema which contains this SchemaElement as its root """
+        raise errors.SubClass
+
+    @classmethod
+    def replace_by_schema(cls, ddhkey: keys.DDHkey, schema_attributes: SchemaAttributes | None) -> type[AbstractSchemaReference]:
+        """ Replace this PySchemaElement by a proper schema with attributes, 
+            and return the PySchemaReference to it, which can be used like a PySchemaElement.
+        """
+        s = cls.to_schema()
+        if schema_attributes: s.schema_attributes = schema_attributes
+        snode = nodes.SchemaNode(owner=principals.RootPrincipal,
+                                 consents=AbstractSchema.get_schema_consents())
+        snode.add_schema(s)
+        keydirectory.NodeRegistry[ddhkey] = snode
+        # now create reference
+        schemaref = s.get_reference_class().create_from_key(ddhkey=ddhkey)
+        return schemaref
+
 
 class AbstractSchema(DDHbaseModel, abc.ABC):
     format_designator: typing.ClassVar[SchemaFormat] = SchemaFormat.internal
@@ -113,6 +133,13 @@ class AbstractSchema(DDHbaseModel, abc.ABC):
     @abc.abstractmethod
     def __setitem__(self, key: keys.DDHkey, value: type[AbstractSchemaElement], create_intermediate: bool = True) -> type[AbstractSchemaElement] | None:
         ...
+
+    @classmethod
+    def get_reference_class(cls) -> type[AbstractSchemaReference]:
+        """ get class of concrete AbstractSchemaReference associated with this concrete Schema.
+            Return AbstractSchemaReference unless refined.
+        """
+        return AbstractSchemaReference
 
     @classmethod
     def __init_subclass__(cls):
@@ -180,12 +207,17 @@ SchemaFormat2Class = {}
 Class2SchemaFormat = {}
 
 
-class SchemaReference(DDHbaseModel):
+class AbstractSchemaReference(DDHbaseModel):
     # TODO: Make version_required part of key
     ddhkey: typing.ClassVar[str]
     # variant: SchemaVariant = ''
     version_required: versions.VersionConstraint = pydantic.Field(
         default=versions.NoConstraint, description="Constrains the version of the target schema")
+
+    @classmethod
+    @abc.abstractmethod
+    def create_from_key(cls, ddhkey: keys.DDHkey, name: str | None = None) -> typing.Type[AbstractSchemaReference]:
+        ...
 
 
 class SchemaContainer(DDHbaseModel):
