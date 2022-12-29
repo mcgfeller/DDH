@@ -58,6 +58,8 @@ class PySchemaElement(schemas.AbstractSchemaElement):
             container
             id
 
+            TODO: Only used in .get_resolver() - eliminate
+
         """
         sub = typing.get_type_hints(cls).get(str(subname))
         if sub is None:
@@ -79,6 +81,7 @@ class PySchemaElement(schemas.AbstractSchemaElement):
             raise errors.DAppError(f'Cannot understand element {subname}={sub} in {cls}')
 
     def get_resolver(self,  selection: keys.DDHkey, access: permissions.Access, q):
+        # TODO: This is far too specific - redesign
         # ids : typing.Dict[type,typing.Dict[str,list]] = {} # {class : {idattr : [id,...]}}
         entire_selection = selection
         schema = self.__class__
