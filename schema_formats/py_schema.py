@@ -162,24 +162,3 @@ class PySchema(schemas.AbstractSchema):
         self.add_fields({name: (schema.schema_element, None)
                         for name, schema in zip(names, schemas)})
         return schemas
-
-    @staticmethod
-    def insert_schema(id, schemakey: keys.DDHkey, transaction):
-        # get a parent scheme to hook into
-        # TODO:#6 This should be more abstract
-        pkey = schemakey.up()
-        if not pkey:
-            raise ValueError(f'{schemakey} key is too high')
-
-        upnode, split = keydirectory.NodeRegistry.get_node(
-            pkey, nodes.NodeSupports.schema, transaction)
-
-        upnode = typing.cast(nodes.SchemaNode, upnode)
-        # TODO: We should check some ownership permission here!
-        parent = upnode.get_sub_schema(pkey, split, create_intermediate=True)  # create missing segments
-        assert parent  # must exist because create_intermediate=True
-
-        # now insert our schema into the parent's:
-        schemaref = parent.get_reference_class().create_from_key(ddhkey=schemakey)
-        parent.add_fields({schemakey[-1]: (schemaref, None)})
-        return schemaref

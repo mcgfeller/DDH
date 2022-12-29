@@ -215,6 +215,26 @@ class AbstractSchema(DDHbaseModel, abc.ABC):
         """ Schema world read access consents """
         return permissions.Consents(consents=[permissions.Consent(grantedTo=[principals.AllPrincipal], withModes={permissions.AccessMode.read})])
 
+    @staticmethod
+    def insert_schema(id, schemakey: keys.DDHkey, transaction):
+        # get a parent scheme to hook into
+        pkey = schemakey.up()
+        if not pkey:
+            raise ValueError(f'{schemakey} key is too high')
+
+        upnode, split = keydirectory.NodeRegistry.get_node(
+            pkey, nodes.NodeSupports.schema, transaction)
+
+        upnode = typing.cast(nodes.SchemaNode, upnode)
+        # TODO: We should check some ownership permission here!
+        parent = upnode.get_sub_schema(pkey, split, create_intermediate=True)  # create missing segments
+        assert parent  # must exist because create_intermediate=True
+
+        # now insert our schema into the parent's:
+        schemaref = parent.get_reference_class().create_from_key(ddhkey=schemakey)
+        parent.add_fields({schemakey[-1]: (schemaref, None)})
+        return schemaref
+
 
 SchemaFormat2Class = {}
 Class2SchemaFormat = {}
