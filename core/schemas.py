@@ -289,13 +289,13 @@ class SchemaContainer(DDHbaseModel):
         return self.get()
 
     @staticmethod
-    def get_node_schema_key(ddhkey: keys.DDHkey, transaction) -> tuple[AbstractSchema, keys.DDHkey]:
-        """ for a ddhkey, get the node, then get its schema and the fully qualified schema key """
+    def get_node_schema_key(ddhkey: keys.DDHkey, transaction) -> tuple[AbstractSchema, keys.DDHkey, keys.DDHkey, nodes.SchemaNode]:
+        """ for a ddhkey, get the node, then get its schema and the fully qualified schema key, and the remainder """
         snode, split = keydirectory.NodeRegistry.get_node(
             ddhkey, nodes.NodeSupports.schema, transaction)
         if snode:
             assert isinstance(snode, nodes.SchemaNode)
-            return snode.schemas.get_schema_key(ddhkey)
+            return snode.schemas.get_schema_key(ddhkey)+(ddhkey.remainder(split), snode)
         else:
             raise errors.NotFound(f'No schema node found for {ddhkey}')
 
@@ -308,6 +308,19 @@ class SchemaContainer(DDHbaseModel):
             return (schema, fqkey)
         else:
             raise errors.NotFound(f'No schema variant and version found for {ddhkey}')
+
+    @staticmethod
+    def get_sub_schema(access: permissions.Access, transaction) -> AbstractSchema | None:
+        schema = None
+        parent_schema, access.ddhkey, remainder, snode = SchemaContainer.get_node_schema_key(
+            access.ddhkey, transaction)
+        if parent_schema:
+            access.raise_if_not_permitted(keydirectory.NodeRegistry._get_consent_node(
+                access.ddhkey.without_variant_version(), nodes.NodeSupports.schema, snode, transaction))
+            schema_element = parent_schema[remainder]
+            if schema_element:
+                schema = schema_element.to_schema()
+        return schema
 
 
 def create_schema(s: str, format: SchemaFormat, sa: SchemaAttributes) -> AbstractSchema:

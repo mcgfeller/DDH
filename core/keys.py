@@ -166,6 +166,10 @@ class DDHkey(DDHbaseModel):
         """
         return self.__class__(self.key[:split], specifiers=self.specifiers), self.__class__(self.key[split:])
 
+    def remainder(self, split: int) -> DDHkey:
+        """ return remainder after split, no specifiers """
+        return self.__class__(self.key[split:])
+
     def ensure_rooted(self) -> DDHkey:
         """ return a DDHkey that is rooted """
         if len(self.key) < 1 or self.key[0] != self.Root:

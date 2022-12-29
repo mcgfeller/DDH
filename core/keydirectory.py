@@ -82,5 +82,17 @@ class _NodeRegistry:
 
         return node, split
 
+    @staticmethod
+    def _get_consent_node(ddhkey: keys.DDHkey, support: nodes.NodeSupports, node: nodes.Node | None, transaction: transactions.Transaction) -> nodes.Node | None:
+        """ get consents, from current node or from its parent """
+        if node and node.has_consents():
+            cnode = node
+        else:
+            cnode, d = NodeRegistry.get_node(
+                ddhkey, support, transaction, condition=nodes.Node.has_consents)
+            if not cnode:  # means that upper nodes don't have consent
+                cnode = node
+        return cnode
+
 
 NodeRegistry = _NodeRegistry()

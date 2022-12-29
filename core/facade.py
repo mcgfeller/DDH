@@ -25,7 +25,7 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
 
     # fork-independent checks:
     # get schema and key with specifiers:
-    schema, access.ddhkey = schemas.SchemaContainer.get_node_schema_key(access.ddhkey, transaction)
+    schema, access.ddhkey, *d = schemas.SchemaContainer.get_node_schema_key(access.ddhkey, transaction)
     check_mimetype_schema(access.ddhkey, schema, accept_header)
 
     match access.ddhkey.fork:
@@ -60,15 +60,13 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
     data_node, d_key_split, remainder = get_or_create_dnode(access, transaction)
     access.raise_if_not_permitted(data_node)
 
-
-
     match access.ddhkey.fork:
         case keys.ForkType.schema:
-            schema = typing.cast(schemas.AbstractSchema,data)
+            schema = typing.cast(schemas.AbstractSchema, data)
             put_schema(access, transaction, schema)
 
         case keys.ForkType.consents | keys.ForkType.data:
-            schema, access.ddhkey = schemas.SchemaContainer.get_node_schema_key(access.ddhkey, transaction)
+            schema, access.ddhkey, *d = schemas.SchemaContainer.get_node_schema_key(access.ddhkey, transaction)
             check_mimetype_schema(access.ddhkey, schema, accept_header)
 
             match access.ddhkey.fork:
@@ -76,9 +74,8 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                     consents = permissions.Consents.parse_raw(data)
                     data_node.update_consents(access, transaction, remainder, consents)
 
-
                 case keys.ForkType.data:
-            
+
                     data = json.loads(data)  # make dict
                     # TODO:
                     # Data checks:
@@ -111,7 +108,7 @@ async def get_data(access: permissions.Access, transaction: transactions.Transac
             *d, consentees = access.raise_if_not_permitted(data_node)
             data = data_node.execute(nodes.Ops.get, access, transaction, d_key_split, None, q)
     else:
-        *d, consentees = access.raise_if_not_permitted(_get_consent_node(
+        *d, consentees = access.raise_if_not_permitted(keydirectory.NodeRegistry._get_consent_node(
             access.ddhkey, nodes.NodeSupports.data, None, transaction))
         data = {}
     transaction.add_read_consentees({c.id for c in consentees})
@@ -154,22 +151,18 @@ def get_schema(access: permissions.Access, transaction: transactions.Transaction
     """ Service utility to retrieve a Schema and return it in the desired format.
         Returns None if no schema found.
     """
-    formatted_schema = None  # in case of not found.
-    snode, split = keydirectory.NodeRegistry.get_node(
-        access.ddhkey, nodes.NodeSupports.schema, transaction)  # get applicable schema nodes
-
-    if snode:
-        access.raise_if_not_permitted(_get_consent_node(
-            access.ddhkey.without_variant_version(), nodes.NodeSupports.schema, snode, transaction))
-        schema = snode.get_sub_schema(access.ddhkey, split)
-        if schema:
-            formatted_schema = schema.to_format(schemaformat)
+    schema = schemas.SchemaContainer.get_sub_schema(access, transaction)
+    if schema:
+        formatted_schema = schema.to_format(schemaformat)
+    else:
+        formatted_schema = None  # in case of not found.
     return formatted_schema
+
 
 def put_schema(access: permissions.Access, transaction: transactions.Transaction, schema: schemas.AbstractSchema):
     """ Service utility to store a Schema.
         TODO: WIP
-    """ 
+    """
     snode, split = keydirectory.NodeRegistry.get_node(
         access.ddhkey, nodes.NodeSupports.schema, transaction)  # get applicable schema nodes
 
@@ -181,12 +174,11 @@ def put_schema(access: permissions.Access, transaction: transactions.Transaction
     #   schema update -> ref
     #   uniform schema tree - all references must be in same schema repr
 
-
     if snode:
-        access.raise_if_not_permitted(_get_consent_node(
+        access.raise_if_not_permitted(keydirectory.NodeRegistry._get_consent_node(
             access.ddhkey.without_variant_version(), nodes.NodeSupports.schema, snode, transaction))
-        schema = snode.get_sub_schema(access.ddhkey, split)
-    return 
+        # schema = snode.get_sub_schema(access.ddhkey, split) # TODO!
+    return
 
 
 def check_mimetype_schema(ddhkey: keys.DDHkey, schema: schemas.AbstractSchema, accept_header: list[str] | None):

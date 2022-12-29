@@ -39,39 +39,39 @@ def test_schema_multiple_versions():
     keydirectory.NodeRegistry[keys.DDHkey(key='//p/health')] = node_s
 
     node_s.add_schema(schema_r1)
-    s, k = schemas.SchemaContainer.get_node_schema_key(keys.DDHkey(key='//p/health'), transaction)
+    s, k, *d = schemas.SchemaContainer.get_node_schema_key(keys.DDHkey(key='//p/health'), transaction)
     assert s is schema_r1
     assert str(k) == '//p/health::rec:1'
 
     node_s.add_schema(schema_r0)  # earlier version, no impact
-    s, k = schemas.SchemaContainer.get_node_schema_key(keys.DDHkey(key='//p/health'), transaction)
+    s, k, *d = schemas.SchemaContainer.get_node_schema_key(keys.DDHkey(key='//p/health'), transaction)
     assert s is schema_r1
     assert str(k) == '//p/health::rec:1'
 
     node_s.add_schema(schema_r0)  # explicit version 0
-    s, k = schemas.SchemaContainer.get_node_schema_key(
+    s, k, *d = schemas.SchemaContainer.get_node_schema_key(
         keys.DDHkey(key='//p/health:::0'), transaction)
     assert s is schema_r0
     assert str(k) == '//p/health::rec:0'
 
     node_s.add_schema(schema_r3)  # later version, becomes default
-    s, k = schemas.SchemaContainer.get_node_schema_key(keys.DDHkey(key='//p/health'), transaction)
+    s, k, *d = schemas.SchemaContainer.get_node_schema_key(keys.DDHkey(key='//p/health'), transaction)
     assert s is schema_r3
     assert str(k) == '//p/health::rec:3'
 
     node_s.add_schema(schema_a2)  # alt version
     node_s.add_schema(schema_a4)  # alt version
-    s, k = schemas.SchemaContainer.get_node_schema_key(
+    s, k, *d = schemas.SchemaContainer.get_node_schema_key(
         keys.DDHkey(key='//p/health'), transaction)  # alt must be explicit
     assert s is schema_r3  # so it's still preferred
     assert str(k) == '//p/health::rec:3'
 
-    s, k = schemas.SchemaContainer.get_node_schema_key(keys.DDHkey(
+    s, k, *d = schemas.SchemaContainer.get_node_schema_key(keys.DDHkey(
         key='//p/health::alt'), transaction)  # explicit alt, latest version
     assert s is schema_a4
     assert str(k) == '//p/health::alt:4'
 
-    s, k = schemas.SchemaContainer.get_node_schema_key(keys.DDHkey(
+    s, k, *d = schemas.SchemaContainer.get_node_schema_key(keys.DDHkey(
         key='//p/health::alt:2'), transaction)  # explicit alt, earlier version
     assert s is schema_a2
     assert str(k) == '//p/health::alt:2'
