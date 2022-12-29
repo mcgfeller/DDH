@@ -175,7 +175,20 @@ class AbstractSchema(DDHbaseModel, abc.ABC):
         ...
 
     def obtain(self, ddhkey: keys.DDHkey, split: int, create_intermediate: bool = False) -> AbstractSchema | None:
-        return None
+        """ obtain a schema for the ddhkey, which is split into the key holding the schema and
+            the remaining path. 
+        """
+        khere, kremainder = ddhkey.split_at(split)
+        if kremainder:
+            # TODO: If __setitem__ is used to insert schema element, create_intermediate
+            # can be retired as False, and a proper indexing can be used.
+            schema_element = self.__getitem__(kremainder, create_intermediate=create_intermediate)
+            if schema_element:
+                s = schema_element.to_schema()
+            else: s = None  # not found
+        else:
+            s = self
+        return s
 
     def to_format(self, format: SchemaFormat):
         """ migrate schema to another format. 

@@ -141,22 +141,6 @@ class PySchema(schemas.AbstractSchema):
     def from_str(cls, schema_str: str, schema_attributes: schemas.SchemaAttributes) -> PySchema:
         raise NotImplementedError('PySchema cannot be created from string')
 
-    def obtain(self, ddhkey: keys.DDHkey, split: int, create_intermediate: bool = False) -> schemas.AbstractSchema | None:
-        """ obtain a schema for the ddhkey, which is split into the key holding the schema and
-            the remaining path. 
-        """
-        khere, kremainder = ddhkey.split_at(split)
-        if kremainder:
-            # TODO: If __setitem__ is used to insert schema element, create_intermediate
-            # can be retired as False, and a proper indexing can be used.
-            schema_element = self.__getitem__(kremainder, create_intermediate=create_intermediate)
-            if schema_element:
-                s = schema_element.to_schema()
-            else: s = None  # not found
-        else:
-            s = self
-        return s
-
     def to_json_schema(self):
         """ Make a JSON Schema from this Schema """
         jcls = schemas.SchemaFormat2Class[schemas.SchemaFormat.json]

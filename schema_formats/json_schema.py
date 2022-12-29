@@ -10,9 +10,10 @@ from core import schemas, keys, errors
 
 class JsonSchemaElement(schemas.AbstractSchemaElement):
 
-    @classmethod
-    def to_schema(cls) -> JsonSchema:
-        return JsonSchema(json_schema=cls)
+    definition: dict
+
+    def to_schema(self) -> JsonSchema:
+        return JsonSchema(json_schema=json.dumps(self.definition))
 
 
 class JsonSchema(schemas.AbstractSchema):
@@ -22,8 +23,8 @@ class JsonSchema(schemas.AbstractSchema):
         of_schema='application/openapi', of_data='application/json')
     json_schema: pydantic.Json
 
-    def __getitem__(self, key: keys.DDHkey, default=None) -> type[JsonSchemaElement] | None:
-        return self._descend_path(self.json_schema, key)
+    def __getitem__(self, key: keys.DDHkey, default=None, create_intermediate: bool = False) -> type[JsonSchemaElement] | None:
+        return JsonSchemaElement(definition=self._descend_path(self.json_schema, key))
 
     def __setitem__(self, key: keys.DDHkey, value: type[JsonSchemaElement], create_intermediate: bool = True) -> type[JsonSchemaElement] | None:
         raise errors.SubClass
@@ -39,21 +40,6 @@ class JsonSchema(schemas.AbstractSchema):
     def to_output(self):
         """ return naked json schema """
         return self.json_schema
-
-    def obtain(self, ddhkey: keys.DDHkey, split: int, create_intermediate: bool = False) -> schemas.AbstractSchema | None:
-        """ obtain a schema for the ddhkey, which is split into the key holding the schema and
-            the remaining path. 
-        """
-        khere, kremainder = ddhkey.split_at(split)
-        if kremainder.key:
-            s = None
-            j_defn = self[kremainder]
-            if j_defn:
-                s = self.__class__.from_definition(j_defn)
-            else: s = None  # not found
-        else:
-            s = self
-        return s
 
     @classmethod
     def _descend_path(cls, json_schema: pydantic.Json, path: keys.DDHkey):
@@ -79,8 +65,3 @@ class JsonSchema(schemas.AbstractSchema):
                     else:  # path continues beyond this point, so this is not found and not creatable
                         return None
         return current
-
-    @classmethod
-    def from_definition(cls, json_schema):
-        # return cls(json_schema=json_schema)
-        return cls(json_schema=json.dumps(json_schema))
