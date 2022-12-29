@@ -6,7 +6,7 @@ import typing
 
 import pydantic
 
-from core import schemas, keys, nodes, principals, keydirectory, errors
+from core import schemas, keys, nodes, principals, keydirectory, errors, permissions
 from frontend import sessions
 from schema_formats import py_schema
 
@@ -22,17 +22,14 @@ class Receipt(py_schema.PySchemaElement):
 
 
 def install_schema(transaction, ddhkey: keys.DDHkey, sel: typing.Type[py_schema.PySchemaElement], schema_attributes: schemas.SchemaAttributes | None = None):
+    # TODO: Almost duplicate with AbstractSchema.insert_schema()
     ddhkey = ddhkey.ensure_fork(keys.ForkType.schema)
     schemaref = sel.replace_by_schema(ddhkey, schema_attributes=schema_attributes)
     pkey = ddhkey.up()
     if not pkey:
         raise errors.NotFound('no parent node')
-    upnode, split = keydirectory.NodeRegistry.get_node(
-        pkey, nodes.NodeSupports.schema, transaction)
-
-    upnode = typing.cast(nodes.SchemaNode, upnode)
-    # TODO: We should check some ownership permission here!
-    parent = upnode.get_sub_schema(pkey, split, create_intermediate=False)  # create missing segments
+    access = permissions.Access(ddhkey=pkey, principal=transaction.for_user)
+    parent = schemas.SchemaContainer.get_sub_schema(access, transaction)
     assert parent  # must exist because create_intermediate=True
 
     # now insert our schema into the parent's:

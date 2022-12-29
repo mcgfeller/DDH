@@ -174,22 +174,6 @@ class AbstractSchema(DDHbaseModel, abc.ABC):
     def from_str(cls, schema_str: str, schema_attributes: SchemaAttributes) -> AbstractSchema:
         ...
 
-    def obtain(self, ddhkey: keys.DDHkey, split: int, create_intermediate: bool = False) -> AbstractSchema | None:
-        """ obtain a schema for the ddhkey, which is split into the key holding the schema and
-            the remaining path. 
-        """
-        khere, kremainder = ddhkey.split_at(split)
-        if kremainder:
-            # TODO: If __setitem__ is used to insert schema element, create_intermediate
-            # can be retired as False, and a proper indexing can be used.
-            schema_element = self.__getitem__(kremainder, create_intermediate=create_intermediate)
-            if schema_element:
-                s = schema_element.to_schema()
-            else: s = None  # not found
-        else:
-            s = self
-        return s
-
     def to_format(self, format: SchemaFormat):
         """ migrate schema to another format. 
             TODO: Do we really need or want this?
@@ -216,18 +200,16 @@ class AbstractSchema(DDHbaseModel, abc.ABC):
         return permissions.Consents(consents=[permissions.Consent(grantedTo=[principals.AllPrincipal], withModes={permissions.AccessMode.read})])
 
     @staticmethod
-    def insert_schema(id, schemakey: keys.DDHkey, transaction):
+    def insert_schema(id: str, schemakey: keys.DDHkey, transaction):
         # get a parent scheme to hook into
         pkey = schemakey.up()
         if not pkey:
             raise ValueError(f'{schemakey} key is too high')
 
-        upnode, split = keydirectory.NodeRegistry.get_node(
-            pkey, nodes.NodeSupports.schema, transaction)
+        access = permissions.Access(ddhkey=pkey, principal=transaction.for_user)
+        parent = SchemaContainer.get_sub_schema(
+            access, transaction, create_intermediate=True)  # create missing segments
 
-        upnode = typing.cast(nodes.SchemaNode, upnode)
-        # TODO: We should check some ownership permission here!
-        parent = upnode.get_sub_schema(pkey, split, create_intermediate=True)  # create missing segments
         assert parent  # must exist because create_intermediate=True
 
         # now insert our schema into the parent's:
@@ -310,14 +292,14 @@ class SchemaContainer(DDHbaseModel):
             raise errors.NotFound(f'No schema variant and version found for {ddhkey}')
 
     @staticmethod
-    def get_sub_schema(access: permissions.Access, transaction) -> AbstractSchema | None:
+    def get_sub_schema(access: permissions.Access, transaction, create_intermediate: bool = False) -> AbstractSchema | None:
         schema = None
         parent_schema, access.ddhkey, remainder, snode = SchemaContainer.get_node_schema_key(
             access.ddhkey, transaction)
         if parent_schema:
             access.raise_if_not_permitted(keydirectory.NodeRegistry._get_consent_node(
                 access.ddhkey.without_variant_version(), nodes.NodeSupports.schema, snode, transaction))
-            schema_element = parent_schema[remainder]
+            schema_element = parent_schema.__getitem__(remainder, create_intermediate=create_intermediate)
             if schema_element:
                 schema = schema_element.to_schema()
         return schema

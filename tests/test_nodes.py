@@ -40,10 +40,11 @@ def test_schema_node():
     node_s, split = keydirectory.NodeRegistry.get_node(
         ddhkey, nodes.NodeSupports.schema, transaction)
     assert node_s.schemas.get() is schema
-    assert node_s.get_sub_schema(ddhkey, split) is None, 'missing intermediate nodes must not be created'
+
     access = permissions.Access(ddhkey=ddhkey, principal=user, modes=[
                                 permissions.AccessMode.read])
-
+    assert schemas.SchemaContainer.get_sub_schema(
+        access, transaction) is None, 'missing intermediate nodes must not be created'
     assert facade.get_schema(access, transaction) is None  # this should be same in one go.
 
 
