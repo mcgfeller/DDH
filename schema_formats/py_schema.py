@@ -52,13 +52,19 @@ class PySchemaElement(schemas.AbstractSchemaElement):
         return current
 
     @classmethod
+    def extract_attributes(cls, path: keys.DDHkey, atts: schemas.SchemaAttributes):
+        """ TODO: Extract attributes and insert them to schema.schema_attributes
+        """
+        return
+
+    @classmethod
     def get_subschema_class(cls, subname) -> typing.Tuple:
         """ return subschema for this schema:
             class
             container
             id
 
-            TODO: Only used in .get_resolver() - eliminate
+            TODO: Only used in .get_resolver() - eliminate -> resolver should be an gatherable annotation.
 
         """
         sub = typing.get_type_hints(cls).get(str(subname))
@@ -134,6 +140,10 @@ class PySchema(schemas.AbstractSchema):
 
     def __setitem__(self, key: keys.DDHkey, value: type[PySchemaElement], create_intermediate: bool = True) -> type[PySchemaElement] | None:
         raise errors.SubClass
+
+    def __iter__(self) -> typing.Iterator[tuple[keys.DDHkey, PySchemaElement]]:
+        # TODO: Schema Iterator
+        return iter([(keys.DDHkey(()), self.schema_element)])
 
     @classmethod
     def get_reference_class(cls) -> type[PySchemaReference]:

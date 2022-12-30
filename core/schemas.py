@@ -112,8 +112,15 @@ class AbstractSchemaElement(DDHbaseModel, abc.ABC):
         schemaref = s.get_reference_class().create_from_key(ddhkey=ddhkey)
         return schemaref
 
+    @classmethod
+    def extract_attributes(cls, path: keys.DDHkey, atts: SchemaAttributes):
+        """ Extract attributes, may be used to modify schema.schema_attributes, 
+            typically references or sensitivities.
+        """
+        return
 
-class AbstractSchema(DDHbaseModel, abc.ABC):
+
+class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
     format_designator: typing.ClassVar[SchemaFormat] = SchemaFormat.internal
     schema_attributes: SchemaAttributes = pydantic.Field(
         default=SchemaAttributes(), descriptor="Attributes associated with this Schema")
@@ -132,6 +139,10 @@ class AbstractSchema(DDHbaseModel, abc.ABC):
 
     @abc.abstractmethod
     def __setitem__(self, key: keys.DDHkey, value: type[AbstractSchemaElement], create_intermediate: bool = True) -> type[AbstractSchemaElement] | None:
+        ...
+
+    @abc.abstractmethod
+    def __iter__(self) -> typing.Iterator[tuple[keys.DDHkey, AbstractSchemaElement]]:
         ...
 
     @classmethod
@@ -154,11 +165,18 @@ class AbstractSchema(DDHbaseModel, abc.ABC):
         if not self.schema_attributes.variant:  # variant name default is class name
             self.schema_attributes.variant = self.__class__.__name__
         self.update_mimetype()
+        self.walk_elements()
 
     def update_mimetype(self):
         """ Take mimetype from Schema if provided and absent in schema_attributes """
         if not self.schema_attributes.mimetypes and self.mimetypes:
             self.schema_attributes.mimetypes = self.mimetypes
+
+    def walk_elements(self):
+        """ walk trhough the elements to gather attributes which are written into . schema_attributes """
+        for path, element in self:
+            element.extract_attributes(path, self.schema_attributes)
+        return
 
     @property
     def format(self) -> SchemaFormat:

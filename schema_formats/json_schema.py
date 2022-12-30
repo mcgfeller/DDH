@@ -29,6 +29,10 @@ class JsonSchema(schemas.AbstractSchema):
     def __setitem__(self, key: keys.DDHkey, value: type[JsonSchemaElement], create_intermediate: bool = True) -> type[JsonSchemaElement] | None:
         raise errors.SubClass
 
+    def __iter__(self) -> typing.Iterator[tuple[keys.DDHkey, JsonSchemaElement]]:
+        # TODO: Schema Iterator
+        return iter([])
+
     @classmethod
     def from_str(cls, schema_str: str, schema_attributes: schemas.SchemaAttributes) -> JsonSchema:
         return cls(json_schema=schema_str, schema_attributes=schema_attributes)
