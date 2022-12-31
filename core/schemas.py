@@ -88,6 +88,14 @@ class SchemaAttributes(DDHbaseModel):
     requires: Requires | None = None
     mimetypes: MimeTypes | None = None
 
+    def add_reference(self, path: keys.DDHkey, reference: AbstractSchemaReference):
+        # TODO
+        return
+
+    def add_sensitivities(self, path: keys.DDHkey, sensitivities: dict[str, Sensitivity]):
+        # TODO
+        return
+
 
 class AbstractSchemaElement(DDHbaseModel, abc.ABC):
     """ An element within a Schema retrieved by key remainder  """

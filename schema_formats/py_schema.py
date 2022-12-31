@@ -66,6 +66,15 @@ class PySchemaElement(schemas.AbstractSchemaElement):
     def extract_attributes(cls, path: keys.DDHkey, atts: schemas.SchemaAttributes):
         """ TODO: Extract attributes and insert them to schema.schema_attributes
         """
+        # References:
+        if issubclass(cls, PySchemaReference):
+            atts.add_reference(path, cls)
+
+        # Sensitivities - sensitivity entry in extra field:
+        sensitivities = {fn: ex['sensitivity']
+                         for fn, f in cls.__fields__.items() if 'sensitivity' in (ex := f.field_info.extra)}
+        if sensitivities:
+            atts.add_sensitivities(path, sensitivities)
         return
 
     @classmethod
