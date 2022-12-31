@@ -3,9 +3,7 @@ from __future__ import annotations
 import typing
 import pydantic
 
-from utils.pydantic_utils import DDHbaseModel
-from core import schemas, keys, versions, errors, principals, permissions, nodes, keydirectory
-from frontend import user_auth
+from core import schemas, keys, errors
 
 
 class PySchemaElement(schemas.AbstractSchemaElement):
@@ -64,7 +62,7 @@ class PySchemaElement(schemas.AbstractSchemaElement):
 
     @classmethod
     def extract_attributes(cls, path: keys.DDHkey, atts: schemas.SchemaAttributes):
-        """ TODO: Extract attributes and insert them to schema.schema_attributes
+        """ Extract attributes and insert them to schema.schema_attributes
         """
         # References:
         if issubclass(cls, PySchemaReference):
@@ -76,57 +74,6 @@ class PySchemaElement(schemas.AbstractSchemaElement):
         if sensitivities:
             atts.add_sensitivities(path, sensitivities)
         return
-
-    @classmethod
-    def get_subschema_class(cls, subname) -> typing.Tuple:
-        """ return subschema for this schema:
-            class
-            container
-            id
-
-            TODO: Only used in .get_resolver() - eliminate -> resolver should be an gatherable annotation.
-
-        """
-        sub = typing.get_type_hints(cls).get(str(subname))
-        if sub is None:
-            return (None, None, None)
-        if isinstance(sub, PySchemaElement):
-            return (sub, None, None)
-        elif isinstance(sub, typing.GenericAlias) and sub.__origin__ is list and sub.__args__:
-            innerclass = sub.__args__[0]
-            princs = [n for n, t in innerclass.__fields__.items() if issubclass(t.type_,
-                                                                                principals.Principal)]
-            if princs:
-                if 'id' in princs:
-                    return (innerclass, sub.__origin__, 'id')
-                else:
-                    return (innerclass, sub.__origin__, princs[0])
-            else:
-                return (innerclass, sub.__origin__, None)
-        else:
-            raise errors.DAppError(f'Cannot understand element {subname}={sub} in {cls}')
-
-    def get_resolver(self,  selection: keys.DDHkey, access: permissions.Access, q):
-        # TODO #8: This is far too specific - redesign
-        # ids : typing.Dict[type,typing.Dict[str,list]] = {} # {class : {idattr : [id,...]}}
-        entire_selection = selection
-        schema = self.__class__
-        princs = user_auth.get_principals(access.ddhkey.owners)
-
-        while len(selection.key):
-            next_key, remainder = selection.split_at(1)  # next level
-            schema, container, idattr = schema.get_subschema_class(next_key)
-            if not schema:
-                raise errors.NotFound(f'Invalid key {next_key} in {entire_selection}')
-            if container:
-                sel, remainder = remainder.split_at(1)  # next level is ids
-            resolver = getattr(schema, 'resolve', None)
-            if resolver:
-                res = resolver(remainder, princs, q)
-                return res
-            selection = remainder
-        else:  # there is no resolver so far, we cannot grab this without a further segment:
-            raise errors.NotFound(f'Incomplete key: {entire_selection}')
 
 
 class PySchemaReference(schemas.AbstractSchemaReference, PySchemaElement):

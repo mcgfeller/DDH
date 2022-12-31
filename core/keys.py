@@ -213,6 +213,12 @@ class DDHkey(DDHbaseModel):
         else:
             return typing.cast(common_ids.PrincipalId, str(self.AnyKey))
 
+    def longest_segments(self) -> typing.Generator[DDHkey, None, None]:
+        """ Generator yielding sucessively shorter subkeys
+            specifiers are not copied. Keys are  only built as needed.
+        """
+        return (self.__class__(self.key[:i]) for i in range(len(self.key), -1, -1))  # count downward from end to 0
+
 
 from . import nodes
 DDHkey.update_forward_refs()

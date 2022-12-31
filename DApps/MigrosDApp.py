@@ -9,11 +9,12 @@ import fastapi.security
 import pandas  # for example
 import pydantic
 from core import (common_ids, dapp_attrs, keys, nodes, permissions, users,
-                  relationships, schemas)
+                  relationships, schemas, errors)
 from schema_formats import py_schema
+from utils import key_utils
 from glom import Iter, S, T, glom  # transform
 
-from frontend import fastapi_dapp
+from frontend import fastapi_dapp, user_auth
 app = fastapi.FastAPI()
 app.include_router(fastapi_dapp.router)
 
@@ -49,16 +50,26 @@ class MigrosDApp(dapp_attrs.DApp):
             if req.access.ddhkey.without_owner().without_variant_version() == self.transforms_into:
                 d = self.get_and_transform(req)
             else:  # key we provide, call schema descent to resolve:
-                d = self._ddhschema.get_data(selection, req.access, req.q)
+                d = self.get_data(selection, req.access, req.q)
         else:
             raise ValueError(f'Unsupported {req.op=}')
         return d
+
+    def get_data(self, selection: keys.DDHkey, access: permissions.Access, q):
+        # print(f'MigrosSchema.get_data: {selection=}')
+        root, resolve = Resolvers.most_specific(selection)
+        if not resolve:
+            raise errors.NotFound(f'Incomplete key: {selection}')
+        remainder = selection.remainder(len(root.key))
+        princs = user_auth.get_principals(access.ddhkey.owners)
+        res = resolve(remainder, princs, q)
+        return res
 
     def get_and_transform(self, req: dapp_attrs.ExecuteRequest):
         """ obtain data by transforming key, then executing, then transforming result """
         here, selection = req.access.ddhkey.split_at(req.key_split)
         selection2 = keys.DDHkey(('receipts',))  # insert selection
-        d = self._ddhschema.get_data(selection2, req.access, req.q)  # obtain org-format data
+        d = self.get_data(selection2, req.access, req.q)  # obtain org-format data
         # transform with glom: into list of dicts, whereas item key becomes buyer:
         spec = {
             "items": (
@@ -117,9 +128,10 @@ class MigrosSchema(py_schema.PySchemaElement):
     cumulus: int | None = pydantic.Field(None, sensitivity=schemas.Sensitivity.qid)
     receipts: list[Receipt] = []
 
-    def get_data(self, selection: keys.DDHkey, access: permissions.Access, q):
-        d = self.get_resolver(selection, access, q)
-        return d
+
+Resolvers = key_utils.LookupByKey({  # register the resolvers per schema key
+    keys.DDHkey('receipts'): Receipt.resolve,
+})
 
 
 MIGROS_DAPP = MigrosDApp(owner=users.User(id='migros', name='Migros (fake account)'),
