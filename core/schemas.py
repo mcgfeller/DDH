@@ -87,13 +87,16 @@ class SchemaAttributes(DDHbaseModel):
         versions.Unspecified, description="The version of this schema instance")
     requires: Requires | None = None
     mimetypes: MimeTypes | None = None
+    references: dict[keys.DDHkey, keys.DDHkey] = {}
+    sensitivities: dict[keys.DDHkey, dict[str, Sensitivity]] = {}
 
     def add_reference(self, path: keys.DDHkey, reference: AbstractSchemaReference):
-        # TODO
+        self.references[path] = reference.get_target()
         return
 
     def add_sensitivities(self, path: keys.DDHkey, sensitivities: dict[str, Sensitivity]):
-        # TODO
+        # TODO: Structure - must be jsonable... fields by Sensitivity?
+        # self.sensitivities[path] = sensitivities
         return
 
 
@@ -259,6 +262,16 @@ class AbstractSchemaReference(DDHbaseModel):
     @abc.abstractmethod
     def create_from_key(cls, ddhkey: keys.DDHkey, name: str | None = None) -> typing.Type[AbstractSchemaReference]:
         ...
+
+    @classmethod
+    @abc.abstractmethod
+    def get_target(cls) -> keys.DDHkey:
+        """ get target key """
+        ...
+
+    @classmethod
+    def getURI(cls) -> pydantic.AnyUrl:
+        return typing.cast(pydantic.AnyUrl, str(cls.get_target()))
 
 
 class SchemaContainer(DDHbaseModel):

@@ -85,8 +85,9 @@ class PySchemaReference(schemas.AbstractSchemaReference, PySchemaElement):
             return
 
     @classmethod
-    def getURI(cls) -> pydantic.AnyUrl:
-        return typing.cast(pydantic.AnyUrl, str(cls.__fields__['ddhkey'].default))
+    def get_target(cls) -> keys.DDHkey:
+        """ get target key - oh Pydantic! """
+        return cls.__fields__['ddhkey'].default
 
     @classmethod
     def create_from_key(cls, ddhkey: keys.DDHkey, name: str | None = None) -> typing.Type[PySchemaReference]:
