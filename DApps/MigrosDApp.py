@@ -28,12 +28,10 @@ fastapi_dapp.get_apps = get_apps
 
 class MigrosDApp(dapp_attrs.DApp):
 
-    _ddhschema: py_schema.PySchemaElement = None
     version = '0.2'
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
-        self._ddhschema = MigrosSchema()
         self.transforms_into = keys.DDHkey(key="//p/living/shopping/receipts")
         self.references = relationships.Reference.defines(self.schemakey) + relationships.Reference.provides(self.schemakey) + \
             relationships.Reference.provides(self.transforms_into)
