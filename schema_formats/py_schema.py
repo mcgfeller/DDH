@@ -16,6 +16,17 @@ class PySchemaElement(schemas.AbstractSchemaElement):
         return PySchema(schema_element=cls)
 
     @classmethod
+    def iter_paths(cls, pk=()):
+        """ recursive descent through schema yielding (key,schema_element) """
+        yield (keys.DDHkey(pk), cls)  # yield ourselves first
+        for k, mf in cls.__fields__.items():
+            assert isinstance(mf, pydantic.fields.ModelField)
+            sub_elem = mf.type_
+            if issubclass(sub_elem, PySchemaElement):
+                yield from sub_elem.iter_paths(pk+(k,))  # then descend
+        return
+
+    @classmethod
     def descend_path(cls, path: keys.DDHkey, create_intermediate: bool = False) -> typing.Type[PySchemaElement] | None:
         """ Travel down PySchemaElement along path using some Pydantic implementation details.
             If a path segment is not found, return None, unless create is specified.
@@ -87,7 +98,7 @@ class PySchemaElement(schemas.AbstractSchemaElement):
             raise errors.DAppError(f'Cannot understand element {subname}={sub} in {cls}')
 
     def get_resolver(self,  selection: keys.DDHkey, access: permissions.Access, q):
-        # TODO: This is far too specific - redesign
+        # TODO #8: This is far too specific - redesign
         # ids : typing.Dict[type,typing.Dict[str,list]] = {} # {class : {idattr : [id,...]}}
         entire_selection = selection
         schema = self.__class__
@@ -143,6 +154,7 @@ class PySchema(schemas.AbstractSchema):
 
     def __iter__(self) -> typing.Iterator[tuple[keys.DDHkey, PySchemaElement]]:
         # TODO: Schema Iterator
+        return self.schema_element.iter_paths()
         return iter([(keys.DDHkey(()), self.schema_element)])
 
     @classmethod
