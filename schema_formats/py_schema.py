@@ -16,7 +16,7 @@ class PySchemaElement(schemas.AbstractSchemaElement):
         return PySchema(schema_element=cls)
 
     @classmethod
-    def iter_paths(cls, pk=()):
+    def iter_paths(cls, pk=()) -> typing.Generator[tuple[keys.DDHkey, type[PySchemaElement]], None, None]:
         """ recursive descent through schema yielding (key,schema_element) """
         yield (keys.DDHkey(pk), cls)  # yield ourselves first
         for k, mf in cls.__fields__.items():
@@ -152,10 +152,10 @@ class PySchema(schemas.AbstractSchema):
     def __setitem__(self, key: keys.DDHkey, value: type[PySchemaElement], create_intermediate: bool = True) -> type[PySchemaElement] | None:
         raise errors.SubClass
 
-    def __iter__(self) -> typing.Iterator[tuple[keys.DDHkey, PySchemaElement]]:
-        # TODO: Schema Iterator
+    def __iter__(self) -> typing.Iterator[tuple[keys.DDHkey, type[PySchemaElement]]]:
+        """ Schema Iterator: yields (key,SchemaElement) pairs, ignoring primitive types.
+        """
         return self.schema_element.iter_paths()
-        return iter([(keys.DDHkey(()), self.schema_element)])
 
     @classmethod
     def get_reference_class(cls) -> type[PySchemaReference]:
