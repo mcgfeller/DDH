@@ -20,7 +20,7 @@ class JsonSchema(schemas.AbstractSchema):
 
     format_designator: typing.ClassVar[schemas.SchemaFormat] = schemas.SchemaFormat.json
     mimetypes: typing.ClassVar[schemas.MimeTypes] = schemas.MimeTypes(
-        of_schema='application/openapi', of_data='application/json')
+        of_schema=['application/openapi', 'application/json'], of_data=['application/json'])
     json_schema: pydantic.Json
 
     def __getitem__(self, key: keys.DDHkey, default=None, create_intermediate: bool = False) -> type[JsonSchemaElement] | None:

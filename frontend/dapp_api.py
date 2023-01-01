@@ -58,16 +58,19 @@ async def get_data(
     access = permissions.Access(op=permissions.Operation.get, ddhkey=keys.DDHkey(
         docpath), principal=session.user, modes=modes, byDApp=session.dappid)
     try:
-        d = await facade.ddh_get(access, session, q, accept)
+        d, headers = await facade.ddh_get(access, session, q, accept)
     except errors.DDHerror as e:
         raise e.to_http()
 
-    response.headers['Content-Location'] = f'{request.url.scheme}://{request.url.netloc}/ddh{str(access.ddhkey)}'
+    headers['Content-Location'] = f'{request.url.scheme}://{request.url.netloc}/ddh'+headers['Content-Location']
+    response.headers.update(headers)
     return d
 
 
 @app.put("/ddh{docpath:path}")
 async def put_data(
+    response: fastapi.Response,
+    request: fastapi.Request,
     data: pydantic.Json,
     docpath: str = fastapi.Path(..., title="The ddh key of the data to put"),
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
@@ -77,11 +80,12 @@ async def put_data(
     access = permissions.Access(op=permissions.Operation.put, ddhkey=keys.DDHkey(
         docpath), principal=session.user, modes=modes, byDApp=session.dappid)
     try:
-        d = facade.ddh_put(access, session, data, q)
+        d, headers = facade.ddh_put(access, session, data, q)
     except errors.DDHerror as e:
         raise e.to_http()
 
-    return {"ddhkey": access.ddhkey, "res": d}
+    response.headers.update(headers)
+    return d
 
 
 @app.post("/transaction")

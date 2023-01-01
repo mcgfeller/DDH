@@ -17,7 +17,7 @@ class XmlSchemaElement(schemas.AbstractSchemaElement):
 class XmlSchema(schemas.AbstractSchema):
     format_designator: typing.ClassVar[schemas.SchemaFormat] = schemas.SchemaFormat.xsd
     mimetypes: typing.ClassVar[schemas.MimeTypes] = schemas.MimeTypes(
-        of_schema='application/xsd', of_data='application/xml')
+        of_schema=['application/xsd', 'application/xml'], of_data=['application/xml'])
     xml_schema: str
 
     def __getitem__(self, key: keys.DDHkey, default=None) -> type[XmlSchemaElement] | None:

@@ -58,22 +58,22 @@ SchemaVariant = pydantic.constr(strip_whitespace=True, max_length=30, regex='[a-
 
 class MimeTypes(DDHbaseModel):
     """ Mime Types both for the schema itself and data conforming to the schema """
-    of_schema: str = pydantic.Field(
+    of_schema: list[str] = pydantic.Field(
         description='Mimetype of the schema - taken from Schema if not provided.')
-    of_data: str = pydantic.Field(
+    of_data: list[str] = pydantic.Field(
         description='Mimetype of data - taken from Schema if not provided.')
 
-    def for_fork(self, fork: keys.ForkType) -> str:
+    def for_fork(self, fork: keys.ForkType) -> list[str]:
         """ return mimetype for a fork """
         match fork:
             case keys.ForkType.data:
                 mt = self.of_data
             case keys.ForkType.consents:
-                mt = 'application/json'
+                mt = ['application/json']
             case keys.ForkType.schema:
                 mt = self.of_schema
             case _:
-                mt = '*/*'
+                mt = ['*/*']
         return mt
 
 

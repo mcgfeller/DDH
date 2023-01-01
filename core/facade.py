@@ -11,7 +11,7 @@ from . import permissions, keys, schemas, nodes, keydirectory, transactions, err
 from frontend import sessions
 
 
-async def ddh_get(access: permissions.Access, session: sessions.Session, q: str | None = None, accept_header: list[str] | None = None) -> typing.Any:
+async def ddh_get(access: permissions.Access, session: sessions.Session, q: str | None = None, accept_header: list[str] | None = None) -> tuple[typing.Any, dict]:
     """ Service utility to retrieve data and return it in the desired format.
         Returns None if no data found.
 
@@ -26,17 +26,16 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
     # fork-independent checks:
     # get schema and key with specifiers:
     schema, access.ddhkey, *d = schemas.SchemaContainer.get_node_schema_key(access.ddhkey, transaction)
-    check_mimetype_schema(access.ddhkey, schema, accept_header)
+    mt = check_mimetype_schema(access.ddhkey, schema, accept_header)
+    headers = {'Content-Location': str(access.ddhkey), 'Content-Type': mt, }
 
     match access.ddhkey.fork:
         case keys.ForkType.schema:  # if we ask for schema, we don't need an owner:
-            schema = get_schema(access, transaction, schemaformat=schemas.SchemaFormat.json)
-            return schema
+            data = get_schema(access, transaction, schemaformat=schemas.SchemaFormat.json)
 
         case keys.ForkType.consents:
             access.ddhkey.raise_if_no_owner()
-            consents = await get_data(access, transaction, q)
-            return consents
+            data = await get_data(access, transaction, q)
 
         case keys.ForkType.data:
             access.ddhkey.raise_if_no_owner()
@@ -45,10 +44,10 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
             # pass data to enode and get result:
             data = await get_enode(nodes.Ops.get, access, transaction, data, q)
 
-    return data
+    return data, headers
 
 
-async def ddh_put(access: permissions.Access, session: sessions.Session, data: pydantic.Json, q: str | None = None, accept_header: list[str] | None = None) -> typing.Any:
+async def ddh_put(access: permissions.Access, session: sessions.Session, data: pydantic.Json, q: str | None = None, accept_header: list[str] | None = None) -> tuple[typing.Any, dict]:
     """ Service utility to store data.
 
     """
@@ -59,6 +58,7 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
     # We need a data node, even for a schema, as it carries the consents:
     data_node, d_key_split, remainder = get_or_create_dnode(access, transaction)
     access.raise_if_not_permitted(data_node)
+    headers = {}
 
     match access.ddhkey.fork:
         case keys.ForkType.schema:
@@ -90,7 +90,7 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                     if data:
                         data_node.execute(nodes.Ops.put, access, transaction, d_key_split, data, q)
 
-    return data
+    return data, headers
 
 
 async def get_data(access: permissions.Access, transaction: transactions.Transaction, q: str | None = None) -> typing.Any:
@@ -181,29 +181,23 @@ def put_schema(access: permissions.Access, transaction: transactions.Transaction
     return
 
 
-MimeSynonyms: dict[str, list[str]] = {
-    'application/openapi': ['application/json'],
-    'application/xsd': ['application/xml'],
-}
-
-
-def check_mimetype_schema(ddhkey: keys.DDHkey, schema: schemas.AbstractSchema, accept_header: list[str] | None):
+def check_mimetype_schema(ddhkey: keys.DDHkey, schema: schemas.AbstractSchema, accept_header: list[str] | None) -> str:
     """ raise error if selected schema variant's mimetype is not acceptable in accept_header.
         Design decision:
             We could also look up the variant which  corresponds to the accept_header when no variant is
-            specified in the ddhkey. However, we consider this too implicit and potentially surprising. 
+            specified in the ddhkey. However, we consider this too implicit and potentially surprising.
+        return primary contens mimetype 
     """
-    if accept_header:
-        mt = schema.schema_attributes.mimetypes
-        assert mt
-        smt = mt.for_fork(ddhkey.fork)  # mimetypes for our ddhkey}
-        smt = [smt]+MimeSynonyms.get(smt, [])
+    mt = schema.schema_attributes.mimetypes
+    assert mt
+    smt = mt.for_fork(ddhkey.fork)  # mimetypes for our ddhkey
+    if accept_header:  # check if accept header is supplied.
         amt = ', '.join(accept_header)
         # we provide one mimetype - is it acceptable?
         if not accept_types.get_best_match(amt, smt):
-            raise errors.NotAcceptable(f'The mime type {smt[0]} of the selected schema variant {schema.schema_attributes.variant} ' +
+            raise errors.NotAcceptable(f'The mime types {", ".join(smt[0])} of the selected schema variant {schema.schema_attributes.variant} ' +
                                        f'does not correspond to the Accept header media types {amt}; try an alternate schema variant.')
-    return
+    return smt[0]
 
 
 def _get_consent_node(ddhkey: keys.DDHkey, support: nodes.NodeSupports, node: nodes.Node | None, transaction: transactions.Transaction) -> nodes.Node | None:

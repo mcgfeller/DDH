@@ -100,7 +100,7 @@ class PySchema(schemas.AbstractSchema):
     """ A AbstractSchema in Pydantic Python, containing a PySchemaElement """
     schema_element: typing.Type[PySchemaElement]
     mimetypes: typing.ClassVar[schemas.MimeTypes] = schemas.MimeTypes(
-        of_schema='application/openapi', of_data='application/json')
+        of_schema=['application/openapi', 'application/json'], of_data=['application/json'])
 
     def __getitem__(self, key: keys.DDHkey, default=None, create_intermediate: bool = False) -> type[PySchemaElement] | None:
         se = self.schema_element.descend_path(key, create_intermediate=create_intermediate)
