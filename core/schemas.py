@@ -346,7 +346,7 @@ class SchemaContainer(DDHbaseModel):
         return schema
 
 
-def create_schema(s: str, format: SchemaFormat, sa: SchemaAttributes) -> AbstractSchema:
+def create_schema(s: str, format: SchemaFormat, sa: dict) -> AbstractSchema:
     sa = SchemaAttributes(**sa)
     sclass = SchemaFormat2Class.get(format)
     if not sclass:

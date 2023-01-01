@@ -9,7 +9,7 @@ import fastapi.security
 import pandas  # for example
 import pydantic
 from core import (common_ids, dapp_attrs, keys, nodes, permissions, users,
-                  relationships, schemas, errors)
+                  relationships, schemas, errors, versions)
 from schema_formats import py_schema
 from utils import key_utils
 from glom import Iter, S, T, glom  # transform
@@ -38,7 +38,8 @@ class MigrosDApp(dapp_attrs.DApp):
 
     def get_schemas(self) -> dict[keys.DDHkey, schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
-        return {keys.DDHkey(key="//org/migros.ch"): py_schema.PySchema(schema_element=MigrosSchema)}
+        return {keys.DDHkey(key="//org/migros.ch"): py_schema.PySchema(schema_element=MigrosSchema,
+                                                                       schema_attributes=schemas.SchemaAttributes(version=versions.Version(self.version)))}
 
     def execute(self, req: dapp_attrs.ExecuteRequest):
         """ obtain data by recursing to schema """
@@ -82,6 +83,7 @@ class MigrosDApp(dapp_attrs.DApp):
 
 
 class ProduktDetail(py_schema.PySchemaElement):
+    """ Details of a product """
     produkt_kategorie: str
     garantie: str | None = None
     garantie_jahre: int | None = 1
@@ -90,6 +92,8 @@ class ProduktDetail(py_schema.PySchemaElement):
 
 
 class Receipt(py_schema.PySchemaElement):
+
+    """ The Receipt of an individual purchase """
 
     Datum_Zeit: datetime.datetime = pydantic.Field(sensitivity=schemas.Sensitivity.sa)
     Filiale:    str = pydantic.Field(sensitivity=schemas.Sensitivity.sa)
@@ -122,7 +126,7 @@ class Receipt(py_schema.PySchemaElement):
 
 
 class MigrosSchema(py_schema.PySchemaElement):
-
+    """ A fake Migros schema, showing Cumulus receipts """
     cumulus: int | None = pydantic.Field(None, sensitivity=schemas.Sensitivity.qid)
     receipts: list[Receipt] = []
 

@@ -64,6 +64,7 @@ class CoopDApp(dapp_attrs.DApp):
 
 
 class CoopSchema(py_schema.PySchemaElement):
+    """ There is no Schema for Coop yet """
 
     supercard: int | None = pydantic.Field(None, sensitivity=schemas.Sensitivity.qid)
     #receipts: list[Receipt] = []
