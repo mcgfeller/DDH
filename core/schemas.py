@@ -88,15 +88,17 @@ class SchemaAttributes(DDHbaseModel):
     requires: Requires | None = None
     mimetypes: MimeTypes | None = None
     references: dict[keys.DDHkey, keys.DDHkey] = {}
-    sensitivities: dict[keys.DDHkey, dict[str, Sensitivity]] = {}
+    sensitivities: dict[Sensitivity, dict[str, set[str]]] = pydantic.Field(default={},
+                                                                           description="Sensitivities by Sensitivity, schema key, set of fields. We cannot use DDHKey for schema key, as the dict is not jsonable.")
 
     def add_reference(self, path: keys.DDHkey, reference: AbstractSchemaReference):
         self.references[path] = reference.get_target()
         return
 
     def add_sensitivities(self, path: keys.DDHkey, sensitivities: dict[str, Sensitivity]):
-        # TODO: Structure - must be jsonable... fields by Sensitivity?
-        # self.sensitivities[path] = sensitivities
+        """ tranform path and {field : Sensitivity} to structure by Sensitivity, path, fields. """
+        for field, s in sensitivities.items():
+            self.sensitivities.setdefault(s, {}).setdefault(str(path), set()).add(field)
         return
 
 
