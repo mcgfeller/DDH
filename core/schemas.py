@@ -220,6 +220,19 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         schema = self.expand_references()
         return schema
 
+    def prepare_data_get(self, access: permissions.Access, transaction, data):
+        """ check data obtained through Schema; may be used to apply capabilities """
+        return data
+
+    def prepare_data_put(self, access: permissions.Access, transaction, data):
+        """ check data against Schema; may be used to apply capabilities:
+                Data version must correspond to a schema version
+                non-latest version data cannot be put unless upgrade exists
+                data under schema reference only if schema reprs are compatible
+
+        """
+        return data
+
     def expand_references(self) -> AbstractSchema:
         """ Replace all references to other schemas by embedding the other schema into
             this schema. Works only if schemas have the same representation. 

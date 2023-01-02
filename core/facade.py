@@ -47,6 +47,7 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
             data = await get_data(access, transaction, q)
             # pass data to enode and get result:
             data = await get_enode(nodes.Ops.get, access, transaction, data, q)
+            data = schema.prepare_data_get(access, transaction, data)
 
     return data, headers
 
@@ -81,13 +82,8 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                 case keys.ForkType.data:
 
                     data = json.loads(data)  # make dict
-                    # TODO:
-                    # Data checks:
-                    # Get schema
-                    # Data can only be put when schema exists
-                    # Data version must correspond to a schema version
-                    # non-latest version data cannot be put unless upgrade exists
-                    # data under schema reference only if schema reprs are compatible
+                    # check data against Schema
+                    data = schema.prepare_data_get(access, transaction, data)
 
                     # first e_node to transform data:
                     data = await get_enode(nodes.Ops.put, access, transaction, data, q)
