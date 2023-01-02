@@ -38,6 +38,9 @@ class SchemaCapability(Capability):
         """ return the capabilities required for the access modes """
         return []
 
+    def apply(self, schema, access, transaction, data):
+        return data
+
 
 class Validate(SchemaCapability):
     supports_modes = set()

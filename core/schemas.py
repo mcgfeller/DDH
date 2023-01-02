@@ -210,11 +210,12 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
                 uniform schema tree - all references must be in same schema repr
 
         """
-        schema = self.expand_references()
+        schema = self
         return schema
 
     def prepare_data_get(self, access: permissions.Access, transaction, data):
         """ check data obtained through Schema; may be used to apply capabilities """
+        data = self.apply_capabilities(access, transaction, data)
         return data
 
     def prepare_data_put(self, access: permissions.Access, transaction, data):
@@ -224,6 +225,7 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
                 data under schema reference only if schema reprs are compatible
 
         """
+        data = self.apply_capabilities(access, transaction, data)
         return data
 
     def expand_references(self) -> AbstractSchema:
@@ -235,6 +237,15 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
             return self
         else:
             return self
+
+    def apply_capabilities(self, access, transaction, data):
+        caps = self.select_capabilities(access, transaction, data)
+        for cap in caps:
+            data = cap.apply(self, access, transaction, data)
+        return data
+
+    def select_capabilities(self, access, transaction, data) -> typing.Iterable[capabilities.SchemaCapability]:
+        return []
 
     @property
     def format(self) -> SchemaFormat:
