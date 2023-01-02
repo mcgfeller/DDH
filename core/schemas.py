@@ -9,19 +9,12 @@ import pydantic
 from frontend import user_auth
 from utils.pydantic_utils import DDHbaseModel
 
-from . import (errors, keydirectory, keys, nodes, permissions, principals, errors,
-               versions)
+from . import (errors, keydirectory, keys, nodes, permissions, principals,
+               versions, capabilities)
 
 import logging
 
 logger = logging.getLogger(__name__)
-
-
-@enum.unique
-class Capability(str, enum.Enum):
-    """ Capabilities of a Schema """
-    anon = 'anonymization'
-    pseudo = 'pseudonymization'
 
 
 @enum.unique
