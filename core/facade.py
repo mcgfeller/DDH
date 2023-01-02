@@ -10,6 +10,10 @@ import accept_types
 from . import permissions, keys, schemas, nodes, keydirectory, transactions, errors, dapp_attrs
 from frontend import sessions
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 async def ddh_get(access: permissions.Access, session: sessions.Session, q: str | None = None, accept_header: list[str] | None = None) -> tuple[typing.Any, dict]:
     """ Service utility to retrieve data and return it in the desired format.
@@ -153,6 +157,7 @@ def get_schema(access: permissions.Access, transaction: transactions.Transaction
     """
     schema = schemas.SchemaContainer.get_sub_schema(access, transaction)
     if schema:
+        schema = schema.prepare_schema_get(access, transactions)
         formatted_schema = schema.to_format(schemaformat)
     else:
         formatted_schema = None  # in case of not found.
@@ -166,17 +171,10 @@ def put_schema(access: permissions.Access, transaction: transactions.Transaction
     snode, split = keydirectory.NodeRegistry.get_node(
         access.ddhkey, nodes.NodeSupports.schema, transaction)  # get applicable schema nodes
 
-    # TODO:
-    # Schema checks:
-    # No shadowing - cannot insert into an existing schema, including into refs
-    # Reference update
-    #   ref -> update referenced
-    #   schema update -> ref
-    #   uniform schema tree - all references must be in same schema repr
-
     if snode:
         access.raise_if_not_permitted(keydirectory.NodeRegistry._get_consent_node(
             access.ddhkey.without_variant_version(), nodes.NodeSupports.schema, snode, transaction))
+        schema = schema.prepare_schema_put(access, transactions)
         # schema = snode.get_sub_schema(access.ddhkey, split) # TODO!
     return
 

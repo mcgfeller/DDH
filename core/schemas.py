@@ -12,6 +12,17 @@ from utils.pydantic_utils import DDHbaseModel
 from . import (errors, keydirectory, keys, nodes, permissions, principals, errors,
                versions)
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+@enum.unique
+class Capability(str, enum.Enum):
+    """ Capabilities of a Schema """
+    anon = 'anonymization'
+    pseudo = 'pseudonymization'
+
 
 @enum.unique
 class Sensitivity(str, enum.Enum):
@@ -186,10 +197,38 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
             self.schema_attributes.mimetypes = self.mimetypes
 
     def walk_elements(self):
-        """ walk trhough the elements to gather attributes which are written into . schema_attributes """
+        """ walk through the elements to gather attributes which are written into . schema_attributes """
         for path, element in self:
             element.extract_attributes(path, self.schema_attributes)
         return
+
+    def prepare_schema_get(self, access: permissions.Access, transaction) -> AbstractSchema:
+        """ Prepare Schema for get, returning this or modified schema """
+        schema = self.expand_references()
+        return schema
+
+    def prepare_schema_put(self, access: permissions.Access, transaction) -> AbstractSchema:
+        """ Prepare Schema for put, returning this or modified schema
+            TODO: Schema checks:
+                No shadowing - cannot insert into an existing schema, including into refs
+                Reference update
+                ref -> update referenced
+                schema update -> ref
+                uniform schema tree - all references must be in same schema repr
+
+        """
+        schema = self.expand_references()
+        return schema
+
+    def expand_references(self) -> AbstractSchema:
+        """ Replace all references to other schemas by embedding the other schema into
+            this schema. Works only if schemas have the same representation. 
+        """
+        if (refs := self.schema_attributes.references):
+            logger.error('reference expansion not supported')
+            return self
+        else:
+            return self
 
     @property
     def format(self) -> SchemaFormat:
@@ -347,6 +386,7 @@ class SchemaContainer(DDHbaseModel):
 
 
 def create_schema(s: str, format: SchemaFormat, sa: dict) -> AbstractSchema:
+    """ Create Schema from a string repr, used by API to instantiate JsonSchema from DApps """
     sa = SchemaAttributes(**sa)
     sclass = SchemaFormat2Class.get(format)
     if not sclass:
