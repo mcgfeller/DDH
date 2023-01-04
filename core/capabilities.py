@@ -52,3 +52,7 @@ class Anonymize(SchemaCapability):
 
 class Pseudonymize(Anonymize):
     supports_modes = {permissions.AccessMode.pseudonym}
+
+
+# Enum with all available Capabilities:
+Capabilities = enum.Enum('Capabilities', [(n, n) for n in SchemaCapability.Capabilities])

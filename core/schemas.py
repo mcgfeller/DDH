@@ -94,6 +94,7 @@ class SchemaAttributes(DDHbaseModel):
     references: dict[keys.DDHkey, keys.DDHkey] = {}
     sensitivities: dict[Sensitivity, dict[str, set[str]]] = pydantic.Field(default={},
                                                                            description="Sensitivities by Sensitivity, schema key, set of fields. We cannot use DDHKey for schema key, as the dict is not jsonable.")
+    capabilities: set[capabilities.Capabilities] = set(capabilities.Capabilities.__members__)  # XXX: for testing only
 
     def add_reference(self, path: keys.DDHkey, reference: AbstractSchemaReference):
         self.references[path] = reference.get_target()
@@ -245,7 +246,13 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         return data
 
     def select_capabilities(self, access, transaction, data) -> typing.Iterable[capabilities.SchemaCapability]:
-        return []
+        # join the capabilities from each mode:
+        required_capabilities = set.union(
+            set(), *[c for m in access.modes if (c := capabilities.SchemaCapability.by_modes.get(m))])
+        missing = required_capabilities - self.schema_attributes.capabilities
+        if missing:  # TODO: Specific error
+            raise errors.AccessError(f"Schema {self} does not support required capabilities; missing {missing}")
+        return self.schema_attributes.capabilities.intersection(required_capabilities)
 
     @property
     def format(self) -> SchemaFormat:
