@@ -47,7 +47,7 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
             data = await get_data(access, transaction, q)
             # pass data to enode and get result:
             data = await get_enode(nodes.Ops.get, access, transaction, data, q)
-            data = schema.prepare_data_get(access, transaction, data)
+            data = schema.after_data_read(access, transaction, data)
 
     return data, headers
 
@@ -83,7 +83,7 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
 
                     data = json.loads(data)  # make dict
                     # check data against Schema
-                    data = schema.prepare_data_get(access, transaction, data)
+                    data = schema.after_data_read(access, transaction, data)
 
                     # first e_node to transform data:
                     data = await get_enode(nodes.Ops.put, access, transaction, data, q)
@@ -153,7 +153,7 @@ def get_schema(access: permissions.Access, transaction: transactions.Transaction
     """
     schema = schemas.SchemaContainer.get_sub_schema(access, transaction)
     if schema:
-        schema = schema.prepare_schema_get(access, transactions)
+        schema = schema.after_schema_read(access, transactions)
         formatted_schema = schema.to_format(schemaformat)
     else:
         formatted_schema = None  # in case of not found.
@@ -170,7 +170,7 @@ def put_schema(access: permissions.Access, transaction: transactions.Transaction
     if snode:
         access.raise_if_not_permitted(keydirectory.NodeRegistry._get_consent_node(
             access.ddhkey.without_variant_version(), nodes.NodeSupports.schema, snode, transaction))
-        schema = schema.prepare_schema_put(access, transactions)
+        schema = schema.before_schema_put(access, transactions)
         # schema = snode.get_sub_schema(access.ddhkey, split) # TODO!
     return
 

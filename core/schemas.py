@@ -195,12 +195,12 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
             element.extract_attributes(path, self.schema_attributes)
         return
 
-    def prepare_schema_get(self, access: permissions.Access, transaction) -> AbstractSchema:
+    def after_schema_read(self, access: permissions.Access, transaction) -> AbstractSchema:
         """ Prepare Schema for get, returning this or modified schema """
         schema = self.expand_references()
         return schema
 
-    def prepare_schema_put(self, access: permissions.Access, transaction) -> AbstractSchema:
+    def before_schema_put(self, access: permissions.Access, transaction) -> AbstractSchema:
         """ Prepare Schema for put, returning this or modified schema
             TODO: Schema checks:
                 No shadowing - cannot insert into an existing schema, including into refs
@@ -213,12 +213,12 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         schema = self
         return schema
 
-    def prepare_data_get(self, access: permissions.Access, transaction, data):
+    def after_data_read(self, access: permissions.Access, transaction, data):
         """ check data obtained through Schema; may be used to apply capabilities """
         data = self.apply_capabilities(access, transaction, data)
         return data
 
-    def prepare_data_put(self, access: permissions.Access, transaction, data):
+    def before_data_put(self, access: permissions.Access, transaction, data):
         """ check data against Schema; may be used to apply capabilities:
                 Data version must correspond to a schema version
                 non-latest version data cannot be put unless upgrade exists
@@ -347,6 +347,8 @@ class SchemaContainer(DDHbaseModel):
     def add(self, schema: AbstractSchema):
         """ add a schema, considering its attributes """
         sa = schema.schema_attributes
+        assert sa
+        assert sa.variant
         sbv = self.schemas_by_variant.setdefault(sa.variant, {})
         sbv[sa.version] = schema
         default_version = sbv.get(versions.Unspecified)
