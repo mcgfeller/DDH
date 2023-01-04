@@ -55,4 +55,4 @@ class Pseudonymize(Anonymize):
 
 
 # Enum with all available Capabilities:
-Capabilities = enum.Enum('Capabilities', [(n, n) for n in SchemaCapability.Capabilities])
+Capabilities = enum.Enum('Capabilities', [(n, n) for n in SchemaCapability.Capabilities], type=str, module=__name__)
