@@ -348,7 +348,6 @@ class SchemaContainer(DDHbaseModel):
         """ add a schema, considering its attributes """
         sa = schema.schema_attributes
         assert sa
-        assert sa.variant
         sbv = self.schemas_by_variant.setdefault(sa.variant, {})
         sbv[sa.version] = schema
         default_version = sbv.get(versions.Unspecified)
