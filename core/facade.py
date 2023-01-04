@@ -170,7 +170,7 @@ def put_schema(access: permissions.Access, transaction: transactions.Transaction
     if snode:
         access.raise_if_not_permitted(keydirectory.NodeRegistry._get_consent_node(
             access.ddhkey.without_variant_version(), nodes.NodeSupports.schema, snode, transaction))
-        schema = schema.before_schema_put(access, transactions)
+        schema = schema.before_schema_write(access, transactions)
         # schema = snode.get_sub_schema(access.ddhkey, split) # TODO!
     return
 
