@@ -247,11 +247,10 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
 
     def select_capabilities(self, access, transaction, data) -> typing.Iterable[capabilities.SchemaCapability]:
         # join the capabilities from each mode:
-        required_capabilities = set.union(
-            set(), *[c for m in access.modes if (c := capabilities.SchemaCapability.by_modes.get(m))])
+        required_capabilities = capabilities.SchemaCapability.capabilities_for_modes(access.modes)
         missing = required_capabilities - self.schema_attributes.capabilities
-        if missing:  # TODO: Specific error
-            raise errors.AccessError(f"Schema {self} does not support required capabilities; missing {missing}")
+        if missing:
+            raise errors.CapabilityMissing(f"Schema {self} does not support required capabilities; missing {missing}")
         return self.schema_attributes.capabilities.intersection(required_capabilities)
 
     @property

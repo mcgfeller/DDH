@@ -16,6 +16,7 @@ class Capability(DDHbaseModel):
 
 
 SchemaCapability = typing.ForwardRef('SchemaCapability')
+Capabilities = typing.ForwardRef('Capabilities')
 
 
 class SchemaCapability(Capability):
@@ -34,9 +35,10 @@ class SchemaCapability(Capability):
         return
 
     @classmethod
-    def capabilities_for_modes(cls, modes: typing.Iterable[permissions.AccessMode]) -> list[SchemaCapability]:
+    def capabilities_for_modes(cls, modes: typing.Iterable[permissions.AccessMode]) -> set[Capabilities]:
         """ return the capabilities required for the access modes """
-        return []
+        caps = set.union(set(), *[c for m in modes if (c := cls.by_modes.get(m))])
+        return {Capabilities(c) for c in caps}  # to Enum
 
     def apply(self, schema, access, transaction, data):
         return data
