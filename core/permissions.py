@@ -262,7 +262,7 @@ class Access(DDHbaseModel):
 
     def raise_if_not_permitted(self, node: nodes.Node | None, owner: principals.Principal | None = None, record_access: bool = True):
         """ raise access error if this access to node is not permitted """
-        ok, used_consents, msg, consentees = self.permitted(node)
+        ok, used_consents, consentees, msg = self.permitted(node)
         if not ok:
             raise errors.AccessError(msg)
         return ok, used_consents, consentees, msg

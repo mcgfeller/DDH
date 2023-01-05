@@ -100,15 +100,15 @@ async def get_data(access: permissions.Access, transaction: transactions.Transac
     if data_node:
         if access.ddhkey.fork == keys.ForkType.consents:
             access.include_mode(permissions.AccessMode.read)
-            *d, consentees = access.raise_if_not_permitted(data_node)
+            *d, consentees, msg = access.raise_if_not_permitted(data_node)
             return data_node.consents
         else:
             data_node = data_node.ensure_loaded(transaction)
             data_node = typing.cast(nodes.DataNode, data_node)
-            *d, consentees = access.raise_if_not_permitted(data_node)
+            *d, consentees, msg = access.raise_if_not_permitted(data_node)
             data = data_node.execute(nodes.Ops.get, access, transaction, d_key_split, None, q)
     else:
-        *d, consentees = access.raise_if_not_permitted(keydirectory.NodeRegistry._get_consent_node(
+        *d, consentees, msg = access.raise_if_not_permitted(keydirectory.NodeRegistry._get_consent_node(
             access.ddhkey, nodes.NodeSupports.data, None, transaction))
         data = {}
     transaction.add_read_consentees({c.id for c in consentees})
