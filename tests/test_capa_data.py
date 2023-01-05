@@ -50,12 +50,12 @@ async def test_read_anon(user, user2):
     # granted only with read anonymous
     ddhkey2 = keys.DDHkey(key="/another/org/private/documents/doc20")
     access = permissions.Access(ddhkey=ddhkey2, principal=user, modes={permissions.AccessMode.read})
-    with pytest.raises(errors.AccessError):
+    with pytest.raises(errors.AccessError):  # we must supply AccessMode.anonymous, so this must raise AccessError
         await facade.ddh_get(access, session)
 
     access = permissions.Access(ddhkey=ddhkey2, principal=user, modes={
                                 permissions.AccessMode.read, permissions.AccessMode.anonymous})
-    with pytest.raises(errors.CapabilityMissing):
+    with pytest.raises(errors.CapabilityMissing):  # TODO Once we have the capable Schema, this must not raise error
         await facade.ddh_get(access, session)
     return
 
