@@ -6,7 +6,7 @@ from backend import keyvault
 import pytest
 import json
 
-keyvault.clear_vaults()  # s
+keyvault.clear_vaults()  # need to be independet of other tests
 
 
 @pytest.fixture(scope="module")
