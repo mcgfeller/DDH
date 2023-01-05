@@ -52,6 +52,9 @@ class AccessKeyVaultClass(DDHbaseModel):
     """ Hold AccessKey by (principal.id, and key.nodeid) """
     access_keys: dict[tuple, AccessKey] = {}
 
+    def clear_vault(self):
+        self.access_keys.clear()
+
     def add(self, key: AccessKey):
         self.access_keys[(key.principal.id, key.nodeid)] = key
 
@@ -104,6 +107,9 @@ class PrincipalKey(DDHbaseModel):
 class PrincipalKeyVaultClass(DDHbaseModel):
 
     key_by_principal: dict[str, PrincipalKey] = {}
+
+    def clear_vault(self):
+        self.key_by_principal.clear()
 
     def key_for_principal(self, principal: principals.Principal) -> PrincipalKey | None:
         return self.key_by_principal.get(principal.id)
@@ -159,3 +165,10 @@ def decrypt_data(principal: principals.Principal, nodeid: common_ids.PersistId, 
     storage_key = AccessKeyVault.get_storage_key(principal, nodeid)
     data = storage_key.decrypt(cipherdata)
     return data
+
+
+def clear_vaults():
+    """ Clears the Vaults; useful to make tests independent of one another 
+    """
+    AccessKeyVault.clear_vault()
+    PrincipalKeyVault.clear_vault()

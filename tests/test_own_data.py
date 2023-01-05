@@ -2,8 +2,11 @@
 from core import keys, permissions, facade, errors, transactions, principals
 from core import pillars
 from frontend import user_auth, sessions
+from backend import keyvault
 import pytest
 import json
+
+keyvault.clear_vaults()  # need to be independet of other tests
 
 
 @pytest.fixture(scope="module")
@@ -95,7 +98,7 @@ async def test_write_data_with_consent(user, user2):
     await facade.ddh_put(access, session, data)
     # grant read access to user1
     consents = permissions.Consent.single(grantedTo=[user], withModes={permissions.AccessMode.read})
-    ddhkey2f = ddhkey2; ddhkey2f.fork = keys.ForkType.consents
+    ddhkey2f = ddhkey2.ensure_fork(keys.ForkType.consents)
     access = permissions.Access(ddhkey=ddhkey2f, principal=user2, modes={permissions.AccessMode.write})
     await facade.ddh_put(access, session, consents.json())
 
