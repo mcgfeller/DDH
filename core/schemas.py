@@ -116,7 +116,7 @@ class AbstractSchemaElement(DDHbaseModel, abc.ABC):
         raise errors.SubClass
 
     @classmethod
-    def replace_by_schema(cls, ddhkey: keys.DDHkey, schema_attributes: SchemaAttributes | None) -> type[AbstractSchemaReference]:
+    def replace_by_schema(cls, ddhkey: keys.DDHkey, schema_attributes: SchemaAttributes | None = None) -> type[AbstractSchemaReference]:
         """ Replace this PySchemaElement by a proper schema with attributes, 
             and return the PySchemaReference to it, which can be used like a PySchemaElement.
         """
