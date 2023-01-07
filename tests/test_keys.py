@@ -10,7 +10,7 @@ def test_paths():
     ddhkey3 = keys.DDHkey(key='/rooted')
     ddhkey4 = keys.DDHkey(key='/rooted/subkey')
     assert ddhkey3 == ddhkey4.up()
-    assert ddhkey3.up().up() is None
+    assert not ddhkey3.up().up()
     ddhkey = keys.DDHkey(key=())
 
     return
@@ -46,7 +46,6 @@ def test_variant():
     assert ddhkey3 == ddhkey4
 
 
-
 def test_version():
     ddhkey1 = keys.DDHkey(key='norooted:data::unspecified')
     assert str(ddhkey1) == 'norooted'
@@ -75,6 +74,7 @@ def test_version():
     with pytest.raises(ValueError):
         keys.DDHkey(key='norooted/subkey:::4.x')  # invalid version
 
+
 def test_without_variant_version():
     ddhkey1 = keys.DDHkey(key='norooted/subkey:schema:spec:1.0')
     ddh_wvv = ddhkey1.without_variant_version()
@@ -82,9 +82,10 @@ def test_without_variant_version():
     assert ddh_wvv.variant == keys.DefaultVariant
     assert ddh_wvv.version == keys.versions.Unspecified
 
+
 def test__split():
     """ Test key split """
     ddhkey1 = keys.DDHkey("/mgf/p/living/shopping/receipts::PySchema")
-    k0,k1 = ddhkey1.split_at(5)
+    k0, k1 = ddhkey1.split_at(5)
     assert str(k0) == "/mgf/p/living/shopping::PySchema"
     assert str(k1) == "receipts"

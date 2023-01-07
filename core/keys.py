@@ -152,13 +152,13 @@ class DDHkey(DDHbaseModel):
         """ get part of key, str if ix is integer, tuple if slice """
         return self.key.__getitem__(ix)
 
-    def up(self) -> DDHkey | None:
-        """ return key up one level, or None if at top """
+    def __bool__(self) -> bool:
+        return bool(self.key)
+
+    def up(self) -> DDHkey:
+        """ return key up one level; if a top, bool(key) is False """
         upkey = self.key[:-1]
-        if upkey:
-            return self.__class__(upkey, specifiers=self.specifiers)
-        else:
-            return None
+        return self.__class__(upkey, specifiers=self.specifiers)
 
     def split_at(self, split: int) -> typing.Tuple[DDHkey, DDHkey]:
         """ split the key into two DDHkeys at split
@@ -218,6 +218,19 @@ class DDHkey(DDHbaseModel):
             specifiers are not copied. Keys are  only built as needed.
         """
         return (self.__class__(self.key[:i]) for i in range(len(self.key), -1, -1))  # count downward from end to 0
+
+    def __add__(self, a: DDHkey | tuple | str) -> DDHkey:
+        """ Add a further segment, creating a new key """
+        if not a:
+            return self
+        else:
+            if isinstance(a, DDHkey):
+                k = a.key
+            elif isinstance(a, str):
+                k = (a,)
+            else:
+                k = tuple(a)
+            return DDHkey(self.key+k, specifiers=self.specifiers)
 
 
 from . import nodes
