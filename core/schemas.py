@@ -310,6 +310,16 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         parent.add_fields({schemakey[-1]: (schemaref, None)})
         return schemaref
 
+    @classmethod
+    def create_schema(cls, s: str, format: SchemaFormat, sa: dict) -> AbstractSchema:
+        """ Create Schema from a string repr, used by API to instantiate JsonSchema from DApps """
+        sat = SchemaAttributes(**sa)
+        sclass = SchemaFormat2Class.get(format)
+        if not sclass:
+            raise errors.NotFound(f'Unknown schema format {format}')
+        schema = sclass.from_str(s, schema_attributes=sat)
+        return schema
+
 
 SchemaFormat2Class = {}
 Class2SchemaFormat = {}
@@ -407,13 +417,3 @@ class SchemaContainer(DDHbaseModel):
             if schema_element:
                 schema = schema_element.to_schema()
         return schema
-
-
-def create_schema(s: str, format: SchemaFormat, sa: dict) -> AbstractSchema:
-    """ Create Schema from a string repr, used by API to instantiate JsonSchema from DApps """
-    sa = SchemaAttributes(**sa)
-    sclass = SchemaFormat2Class.get(format)
-    if not sclass:
-        raise errors.NotFound(f'Unknown schema format {format}')
-    schema = sclass.from_str(s, schema_attributes=sa)
-    return schema
