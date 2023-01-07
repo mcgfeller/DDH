@@ -1,6 +1,8 @@
 """ Test Schema manipulations """
 
 import pytest
+import typing
+import datetime
 from core import keys, schemas, pillars, keydirectory, nodes, schema_root
 from frontend import sessions
 from schema_formats import py_schema
@@ -42,9 +44,33 @@ def test_container(migros_key_schema):
 def test_insert_schema(ensure_root_node, migros_key_schema, transaction):
     assert ensure_root_node
     k, schema = migros_key_schema
-    json_schema = schema.to_json_schema()
     # replace_by_schema --> by with JsonSchema
     py_schema.PySchema.insert_schema('Migros', k, transaction)
+
+
+def test_insert_py_schemaelement(ensure_root_node, migros_key_schema, transaction):
+    assert ensure_root_node
+    k, schema = migros_key_schema
+    schema[keys.DDHkey('Garantie')] = Garantie
+
+
+def test_replace_py_schemaelement(ensure_root_node, migros_key_schema, transaction):
+    assert ensure_root_node
+    k, schema = migros_key_schema
+    schema[keys.DDHkey('Produkt/garantie')] = Garantie
+
+
+def test_insert_py_schemaelement_intermediate(ensure_root_node, migros_key_schema, transaction):
+    assert ensure_root_node
+    k, schema = migros_key_schema
+    schema.__setitem__(keys.DDHkey('garantie'), Garantie, create_intermediate=True)
+
+
+def test_insert_py_reference(ensure_root_node, migros_key_schema, transaction):
+    assert ensure_root_node
+    k, schema = migros_key_schema
+    s = Garantie.replace_by_schema(k+'refgarantie')
+    schema[keys.DDHkey('Garantie')] = s
 
 
 def test_schema_to_json(migros_key_schema):
@@ -58,3 +84,9 @@ def test_schema_iterator(migros_key_schema):
     assert [se for se in migros_key_schema[1]]
     json_schema = migros_key_schema[1].to_json_schema()
     # assert [se for se in json_schema]
+
+
+class Garantie(py_schema.PySchemaElement):
+    """ Details of a product """
+    issuer: str = 'Migros'
+    garantie_bis: datetime.date

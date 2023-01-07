@@ -107,6 +107,7 @@ class PySchema(schemas.AbstractSchema):
         return default if se is None else se
 
     def __setitem__(self, key: keys.DDHkey, value: type[PySchemaElement], create_intermediate: bool = True) -> type[PySchemaElement] | None:
+        parent = self.schema_element.descend_path(key.up(), create_intermediate=False)
         raise errors.SubClass
 
     def __iter__(self) -> typing.Iterator[tuple[keys.DDHkey, type[PySchemaElement]]]:
