@@ -80,7 +80,10 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                     data_node.update_consents(access, transaction, remainder, consents)
 
                 case keys.ForkType.data:
-
+                    # TODO: Checks
+                    # + Schema exists for data version
+                    # - non-latest version only if upgrade exists (consider again: New Schema may make everything fail)
+                    # - Data within schema that includes schema reference only if schema can be expanded
                     data = json.loads(data)  # make dict
                     # check data against Schema
                     data = schema.after_data_read(access, transaction, data)
