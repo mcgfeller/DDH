@@ -40,6 +40,8 @@ class DDHbaseModel(pydantic.BaseModel):
                         'default values are not allowed'
                     ) from e
             else:
+                assert not issubclass(
+                    f_def, pydantic.BaseModel), 'pass tuple or default value as single item (not model!)'
                 f_annotation, f_value = None, f_def
 
             if f_annotation:
