@@ -1,10 +1,11 @@
-""" Demonstrates Pydantic Bug https://github.com/pydantic/pydantic/issues/3679#issuecomment-1337575645
-"""
+
 
 from __future__ import annotations
 import pydantic
 import typing
 
+
+# This cannot be inline in the funtion, as it needs to be module global
 WithClassVar = typing.ForwardRef('WithClassVar')  # resolved problem
 
 
@@ -17,5 +18,10 @@ class WithClassVar(pydantic.BaseModel):
 
 
 WithClassVar.update_forward_refs()
-wcv = WithClassVar(i=42)
-print(wcv)
+
+
+def test_pydantic_issue_3679():
+    """ Demonstrates Pydantic Bug https://github.com/pydantic/pydantic/issues/3679#issuecomment-1337575645
+    """
+    wcv = WithClassVar(i=42)
+    d = wcv.dict()
