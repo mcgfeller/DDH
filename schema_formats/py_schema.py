@@ -47,6 +47,7 @@ class PySchemaElement(schemas.AbstractSchemaElement):
                     return None
             else:
                 assert isinstance(mf, pydantic.fields.ModelField)
+                assert mf.type_ is not None
                 if issubclass(mf.type_, PySchemaElement):
                     current = mf.type_  # this is the next Pydantic class
                 else:  # we're at a leaf, return
@@ -108,9 +109,10 @@ class PySchema(schemas.AbstractSchema):
 
     def __setitem__(self, key: keys.DDHkey, value: type[PySchemaElement], create_intermediate: bool = True) -> type[PySchemaElement] | None:
         pkey = key.up()
-        parent = self.schema_element.descend_path(pkey, create_intermediate=False)
+        parent = self.schema_element.descend_path(pkey, create_intermediate=create_intermediate)
         assert parent
-        parent.add_fields(**{key[-1]: (self.schema_element, None)})
+        assert issubclass(value, PySchemaElement)
+        parent.add_fields(**{key[-1]: (value, None)})
         return parent
 
     def __iter__(self) -> typing.Iterator[tuple[keys.DDHkey, type[PySchemaElement]]]:
