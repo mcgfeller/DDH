@@ -32,6 +32,13 @@ def migros_key_schema():
     return k, ps
 
 
+def check_schema(schema):
+    """ check if schema is valid """
+    assert schema.schema_element.schema()
+    assert schema.schema_element.schema_json()
+    assert [se for se in schema]
+
+
 def test_container(migros_key_schema):
     k, schema = migros_key_schema
     json_schema = schema.to_json_schema()
@@ -46,24 +53,28 @@ def test_insert_schema(ensure_root_node, migros_key_schema, transaction):
     k, schema = migros_key_schema
     # replace_by_schema --> by with JsonSchema
     py_schema.PySchema.insert_schema('Migros', k, transaction)
+    check_schema(schema)
 
 
 def test_insert_py_schemaelement(ensure_root_node, migros_key_schema, transaction):
     assert ensure_root_node
     k, schema = migros_key_schema
     schema[keys.DDHkey('Garantie')] = Garantie
+    check_schema(schema)
 
 
 def test_replace_py_schemaelement(ensure_root_node, migros_key_schema, transaction):
     assert ensure_root_node
     k, schema = migros_key_schema
     schema[keys.DDHkey('Produkt/garantie')] = Garantie
+    check_schema(schema)
 
 
 def test_insert_py_schemaelement_intermediate(ensure_root_node, migros_key_schema, transaction):
     assert ensure_root_node
     k, schema = migros_key_schema
     schema.__setitem__(keys.DDHkey('garantie'), Garantie, create_intermediate=True)
+    check_schema(schema)
 
 
 def test_insert_py_reference(ensure_root_node, migros_key_schema, transaction):
@@ -71,6 +82,7 @@ def test_insert_py_reference(ensure_root_node, migros_key_schema, transaction):
     k, schema = migros_key_schema
     s = Garantie.replace_by_schema(k+'refgarantie')
     schema[keys.DDHkey('Garantie')] = s
+    check_schema(schema)
 
 
 def test_schema_to_json(migros_key_schema):
