@@ -56,6 +56,16 @@ def test_add_deep_subclass():
     check(TopClass)
 
 
+def test_add_empty_subclass():
+    empty = pydantic.create_model('empty', __base__=DDHbaseModel)
+    empty2 = pydantic.create_model('empty2', __base__=DDHbaseModel)
+    TopClass.__fields__['receipts'].type_.add_fields(empty=(empty, None))
+    empty.add_fields(empty2=(empty2, None))
+    empty2.add_fields(last_receipts=(UpperClass, None))
+    check(empty)
+    check(TopClass)
+
+
 def check(cls):
     cls.schema()
     a = list(cls.__fields__.items())

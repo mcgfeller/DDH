@@ -72,13 +72,11 @@ def test_replace_py_schemaelement(ensure_root_node, migros_key_schema, transacti
     check_schema(schema)
 
 
-@pytest.mark.skip(reason="create_intermediate damages schema in rest of tests")
 def test_insert_py_schemaelement_intermediate(ensure_root_node, migros_key_schema, transaction):
     assert ensure_root_node
     k, schema = migros_key_schema
-    # TODO: create_intermediate leaves mf.type_ is None
-    # schema.__setitem__(keys.DDHkey('products/garantie'), Garantie, create_intermediate=True)
-    # assert schema[keys.DDHkey('products/garantie')] is Garantie
+    schema.__setitem__(keys.DDHkey('products/garantie'), Garantie, create_intermediate=True)
+    assert schema[keys.DDHkey('products/garantie')] is Garantie
     check_schema(schema)
 
 

@@ -41,7 +41,7 @@ class PySchemaElement(schemas.AbstractSchemaElement):
             if mf is None:
                 if create_intermediate:
                     new_current = pydantic.create_model(segment, __base__=PySchemaElement)
-                    current.add_fields(**{segment: new_current})
+                    current.add_fields(**{segment: (new_current, None)})
                     current = new_current
                 else:
                     return None
