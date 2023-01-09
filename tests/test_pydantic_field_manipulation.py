@@ -39,29 +39,29 @@ class TopClass(DDHbaseModel):
 
 def test_add_simple():
     """ Apparently simple fields cannot be added to a Pydantic class """
-    TopClass.add_fields(cumulus=(typing.Optional[int], None))
+    TopClass._add_fields(cumulus=(typing.Optional[int], None))
     assert 'cumulus' in TopClass.__fields__
     check(TopClass)
     return
 
 
 def test_add_subclass():
-    TopClass.add_fields(Produkt2=(LowerClass, None))
+    TopClass._add_fields(Produkt2=(LowerClass, None))
     check(TopClass)
 
 
 def test_add_deep_subclass():
-    TopClass.__fields__['receipts'].type_.add_fields(last_receipts=(UpperClass, None))
-    TopClass.__fields__['receipts'].type_.add_fields(last_receipts=(UpperClass, None), last_product=(LowerClass, None))
+    TopClass.__fields__['receipts'].type_._add_fields(last_receipts=(UpperClass, None))
+    TopClass.__fields__['receipts'].type_._add_fields(last_receipts=(UpperClass, None), last_product=(LowerClass, None))
     check(TopClass)
 
 
 def test_add_empty_subclass():
     empty = pydantic.create_model('empty', __base__=DDHbaseModel)
     empty2 = pydantic.create_model('empty2', __base__=DDHbaseModel)
-    TopClass.__fields__['receipts'].type_.add_fields(empty=(empty, None))
-    empty.add_fields(empty2=(empty2, None))
-    empty2.add_fields(last_receipts=(UpperClass, None))
+    TopClass.__fields__['receipts'].type_._add_fields(empty=(empty, None))
+    empty._add_fields(empty2=(empty2, None))
+    empty2._add_fields(last_receipts=(UpperClass, None))
     check(empty)
     check(TopClass)
 

@@ -33,7 +33,7 @@ def install_schema(transaction, ddhkey: keys.DDHkey, sel: typing.Type[py_schema.
     assert parent  # must exist because create_intermediate=True
 
     # now insert our schema into the parent's:
-    parent.add_fields({ddhkey[-1]: (schemaref, None)})
+    parent._add_fields({ddhkey[-1]: (schemaref, None)})
 
     return parent
 

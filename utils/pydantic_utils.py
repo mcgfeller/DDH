@@ -24,7 +24,7 @@ class DDHbaseModel(pydantic.BaseModel):
     #         return super().validate(value)
 
     @classmethod
-    def add_fields(cls, **field_definitions: typing.Any):
+    def _add_fields(cls, **field_definitions: typing.Any):
         """ Add fields in-place https://github.com/samuelcolvin/pydantic/issues/1937 """
         new_fields: dict[str, pydantic.fields.ModelField] = {}
         new_annotations: dict[str, type | None] = {}

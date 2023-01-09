@@ -160,7 +160,7 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         parent = self.__getitem__(pkey, create_intermediate=create_intermediate)
         assert parent
         assert issubclass(value, AbstractSchemaElement)
-        parent.add_fields(**{key[-1]: (value, None)})
+        parent._add_fields(**{key[-1]: (value, None)})
         return parent
 
     @abc.abstractmethod
@@ -288,7 +288,7 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         """ native output representation """
         ...
 
-    def add_fields(self, fields: dict):
+    def _add_fields(self, fields: dict):
         raise NotImplementedError('Field adding not supported in this schema')
 
     @staticmethod

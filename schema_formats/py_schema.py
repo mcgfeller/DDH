@@ -41,7 +41,7 @@ class PySchemaElement(schemas.AbstractSchemaElement):
             if mf is None:
                 if create_intermediate:
                     new_current = pydantic.create_model(segment, __base__=PySchemaElement)
-                    current.add_fields(**{segment: (new_current, None)})
+                    current._add_fields(**{segment: (new_current, None)})
                     current = new_current
                 else:
                     return None
@@ -131,6 +131,6 @@ class PySchema(schemas.AbstractSchema):
         # return self.to_json_schema()
         return self.schema_element.schema_json()
 
-    def add_fields(self, fields: dict[str, tuple]):
+    def _add_fields(self, fields: dict[str, tuple]):
         """ Add the field in dict to the schema element """
-        self.schema_element.add_fields(**fields)
+        self.schema_element._add_fields(**fields)
