@@ -131,14 +131,6 @@ class PySchema(schemas.AbstractSchema):
         # return self.to_json_schema()
         return self.schema_element.schema_json()
 
-    def add_fields(self, fields: dict[str, tuple]):  # TODO: Do we need this here, or element only?
-        """ Add the field in dict """
+    def add_fields(self, fields: dict[str, tuple]):
+        """ Add the field in dict to the schema element """
         self.schema_element.add_fields(**fields)
-
-    # def add_empty_schemas(self, names: list[str]) -> list[PySchema]:
-    #     """ Add a sequence of empty models, returing them as a list
-    #         TODO: Used?
-    #     """
-    #     schemas = [PySchema(schema_element=pydantic.create_model(name, __base__=PySchemaElement)) for name in names]
-    #     self.add_fields({name: (schema.schema_element, None) for name, schema in zip(names, schemas)})
-    #     return schemas

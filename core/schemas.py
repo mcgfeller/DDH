@@ -151,20 +151,15 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
     @abc.abstractmethod
     def __getitem__(self, key: keys.DDHkey, default=None, create_intermediate: bool = False) -> type[AbstractSchemaElement] | None:
         """ get Schema element at remainder key (within Schema only)
-            TODO: create_intermediate is used to obtain parent, should be abstracted away by using __setitem__ 
+            create_intermediate is used to obtain parent and is used by .__setitem__() 
         """
         ...
-
-    # @abc.abstractmethod
-    # def __setitem__(self, key: keys.DDHkey, value: type[AbstractSchemaElement], create_intermediate: bool = True) -> type[AbstractSchemaElement] | None:
-    #     ...
 
     def __setitem__(self, key: keys.DDHkey, value: type[AbstractSchemaElement], create_intermediate: bool = True) -> type[AbstractSchemaElement] | None:
         pkey = key.up()
         parent = self.__getitem__(pkey, create_intermediate=create_intermediate)
-        # parent = self.schema_element.descend_path(pkey, create_intermediate=create_intermediate)
         assert parent
-        # assert issubclass(value, AbstractSchemaElement)
+        assert issubclass(value, AbstractSchemaElement)
         parent.add_fields(**{key[-1]: (value, None)})
         return parent
 
@@ -328,7 +323,7 @@ SchemaFormat2Class = {}
 Class2SchemaFormat = {}
 
 
-class AbstractSchemaReference(DDHbaseModel):  # XXX: Should be AbstractSchemaElement
+class AbstractSchemaReference(AbstractSchemaElement):
     # TODO: Make version_required part of key
     ddhkey: typing.ClassVar[str]
     # variant: SchemaVariant = ''
