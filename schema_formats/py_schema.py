@@ -107,14 +107,6 @@ class PySchema(schemas.AbstractSchema):
         se = self.schema_element.descend_path(key, create_intermediate=create_intermediate)
         return default if se is None else se
 
-    def __setitem__(self, key: keys.DDHkey, value: type[PySchemaElement], create_intermediate: bool = True) -> type[PySchemaElement] | None:
-        pkey = key.up()
-        parent = self.schema_element.descend_path(pkey, create_intermediate=create_intermediate)
-        assert parent
-        assert issubclass(value, PySchemaElement)
-        parent.add_fields(**{key[-1]: (value, None)})
-        return parent
-
     def __iter__(self) -> typing.Iterator[tuple[keys.DDHkey, type[PySchemaElement]]]:
         """ Schema Iterator: yields (key,SchemaElement) pairs, ignoring primitive types.
         """
@@ -139,14 +131,14 @@ class PySchema(schemas.AbstractSchema):
         # return self.to_json_schema()
         return self.schema_element.schema_json()
 
-    def add_fields(self, fields: dict[str, tuple]):
+    def add_fields(self, fields: dict[str, tuple]):  # TODO: Do we need this here, or element only?
         """ Add the field in dict """
         self.schema_element.add_fields(**fields)
 
-    def add_empty_schemas(self, names: list[str]) -> list[PySchema]:
-        """ Add a sequence of empty models, returing them as a list """
-        schemas = [PySchema(schema_element=pydantic.create_model(
-            name, __base__=PySchemaElement)) for name in names]
-        self.add_fields({name: (schema.schema_element, None)
-                        for name, schema in zip(names, schemas)})
-        return schemas
+    # def add_empty_schemas(self, names: list[str]) -> list[PySchema]:
+    #     """ Add a sequence of empty models, returing them as a list
+    #         TODO: Used?
+    #     """
+    #     schemas = [PySchema(schema_element=pydantic.create_model(name, __base__=PySchemaElement)) for name in names]
+    #     self.add_fields({name: (schema.schema_element, None) for name, schema in zip(names, schemas)})
+    #     return schemas

@@ -26,9 +26,6 @@ class JsonSchema(schemas.AbstractSchema):
     def __getitem__(self, key: keys.DDHkey, default=None, create_intermediate: bool = False) -> type[JsonSchemaElement] | None:
         return JsonSchemaElement(definition=self._descend_path(self.json_schema, key))
 
-    def __setitem__(self, key: keys.DDHkey, value: type[JsonSchemaElement], create_intermediate: bool = True) -> type[JsonSchemaElement] | None:
-        raise errors.SubClass
-
     def __iter__(self) -> typing.Iterator[tuple[keys.DDHkey, JsonSchemaElement]]:
         # TODO: Schema Iterator
         return iter([])

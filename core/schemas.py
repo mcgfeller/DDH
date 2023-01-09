@@ -155,9 +155,18 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         """
         ...
 
-    @abc.abstractmethod
+    # @abc.abstractmethod
+    # def __setitem__(self, key: keys.DDHkey, value: type[AbstractSchemaElement], create_intermediate: bool = True) -> type[AbstractSchemaElement] | None:
+    #     ...
+
     def __setitem__(self, key: keys.DDHkey, value: type[AbstractSchemaElement], create_intermediate: bool = True) -> type[AbstractSchemaElement] | None:
-        ...
+        pkey = key.up()
+        parent = self.__getitem__(pkey, create_intermediate=create_intermediate)
+        # parent = self.schema_element.descend_path(pkey, create_intermediate=create_intermediate)
+        assert parent
+        # assert issubclass(value, AbstractSchemaElement)
+        parent.add_fields(**{key[-1]: (value, None)})
+        return parent
 
     @abc.abstractmethod
     def __iter__(self) -> typing.Iterator[tuple[keys.DDHkey, AbstractSchemaElement]]:
@@ -293,21 +302,15 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         return permissions.Consents(consents=[permissions.Consent(grantedTo=[principals.AllPrincipal], withModes={permissions.AccessMode.read})])
 
     @staticmethod
-    def insert_schema(id: str, schemakey: keys.DDHkey, transaction):
-        # get a parent scheme to hook into
-        pkey = schemakey.up()
-        if not pkey:
-            raise ValueError(f'{schemakey} key is too high')
-
-        access = permissions.Access(ddhkey=pkey, principal=transaction.for_user)
-        parent = SchemaContainer.get_sub_schema(
-            access, transaction, create_intermediate=True)  # create missing segments
-
-        assert parent  # must exist because create_intermediate=True
-
+    def insert_schema(id: str, schemakey: keys.DDHkey, transaction) -> AbstractSchemaReference:
+        """ Add schemakey as a Reference. """
+        # get a parent scheme to hook into:
+        parent, key, remainder, node = SchemaContainer.get_node_schema_key(schemakey.up(), transaction)
+        if not parent:
+            raise errors.NotFound(f'No parent for {schemakey}')
         # now insert our schema into the parent's:
         schemaref = parent.get_reference_class().create_from_key(ddhkey=schemakey)
-        parent.add_fields({schemakey[-1]: (schemaref, None)})
+        parent.__setitem__(remainder, schemaref, create_intermediate=True)
         return schemaref
 
     @classmethod
@@ -325,7 +328,7 @@ SchemaFormat2Class = {}
 Class2SchemaFormat = {}
 
 
-class AbstractSchemaReference(DDHbaseModel):
+class AbstractSchemaReference(DDHbaseModel):  # XXX: Should be AbstractSchemaElement
     # TODO: Make version_required part of key
     ddhkey: typing.ClassVar[str]
     # variant: SchemaVariant = ''
