@@ -116,8 +116,8 @@ class AbstractSchemaElement(DDHbaseModel, abc.ABC):
         raise errors.SubClass
 
     @classmethod
-    def replace_by_schema(cls, ddhkey: keys.DDHkey, schema_attributes: SchemaAttributes | None = None) -> type[AbstractSchemaReference]:
-        """ Replace this PySchemaElement by a proper schema with attributes, 
+    def store_as_schema(cls, ddhkey: keys.DDHkey, schema_attributes: SchemaAttributes | None = None) -> type[AbstractSchemaReference]:
+        """ Replace this PySchemaElement by a proper schema with attributes, store it, 
             and return the PySchemaReference to it, which can be used like a PySchemaElement.
         """
         s = cls.to_schema()
@@ -129,6 +129,11 @@ class AbstractSchemaElement(DDHbaseModel, abc.ABC):
         # now create reference
         schemaref = s.get_reference_class().create_from_key(ddhkey=ddhkey)
         return schemaref
+
+    @classmethod
+    def insert_as_schema(cls, transaction, ddhkey: keys.DDHkey, schema_attributes: SchemaAttributes | None = None):
+        ref = cls.store_as_schema(ddhkey, schema_attributes)
+        return AbstractSchema.insert_schema_ref(transaction, ddhkey, ref)
 
     @classmethod
     def extract_attributes(cls, path: keys.DDHkey, atts: SchemaAttributes):
@@ -297,14 +302,20 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         return permissions.Consents(consents=[permissions.Consent(grantedTo=[principals.AllPrincipal], withModes={permissions.AccessMode.read})])
 
     @staticmethod
-    def insert_schema(id: str, schemakey: keys.DDHkey, transaction) -> AbstractSchemaReference:
-        """ Add schemakey as a Reference. """
+    def insert_schema_ref(transaction, ddhkey: keys.DDHkey, schemaref: type[AbstractSchemaReference] | None = None) -> type[AbstractSchemaReference]:
+        """ Add a schema reference to its parent schema; 
+            if schemaref is not given, it is created pointing to ddhkey.
+        """
+        ddhkey = ddhkey.ensure_fork(keys.ForkType.schema)
         # get a parent scheme to hook into:
-        parent, key, remainder, node = SchemaContainer.get_node_schema_key(schemakey.up(), transaction)
+        parent, key, remainder, node = SchemaContainer.get_node_schema_key(ddhkey.up(), transaction)
         if not parent:
-            raise errors.NotFound(f'No parent for {schemakey}')
+            raise errors.NotFound(f'No parent for {ddhkey}')
+
+        if not schemaref:  # create schema ref in parent's schema format:
+            schemaref = parent.get_reference_class().create_from_key(ddhkey=ddhkey)
+
         # now insert our schema into the parent's:
-        schemaref = parent.get_reference_class().create_from_key(ddhkey=schemakey)
         parent.__setitem__(remainder, schemaref, create_intermediate=True)
         return schemaref
 

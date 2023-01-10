@@ -77,7 +77,7 @@ def build_root_schemas():
     return root
 
 
-def descend_schema(tree: list, schema_attributes: dict, parents=()) -> type[py_schema.PySchemaElement]:
+def descend_schema(tree: list, schema_attributes: dict, parents=()) -> type[schemas.AbstractSchemaElement]:
     """ Descent on our tree representation, returning model """
     key = parents+(tree[0],)  # new key, from parents down
     elements = {t[0]: (descend_schema(t, schema_attributes, parents=key), None)
@@ -87,7 +87,7 @@ def descend_schema(tree: list, schema_attributes: dict, parents=()) -> type[py_s
     if sa := schema_attributes.get(key):  # SchemaAttributes here?
         # we need to replace the PySchemaElement by a full Schema and a PySchemaReference to it
         dkey = keys.DDHkey(('', '')+key[2:], fork=keys.ForkType.schema)  # 'root' is '' in key
-        se = se.replace_by_schema(dkey, sa)
+        se = se.store_as_schema(dkey, sa)
     return se
 
 

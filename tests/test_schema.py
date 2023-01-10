@@ -48,11 +48,11 @@ def test_container(migros_key_schema):
     assert schema is sc.get(variant=sa.variant, version=sa.version)
 
 
-def test_insert_schema(ensure_root_node, migros_key_schema, transaction):
+def test_insert_schema_ref(ensure_root_node, migros_key_schema, transaction):
     assert ensure_root_node
     k, schema = migros_key_schema
-    # replace_by_schema --> by with JsonSchema
-    py_schema.PySchema.insert_schema('Migros', k, transaction)
+    # store_as_schema --> by with JsonSchema
+    py_schema.PySchema.insert_schema_ref(transaction, k)
     check_schema(schema)
 
 
@@ -83,7 +83,7 @@ def test_insert_py_schemaelement_intermediate(ensure_root_node, migros_key_schem
 def test_insert_py_reference(ensure_root_node, migros_key_schema, transaction):
     assert ensure_root_node
     k, schema = migros_key_schema
-    s = Garantie.replace_by_schema(k+'refgarantie')
+    s = Garantie.store_as_schema(k+'refgarantie')
     schema[keys.DDHkey('Garantie')] = s
     check_schema(schema)
 
