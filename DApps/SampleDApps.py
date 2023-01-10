@@ -35,7 +35,7 @@ class SampleDApps(dapp_attrs.DApp):
 
     def get_schemas(self) -> dict[keys.DDHkey, schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
-        return {self.schemakey: py_schema.PySchema(schema_element=pydantic.create_model('DummySchema', __base__=py_schema.PySchemaElement))}
+        return {self.schemakey: py_schema.PySchema(schema_element=py_schema.PySchemaElement.create_from_elements('DummySchema'))}
 
     def execute(self, op: nodes.Ops, access: permissions.Access, transaction: transactions.Transaction, key_split: int, data: dict | None = None, q: str | None = None):
         """ obtain data by recursing to schema """

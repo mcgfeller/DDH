@@ -116,6 +116,11 @@ class AbstractSchemaElement(DDHbaseModel, abc.ABC):
         raise errors.SubClass
 
     @classmethod
+    def create_from_elements(cls, key: keys.DDHkey | tuple | str, **elements: typing.Mapping[str, tuple[type, typing.Any]]) -> typing.Self:
+        """ Create a named concrete SchemaElement from a Mapping of elements, which {name : (type,default)} """
+        raise errors.SubClass
+
+    @classmethod
     def store_as_schema(cls, ddhkey: keys.DDHkey, schema_attributes: SchemaAttributes | None = None) -> type[AbstractSchemaReference]:
         """ Replace this PySchemaElement by a proper schema with attributes, store it, 
             and return the PySchemaReference to it, which can be used like a PySchemaElement.

@@ -40,7 +40,7 @@ class PySchemaElement(schemas.AbstractSchemaElement):
             mf = current.__fields__.get(str(segment), None)
             if mf is None:
                 if create_intermediate:
-                    new_current = pydantic.create_model(segment, __base__=PySchemaElement)
+                    new_current = cls.create_from_elements(segment)
                     current._add_fields(**{segment: (new_current, None)})
                     current = new_current
                 else:
@@ -76,6 +76,15 @@ class PySchemaElement(schemas.AbstractSchemaElement):
             atts.add_sensitivities(path, sensitivities)
         return
 
+    @classmethod
+    def create_from_elements(cls, key: keys.DDHkey | tuple | str, **elements: typing.Mapping[str, tuple[type, typing.Any]]) -> typing.Self:
+        """ Create a named SchemaElement from a Mapping of elements, which {name : (type,default)} """
+        if isinstance(key, keys.DDHkey):
+            key = key.key
+        if isinstance(key, tuple):
+            key = '_'.join(key)
+        return pydantic.create_model(key, __base__=cls, **elements)
+
 
 class PySchemaReference(schemas.AbstractSchemaReference, PySchemaElement):
 
@@ -93,7 +102,7 @@ class PySchemaReference(schemas.AbstractSchemaReference, PySchemaElement):
     @classmethod
     def create_from_key(cls, ddhkey: keys.DDHkey, name: str | None = None) -> typing.Type[PySchemaReference]:
         name = name if name else str(ddhkey)
-        m = pydantic.create_model(name, __base__=cls, ddhkey=(keys.DDHkey, ddhkey))
+        m = PySchemaElement.create_from_elements(name, ddhkey=(keys.DDHkey, ddhkey))
         return typing.cast(typing.Type[PySchemaReference], m)
 
 

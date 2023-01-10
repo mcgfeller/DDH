@@ -82,8 +82,7 @@ def descend_schema(tree: list, schema_attributes: dict, parents=()) -> type[sche
     key = parents+(tree[0],)  # new key, from parents down
     elements = {t[0]: (descend_schema(t, schema_attributes, parents=key), None)
                 for t in tree[1:]}  # descend on subtree, build dict of {head_name  : subtree}
-    se = pydantic.create_model('_'.join(key), __base__=py_schema.PySchemaElement,
-                               **elements)  # create a model with subtree elements
+    se = py_schema.PySchemaElement.create_from_elements(key, **elements)  # create a model with subtree elements
     if sa := schema_attributes.get(key):  # SchemaAttributes here?
         # we need to replace the PySchemaElement by a full Schema and a PySchemaReference to it
         dkey = keys.DDHkey(('', '')+key[2:], fork=keys.ForkType.schema)  # 'root' is '' in key
