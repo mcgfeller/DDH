@@ -16,7 +16,6 @@ import pprint
 import time
 import logging
 
-# from pydantic.main import create_model
 
 OnWindows = sys.platform == 'win32'
 
