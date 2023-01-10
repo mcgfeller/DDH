@@ -1,16 +1,17 @@
 """ Utilities """
-import types,sys,operator,threading,struct,traceback,collections,inspect,typing
+import types, sys, operator, threading, struct, traceback, collections, inspect, typing
 from time import time as _time, sleep as _sleep
 import heapq
 import logging
 
 logger = logging.getLogger(__name__)
 
+
 def isPyPy():
-    return not hasattr(sys,'getrefcount')
+    return not hasattr(sys, 'getrefcount')
 
 
-def loadModule(modulename,raiseError=True):
+def loadModule(modulename, raiseError=True):
     """ Dynamically load a module, return module
         If raiseError is False, error is logged and None is returned.
     """
@@ -31,49 +32,51 @@ def loadModule(modulename,raiseError=True):
                 logger.error(msg)
     return module
 
-def loadClass(modulename : str,classname: str)-> type:
 
-    module = sys.modules.get(modulename,None)
+def loadClass(modulename: str, classname: str) -> type:
+
+    module = sys.modules.get(modulename, None)
     if module is None:
         module = loadModule(modulename)
-    cls = getattr(module,classname)
+    cls = getattr(module, classname)
     return cls
 
 
-def typecheck(obj,cls,allowNone=False):
+def typecheck(obj, cls, allowNone=False):
     """ Simple type check. obj is checked for instance of cls. If obj is a sequence, and cls is not, the
         elements of obj are checked.
     """
-    if not isinstance(obj,cls):
+    if not isinstance(obj, cls):
         if allowNone and obj is None: return
-        if type(obj) in (list,tuple):
+        if type(obj) in (list, tuple):
             for i in obj:
-                typecheck(i,cls)
+                typecheck(i, cls)
         else:
             raise TypeError('Invalid object '+str(obj)+' of type '+type(obj).__name__+'; expected '+cls.__name__+'.')
     return
 
+
 def ensureTuple(seq):
     """ ensure seq is a tuple, converting strings and other simple elements to 1-elem tuples """
-    if type(seq) in (list,tuple,set,frozenset):
-         return tuple(seq)
+    if type(seq) in (list, tuple, set, frozenset):
+        return tuple(seq)
     else:
         return (seq,)
 
 
-def cutlist(lst,max):
+def cutlist(lst, max):
     """ Cut a list or string into a list of lists / strings so that the sublists are at most max long """
-    s = list(range(0,len(lst),max))
+    s = list(range(0, len(lst), max))
     e = s[1:] + [len(lst)]
-    return [lst[i0:i1] for (i0,i1) in zip(s,e)]
+    return [lst[i0:i1] for (i0, i1) in zip(s, e)]
 
 
-def allin(a,b):
+def allin(a, b):
     """ return True if all items of sequence a are in sequence b """
     return not False in [x in b for x in a]
 
 
-def anyin(a,b):
+def anyin(a, b):
     """ return True if any item of sequence a is in sequence b """
     return True in [x in b for x in a]
 
@@ -85,11 +88,11 @@ def raiseIfError(exception):
     else:
         return
 
+
 def consumeIterator(iterator):
     """ consume an iterator to the end efficiently """
     # feed the entire iterator into a zero-length deque
     collections.deque(iterator, maxlen=0)
-
 
 
 def topological_sort(items, partial_order):
@@ -108,7 +111,6 @@ def topological_sort(items, partial_order):
         Taken from http://www.bitformation.com/art/python_toposort.html       
     """
 
-
     # step 1 - create a directed graph with an arc a->b for each input
     # pair (a,b).
     # The graph is represented by a dictionary. The dictionary contains
@@ -122,9 +124,9 @@ def topological_sort(items, partial_order):
     # cause GC problems even when the represented graph contains loops,
     # because we keep the node names rather than references to the nodes.
     graph = {}
-    for i,node in enumerate(items):
+    for i, node in enumerate(items):
         if node not in graph:
-            graph[node] = [i,0] # 0 = number of arcs coming into this node.
+            graph[node] = [i, 0]  # 0 = number of arcs coming into this node.
     for fromnode, tonode in partial_order:
         """ Add an arc to a graph. Can create multiple arcs.
             The end nodes must already exist."""
@@ -132,10 +134,9 @@ def topological_sort(items, partial_order):
         # Update the count of incoming arcs in tonode.
         graph[tonode][1] = graph[tonode][1] + 1
 
-
     # Step 2 - find all roots (nodes with zero incoming arcs), use original index as key:
-    roots = [(nodeinfo[0],node) for (node,nodeinfo) in list(graph.items()) if nodeinfo[1] == 0]
-    heapq.heapify(roots) 
+    roots = [(nodeinfo[0], node) for (node, nodeinfo) in list(graph.items()) if nodeinfo[1] == 0]
+    heapq.heapify(roots)
 
     # step 3 - repeatedly emit a root and remove it from the graph. Removing
     # a node may convert some of the node's direct children into roots.
@@ -151,12 +152,12 @@ def topological_sort(items, partial_order):
         # that satisfy the input restrictions. We arbitrarily take one of
         # the roots using pop(). Note that for the algorithm to be efficient,
         # this operation must be done in O(1) time.
-        dummy,root = heapq.heappop(roots)
+        dummy, root = heapq.heappop(roots)
         tsorted.append(root)
         for child in graph[root][2:]:
             graph[child][1] = graph[child][1] - 1
             if graph[child][1] == 0:
-                heapq.heappush(roots,(graph[child][0],child))
+                heapq.heappush(roots, (graph[child][0], child))
         del graph[root]
     if len(graph) != 0:
         # There is a loop in the input.
@@ -164,15 +165,12 @@ def topological_sort(items, partial_order):
     return tsorted
 
 
-
 def formattedStack(maxdepth=None):
     try:
         s = inspect.stack()
     except: return []
-    if maxdepth is maxdepth: maxdepth = len(s)
-    return [l[1]+'.'+l[3]+'['+str(l[2])+']' for l in    s[1:maxdepth+2]]
-    
-
+    if maxdepth is None: maxdepth = len(s)
+    return [l[1]+'.'+l[3]+'['+str(l[2])+']' for l in s[1:maxdepth+2]]
 
 
 class Singleton(object):
@@ -183,33 +181,35 @@ class Singleton(object):
 
         Please note that __init__ is called on the Singleton each time, not only for the first time!        
     """
-    _tlock = threading.Lock() 
-    
+    _tlock = threading.Lock()
+
     def __new__(cls, *p, **k):
         Singleton._tlock.acquire()
-        try: # new might fail on a cls, ensure lock is released
+        try:  # new might fail on a cls, ensure lock is released
             if not '_the_instance' in cls.__dict__:
                 cls._the_instance = object.__new__(cls)
         finally:
             Singleton._tlock.release()
         return cls._the_instance
 
+
 class Invalidatable:
     """ simple object to keep a valid status and invoke a callable to revalidate """
 
-    def __init__(self, revalidate : typing.Callable):
-        self.revalidate = revalidate 
-        self._valid : bool = False
+    def __init__(self, revalidate: typing.Callable):
+        self.revalidate = revalidate
+        self._valid: bool = False
 
     def invalidate(self):
         self._valid = False
 
     def use(self):
         """ call before using the parent, used to revalidate if parent is invalid """
-        if not self._valid: 
+        if not self._valid:
             self.revalidate()
             self._valid = True
         return
+
 
 class _DummyContext(object):
     """ A context that does nothing on entry and exit and also offers dummy lock methods """
@@ -220,7 +220,7 @@ class _DummyContext(object):
     def __exit__(self, exc_type, exc_value, traceback):
         return None
 
-    def acquire(self,blocking=True):
+    def acquire(self, blocking=True):
         return True
 
     def release(self):
@@ -230,4 +230,4 @@ class _DummyContext(object):
         return False
 
 
-DummyContext = _DummyContext() # useful only as object
+DummyContext = _DummyContext()  # useful only as object

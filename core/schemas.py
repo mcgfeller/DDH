@@ -170,7 +170,7 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         parent = self.__getitem__(pkey, create_intermediate=create_intermediate)
         assert parent
         assert issubclass(value, AbstractSchemaElement)
-        parent._add_fields(**{key[-1]: (value, None)})
+        parent._add_fields(**{str(key[-1]): (value, None)})
         return parent
 
     @abc.abstractmethod
@@ -368,7 +368,7 @@ class SchemaContainer(DDHbaseModel):
         and recommended as variant ''.
     """
 
-    schemas_by_variant: dict[SchemaVariant,
+    schemas_by_variant: dict[SchemaVariant | None,
                              dict[versions.Version, AbstractSchema]] = {}
 
     def __bool__(self):
