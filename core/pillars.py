@@ -38,7 +38,6 @@ def load_standard_schemas():
 
 Pillars = {  # collect the singletons so we can pass them to whomever needs them for their initialization
     'DAppManager': dapp_proxy.DAppManager,
-    'SchemaNetwork': schema_network.SchemaNetworkClass(),
 }
 
 dapp_proxy.DAppManager.bootstrap(Pillars)

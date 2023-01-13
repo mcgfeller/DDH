@@ -10,11 +10,14 @@ from frontend import user_auth
 from utils.pydantic_utils import DDHbaseModel
 
 from . import (errors, keydirectory, keys, nodes, permissions, principals,
-               versions, capabilities)
+               versions, capabilities, schema_network)
 
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Global reference to singleton Schema Network:
+SchemaNetwork: schema_network.SchemaNetworkClass = schema_network.SchemaNetworkClass()
 
 
 @enum.unique
@@ -374,7 +377,7 @@ class SchemaContainer(DDHbaseModel):
     def __bool__(self):
         return self.default_schema is not None
 
-    def add(self, schema: AbstractSchema, schema_network=None):
+    def add(self, schema: AbstractSchema):
         """ add a schema, considering its attributes """
         sa = schema.schema_attributes
         assert sa
@@ -387,6 +390,7 @@ class SchemaContainer(DDHbaseModel):
 
         if sa.variant_usage == SchemaVariantUsage.recommended:  # latest recommended schema becomes default
             self.schemas_by_variant[''] = sbv
+        SchemaNetwork.network
         return schema
 
     def get(self, variant: SchemaVariant = '', version: versions.Version = versions.Unspecified) -> AbstractSchema | None:

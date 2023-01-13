@@ -37,9 +37,8 @@ class DAppProxy(DDHbaseModel):
             js = j.json()
             self.schemas = {keys.DDHkey(k): schemas.AbstractSchema.create_schema(s, sf, sa)
                             for k, (sa, sf, s) in js.items()}
-            schema_network: schema_network.SchemaNetworkClass = pillars['SchemaNetwork']
-            self.register_schema(session, schema_network)
-            self.register_references(session, schema_network)
+            self.register_schema(session)
+            self.register_references(session, schemas.SchemaNetwork)
         return
 
     def register_references(self, session, schema_network: schema_network.SchemaNetworkClass):
@@ -68,7 +67,7 @@ class DAppProxy(DDHbaseModel):
         schema_network.valid.invalidate()  # we have modified the network
         return
 
-    def register_schema(self, session, schema_network: schema_network.SchemaNetworkClass) -> list[nodes.Node]:
+    def register_schema(self, session) -> list[nodes.Node]:
         """ We register: 
             - SchemaNode for the Schemas our node provides, including transformed-into keys.
 
@@ -121,7 +120,7 @@ class DAppManagerClass(DDHbaseModel):
         return
 
     def bootstrap(self, pillars: dict):
-        # pillars['SchemaNetwork'].plot(layout='shell_layout')
+        # schemas.SchemaNetwork.plot(layout='shell_layout')
         return
 
 

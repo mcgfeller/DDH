@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 import pydantic
 from utils import utils
 from utils import fastapi_utils
-from core import dapp_attrs, schema_network, principals, keys, pillars, common_ids, schema_root
+from core import dapp_attrs, schemas, principals, keys, pillars, common_ids, schema_root
 from utils.pydantic_utils import DDHbaseModel
 
 
@@ -110,13 +110,12 @@ async def add_costs(session, sris: list[SearchResultItem], subscribed: typing.It
         Schemas with schema.Requires attributes except schema.Requires.all get reduced costs. 
 
     """
-    schema_network = pillars.Pillars['SchemaNetwork']
-
     dappids = [sri.da.id for sri in sris]
     to_r = await fastapi_utils.submit1_asynch(session, 'http://localhost:8001', '/graph/to/'+'+'.join(dappids)+'?include_weights=True')
 
     for sri, (requires, calculated, weights) in zip(sris, to_r):
-        # requires,calculated = schema_network.dapps_required(sri.da,session.user) # all required despite schema annotations, require for cost calculation
+        # all required despite schema annotations, require for cost calculation
+        # requires, calculated = schemas.SchemaNetwork.dapps_required(sri.da, session.user)
         # print(f'add_costs: {sri=}, {requires=}, {calculated=}, {weights=}')
         sri.requires = set(requires)
         sri.missing = sri.requires - set(subscribed)

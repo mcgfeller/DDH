@@ -161,12 +161,12 @@ async def dapps_from(
     details: bool = fastapi.Query(False),
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
 ) -> typing.Iterable[principals.DAppId]:
-    schema_network = pillars.Pillars['SchemaNetwork']
+
     s = []
     for dappid in from_dapps.split('+'):
         dapp = dapp_proxy.DAppManager.DAppsById.get(typing.cast(principals.DAppId, dappid))
         if dapp:
-            x1 = schema_network.dapps_from(dapp.attrs, session.user)
+            x1 = schemas.SchemaNetwork.dapps_from(dapp.attrs, session.user)
             if details:
                 s.append(x1)
             else:
@@ -180,12 +180,12 @@ async def dapps_required(
     include_weights: bool = fastapi.Query(False),
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
 ) -> list[tuple[set[principals.DAppId], set[principals.DAppId]]]:
-    schema_network = pillars.Pillars['SchemaNetwork']
+
     s = []
     for dappid in for_dapps.split('+'):
         dapp = dapp_proxy.DAppManager.DAppsById.get(typing.cast(principals.DAppId, dappid))
         if dapp:
-            x1, x2 = schema_network.dapps_required(dapp.attrs, session.user)
+            x1, x2 = schemas.SchemaNetwork.dapps_required(dapp.attrs, session.user)
             if include_weights:
                 s.append(({x.id for x in x1}, {x.id for x in x2},
                          {x.id: x.get_weight() for x in x2}))
