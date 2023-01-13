@@ -37,12 +37,12 @@ class DAppProxy(DDHbaseModel):
             js = j.json()
             self.schemas = {keys.DDHkey(k): schemas.AbstractSchema.create_schema(s, sf, sa)
                             for k, (sa, sf, s) in js.items()}
-            schemaNetwork: schema_network.SchemaNetworkClass = pillars['SchemaNetwork']
-            self.register_schema(session, schemaNetwork)
-            self.register_references(session, schemaNetwork)
+            schema_network: schema_network.SchemaNetworkClass = pillars['SchemaNetwork']
+            self.register_schema(session, schema_network)
+            self.register_references(session, schema_network)
         return
 
-    def register_references(self, session, schemaNetwork: schema_network.SchemaNetworkClass):
+    def register_references(self, session, schema_network: schema_network.SchemaNetworkClass):
         """ We register: 
             - DAppNode where our DApp provides or transforms into a DDHkey
             - DApp as SchemaNetwork node, with edges to provides, transforms and requires 
@@ -51,24 +51,24 @@ class DAppProxy(DDHbaseModel):
 
         attrs = self.attrs
         dnode = DAppNode(owner=attrs.owner, dapp=self, consents=schemas.AbstractSchema.get_schema_consents())
-        schemaNetwork.network.add_node(attrs, id=attrs.id, type='dapp',
-                                       cost=attrs.estimated_cost(), availability_user_dependent=attrs.availability_user_dependent())
+        schema_network.network.add_node(attrs, id=attrs.id, type='dapp',
+                                        cost=attrs.estimated_cost(), availability_user_dependent=attrs.availability_user_dependent())
         for ref in attrs.references:
             # we want node attributes of, so get the node:
             snode, split = keydirectory.NodeRegistry.get_node(
                 ref.target, nodes.NodeSupports.schema, transaction)  # get applicable schema node for attributes
             sa = snode.schemas.get().schema_attributes
-            schemaNetwork.network.add_node(ref.target, id=str(ref.target), type='schema', requires=sa.requires)
+            schema_network.network.add_node(ref.target, id=str(ref.target), type='schema', requires=sa.requires)
             if ref.relation == relationships.Relation.provides:
-                schemaNetwork.network.add_edge(attrs, ref.target, type='provides', weight=attrs.get_weight())
+                schema_network.network.add_edge(attrs, ref.target, type='provides', weight=attrs.get_weight())
                 # register our node as a provider for (or transformer into) the key:
                 keydirectory.NodeRegistry[ref.target] = dnode
             elif ref.relation == relationships.Relation.requires:
-                schemaNetwork.network.add_edge(ref.target, attrs, type='requires')
-        schemaNetwork.valid.invalidate()  # we have modified the network
+                schema_network.network.add_edge(ref.target, attrs, type='requires')
+        schema_network.valid.invalidate()  # we have modified the network
         return
 
-    def register_schema(self, session, schemaNetwork: schema_network.SchemaNetworkClass) -> list[nodes.Node]:
+    def register_schema(self, session, schema_network: schema_network.SchemaNetworkClass) -> list[nodes.Node]:
         """ We register: 
             - SchemaNode for the Schemas our node provides, including transformed-into keys.
 

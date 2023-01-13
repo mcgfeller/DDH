@@ -110,13 +110,13 @@ async def add_costs(session, sris: list[SearchResultItem], subscribed: typing.It
         Schemas with schema.Requires attributes except schema.Requires.all get reduced costs. 
 
     """
-    schemaNetwork = pillars.Pillars['SchemaNetwork']
+    schema_network = pillars.Pillars['SchemaNetwork']
 
     dappids = [sri.da.id for sri in sris]
     to_r = await fastapi_utils.submit1_asynch(session, 'http://localhost:8001', '/graph/to/'+'+'.join(dappids)+'?include_weights=True')
 
     for sri, (requires, calculated, weights) in zip(sris, to_r):
-        # requires,calculated = schemaNetwork.dapps_required(sri.da,session.user) # all required despite schema annotations, require for cost calculation
+        # requires,calculated = schema_network.dapps_required(sri.da,session.user) # all required despite schema annotations, require for cost calculation
         # print(f'add_costs: {sri=}, {requires=}, {calculated=}, {weights=}')
         sri.requires = set(requires)
         sri.missing = sri.requires - set(subscribed)
