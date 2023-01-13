@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 from utils import utils
 # from frontend import sessions
-from core import keys, permissions, schemas, nodes, keydirectory, policies, errors, transactions, principals, relationships, pillars, common_ids, dapp_attrs, versions
+from core import keys, permissions, schemas, nodes, keydirectory, policies, errors, transactions, principals, relationships, pillars, schema_network, common_ids, dapp_attrs, versions
 from utils.pydantic_utils import DDHbaseModel
 from schema_formats import py_schema
 
@@ -37,12 +37,12 @@ class DAppProxy(DDHbaseModel):
             js = j.json()
             self.schemas = {keys.DDHkey(k): schemas.AbstractSchema.create_schema(s, sf, sa)
                             for k, (sa, sf, s) in js.items()}
-            schemaNetwork: pillars.SchemaNetworkClass = pillars['SchemaNetwork']
-            self.register_schema(session)
+            schemaNetwork: schema_network.SchemaNetworkClass = pillars['SchemaNetwork']
+            self.register_schema(session, schemaNetwork)
             self.register_references(session, schemaNetwork)
         return
 
-    def register_references(self, session, schemaNetwork: pillars.SchemaNetworkClass):
+    def register_references(self, session, schemaNetwork: schema_network.SchemaNetworkClass):
         """ We register: 
             - DAppNode where our DApp provides or transforms into a DDHkey
             - DApp as SchemaNetwork node, with edges to provides, transforms and requires 
@@ -68,7 +68,7 @@ class DAppProxy(DDHbaseModel):
         schemaNetwork.valid.invalidate()  # we have modified the network
         return
 
-    def register_schema(self, session) -> list[nodes.Node]:
+    def register_schema(self, session, schemaNetwork: schema_network.SchemaNetworkClass) -> list[nodes.Node]:
         """ We register: 
             - SchemaNode for the Schemas our node provides, including transformed-into keys.
 
@@ -80,7 +80,7 @@ class DAppProxy(DDHbaseModel):
             snode = keydirectory.NodeRegistry[schemakey].get(
                 nodes.NodeSupports.schema)  # need exact location, not up the tree
             if snode:
-                snode = typing.cast(DAppNode, snode.ensure_loaded(transaction))
+                snode = typing.cast(nodes.SchemaNode, snode.ensure_loaded(transaction))
                 snode.add_schema(schema)
             else:
                 # create snode with our schema:

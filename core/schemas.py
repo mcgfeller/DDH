@@ -374,7 +374,7 @@ class SchemaContainer(DDHbaseModel):
     def __bool__(self):
         return self.default_schema is not None
 
-    def add(self, schema: AbstractSchema):
+    def add(self, schema: AbstractSchema, schema_network=None):
         """ add a schema, considering its attributes """
         sa = schema.schema_attributes
         assert sa
