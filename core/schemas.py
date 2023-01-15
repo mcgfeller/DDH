@@ -390,7 +390,7 @@ class SchemaContainer(DDHbaseModel):
 
         if sa.variant_usage == SchemaVariantUsage.recommended:  # latest recommended schema becomes default
             self.schemas_by_variant[''] = sbv
-        SchemaNetwork.network
+        SchemaNetwork  # TODO: Add schema to network
         return schema
 
     def get(self, variant: SchemaVariant = '', version: versions.Version = versions.Unspecified) -> AbstractSchema | None:
