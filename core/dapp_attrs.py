@@ -5,7 +5,7 @@ import enum
 import typing
 import pydantic
 
-from core import keys, schemas, policies, principals, relationships, common_ids, versions, permissions, transactions
+from core import keys, schemas, policies, principals, relationships, common_ids, versions, permissions, transactions, privileges
 from utils.pydantic_utils import DDHbaseModel
 
 
@@ -81,21 +81,6 @@ CostToWeight = {
 }
 
 
-@enum.unique
-class Privileges(str, enum.Enum):
-    """ Privileges a DApp may enjoy 
-        TODO: 
-        - I think these privileges must be parametrized, e.g., system_service(storage)
-        - Move into own module
-        - Who to grant requested privileges? Review workflow?
-    """
-
-    system = 'system'  # System DApp, aka root -- Perhaps not, only specific services
-    incoming_http = 'incoming_http'
-    outgoing_http = 'outgoing_http'
-    sensitive_data_read = 'sensitive_data_read'  # may read data that is designated sensitive in Schema
-
-
 class DApp(DAppOrFamily):
     class Config:
         extra = 'allow'  # DApps are free to use their own variables
@@ -104,8 +89,8 @@ class DApp(DAppOrFamily):
     references: list[relationships.Reference] = []
     transforms_into: keys.DDHkey | None = None
     estimatedCosts: EstimatedCosts = EstimatedCosts.free
-    requested_privileges: set[Privileges] = set()
-    granted_privileges: set[Privileges] = pydantic.Field(
+    requested_privileges: set[privileges.DAppPrivileges] = set()
+    granted_privileges: set[privileges.DAppPrivileges] = pydantic.Field(
         default=set(), const=True, description="privileges actually granted, cannot be set")
 
     def __init__(self, *a, **kw):
