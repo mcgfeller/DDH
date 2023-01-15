@@ -26,8 +26,8 @@ class SchemaNetworkClass():
     def add_schema(self, attrs: schemas.SchemaAttributes):
         ...
 
-    def add_schema_node(self, target: keys.DDHkey, attrs: schemas.SchemaAttributes):
-        self._network.add_node(target, id=str(target), type='schema', requires=attrs.requires)
+    def add_schema_node(self, schema_key: keys.DDHkey, schema_attrs: schemas.SchemaAttributes):
+        self._network.add_node(schema_key, id=str(schema_key), type='schema', requires=schema_attrs.requires)
 
     def add_edge(self, attrs, target, type, weight=None):
         self._network.add_edge(attrs, target, type=type, weight=weight)
