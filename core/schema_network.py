@@ -23,8 +23,12 @@ class SchemaNetworkClass():
         self._network.add_node(attrs, id=attrs.id, type='dapp',
                                cost=attrs.estimated_cost(), availability_user_dependent=attrs.availability_user_dependent())
 
-    def add_schema(self, attrs: schemas.SchemaAttributes):
-        ...
+    def add_schema(self, key: keys.DDHkey, attrs: schemas.SchemaAttributes):
+        assert key is key.without_variant_version()
+        self._network.add_node(key, id=str(key), type='schema')
+        vvkey = keys.DDHkey(key.key, fork=keys.ForkType.schema, variant=attrs.variant, version=attrs.version)
+        self._network.add_node(vvkey, id=str(vvkey), type='schema')
+        return
 
     def add_schema_node(self, schema_key: keys.DDHkey, schema_attrs: schemas.SchemaAttributes):
         self._network.add_node(schema_key, id=str(schema_key), type='schema', requires=schema_attrs.requires)

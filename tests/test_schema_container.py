@@ -14,7 +14,8 @@ def test_container():
         variant='rec', variant_usage=schemas.SchemaVariantUsage.recommended, version=versions.Version(0))
     schema = py_schema.PySchema(schema_element=DummyElement, schema_attributes=sa)
     sc = schemas.SchemaContainer()
-    sc.add(schema)
+    k = keys.DDHkey('/org/test/test_schema:schema')
+    sc.add(k, schema)
     sa = schema.schema_attributes
     assert schema is sc.get(variant=sa.variant, version=sa.version)
 

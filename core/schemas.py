@@ -132,8 +132,8 @@ class AbstractSchemaElement(DDHbaseModel, abc.ABC):
         if schema_attributes: s.schema_attributes = schema_attributes
         snode = nodes.SchemaNode(owner=principals.RootPrincipal,
                                  consents=AbstractSchema.get_schema_consents())
+        keydirectory.NodeRegistry[ddhkey] = snode  # sets snode.key
         snode.add_schema(s)
-        keydirectory.NodeRegistry[ddhkey] = snode
         # now create reference
         schemaref = s.get_reference_class().create_from_key(ddhkey=ddhkey)
         return schemaref
@@ -377,7 +377,7 @@ class SchemaContainer(DDHbaseModel):
     def __bool__(self):
         return self.default_schema is not None
 
-    def add(self, schema: AbstractSchema):
+    def add(self, key: keys.DDHkey, schema: AbstractSchema):
         """ add a schema, considering its attributes """
         sa = schema.schema_attributes
         assert sa
@@ -390,7 +390,7 @@ class SchemaContainer(DDHbaseModel):
 
         if sa.variant_usage == SchemaVariantUsage.recommended:  # latest recommended schema becomes default
             self.schemas_by_variant[''] = sbv
-        SchemaNetwork  # TODO: Add schema to network
+        SchemaNetwork.add_schema(key, schema.schema_attributes)  # TODO: Add schema to network
         return schema
 
     def get(self, variant: SchemaVariant = '', version: versions.Version = versions.Unspecified) -> AbstractSchema | None:

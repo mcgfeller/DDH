@@ -84,9 +84,9 @@ class DAppProxy(DDHbaseModel):
             else:
                 # create snode with our schema:
                 snode = nodes.SchemaNode(owner=self.attrs.owner, consents=schemas.AbstractSchema.get_schema_consents())
+                keydirectory.NodeRegistry[schemakey] = snode
                 snode.add_schema(schema)
                 # hook into parent schema:
-                keydirectory.NodeRegistry[schemakey] = snode
                 py_schema.PySchema.insert_schema_ref(transaction, schemakey)
 
                 #

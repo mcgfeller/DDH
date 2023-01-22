@@ -43,7 +43,7 @@ def test_container(migros_key_schema):
     k, schema = migros_key_schema
     json_schema = schema.to_json_schema()
     sc = schemas.SchemaContainer()
-    sc.add(schema)
+    sc.add(k, schema)
     sa = schema.schema_attributes
     assert schema is sc.get(variant=sa.variant, version=sa.version)
 

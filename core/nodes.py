@@ -110,7 +110,8 @@ class SchemaNode(Node, persistable.NonPersistable):
         super().__init__(*a, **kw)
 
     def add_schema(self, schema: schemas.AbstractSchema):
-        self.schemas.add(schema)
+        assert self.key, 'add schema node to keydirectory.NodeRegistry first'
+        self.schemas.add(self.key, schema)
         return
 
     @property
