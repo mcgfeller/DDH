@@ -131,6 +131,15 @@ async def connect_dapp(
     return
 
 
+@app.get("/_graph")
+async def show_graph(
+        session:  sessions.Session = fastapi.Depends(user_auth.get_current_session),
+        layout: str = fastapi.Query('shell_layout', alias="networkx plot layout"),
+):
+    schemas.SchemaNetwork.plot(layout=layout)
+    return
+
+
 @app.get("/dapp")
 async def list_dapps(
     session:  sessions.Session = fastapi.Depends(user_auth.get_current_session),

@@ -25,9 +25,23 @@ class SchemaNetworkClass():
 
     def add_schema(self, key: keys.DDHkey, attrs: schemas.SchemaAttributes):
         assert key is key.without_variant_version()
+        # base node without vv:
         self._network.add_node(key, id=str(key), type='schema')
+        # specific vv:
         vvkey = keys.DDHkey(key.key, fork=keys.ForkType.schema, variant=attrs.variant, version=attrs.version)
         self._network.add_node(vvkey, id=str(vvkey), type='schema')
+        # TODO: Add edge between base and vv!
+        # add references:
+        for ref in attrs.references:
+            self.add_schema_reference(vvkey, ref)
+        return
+
+    def add_schema_reference(self, vvkey: keys.DDHkey, ref: keys.DDHkey):
+        refbase = ref.without_variant_version()
+        self._network.add_node(refbase, id=str(refbase), type='schema')  # ensure base of reference is there
+        self._network.add_node(ref, id=str(ref), type='schema')  # reference with vv
+        # TODO: Add edge between base and vv!
+        self._network.add_edge(vvkey, ref, type='references')
         return
 
     def add_schema_node(self, schema_key: keys.DDHkey, schema_attrs: schemas.SchemaAttributes):
