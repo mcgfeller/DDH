@@ -435,3 +435,9 @@ class SchemaContainer(DDHbaseModel):
             if schema_element:
                 schema = schema_element.to_schema()
         return schema
+
+    def fullfills(self, ddhkey: keys.DDHkey, version_constraint: versions.VersionConstraint) -> typing.Iterator[AbstractSchema]:
+        """ return iterator of schemas that fulfill key and VersionConstraint """
+        # cands is dict of either specified variant or None for default variant (which has key None):
+        cands = self.schemas_by_variant.get(ddhkey.variant, {})
+        return (schema for version, schema in cands.items() if version in version_constraint)
