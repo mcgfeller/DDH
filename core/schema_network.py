@@ -74,7 +74,7 @@ class SchemaNetworkClass():
         fig = plt.figure(None, figsize=(size_h, size_v), dpi=100)
         networkx.draw_networkx(self._network, pos=pos, with_labels=True,
                                labels=labels, node_color=colors, font_size=size_f)
-        plt.savefig(stream, format='png')
+        plt.savefig(stream, format='png', bbox_inches='tight')  # bbox_inches -> no frame
         stream.seek(0)  # rewind
         return
 
