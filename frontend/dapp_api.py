@@ -4,13 +4,14 @@
     - Data App serving a User Interface
 """
 
-from ensurepip import version
 import fastapi
 import fastapi.security
+import fastapi.responses
 import typing
 import pydantic
 import datetime
 import enum
+import io
 
 
 from core import pillars, schema_network
@@ -131,13 +132,17 @@ async def connect_dapp(
     return
 
 
-@app.get("/_graph")
-async def show_graph(
-        session:  sessions.Session = fastapi.Depends(user_auth.get_current_session),
-        layout: str = fastapi.Query('shell_layout', alias="networkx plot layout"),
+@app.get("/graph/draw")
+async def draw_graph(
+        # session:  sessions.Session = fastapi.Depends(user_auth.get_current_session), # XXX: NO AUTH FOR THE MOMENT
+        layout: str = fastapi.Query('shell_layout', description="networkx plot layout"),
+        size_h: pydantic.conint(gt=500, lt=10000) = fastapi.Query(2000, description="horizontal figure size in px"),
 ):
-    schemas.SchemaNetwork.plot(layout=layout)
-    return
+    """ Return an image of the schema graph """
+    stream = io.BytesIO()
+    schemas.SchemaNetwork.plot(stream, layout=layout, size_h=size_h)
+    stream.seek(0)
+    return fastapi.responses.StreamingResponse(content=stream, media_type="image/png")
 
 
 @app.get("/dapp")
@@ -162,6 +167,18 @@ async def get_dapp(
     dapps = [dapp.attrs for dappid in dis if (
         dapp := dapp_proxy.DAppManager.DAppsById.get(typing.cast(principals.DAppId, dappid)))]
     return dapps
+
+
+@app.get("/graph/draw")
+async def draw_graph(
+        # session:  sessions.Session = fastapi.Depends(user_auth.get_current_session), # XXX: NO AUTH FOR THE MOMENT
+        layout: str = fastapi.Query('shell_layout', description="networkx plot layout"),
+        size_h: pydantic.conint(gt=500, lt=10000) = fastapi.Query(2000, description="horizontal figure size in px"),
+):
+    """ Return an image of the schema graph """
+    stream = io.BytesIO()
+    schemas.SchemaNetwork.plot(stream, layout=layout, size_h=size_h)
+    return fastapi.responses.StreamingResponse(content=stream, media_type="image/png")
 
 
 @app.get("/graph/from/{from_dapps}")
