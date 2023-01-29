@@ -98,7 +98,7 @@ def test_p_schema(user1):
 
 
 def test_schema_graph(user1):
-    r = user1.get('/graph/draw')
+    r = user1.get('/graph/draw?layout=shell_layout&size_h=1000')
     r.raise_for_status()
     assert r.headers['content-type'] == 'image/png'
     return
