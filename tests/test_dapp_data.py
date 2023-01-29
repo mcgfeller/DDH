@@ -14,8 +14,9 @@ def test_get_data(user1):
     assert r.headers['content-location'] == str(user1.base_url)+'/ddh/mgf/org/migros.ch/receipts::PySchema'
     return
 
+
 def test_get_data_wrong_mimetype(user1):
-    r = user1.get('/ddh/mgf/org/migros.ch/receipts',headers={'Accept':'application/xml'})
+    r = user1.get('/ddh/mgf/org/migros.ch/receipts', headers={'Accept': 'application/xml'})
     assert 406 == r.status_code
     msg = r.json()['detail']
     assert msg
@@ -93,4 +94,11 @@ def test_p_schema(user1):
     r.raise_for_status()
     d = r.json()
     assert d.get('title'), 'schema is empty'
+    return
+
+
+def test_schema_graph(user1):
+    r = user1.get('/graph/draw')
+    r.raise_for_status()
+    assert r.headers['content-type'] == 'image/png'
     return
