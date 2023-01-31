@@ -33,7 +33,8 @@ class SchemaNetworkClass():
         # specific vv:
         vvkey = keys.DDHkey(key.key, fork=keys.ForkType.schema, variant=attrs.variant, version=attrs.version)
         self._network.add_node(vvkey, id=str(vvkey), type='schema')
-        # TODO: Add edge between base and vv!
+        # Add edge between base and vv!
+        self._network.add_edge(key, vvkey, type='version')
         # add references:
         for ref in attrs.references:
             self.add_schema_reference(vvkey, ref)
@@ -53,27 +54,38 @@ class SchemaNetworkClass():
     def add_edge(self, attrs, target, type, weight=None):
         self._network.add_edge(attrs, target, type=type, weight=weight)
 
-    def plot(self, stream, layout='circular_layout', size_h=1200):
-        """ Return a graph on stream of the current network """
+    def plot(self, stream, layout='circular_layout', size_h=1200, center_schema: keys.DDHbaseModel | None = None, radius: int = 2):
+        """ Return a graph on stream of the current network.
+            If center_schema is given, it is used as the center of an ego_graph.
+        """
         self.valid.use()
-        labels = {node: f"{attrs['type']}:{attrs['id']}" for node,
-                  attrs in self._network.nodes.items()}  # short id for nodes
-        colors = ['blue' if attrs['type'] ==
-                  'schema' else 'red' for attrs in self._network.nodes.values()]
+
         flayout = getattr(networkx, layout, None)
         if not flayout:
             raise errors.NotAcceptable('Layout not available').to_http()
-        try:
-            pos = flayout(self._network)
-        except Exception as e:
-            raise errors.DDHerror(f'Layouting error: {e}; choose another layout').to_http()
+
         plt.clf()  # reset any existing figure
         # size is given in px, calculate in inch
         size_h = size_h // 100; size_v = size_h * 9//10
         size_f = size_h // 2  # font size in pt
         fig = plt.figure(None, figsize=(size_h, size_v), dpi=100)
-        networkx.draw_networkx(self._network, pos=pos, with_labels=True,
+        G = self._network
+        if center_schema:
+            if center_schema not in G.nodes:
+                raise errors.NotFound('Center key schema not found').to_http()
+            G = networkx.ego_graph(G, center_schema, radius=radius, undirected=True)
+        # G = networkx.ego_graph(G, keys.DDHkey('//p/employment/salary/statements'), radius=3, undirected=True)
+        try:
+            pos = flayout(G)
+        except Exception as e:
+            raise errors.DDHerror(f'Layouting error: {e}; choose another layout').to_http()
+
+        labels = {node: f"{attrs['id']}" for node, attrs in G.nodes.items()}  # short id for nodes
+        colors = ['blue' if attrs['type'] == 'schema' else 'red' for attrs in G.nodes.values()]
+        networkx.draw_networkx(G, pos=pos, with_labels=True,
                                labels=labels, node_color=colors, font_size=size_f)
+        networkx.draw_networkx_edge_labels(
+            G, pos, edge_labels=networkx.get_edge_attributes(G, 'type'))
         plt.savefig(stream, format='png', bbox_inches='tight')  # bbox_inches -> no frame
         stream.seek(0)  # rewind
         return

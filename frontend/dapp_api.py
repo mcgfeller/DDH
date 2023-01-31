@@ -132,19 +132,6 @@ async def connect_dapp(
     return
 
 
-@app.get("/graph/draw")
-async def draw_graph(
-        # session:  sessions.Session = fastapi.Depends(user_auth.get_current_session), # XXX: NO AUTH FOR THE MOMENT
-        layout: str = fastapi.Query('shell_layout', description="networkx plot layout"),
-        size_h: pydantic.conint(gt=500, lt=10000) = fastapi.Query(2000, description="horizontal figure size in px"),
-):
-    """ Return an image of the schema graph """
-    stream = io.BytesIO()
-    schemas.SchemaNetwork.plot(stream, layout=layout, size_h=size_h)
-    stream.seek(0)
-    return fastapi.responses.StreamingResponse(content=stream, media_type="image/png")
-
-
 @app.get("/dapp")
 async def list_dapps(
     session:  sessions.Session = fastapi.Depends(user_auth.get_current_session),
@@ -174,10 +161,17 @@ async def draw_graph(
         # session:  sessions.Session = fastapi.Depends(user_auth.get_current_session), # XXX: NO AUTH FOR THE MOMENT
         layout: str = fastapi.Query('shell_layout', description="networkx plot layout"),
         size_h: pydantic.conint(gt=500, lt=10000) = fastapi.Query(2000, description="horizontal figure size in px"),
+        center_schema: str | None = fastapi.Query(
+            None, description="center graph around this node, with a radius; e.g., //p/employment/salary/statements"),
+        radius: int = fastapi.Query(2, description="radius (=number of hops) of the graph if center_node is given"),
 ):
-    """ Return an image of the schema graph """
+    """ Return an image of the schema graph.
+        If a center_node is given, show graph with radius around the center node.
+     """
     stream = io.BytesIO()
-    schemas.SchemaNetwork.plot(stream, layout=layout, size_h=size_h)
+    if center_schema:
+        center_schema = keys.DDHkey(center_schema)
+    schemas.SchemaNetwork.plot(stream, layout=layout, size_h=size_h, center_schema=center_schema, radius=radius)
     return fastapi.responses.StreamingResponse(content=stream, media_type="image/png")
 
 

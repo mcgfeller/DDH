@@ -102,3 +102,10 @@ def test_schema_graph(user1):
     r.raise_for_status()
     assert r.headers['content-type'] == 'image/png'
     return
+
+
+def test_schema_ego_graph(user1):
+    r = user1.get('/graph/draw?layout=planar_layout&size_h=1000&center_schema=//p/employment/salary&radius=4')
+    r.raise_for_status()
+    assert r.headers['content-type'] == 'image/png'
+    return
