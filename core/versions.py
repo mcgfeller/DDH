@@ -89,7 +89,7 @@ class _UnspecifiedVersion(Version):
 Unspecified = _UnspecifiedVersion(alias='unspecified')
 
 
-class VersionConstraint(DDHbaseModel):
+class VersionConstraint(DDHbaseModel, typing.Hashable):
     """ Version constraint specifiy upper and lower bounds of acceptable versions.
         Comparisons can be specified as '==version', '>=version', '>version', and < instead of >.
         Ranges can be specified by two comparisons such as '<version1,>=version2'.
@@ -129,6 +129,9 @@ class VersionConstraint(DDHbaseModel):
         self.normalize()
         return
 
+    def _as_tuple(self) -> tuple:
+        return (self.op1, self.v1, self.op2, self.v2)
+
     def normalize(self):
         """ normalize constraint, so > comes before <.
             May raise errors if there is no version between lower is > upper or if duplicate constraints. 
@@ -158,7 +161,7 @@ class VersionConstraint(DDHbaseModel):
         return f'{self.__class__.__name__}({self!s})'
 
     def __str__(self):
-        return f'{self.op1}{self.v1}' + (f', {self.op2}{self.v2}' if self.op2 else '')
+        return f'{self.op1}{self.v1}' + (f',{self.op2}{self.v2}' if self.op2 else '')
 
     def __contains__(self, version:  Version):
         """ returns True is version satisfies VersionConstraint """
@@ -169,6 +172,17 @@ class VersionConstraint(DDHbaseModel):
             if ok and self.op2:
                 ok = self._vops[self.op2](version, self.v2)
         return ok
+
+    def __eq__(self, other):
+        """ VersionConstraint if the normalized tuples are equal.
+        """
+        if isinstance(other, VersionConstraint):
+            return self._as_tuple() == other._as_tuple()
+        else:
+            return False
+
+    def __hash__(self):
+        return hash(self._as_tuple())
 
 
 NoConstraint = VersionConstraint(op1='>=', v1=Version((0)))  # everything is bigger than 0
