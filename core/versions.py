@@ -106,6 +106,10 @@ class VersionConstraint(DDHbaseModel, typing.Hashable):
     v2: Version | None = None
     op2:  str | None = None
 
+    @classmethod
+    def make_with_default(cls, v: str | None) -> VersionConstraint:
+        return cls(v) if v and not v == 'unspecified' else NoConstraint
+
     @pydantic.validator('op1', 'op2')
     def v_op1(cls, v):
         if v and v not in cls._vops:
@@ -186,6 +190,18 @@ class VersionConstraint(DDHbaseModel, typing.Hashable):
 
 
 NoConstraint = VersionConstraint(op1='>=', v1=Version((0)))  # everything is bigger than 0
+
+
+def make_version_or_constraint(v: str | None) -> Version | VersionConstraint:
+    """ return either a Version or a VersionConstraint depending 
+        on the string.
+    """
+    if (not v or v == 'unspecified'):
+        return Unspecified
+    elif any(k in v for k in ('<', '>', '=', ',')):
+        return VersionConstraint(v)
+    else:
+        return Version(v)
 
 
 class Upgrader(typing.Protocol):

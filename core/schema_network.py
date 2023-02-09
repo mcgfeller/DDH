@@ -27,7 +27,7 @@ class SchemaNetworkClass():
                                cost=attrs.estimated_cost(), availability_user_dependent=attrs.availability_user_dependent())
 
     def add_schema(self, key: keys.DDHkey, attrs: schemas.SchemaAttributes):
-        assert key is key.without_variant_version()
+        assert key == key.without_variant_version()
         # base node without vv:
         self._network.add_node(key, id=str(key), type='schema')
         # specific vv:

@@ -58,22 +58,21 @@ def variant_with_default(v: str | None) -> VariantType:
     return VariantType(v) if v else DefaultVariant
 
 
-Specifier_types = [ForkType.make_with_default,
-                   variant_with_default, versions.Version.make_with_default]
-
-
 class DDHkey(DDHbaseModel):
     """ A key identifying a DDH ressource. DDHkey is decoupled from any permissions, storage, etc.,
     """
     key: tuple
     fork: ForkType = ForkType.data
     variant: VariantType = DefaultVariant
-    version: versions.Version = versions.Unspecified
+    version: versions.Version | versions.VersionConstraint = versions.Unspecified
 
     Delimiter: typing.ClassVar[str] = '/'
     SpecDelimiter: typing.ClassVar[str] = ':'
     Root: typing.ClassVar[_RootType] = _RootType(Delimiter)
     AnyKey: typing.ClassVar[_AnyType] = _AnyType(Delimiter)
+
+    Specifier_types: typing.ClassVar[list] = [ForkType.make_with_default,
+                                              variant_with_default, versions.make_version_or_constraint]
 
     def dict(self, **kw):
         """ We want a short representation """
@@ -113,7 +112,7 @@ class DDHkey(DDHbaseModel):
             if s:
                 kspecs[i] = s
             elif k:
-                kspecs[i] = Specifier_types[i](k)
+                kspecs[i] = self.Specifier_types[i](k)
             else:
                 kspecs[i] = Default_specifiers[i]
         fork, variant, version = kspecs
@@ -122,7 +121,7 @@ class DDHkey(DDHbaseModel):
         return
 
     @property
-    def specifiers(self) -> tuple[ForkType, VariantType, versions.Version]:
+    def specifiers(self) -> tuple[ForkType, VariantType, versions.Version | versions.VersionConstraint]:
         return (self.fork, self.variant, self.version)
 
     def __hash__(self):
@@ -142,7 +141,7 @@ class DDHkey(DDHbaseModel):
         return s+p.rstrip(self.SpecDelimiter)
 
     def __repr__(self) -> str:
-        return f'DDHkey({self.__str__()})'
+        return f'{self.__class__.__name__}({self.__str__()})'
 
     def __iter__(self) -> typing.Iterator:
         """ Iterate over key """
@@ -180,7 +179,7 @@ class DDHkey(DDHbaseModel):
     def ensure_fork(self, fork:  ForkType) -> typing.Self:
         """ ensure that key has the given fork """
         if self.fork != fork:  # create new key with correct fork
-            return DDHkey(key=self.key, fork=fork, variant=self.variant, version=self.version)
+            return self.__class__(key=self.key, fork=fork, variant=self.variant, version=self.version)
         else:
             return self
 
@@ -196,12 +195,15 @@ class DDHkey(DDHbaseModel):
         if self.owners is self.AnyKey:
             raise errors.NotFound('key has no owner')
 
-    def without_variant_version(self) -> DDHkey:
+    def without_variant_version(self) -> DDHkeyGeneric:
         """ return key with fork, but without schema variant and version, typically used for access control """
-        if self.version == versions.Unspecified and self.variant == DefaultVariant:
+        if isinstance(self, DDHkeyGeneric):
             k = self
+        elif self.version == versions.Unspecified and self.variant == DefaultVariant:
+            # XXX: is actually generic, but we cannot change class:
+            k = DDHkeyGeneric(self.key, fork=self.fork, variant=DefaultVariant, version=versions.Unspecified)
         else:
-            k = self.__class__(self.key, fork=self.fork, variant=DefaultVariant, version=versions.Unspecified)
+            k = DDHkeyGeneric(self.key, fork=self.fork, variant=DefaultVariant, version=versions.Unspecified)
         return k
 
     @property
@@ -230,7 +232,61 @@ class DDHkey(DDHbaseModel):
                 k = (a,)
             else:
                 k = tuple(a)
-            return DDHkey(self.key+k, specifiers=self.specifiers)
+            return self.__class__(self.key+k, specifiers=self.specifiers)
+
+
+class DDHkeyGeneric(DDHkey):
+    """ DDHKey which must not contain Variant nor Version """
+
+    variant: typing.Final[VariantType] = DefaultVariant
+    version: typing.Final[versions.Version] = versions.Unspecified
+
+    Specifier_types: typing.ClassVar[list] = [ForkType.make_with_default,
+                                              variant_with_default, versions.Version.make_with_default]
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        if self.variant != DefaultVariant:
+            raise ValueError('DDHkeyGeneric must not have non-default variant')
+        if self.version != versions.Unspecified:
+            raise ValueError('DDHkeyGeneric must not have non-default version')
+        return
+
+
+class DDHkeyRange(DDHkey):
+    """ DDHKey which must Variant and VersionConstraint """
+
+    variant: VariantType = DefaultVariant
+    version: versions.VersionConstraint = versions.NoConstraint
+
+    Specifier_types: typing.ClassVar[list] = [ForkType.make_with_default,
+                                              variant_with_default, versions.VersionConstraint.make_with_default]
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        if self.variant == DefaultVariant:
+            raise ValueError('DDHkeyRange must have non-default variant')
+        if (not isinstance(self.version, versions.VersionConstraint)) or self.version == versions.NoConstraint:
+            raise ValueError('DDHkeyRange must not have unconstrained version')
+        return
+
+
+class DDHkeyVersioned(DDHkey):
+    """ DDHKey which must contain Variant and Version """
+
+    variant: VariantType = DefaultVariant
+    version: versions.Version = versions.Unspecified
+
+    Specifier_types: typing.ClassVar[list] = [ForkType.make_with_default,
+                                              variant_with_default, versions.Version.make_with_default]
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        if self.variant == DefaultVariant:
+            raise ValueError('DDHkeyVersioned must have non-default variant')
+        if (not isinstance(self.version, versions.Version)) or self.version == versions.Unspecified:
+            raise ValueError('DDHkeyVersioned must have non-default version')
+        return
 
 
 from . import nodes
