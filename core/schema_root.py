@@ -6,7 +6,7 @@ import datetime
 import typing
 import logging
 
-from core import keys, schemas, nodes, keydirectory, principals
+from core import keys, schemas, nodes, keydirectory, principals, versions
 from schema_formats import py_schema
 from frontend import sessions
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ def register_schema() -> nodes.SchemaNode:
     """ Register root schema at root node. 
         This is preliminary, as the schema is hard-coded.
     """
-    root = keys.DDHkey(keys.DDHkey.Root, fork=keys.ForkType.schema)
+    root = keys.DDHkeyGeneric(keys.DDHkey.Root, fork=keys.ForkType.schema)
     session = sessions.get_system_session()
     transaction = session.get_or_create_transaction()
     root_node, split = keydirectory.NodeRegistry.get_node(
@@ -85,7 +85,7 @@ def descend_schema(tree: list, schema_attributes: dict, parents=()) -> type[sche
     se = py_schema.PySchemaElement.create_from_elements(key, **elements)  # create a model with subtree elements
     if sa := schema_attributes.get(key):  # SchemaAttributes here?
         # we need to replace the PySchemaElement by a full Schema and a PySchemaReference to it
-        dkey = keys.DDHkey(('', '')+key[2:], fork=keys.ForkType.schema)  # 'root' is '' in key
+        dkey = keys.DDHkeyGeneric(('', '')+key[2:], fork=keys.ForkType.schema)  # 'root' is '' in key
         se = se.store_as_schema(dkey, sa)
     return se
 

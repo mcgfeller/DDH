@@ -32,21 +32,21 @@ class MigrosDApp(dapp_attrs.DApp):
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
-        self.transforms_into = keys.DDHkey(key="//p/living/shopping/receipts")
+        self.transforms_into = keys.DDHkeyVersioned0(key="//p/living/shopping/receipts")
         self.references = relationships.Reference.defines(self.schemakey) + relationships.Reference.provides(self.schemakey) + \
             relationships.Reference.provides(self.transforms_into)
 
     def get_schemas(self) -> dict[keys.DDHkey, schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
-        return {keys.DDHkey(key="//org/migros.ch"): py_schema.PySchema(schema_element=MigrosSchema,
-                                                                       schema_attributes=schemas.SchemaAttributes(version=versions.Version(self.version)))}
+        return {keys.DDHkeyVersioned0(key="//org/migros.ch"): py_schema.PySchema(schema_element=MigrosSchema,
+                                                                                 schema_attributes=schemas.SchemaAttributes(version=versions.Version(self.version)))}
 
     def execute(self, req: dapp_attrs.ExecuteRequest):
         """ obtain data by recursing to schema """
         if req.op == nodes.Ops.get:
             here, selection = req.access.ddhkey.split_at(req.key_split)
             # key we transform into?
-            if req.access.ddhkey.without_owner().without_variant_version() == self.transforms_into:
+            if req.access.ddhkey.without_owner().without_variant_version() == self.transforms_into.without_variant_version():
                 d = self.get_and_transform(req)
             else:  # key we provide, call schema descent to resolve:
                 d = self.get_data(selection, req.access, req.q)
@@ -137,13 +137,13 @@ Resolvers = key_utils.LookupByKey({  # register the resolvers per schema key
 
 
 MIGROS_DAPP = MigrosDApp(owner=users.User(id='migros', name='Migros (fake account)'),
-                         schemakey=keys.DDHkey(key="//org/migros.ch"),
+                         schemakey=keys.DDHkeyVersioned0(key="//org/migros.ch"),
                          catalog=common_ids.CatalogCategory.living)
 
 
 if __name__ == "__main__":  # Debugging
     import uvicorn
     import os
-    port = 9001
+    port = 9002
     os.environ['port'] = str(port)
     uvicorn.run(app, host="0.0.0.0", port=port)

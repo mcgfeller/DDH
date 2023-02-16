@@ -29,21 +29,21 @@ class CoopDApp(dapp_attrs.DApp):
     version = '0.2'
     owner: typing.ClassVar[principals.Principal] = users.User(
         id='coop', name='Coop (fake account)')
-    schemakey: typing.ClassVar[keys.DDHkey] = keys.DDHkey(key="//org/coop.ch")
+    schemakey: typing.ClassVar[keys.DDHkeyVersioned] = keys.DDHkeyVersioned0(key="//org/coop.ch")
     catalog = common_ids.CatalogCategory.living
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
         self._ddhschema = CoopSchema()
 
-        self.transforms_into = keys.DDHkey(key="//p/living/shopping/receipts")
+        self.transforms_into = keys.DDHkeyVersioned0(key="//p/living/shopping/receipts")
         self.references = relationships.Reference.defines(self.schemakey) + relationships.Reference.provides(self.schemakey) \
             # TODO: Must not register transform unless provided:
         # + relationships.Reference.provides(self.transforms_into)
 
     def get_schemas(self) -> dict[keys.DDHkey, schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
-        return {keys.DDHkey(key="//org/coop.ch"): py_schema.PySchema(schema_element=CoopSchema)}
+        return {keys.DDHkeyVersioned0(key="//org/coop.ch"): py_schema.PySchema(schema_element=CoopSchema)}
 
     def execute(self, req: dapp_attrs.ExecuteRequest):
         """ obtain data by recursing to schema """
@@ -74,7 +74,7 @@ class CoopSchema(py_schema.PySchemaElement):
 
 
 COOP_DAPP = CoopDApp(owner=users.User(id='coop', name='Coop (fake account)'),
-                     schemakey=keys.DDHkey(key="//org/coop.ch"),
+                     schemakey=keys.DDHkeyVersioned0(key="//org/coop.ch"),
                      catalog=common_ids.CatalogCategory.living)
 
 if __name__ == "__main__":  # Debugging

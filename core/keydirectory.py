@@ -20,6 +20,8 @@ class _NodeRegistry:
         for easy lookup by NodeSupports.
 
         A proper realization could use a PatriciaTrie.
+
+        # TODO: Are nodes on DDHKey or DDHKeyGeneric?
     """
 
     nodes_by_key: dict[tuple, dict[nodes.NodeSupports, nodes.NodeProxy]]  # by key, then by NodeTypes

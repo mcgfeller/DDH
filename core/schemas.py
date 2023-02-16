@@ -124,7 +124,7 @@ class AbstractSchemaElement(DDHbaseModel, abc.ABC):
         raise errors.SubClass
 
     @classmethod
-    def store_as_schema(cls, ddhkey: keys.DDHkey, schema_attributes: SchemaAttributes | None = None) -> type[AbstractSchemaReference]:
+    def store_as_schema(cls, ddhkey: keys.DDHkeyGeneric, schema_attributes: SchemaAttributes | None = None) -> type[AbstractSchemaReference]:
         """ Replace this PySchemaElement by a proper schema with attributes, store it, 
             and return the PySchemaReference to it, which can be used like a PySchemaElement.
         """
@@ -377,8 +377,9 @@ class SchemaContainer(DDHbaseModel):
     def __bool__(self):
         return self.default_schema is not None
 
-    def add(self, key: keys.DDHkey, schema: AbstractSchema):
-        """ add a schema, considering its attributes """
+    def add(self, key: keys.DDHkeyGeneric, schema: AbstractSchema):
+        """ add a schema, considering its attributes. key is the Container's generic key. """
+        key = key.without_variant_version()  # ensure key is generic
         sa = schema.schema_attributes
         assert sa
         sbv = self.schemas_by_variant.setdefault(sa.variant, {})

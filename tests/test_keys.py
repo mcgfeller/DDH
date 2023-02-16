@@ -1,4 +1,4 @@
-from core import keys
+from core import keys, versions
 import pytest
 
 
@@ -34,10 +34,11 @@ def test_forks():
 def test_variant():
     ddhkey1 = keys.DDHkey(key='norooted:data:recommended')
     ddhkey2 = keys.DDHkey(key='norooted/subkey:data:recommended')
-    assert ddhkey1 == ddhkey2.up()
+    assert ddhkey1 == ddhkey2.up(retain_specifiers=True)
+    assert ddhkey1 != ddhkey2.up()  # variant does not match, as it is not retained
 
     ddhkey3 = keys.DDHkey(key='norooted/subkey:data:rec1')
-    assert ddhkey1 != ddhkey3.up()  # variants don't match
+    assert ddhkey1 != ddhkey3.up(retain_specifiers=True)  # variants don't match
 
     ddhkey4 = keys.DDHkey(key='norooted/subkey:data:rec1')
     assert ddhkey3 == ddhkey4
@@ -65,7 +66,8 @@ def test_version():
 
     ddhkey3 = keys.DDHkey(key='norooted/subkey:::4.0')
     assert str(ddhkey3) == 'norooted/subkey:::4.0'
-    assert ddhkey1 != ddhkey3.up()  # versions don't match
+    assert ddhkey1 == ddhkey3.up()  # version not retained, matches
+    assert ddhkey1 != ddhkey3.up(retain_specifiers=True)  # versions don't match
 
     ddhkey4 = keys.DDHkey(key='norooted/subkey:data::5.0')
     assert str(ddhkey4) == 'norooted/subkey:::5.0'
@@ -83,9 +85,15 @@ def test_without_variant_version():
     assert ddh_wvv.version == keys.versions.Unspecified
 
 
-def test__split():
+def test_split():
     """ Test key split """
     ddhkey1 = keys.DDHkey("/mgf/p/living/shopping/receipts::PySchema")
     k0, k1 = ddhkey1.split_at(5)
     assert str(k0) == "/mgf/p/living/shopping::PySchema"
     assert str(k1) == "receipts"
+
+
+def test_range():
+    ddhkey1 = keys.DDHkeyRange(key="//org/ubs.com/switzerland/customer/account:::>0")
+    assert versions.Version(0) not in ddhkey1.version
+    assert versions.Version(1) in ddhkey1.version

@@ -87,7 +87,7 @@ class DApp(DAppOrFamily):
 
     belongsTo: DAppFamily | None = None
     references: list[relationships.Reference] = []
-    transforms_into: keys.DDHkey | None = None
+    transforms_into: keys.DDHkeyVersioned0 | None = None  # Versioned0 here to avoid errors for incomplete DApps
     estimatedCosts: EstimatedCosts = EstimatedCosts.free
     requested_privileges: set[privileges.DAppPrivileges] = set()
     granted_privileges: set[privileges.DAppPrivileges] = pydantic.Field(
@@ -106,7 +106,7 @@ class DApp(DAppOrFamily):
     def __eq__(self, other):
         return (self.id == other.id) if isinstance(other, DApp) else False
 
-    def get_schemas(self) -> dict[keys.DDHkey, schemas.AbstractSchema]:
+    def get_schemas(self) -> dict[keys.DDHkeyVersioned, schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
         return {}
 

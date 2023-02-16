@@ -105,6 +105,7 @@ class MultiOwnerNode(Node):
 class SchemaNode(Node, persistable.NonPersistable):
 
     schemas: schemas.SchemaContainer = schemas.SchemaContainer()
+    key: keys.DDHkeyGeneric | None = None
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)

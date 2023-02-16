@@ -154,10 +154,19 @@ class DDHkey(DDHbaseModel):
     def __bool__(self) -> bool:
         return bool(self.key)
 
-    def up(self) -> DDHkey:
-        """ return key up one level; if a top, bool(key) is False """
+    def up(self, retain_specifiers=False) -> DDHkey:
+        """ return key up one level; if a top, bool(key) is False
+            If retain_specifiers is True, specifiers and __class__ are retained.
+        """
         upkey = self.key[:-1]
-        return self.__class__(upkey, specifiers=self.specifiers)
+        if retain_specifiers:
+            cls = self.__class__
+            specifiers = self.specifiers
+        else:
+            cls = DDHkey
+            specifiers = ()
+
+        return cls(upkey, fork=self.fork, specifiers=specifiers)
 
     def split_at(self, split: int) -> typing.Tuple[DDHkey, DDHkey]:
         """ split the key into two DDHkeys at split
@@ -219,7 +228,7 @@ class DDHkey(DDHbaseModel):
         """ Generator yielding sucessively shorter subkeys
             specifiers are not copied. Keys are  only built as needed.
         """
-        return (self.__class__(self.key[:i]) for i in range(len(self.key), -1, -1))  # count downward from end to 0
+        return (DDHkey(self.key[:i]) for i in range(len(self.key), -1, -1))  # count downward from end to 0
 
     def __add__(self, a: DDHkey | tuple | str) -> DDHkey:
         """ Add a further segment, creating a new key """
@@ -264,8 +273,8 @@ class DDHkeyRange(DDHkey):
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
-        if self.variant == DefaultVariant:
-            raise ValueError('DDHkeyRange must have non-default variant')
+        # if self.variant == DefaultVariant:
+        #     raise ValueError('DDHkeyRange must have non-default variant')
         if (not isinstance(self.version, versions.VersionConstraint)) or self.version == versions.NoConstraint:
             raise ValueError('DDHkeyRange must not have unconstrained version')
         return
@@ -282,11 +291,33 @@ class DDHkeyVersioned(DDHkey):
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
-        if self.variant == DefaultVariant:
-            raise ValueError('DDHkeyVersioned must have non-default variant')
         if (not isinstance(self.version, versions.Version)) or self.version == versions.Unspecified:
-            raise ValueError('DDHkeyVersioned must have non-default version')
+            raise ValueError('DDHkeyVersioned must not have unspecified version')
         return
+
+    def __hash__(self):
+        return super().__hash__()
+
+    def __eq__(self, o):
+        return super().__eq__(o)
+
+
+class DDHkeyVersioned0(DDHkeyVersioned):
+    """ DDHKey Versioned with default 0 """
+
+    version: versions.Version = versions.Version(0)
+
+    def __init__(self, *a, **kw):
+        DDHkey.__init__(self, *a, **kw)
+        if (not isinstance(self.version, versions.Version)) or self.version == versions.Unspecified:
+            self.version = versions.Version(0)
+        return
+
+    def __hash__(self):
+        return super().__hash__()
+
+    def __eq__(self, o):
+        return super().__eq__(o)
 
 
 from . import nodes

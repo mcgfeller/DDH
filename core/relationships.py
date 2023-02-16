@@ -21,7 +21,7 @@ class Relation(str, enum.Enum):
 
 class Reference(DDHbaseModel):
     relation: Relation
-    target: keys.DDHkey
+    target: keys.DDHkey  # TODO: Provides and requires have different DDHKey subclasses
     qualities: set[Quality] = set()
 
     @classmethod
@@ -30,16 +30,19 @@ class Reference(DDHbaseModel):
         return [cls(relation=relation, target=k) for k in ddhkeys]
 
     @classmethod
-    def requires(cls, *a, **kw):
-        return cls.multiple(Relation.requires, *a, **kw)
+    def requires(cls, *ddhkeys: typing.Iterable[keys.DDHkeyRange], **kw):
+        assert all(isinstance(d, keys.DDHkeyRange) for d in ddhkeys)
+        return cls.multiple(Relation.requires, *ddhkeys, **kw)
 
     @classmethod
-    def provides(cls, *a, **kw):
-        return cls.multiple(Relation.provides, *a, **kw)
+    def provides(cls, *ddhkeys: typing.Iterable[keys.DDHkeyVersioned], **kw):
+        assert all(isinstance(d, keys.DDHkeyVersioned) for d in ddhkeys)
+        return cls.multiple(Relation.provides, *ddhkeys, **kw)
 
     @classmethod
-    def defines(cls, *a, **kw):
-        return cls.multiple(Relation.defines, *a, **kw)
+    def defines(cls, *ddhkeys: typing.Iterable[keys.DDHkeyVersioned], **kw):
+        assert all(isinstance(d, keys.DDHkeyVersioned) for d in ddhkeys)
+        return cls.multiple(Relation.defines, *ddhkeys, **kw)
 
 
 class Quality(DDHbaseModel):

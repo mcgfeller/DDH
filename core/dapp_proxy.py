@@ -28,14 +28,14 @@ class DAppProxy(DDHbaseModel):
     running:  dapp_attrs.RunningDApp
     attrs: dapp_attrs.DApp
     client: httpx.AsyncClient
-    schemas: dict[keys.DDHkey, schemas.AbstractSchema] = {}
+    schemas: dict[keys.DDHkeyVersioned, schemas.AbstractSchema] = {}
 
     async def initialize(self, session, pillars: dict):
         if True:  # self.running.schema_version > versions._UnspecifiedVersion:
             j = await(self.client.get('/schemas'))
             j.raise_for_status()
             js = j.json()
-            self.schemas = {keys.DDHkey(k): schemas.AbstractSchema.create_schema(s, sf, sa)
+            self.schemas = {keys.DDHkeyVersioned(k): schemas.AbstractSchema.create_schema(s, sf, sa)
                             for k, (sa, sf, s) in js.items()}
             self.register_schema(session)
             self.register_references(session, schemas.SchemaNetwork)
@@ -43,7 +43,7 @@ class DAppProxy(DDHbaseModel):
 
     def register_references(self, session, schema_network: schema_network.SchemaNetworkClass):
         """ We register: 
-            - DAppNode where our DApp provides or transforms into a DDHkey
+            - DAppNode where our DApp provides or transforms into a DDHkeyVersioned
             - DApp as SchemaNetwork node, with edges to provides, transforms and requires 
         """
         transaction = session.get_or_create_transaction()
@@ -76,7 +76,8 @@ class DAppProxy(DDHbaseModel):
 
         snodes = []
         for schemakey, schema in self.schemas.items():
-            snode = keydirectory.NodeRegistry[schemakey].get(
+            genkey = schemakey.without_variant_version()
+            snode = keydirectory.NodeRegistry[genkey].get(
                 nodes.NodeSupports.schema)  # need exact location, not up the tree
             if snode:
                 snode = typing.cast(nodes.SchemaNode, snode.ensure_loaded(transaction))
@@ -84,10 +85,10 @@ class DAppProxy(DDHbaseModel):
             else:
                 # create snode with our schema:
                 snode = nodes.SchemaNode(owner=self.attrs.owner, consents=schemas.AbstractSchema.get_schema_consents())
-                keydirectory.NodeRegistry[schemakey] = snode
+                keydirectory.NodeRegistry[genkey] = snode
                 snode.add_schema(schema)
                 # hook into parent schema:
-                py_schema.PySchema.insert_schema_ref(transaction, schemakey)
+                py_schema.PySchema.insert_schema_ref(transaction, genkey)
 
                 #
             snodes.append(snode)
