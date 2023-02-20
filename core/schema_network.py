@@ -13,7 +13,7 @@ matplotlib.use('Agg')  # Server-side rendering
 logger = logging.getLogger(__name__)
 
 from utils import utils
-from core import dapp_attrs, schemas, principals, keys, errors
+from core import dapp_attrs, schemas, principals, keys, errors, versions
 
 
 class SchemaNetworkClass():
@@ -28,31 +28,48 @@ class SchemaNetworkClass():
 
     def add_schema(self, key: keys.DDHkeyGeneric, attrs: schemas.SchemaAttributes):
         assert key == key.without_variant_version()
-        # base node without vv:
-        self._network.add_node(key, id=str(key), type='schema')
+        key = key.ensure_fork(keys.ForkType.schema)
         # specific vv:
-        vvkey = keys.DDHkey(key.key, fork=keys.ForkType.schema, variant=attrs.variant, version=attrs.version)
-        self._network.add_node(vvkey, id=str(vvkey), type='schema')
-        # Add edge between base and vv!
-        self._network.add_edge(key, vvkey, type='version')
+        if attrs.version == versions.Unspecified:
+            logger.warning(f'schema at {key} has unspecified version')
+            version = versions.Version(0)
+        else:
+            version = attrs.version
+        vvkey = keys.DDHkeyVersioned(key.key, fork=keys.ForkType.schema, variant=attrs.variant, version=version)
+
+        # base node without vv:
+        self.add_schema_vv(key, vvkey)
         # add references:
         for ref in attrs.references:
-            self.add_schema_reference(vvkey, ref)
+            self.add_schema_reference(vvkey, typing.cast(keys.DDHkeyRange, ref))
         return
 
-    def add_schema_reference(self, vvkey: keys.DDHkey, ref: keys.DDHkeyVersioned):
-        refbase = ref.without_variant_version()
+    def add_schema_vv(self, key: keys.DDHkeyGeneric, vvkey: keys.DDHkeyVersioned):
+        self._network.add_node(key, id=str(key), type='schema')
+        self._network.add_node(vvkey, id=str(vvkey), type='schema_version')
+        # Add edge between base and vv!
+        self._network.add_edge(key, vvkey, type='version')
+        return
+
+    def add_schema_range(self, rangekey: keys.DDHkeyRange):
+        refbase = rangekey.without_variant_version()
         self._network.add_node(refbase, id=str(refbase), type='schema')  # ensure base of reference is there
-        self._network.add_node(ref, id=str(ref), type='schema')  # reference with vv
-        # TODO: Add edge between base and vv!
+        self._network.add_node(rangekey, id=str(rangekey), type='schema_range')  # reference with vv
+        self._network.add_edge(rangekey, refbase, type='range')
+
+    def add_schema_reference(self, vvkey: keys.DDHkeyVersioned, ref: keys.DDHkeyRange):
+        self.add_schema_range(ref)
+        # Add edge between base and vv!
         self._network.add_edge(vvkey, ref, type='references')
         return
 
     def add_schema_node(self, schema_key: keys.DDHkey, schema_attrs: schemas.SchemaAttributes):
-        self._network.add_node(schema_key, id=str(schema_key), type='schema', requires=schema_attrs.requires)
+        # self._network.add_node(schema_key, id=str(schema_key), type='schema', requires=schema_attrs.requires)
+        return
 
     def add_edge(self, attrs, target, type, weight=None):
-        self._network.add_edge(attrs, target, type=type, weight=weight)
+        # self._network.add_edge(attrs, target, type=type, weight=weight)
+        return
 
     def plot(self, stream, layout='circular_layout', size_h=1200, center_schema: keys.DDHbaseModel | None = None, radius: int = 2):
         """ Return a graph on stream of the current network.
