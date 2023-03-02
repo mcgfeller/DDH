@@ -41,32 +41,6 @@ class DAppProxy(DDHbaseModel):
             self.register_references(session, schemas.SchemaNetwork)
         return
 
-    def register_references(self, session, schema_network: schema_network.SchemaNetworkClass):
-        """ We register: 
-            - DAppNode where our DApp provides or transforms into a DDHkeyVersioned
-            - DApp as SchemaNetwork node, with edges to provides, transforms and requires 
-        """
-        transaction = session.get_or_create_transaction()
-
-        attrs = self.attrs
-        dnode = DAppNode(owner=attrs.owner, dapp=self, consents=schemas.AbstractSchema.get_schema_consents())
-        schema_network.add_dapp(attrs)
-
-        for ref in attrs.references:
-            # we want node attributes of, so get the node:
-            snode, split = keydirectory.NodeRegistry.get_node(
-                ref.target, nodes.NodeSupports.schema, transaction)  # get applicable schema node for attributes
-            sa = snode.schemas.get().schema_attributes
-            schema_network.add_schema_node(ref.target, sa)
-            if ref.relation == relationships.Relation.provides:
-                schema_network.add_edge(attrs, ref.target, type='provides', weight=attrs.get_weight())
-                # register our node as a provider for (or transformer into) the key:
-                keydirectory.NodeRegistry[ref.target] = dnode
-            elif ref.relation == relationships.Relation.requires:
-                schema_network.add_edge(ref.target, attrs, type='requires')
-        schema_network.valid.invalidate()  # we have modified the network
-        return
-
     def register_schema(self, session) -> list[nodes.Node]:
         """ We register: 
             - SchemaNode for the Schemas our node provides, including transformed-into keys.
@@ -93,6 +67,32 @@ class DAppProxy(DDHbaseModel):
                 #
             snodes.append(snode)
         return snodes
+
+    def register_references(self, session, schema_network: schema_network.SchemaNetworkClass):
+        """ We register: 
+            - DAppNode where our DApp provides or transforms into a DDHkeyVersioned
+            - DApp as SchemaNetwork node, with edges to provides, transforms and requires 
+        """
+        transaction = session.get_or_create_transaction()
+
+        attrs = self.attrs
+        dnode = DAppNode(owner=attrs.owner, dapp=self, consents=schemas.AbstractSchema.get_schema_consents())
+        schema_network.add_dapp(attrs)
+
+        for ref in attrs.references:
+            # we want node attributes of, so get the node:
+            snode, split = keydirectory.NodeRegistry.get_node(
+                ref.target, nodes.NodeSupports.schema, transaction)  # get applicable schema node for attributes
+            sa = snode.schemas.get().schema_attributes
+            schema_network.add_schema_node(ref.target, sa)
+            if ref.relation == relationships.Relation.provides:
+                schema_network.add_edge(attrs, ref.target, type='provides', weight=attrs.get_weight())
+                # register our node as a provider for (or transformer into) the key:
+                keydirectory.NodeRegistry[ref.target] = dnode
+            elif ref.relation == relationships.Relation.requires:
+                schema_network.add_edge(ref.target, attrs, type='requires')
+        schema_network.valid.invalidate()  # we have modified the network
+        return
 
     async def execute(self, req: dapp_attrs.ExecuteRequest):
         """ forward execution request to DApp microservice """
