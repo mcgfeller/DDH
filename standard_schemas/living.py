@@ -23,7 +23,7 @@ class Receipt(py_schema.PySchemaElement):
 
 def install():
     transaction = sessions.get_system_session().get_or_create_transaction()
-    return Receipt.insert_as_schema(transaction, keys.DDHkey('//p/living/shopping/receipts'))
+    return Receipt.insert_as_schema(transaction, keys.DDHkeyGeneric('//p/living/shopping/receipts'))
 
 
 install()

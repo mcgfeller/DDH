@@ -8,7 +8,7 @@ import fastapi
 import fastapi.security
 import pydantic
 from core import (common_ids, dapp_attrs, keys, nodes, permissions, principals, users,
-                  relationships, schemas)
+                  relationships, schemas, transactions)
 from schema_formats import py_schema
 from frontend import fastapi_dapp
 app = fastapi.FastAPI()

@@ -11,7 +11,7 @@ def test_get_data(user1):
     assert len(data['mgf']) > 10
     assert all(a in data['mgf'][5]
                for a in ('Datum_Zeit', 'Menge', 'Filiale'))  # these keys must be present
-    assert r.headers['content-location'] == str(user1.base_url)+'/ddh/mgf/org/migros.ch/receipts::PySchema'
+    assert r.headers['content-location'] == str(user1.base_url)+'/ddh/mgf/org/migros.ch/receipts::PySchema:0'
     return
 
 
@@ -105,7 +105,7 @@ def test_schema_graph(user1):
 
 
 def test_schema_ego_graph(user1):
-    r = user1.get('/graph/draw?layout=planar_layout&size_h=1000&center_schema=//p/employment/salary&radius=4')
+    r = user1.get('/graph/draw?layout=planar_layout&size_h=1000&center_schema=//p/employment/salary/statements&radius=4')
     r.raise_for_status()
     assert r.headers['content-type'] == 'image/png'
     return

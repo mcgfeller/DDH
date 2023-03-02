@@ -67,7 +67,8 @@ class CoopSchema(py_schema.PySchemaElement):
     """ There is no Schema for Coop yet """
 
     supercard: int | None = pydantic.Field(None, sensitivity=schemas.Sensitivity.qid)
-    #receipts: list[Receipt] = []
+    receipts: list[py_schema.PySchemaReference.create_from_key(
+        keys.DDHkeyRange('//p/living/shopping/receipts:::>0'))] = []
 
     # def get_data(self, selection: keys.DDHkey, access: permissions.Access, q):
     #     return None
@@ -78,8 +79,12 @@ COOP_DAPP = CoopDApp(owner=users.User(id='coop', name='Coop (fake account)'),
                      catalog=common_ids.CatalogCategory.living)
 
 if __name__ == "__main__":  # Debugging
-    import uvicorn
-    import os
-    port = 9022
-    os.environ['port'] = str(port)
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    # s = COOP_DAPP.get_schemas()
+    # from fastapi.encoders import jsonable_encoder
+    # j = jsonable_encoder(s)
+    # import uvicorn
+    # import os
+    # port = 9022
+    # os.environ['port'] = str(port)
+    # uvicorn.run(app, host="0.0.0.0", port=port)
+    ...
