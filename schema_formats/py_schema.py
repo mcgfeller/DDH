@@ -100,10 +100,10 @@ class PySchemaReference(schemas.AbstractSchemaReference, PySchemaElement):
         return cls.__fields__['ddhkey'].default
 
     @classmethod
-    def create_from_key(cls, ddhkey: keys.DDHkey, name: str | None = None) -> typing.Type[PySchemaReference]:
+    def create_from_key(cls, ddhkey: keys.DDHkeyRange, name: str | None = None) -> typing.Type[PySchemaReference]:
         name = name if name else str(ddhkey)
-        m = PySchemaElement.create_from_elements(name, ddhkey=(keys.DDHkey, ddhkey))
-        return typing.cast(typing.Type[PySchemaReference], m)
+        m = cls.create_from_elements(name, ddhkey=(keys.DDHkeyRange, ddhkey))
+        return m  # typing.cast(typing.Type[PySchemaReference], m)
 
 
 class PySchema(schemas.AbstractSchema):

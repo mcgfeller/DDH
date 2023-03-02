@@ -91,16 +91,17 @@ class SchemaAttributes(DDHbaseModel):
     variant_usage: SchemaVariantUsage = pydantic.Field(
         SchemaVariantUsage.recommended, description="How this variant is used.")
     version: versions.Version = pydantic.Field(
-        versions.Unspecified, description="The version of this schema instance")
+        versions.Version(0), description="The version of this schema instance")
     requires: Requires | None = None
     mimetypes: MimeTypes | None = None
-    references: dict[keys.DDHkey, keys.DDHkey] = {}
+    references: dict[str, keys.DDHkeyRange] = {}  # TODO:#17 key should be DDHkey
     sensitivities: dict[Sensitivity, dict[str, set[str]]] = pydantic.Field(default={},
                                                                            description="Sensitivities by Sensitivity, schema key, set of fields. We cannot use DDHKey for schema key, as the dict is not jsonable.")
     capabilities: set[capabilities.Capabilities] = set()
 
     def add_reference(self, path: keys.DDHkey, reference: AbstractSchemaReference):
-        self.references[path] = reference.get_target()
+        print(f'SchemaAttributes.add_reference {path=}, {reference=}')
+        self.references[str(path)] = reference.get_target()
         return
 
     def add_sensitivities(self, path: keys.DDHkey, sensitivities: dict[str, Sensitivity]):
@@ -129,17 +130,19 @@ class AbstractSchemaElement(DDHbaseModel, abc.ABC):
             and return the PySchemaReference to it, which can be used like a PySchemaElement.
         """
         s = cls.to_schema()
-        if schema_attributes: s.schema_attributes = schema_attributes
+        if schema_attributes:
+            s.schema_attributes = schema_attributes
         snode = nodes.SchemaNode(owner=principals.RootPrincipal,
                                  consents=AbstractSchema.get_schema_consents())
         keydirectory.NodeRegistry[ddhkey] = snode  # sets snode.key
         snode.add_schema(s)
         # now create reference
-        schemaref = s.get_reference_class().create_from_key(ddhkey=ddhkey)
+        vv = keys.DDHkeyVersioned0(ddhkey, variant=s.schema_attributes.variant, version=s.schema_attributes.version)
+        schemaref = s.get_reference_class().create_from_key(ddhkey=vv.to_range())
         return schemaref
 
     @classmethod
-    def insert_as_schema(cls, transaction, ddhkey: keys.DDHkey, schema_attributes: SchemaAttributes | None = None):
+    def insert_as_schema(cls, transaction, ddhkey: keys.DDHkeyGeneric, schema_attributes: SchemaAttributes | None = None):
         ref = cls.store_as_schema(ddhkey, schema_attributes)
         return AbstractSchema.insert_schema_ref(transaction, ddhkey, ref)
 
@@ -343,20 +346,16 @@ Class2SchemaFormat = {}
 
 
 class AbstractSchemaReference(AbstractSchemaElement):
-    # TODO: Make version_required part of key
     ddhkey: typing.ClassVar[str]
-    # variant: SchemaVariant = ''
-    version_required: versions.VersionConstraint = pydantic.Field(
-        default=versions.NoConstraint, description="Constrains the version of the target schema")
 
     @classmethod
     @abc.abstractmethod
-    def create_from_key(cls, ddhkey: keys.DDHkey, name: str | None = None) -> typing.Type[AbstractSchemaReference]:
+    def create_from_key(cls, ddhkey: keys.DDHkeyRange, name: str | None = None) -> typing.Type[AbstractSchemaReference]:
         ...
 
     @classmethod
     @abc.abstractmethod
-    def get_target(cls) -> keys.DDHkey:
+    def get_target(cls) -> keys.DDHkeyRange:
         """ get target key """
         ...
 
