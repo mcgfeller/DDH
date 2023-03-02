@@ -192,6 +192,10 @@ class DDHkey(DDHbaseModel):
         else:
             return self
 
+    def ens(self) -> typing.Self:
+        """ shortcut for ensure_fork(schema) """
+        return self.ensure_fork(ForkType.schema)
+
     def without_owner(self) -> DDHkey:
         """ return key without owner """
         rooted_key = self.ensure_rooted()
@@ -300,6 +304,13 @@ class DDHkeyVersioned(DDHkey):
 
     def __eq__(self, o):
         return super().__eq__(o)
+
+    def to_range(self) -> DDHkeyRange:
+        """ return a range key constraining to this version """
+        if self.version == versions.Unspecified:
+            return DDHkeyRange(self.key, variant=self.variant, version=versions.NoConstraint)
+        else:
+            return DDHkeyRange(self.key, variant=self.variant, version=versions.VersionConstraint(op1='==', v1=self.version))
 
 
 class DDHkeyVersioned0(DDHkeyVersioned):
