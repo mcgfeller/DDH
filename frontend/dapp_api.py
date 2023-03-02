@@ -170,7 +170,7 @@ async def draw_graph(
      """
     stream = io.BytesIO()
     if center_schema:
-        center_schema = keys.DDHkey(center_schema)
+        center_schema = keys.DDHkey(center_schema).ens()
     schemas.SchemaNetwork.plot(stream, layout=layout, size_h=size_h, center_schema=center_schema, radius=radius)
     return fastapi.responses.StreamingResponse(content=stream, media_type="image/png")
 
