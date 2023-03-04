@@ -67,7 +67,8 @@ class CoopSchema(py_schema.PySchemaElement):
     """ There is no Schema for Coop yet """
 
     supercard: int | None = pydantic.Field(None, sensitivity=schemas.Sensitivity.qid)
-    receipts: list[py_schema.PySchemaReference] = [py_schema.PySchemaReference('//p/living/shopping/receipts:::>0')]
+    receipts: list[py_schema.PySchemaReference.create_from_key(
+        keys.DDHkeyRange('//p/living/shopping/receipts:::>0'))] = []
 
     # def get_data(self, selection: keys.DDHkey, access: permissions.Access, q):
     #     return None

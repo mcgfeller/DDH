@@ -94,10 +94,6 @@ class PySchemaReference(schemas.AbstractSchemaReference, PySchemaElement):
             schema['properties']['dep'] = {'$ref': model.getURI()}
             return
 
-    def __init__(self, k):
-        """ allow type annotation PySchemaReference['key'] """
-        return self.__class__.create_from_key(keys.DDHkeyRange(k))
-
     @classmethod
     def get_target(cls) -> keys.DDHkey:
         """ get target key - oh Pydantic! """
