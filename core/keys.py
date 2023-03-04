@@ -234,7 +234,7 @@ class DDHkey(DDHbaseModel):
         """
         return (DDHkey(self.key[:i]) for i in range(len(self.key), -1, -1))  # count downward from end to 0
 
-    def __add__(self, a: DDHkey | tuple | str) -> DDHkey:
+    def __add__(self, a: DDHkey | tuple | str) -> typing.Self:
         """ Add a further segment, creating a new key """
         if not a:
             return self

@@ -18,6 +18,14 @@ from core import dapp_attrs, schemas, principals, keys, errors, versions
 
 class SchemaNetworkClass():
 
+    NodeColors: typing.ClassVar[dict[str, str]] = {
+        'schema': 'blue',
+        'schema_range': 'mediumpurple',
+        'schema_version': 'violet',
+        'sub_schema': 'slateblue',
+        'dapp': 'red',
+    }
+
     def __init__(self):
         self._network = networkx.DiGraph()
         self.valid = utils.Invalidatable(self.complete_graph)
@@ -35,9 +43,13 @@ class SchemaNetworkClass():
         # base node and vv:
         self.add_schema_vv(key, vvkey)
         # add references to other schema:
-        for ref in attrs.references.values():
-            print(f'add_schema reference {vvkey=} -> {ref=}')
-            self.add_schema_reference(vvkey, typing.cast(keys.DDHkeyRange, ref.ens()))
+        for subpath, ref in attrs.references.items():
+            print(f'add_schema reference {vvkey=} {subpath=} -> {ref=}')
+            subkey = vvkey+subpath  # the reference is from the versioned subkey
+            if subpath:  # if not ==vvkey, add subkey and link it:
+                self._network.add_node(subkey, id=str(subkey), type='sub_schema')
+                self._network.add_edge(vvkey, subkey, type='sub')
+            self.add_schema_reference(subkey, typing.cast(keys.DDHkeyRange, ref.ens()))
         return
 
     def add_schema_vv(self, key: keys.DDHkeyGeneric, vvkey: keys.DDHkeyVersioned):
@@ -64,7 +76,7 @@ class SchemaNetworkClass():
         return
 
     def add_edge(self, attrs, target, type, weight=None):
-        # self._network.add_edge(attrs, target, type=type, weight=weight)
+        self._network.add_edge(attrs, target, type=type, weight=weight)
         return
 
     def plot(self, stream, layout='circular_layout', size_h=1200, center_schema: keys.DDHbaseModel | None = None, radius: int = 2):
@@ -93,8 +105,8 @@ class SchemaNetworkClass():
         except Exception as e:
             raise errors.DDHerror(f'Layouting error: {e}; choose another layout').to_http()
 
-        labels = {node: f"{attrs['id']}" for node, attrs in G.nodes.items()}  # short id for nodes
-        colors = ['blue' if attrs['type'] == 'schema' else 'red' for attrs in G.nodes.values()]
+        labels = {node: f"{attrs.get('id','-unknown-')}" for node, attrs in G.nodes.items()}  # short id for nodes
+        colors = [self.NodeColors.get(attrs.get('type', '-unknown-'), 'black') for attrs in G.nodes.values()]
         networkx.draw_networkx(G, pos=pos, with_labels=True,
                                labels=labels, node_color=colors, font_size=size_f)
         networkx.draw_networkx_edge_labels(
