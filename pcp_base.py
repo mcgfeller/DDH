@@ -148,8 +148,12 @@ class Runnable(Controllable):
         logger.info(
             f"Starting {self} with {' '.join(cmd)} and serverparam={env.get('SERVER_TYPE','*default*')}")
         if OnWindows:
+            # Open windows minimized to avoid taking away focus from editor:
+            si = subprocess.STARTUPINFO()
+            si.dwFlags = subprocess.STARTF_USESHOWWINDOW
+            si.wShowWindow = 2  # SW_SHOWMINIMIZED
             p = subprocess.Popen(cmd, bufsize=-1, cwd=PARENTDIR, env=env,
-                                 creationflags=subprocess.DETACHED_PROCESS, **param)
+                                 creationflags=subprocess.DETACHED_PROCESS, startupinfo=si,  **param)
         else:
             p = subprocess.Popen(cmd, bufsize=-1, cwd=PARENTDIR, env=env, start_new_session=True,
                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **param)
