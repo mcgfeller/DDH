@@ -39,6 +39,7 @@ class DAppProxy(DDHbaseModel):
                             for k, (sa, sf, s) in js.items()}
             self.register_schema(session)
             self.register_references(session, schemas.SchemaNetwork)
+            schemas.SchemaNetwork.valid.invalidate()  # finished
         return
 
     def register_schema(self, session) -> list[nodes.Node]:

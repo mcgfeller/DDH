@@ -34,6 +34,7 @@ def load_schema_formats():
 
 def load_standard_schemas():
     import_modules.importAllSubPackages(standard_schemas)
+    schemas.SchemaNetwork.valid.invalidate()  # finished
 
 
 Pillars = {  # collect the singletons so we can pass them to whomever needs them for their initialization

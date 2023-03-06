@@ -28,7 +28,8 @@ def register_schema() -> nodes.SchemaNode:
                                      consents=schemas.AbstractSchema.get_schema_consents())
         keydirectory.NodeRegistry[root] = root_node
         root_node.add_schema(schema)
-    logger.info('AbstractSchema Root built')
+        schemas.SchemaNetwork.valid.invalidate()  # finished
+        logger.info('AbstractSchema Root built')
     return root_node
 
 
