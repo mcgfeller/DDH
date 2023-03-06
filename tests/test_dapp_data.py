@@ -97,6 +97,24 @@ def test_p_schema(user1):
     return
 
 
+def test_graph_from(user1):
+    r = user1.get('/graph/from/MigrosDApp+CoopDApp')
+    r.raise_for_status()
+    d = r.json()
+    assert len(d) == 2, 'one result per app'
+    return  # TODO: Check result
+
+
+def test_graph_to(user1):
+    r = user1.get('/graph/from/TaxCalc')
+    r.raise_for_status()
+    d = r.json()
+    assert len(d) == 1, 'one app, one result'
+    assert 'SBBempDApp' in d[0]  # TODO: Check result
+    assert 'UBSaccount' in d[0]
+    return
+
+
 def test_schema_graph(user1):
     r = user1.get('/graph/draw?layout=shell_layout&size_h=1000')
     r.raise_for_status()
