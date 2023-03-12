@@ -68,7 +68,7 @@ class CoopSchema(py_schema.PySchemaElement):
 
     supercard: int | None = pydantic.Field(None, sensitivity=schemas.Sensitivity.qid)
     receipts: list[py_schema.PySchemaReference.create_from_key(
-        keys.DDHkeyRange('//p/living/shopping/receipts:::>0'))] = []
+        keys.DDHkeyRange('//p/living/shopping/receipts:::>=0'))] = []
 
     # def get_data(self, selection: keys.DDHkey, access: permissions.Access, q):
     #     return None

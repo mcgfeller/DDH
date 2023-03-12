@@ -161,13 +161,13 @@ class VersionConstraint(DDHbaseModel, typing.Hashable):
                     raise ValueError('Only one > / >= constraint allowed')
         return
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self!s})'
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'{self.op1}{self.v1}' + (f',{self.op2}{self.v2}' if self.op2 else '')
 
-    def __contains__(self, version:  Version):
+    def __contains__(self, version:  Version) -> bool:
         """ returns True is version satisfies VersionConstraint """
         if isinstance(version, _UnspecifiedVersion):  # unspecified satisfies all constraints
             ok = True
@@ -177,7 +177,7 @@ class VersionConstraint(DDHbaseModel, typing.Hashable):
                 ok = self._vops[self.op2](version, self.v2)
         return ok
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         """ VersionConstraint if the normalized tuples are equal.
         """
         if isinstance(other, VersionConstraint):
@@ -189,7 +189,26 @@ class VersionConstraint(DDHbaseModel, typing.Hashable):
         return hash(self._as_tuple())
 
 
-NoConstraint = VersionConstraint(op1='>=', v1=Version((0)))  # everything is bigger than 0
+class _NoConstraint(VersionConstraint):
+
+    v1: Version | None = None
+    op1:  str | None = None
+    v2: Version | None = None
+    op2:  str | None = None
+
+    def __str__(self):
+        return '[NoConstraint]'
+
+    def __contains__(self, version:  Version) -> bool:
+        """ all versions satisfy this constrain """
+        return True
+
+    def normalize(self):
+        """ nothing to do """
+        return
+
+
+NoConstraint = _NoConstraint()
 
 
 def make_version_or_constraint(v: str | None) -> Version | VersionConstraint:

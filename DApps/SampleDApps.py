@@ -96,8 +96,8 @@ class SampleDApps(dapp_attrs.DApp):
                 provides_schema=True,
                 catalog=common_ids.CatalogCategory.finance,
             ).add_reference(relationships.Reference.requires(
-                keys.DDHkeyRange(key="//p/employment/salary/statements:::>=1"),
-                keys.DDHkeyRange(key="//p/finance/holdings/portfolio:::>=1")
+                keys.DDHkeyRange(key="//p/employment/salary/statements:::>=0"),
+                keys.DDHkeyRange(key="//p/finance/holdings/portfolio:::>=0")
             )),
 
             cls(
@@ -147,8 +147,8 @@ class SampleDApps(dapp_attrs.DApp):
                 catalog=common_ids.CatalogCategory.finance,
             ).add_reference(relationships.Reference.requires(
                 # TODO: >= 0 -> unconstrained
-                keys.DDHkeyRange(key="//org/credit-suisse.com/clients/portfolio/account:::>=1"),
-                keys.DDHkeyRange(key="//org/ubs.com/switzerland/customer/account:::>=1"),
+                keys.DDHkeyRange(key="//org/credit-suisse.com/clients/portfolio/account:::>=0"),
+                keys.DDHkeyRange(key="//org/ubs.com/switzerland/customer/account:::>=0"),
             )),
 
 
