@@ -35,6 +35,7 @@ class SchemaNetworkClass():
                                cost=attrs.estimated_cost(), availability_user_dependent=attrs.availability_user_dependent())
 
     def add_schema(self, key: keys.DDHkeyGeneric, attrs: schemas.SchemaAttributes):
+        """ Add base schema, variant/version from attrs, and references to other schemas as subpath -> other_range """
         assert key == key.without_variant_version()
         key = key.ens()
         # specific vv:
@@ -53,6 +54,7 @@ class SchemaNetworkClass():
         return
 
     def add_schema_vv(self, key: keys.DDHkeyGeneric, vvkey: keys.DDHkeyVersioned):
+        """ Add a concrete variant/version, its base schema, and a version link between them. """
         self._network.add_node(key, id=str(key), type='schema')
         self._network.add_node(vvkey, id=str(vvkey), type='schema_version')
         # Add edge between base and vv!
@@ -60,22 +62,24 @@ class SchemaNetworkClass():
         return
 
     def add_schema_reference(self, vvkey: keys.DDHkeyVersioned, ref: keys.DDHkeyRange):
+        """ A reference from vvkey to a reference range """
         self.add_schema_range(ref)
         # Add edge between own vv and ref range:
         self._network.add_edge(vvkey, ref, type='references')
         return
 
     def add_schema_range(self, rangekey: keys.DDHkeyRange):
+        """ add a range and base schema, link them.
+            Note: the link is from base to range, so there is no direct path in the graph 
+            .complete_graph() will link the range with applicable versions, creating a path.
+        """
         refbase = rangekey.without_variant_version()
         self._network.add_node(refbase, id=str(refbase), type='schema')  # ensure base of reference is there
         self._network.add_node(rangekey, id=str(rangekey), type='schema_range')  # reference to range
-        self._network.add_edge(rangekey, refbase, type='range')
-
-    def add_schema_node(self, schema_key: keys.DDHkey, schema_attrs: schemas.SchemaAttributes):
-        # self._network.add_node(schema_key, id=str(schema_key), type='schema', requires=schema_attrs.requires)
-        return
+        self._network.add_edge(refbase, rangekey, type='range')
 
     def add_edge(self, attrs, target, type, weight=None):
+        """ Add link (by outside caller); used to add DApp depends/provides """
         self._network.add_edge(attrs, target, type=type, weight=weight)
         return
 
@@ -156,24 +160,42 @@ class SchemaNetworkClass():
     def complete_graph(self):
         """ Finish up the graph after all nodes have been added:
 
-            Keys are provided if key above it is provided.
-            For all keys that are requires, 
-            check if a parent key is provided, and add a provision from this key to that parent
+            Compile all schemas and their variant/versions (vv) that are provided by a DApp.
+
+            For each range, check the corresponding schema for matching vv, and add 'fulfills' edges
+            from the range to the vv. Go up the range's schema to find 
 
         """
-        # schema nodes that have an out_edge of type 'requires':
-        required_nodes = {n for n, n_out, t in self._network.out_edges((node for node, typ in self._network.nodes(
-            data='type', default=None) if typ == 'schema'), data='type') if t == 'requires'}  # type:ignore
+        # all schemas
+        schemas = {node for node, typ in self._network.nodes(data='type', default=None) if typ == 'schema'}
+        # {schema : {variant_version}} for all schemas, where variant_version has a 'provided by' edge; i.e., is provided
+        # by a DApp apart from being just a schema version.
+        # Consider: For graph purposes, this is actually not needed, as the traversal goes to the DApp; however,
+        # omitting it could clutter the graph.
+        vv_by_schema = {schema: vvs for schema in schemas if (
+            # set of successors of schema of type version and at least one out-edge of type 'provided by':
+            vvs := {k for k, v in self._network.succ[schema].items() if v['type'] == 'version' and
+                    bool([e for x, e, typ in self._network.out_edges(k, data='type', default=None) if typ == 'provided by'])})}
 
-        # schema nodes that have in in_edge of type requires
-        provided_nodes = {n for n_in, n, t in self._network.in_edges((node for node, typ in self._network.nodes(
-            data='type', default=None) if typ == 'schema'), data='type') if t == 'provides'}  # type:ignore
+        print(f'complete_graph {vv_by_schema=}')
 
-        for node in required_nodes:
-            up = node
-            while up := up.up():  # go path up until exhausted
-                if up in provided_nodes:  # provided at this level?
-                    # extend provision from up level to node
-                    self._network.add_edge(up, node, type='provides')
+        # all ranges we need to treat:
+        ranges = {node for node, typ in self._network.nodes(data='type', default=None) if typ == 'schema_range'}
+        for srange in ranges:
+            # get the base schema for this range - type is type of edge:
+            schema = [k for k, v in self._network.pred[srange].items() if v['type'] == 'range']
+            if len(schema) == 1:
+                schema = schema[0]
+            else:
+                raise ValueError(f'Network range {srange} has no unique schema')
 
+            while schema:  # exhausted?
+                if (svvs := vv_by_schema.get(schema)):
+                    # Add an edge from the range to all version with equal variants and fulfilling the version constraint:
+                    svvs_match = [svv for svv in svvs if svv.variant ==
+                                  srange.variant and svv.version in srange.version]
+                    print(f'range {srange} against candidates {svvs} -> match {svvs_match}')
+                    [self._network.add_edge(srange, svv, type='fulfills') for svv in svvs_match]
+
+                schema = schema.up()  # go path up until exhausted
         return
