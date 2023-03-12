@@ -156,6 +156,7 @@ class DDHkey(DDHbaseModel):
 
     @classmethod
     def cast(cls, key: DDHkey) -> typing.Self:
+        """ Cast a key to a specific subclass """
         if not isinstance(key, DDHkey):
             raise ValueError(f'Cannot cast type {key.__class__.__name__} to {cls.__name__}')
         elif cls == key.__class__:
