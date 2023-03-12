@@ -192,9 +192,8 @@ class SchemaNetworkClass():
             while schema:  # exhausted?
                 if (svvs := vv_by_schema.get(schema)):
                     # Add an edge from the range to all version with equal variants and fulfilling the version constraint:
-                    svvs_match = [svv for svv in svvs if svv.variant ==
-                                  srange.variant and svv.version in srange.version]
-                    print(f'range {srange} against candidates {svvs} -> match {svvs_match}')
+                    svvs_match = [svv for svv in svvs if svv in srange]
+                    print(f'range {srange} against candidates {svvs} \n-> match {svvs_match}')
                     [self._network.add_edge(srange, svv, type='fulfills') for svv in svvs_match]
 
                 schema = schema.up()  # go path up until exhausted

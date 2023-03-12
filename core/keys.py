@@ -283,6 +283,10 @@ class DDHkeyRange(DDHkey):
             raise ValueError('DDHkeyRange must not have unconstrained version')
         return
 
+    def __contains__(self, key : DDHkeyVersioned):
+        """ return True if key fulfills this range """
+        return key.variant == self.variant and key.version in self.version
+
 
 class DDHkeyVersioned(DDHkey):
     """ DDHKey which must contain Variant and Version """
