@@ -154,6 +154,15 @@ class DDHkey(DDHbaseModel):
     def __bool__(self) -> bool:
         return bool(self.key)
 
+    @classmethod
+    def cast(cls, key: DDHkey) -> typing.Self:
+        if not isinstance(key, DDHkey):
+            raise ValueError(f'Cannot cast type {key.__class__.__name__} to {cls.__name__}')
+        elif cls == key.__class__:
+            return key
+        else:
+            return cls(key=str(key))
+
     def up(self, retain_specifiers=False) -> DDHkey:
         """ return key up one level; if a top, bool(key) is False
             If retain_specifiers is True, specifiers and __class__ are retained.
@@ -283,9 +292,12 @@ class DDHkeyRange(DDHkey):
             raise ValueError('DDHkeyRange must not have unconstrained version')
         return
 
-    def __contains__(self, key : DDHkeyVersioned):
+    def __contains__(self, key: DDHkeyVersioned):
         """ return True if key fulfills this range """
-        return key.variant == self.variant and key.version in self.version
+        ok = key.variant == self.variant and key.version in self.version
+        print(
+            f'DDHkeyRange.__contains__({self=},{key=}) -> {ok} {key.variant == self.variant=} {key.version in self.version=}')
+        return ok
 
 
 class DDHkeyVersioned(DDHkey):

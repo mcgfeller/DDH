@@ -88,13 +88,13 @@ class DAppProxy(DDHbaseModel):
             # schema_network.add_schema_node(ref.target, sa)
             target = ref.target.ens()
             if ref.relation == relationships.Relation.provides:
-                target = typing.cast(keys.DDHkeyVersioned, target)
+                target = keys.DDHkeyVersioned0.cast(target)
                 schema_network.add_schema_vv(target.without_variant_version(), target)
                 schema_network.add_edge(target, attrs, type='provided by', weight=attrs.get_weight())
                 # register our node as a provider for (or transformer into) the key:
                 keydirectory.NodeRegistry[ref.target] = dnode
             elif ref.relation == relationships.Relation.requires:
-                target = typing.cast(keys.DDHkeyRange, target)
+                target = keys.DDHkeyRange.cast(target)
                 schema_network.add_schema_range(target)
                 schema_network.add_edge(attrs, target, type='requires')
         schema_network.valid.invalidate()  # we have modified the network
