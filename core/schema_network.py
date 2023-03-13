@@ -135,8 +135,8 @@ class SchemaNetworkClass():
         # sp = networkx.shortest_path(g, target=for_dapp)
         # lines = [{x for x in l if isinstance(x, dapp_attrs.DApp)} for l in sp.keys()]
         # suggested = set.union(*lines)
-        sp = networkx.predecessor(g, for_dapp)
-        suggested = {s for s in sp.keys() if isinstance(s, dapp_attrs.DApp)}
+        preds = networkx.predecessor(g, for_dapp)
+        suggested = {s for s in preds.keys() if isinstance(s, dapp_attrs.DApp)}  # only DApps
         return suggested, suggested
 
         # node: req if node has any requirement:

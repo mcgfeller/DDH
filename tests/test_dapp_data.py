@@ -111,8 +111,8 @@ def test_graph_to(user1):
     r.raise_for_status()
     d = r.json()
     assert len(d) == 1, 'one app, one result'
-    assert 'SBBempDApp' in d[0]  # TODO: Check result
-    assert 'UBSaccount' in d[0]
+    assert 'SBBempDApp' in d[0][0]
+    assert 'UBSaccount' in d[0][0]
     return
 
 
