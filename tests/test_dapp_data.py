@@ -98,15 +98,16 @@ def test_p_schema(user1):
 
 
 def test_graph_from(user1):
-    r = user1.get('/graph/from/MigrosDApp+CoopDApp')
+    r = user1.get('/graph/from/MigrosDApp+SwisscomEmpDApp')
     r.raise_for_status()
     d = r.json()
     assert len(d) == 2, 'one result per app'
-    return  # TODO: Check result
+    assert 'TaxCalc' in d[1]
+    return
 
 
 def test_graph_to(user1):
-    r = user1.get('/graph/from/TaxCalc')
+    r = user1.get('/graph/to/TaxCalc')
     r.raise_for_status()
     d = r.json()
     assert len(d) == 1, 'one app, one result'

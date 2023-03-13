@@ -45,7 +45,7 @@ class SchemaNetworkClass():
         self.add_schema_vv(key, vvkey)
         # add references to other schema:
         for subpath, ref in attrs.references.items():
-            print(f'add_schema reference {vvkey=} {subpath=} -> {ref=}')
+            # print(f'add_schema reference {vvkey=} {subpath=} -> {ref=}')
             subkey = vvkey+subpath  # the reference is from the versioned subkey
             if subpath:  # if not ==vvkey, add subkey and link it:
                 self._network.add_node(subkey, id=str(subkey), type='sub_schema')
@@ -121,7 +121,7 @@ class SchemaNetworkClass():
 
     def dapps_from(self, from_dapp: dapp_attrs.DApp, principal: principals.Principal) -> typing.Iterable[dapp_attrs.DApp]:
         self.valid.use()
-        return [n for n in networkx.descendants(self._network, from_dapp) if isinstance(n, dapp_attrs.DApp)]
+        return [n for n in networkx.ancestors(self._network, from_dapp) if isinstance(n, dapp_attrs.DApp)]
 
     def dapps_required(self, for_dapp: dapp_attrs.DApp, principal: principals.Principal) -> tuple[set[dapp_attrs.DApp], set[dapp_attrs.DApp]]:
         """ return two sets of DApps required by this DApp
@@ -132,10 +132,12 @@ class SchemaNetworkClass():
         """
         self.valid.use()
         g = self._network
-        sp = networkx.shortest_path(g, target=for_dapp)
-
-        lines = [{x for x in l if isinstance(x, dapp_attrs.DApp)} for l in sp.values()]
-        suggested = set.union(*lines)
+        # sp = networkx.shortest_path(g, target=for_dapp)
+        # lines = [{x for x in l if isinstance(x, dapp_attrs.DApp)} for l in sp.keys()]
+        # suggested = set.union(*lines)
+        sp = networkx.predecessor(g, for_dapp)
+        suggested = {s for s in sp.keys() if isinstance(s, dapp_attrs.DApp)}
+        return suggested, suggested
 
         # node: req if node has any requirement:
         nodes_with_reqs = {k: req for k in sp.keys() if (
@@ -177,7 +179,7 @@ class SchemaNetworkClass():
             vvs := {k for k, v in self._network.succ[schema].items() if v['type'] == 'version' and
                     bool([e for x, e, typ in self._network.out_edges(k, data='type', default=None) if typ == 'provided by'])})}
 
-        print(f'complete_graph {vv_by_schema=}')
+        # print(f'complete_graph {vv_by_schema=}')
 
         # all ranges we need to treat:
         ranges = {node for node, typ in self._network.nodes(data='type', default=None) if typ == 'schema_range'}
@@ -193,7 +195,7 @@ class SchemaNetworkClass():
                 if (svvs := vv_by_schema.get(schema)):
                     # Add an edge from the range to all version with equal variants and fulfilling the version constraint:
                     svvs_match = [svv for svv in svvs if svv in srange]
-                    print(f'range {srange} against candidates {svvs} \n-> match {svvs_match}')
+                    # print(f'range {srange!r} against candidates {svvs} \n-> match {svvs_match}')
                     [self._network.add_edge(srange, svv, type='fulfills') for svv in svvs_match]
 
                 schema = schema.up()  # go path up until exhausted
