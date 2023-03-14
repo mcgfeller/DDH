@@ -296,8 +296,8 @@ class DDHkeyRange(DDHkey):
     def __contains__(self, key: DDHkeyVersioned):
         """ return True if key fulfills this range """
         ok = key.variant == self.variant and key.version in self.version
-        print(
-            f'DDHkeyRange.__contains__({self=},{key=}) -> {ok} {key.variant == self.variant=} {key.version in self.version=}')
+        # print(
+        #     f'DDHkeyRange.__contains__({self=},{key=}) -> {ok} {key.variant == self.variant=} {key.version in self.version=}')
         return ok
 
 
