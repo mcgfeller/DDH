@@ -42,7 +42,7 @@ class SchemaNetworkClass():
         assert attrs.version != versions.Unspecified, f'schema at {key} has unspecified version'
         vvkey = keys.DDHkeyVersioned(key.key, fork=keys.ForkType.schema, variant=attrs.variant, version=attrs.version)
         # base node and vv:
-        self.add_schema_vv(key, vvkey)
+        self.add_schema_vv(key, vvkey, attrs.requires)
         # add references to other schema:
         for subpath, ref in attrs.references.items():
             # print(f'add_schema reference {vvkey=} {subpath=} -> {ref=}')
@@ -53,10 +53,14 @@ class SchemaNetworkClass():
             self.add_schema_reference(subkey, typing.cast(keys.DDHkeyRange, ref.ens()))
         return
 
-    def add_schema_vv(self, key: keys.DDHkeyGeneric, vvkey: keys.DDHkeyVersioned):
-        """ Add a concrete variant/version, its base schema, and a version link between them. """
+    def add_schema_vv(self, key: keys.DDHkeyGeneric, vvkey: keys.DDHkeyVersioned, requires: schemas.Requires | None = None):
+        """ Add a concrete variant/version (with requires attribute), its base schema, and a version link between them. """
         self._network.add_node(key, id=str(key), type='schema')
-        self._network.add_node(vvkey, id=str(vvkey), type='schema_version')
+        prev = self._network.nodes.get(vvkey)
+        # avoid overwriting an existing requires if a duplicate entry is made without requires:
+        if prev is None or requires is not None:
+            print(f'add_schema {vvkey=} {requires=}')
+            self._network.add_node(vvkey, id=str(vvkey), type='schema_version', requires=requires)
         # Add edge between base and vv!
         self._network.add_edge(key, vvkey, type='version')
         return
@@ -126,27 +130,25 @@ class SchemaNetworkClass():
     def dapps_required(self, for_dapp: dapp_attrs.DApp, principal: principals.Principal) -> tuple[set[dapp_attrs.DApp], set[dapp_attrs.DApp]]:
         """ return two sets of DApps required by this DApp
             -   all required 
-            -   required for cost calculation, considering despite schemas.Requires annotations, for which
-                we take only the longest line of requires DApps as a conservative estimate.
+            -   required for cost calculation, considering schemas.Requires annotations, for which
+                we take only the longest line of DApps with requires as a conservative estimate.
 
         """
         self.valid.use()
         g = self._network
-        # sp = networkx.shortest_path(g, target=for_dapp)
-        # lines = [{x for x in l if isinstance(x, dapp_attrs.DApp)} for l in sp.keys()]
-        # suggested = set.union(*lines)
-        preds = networkx.predecessor(g, for_dapp)
-        suggested = {s for s in preds.keys() if isinstance(s, dapp_attrs.DApp)}  # only DApps
-        return suggested, suggested
+        sp = networkx.shortest_path(g, source=for_dapp)
+        lines = [{x for x in l if isinstance(x, dapp_attrs.DApp)} for l in sp.values()]
+        suggested = set.union(*lines)
 
         # node: req if node has any requirement:
         nodes_with_reqs = {k: req for k in sp.keys() if (
-            nk := g.nodes[k])['type'] == 'schema' and (req := nk.get('requires'))}
+            nk := g.nodes[k])['type'] == 'schema_version' and (req := nk.get('requires'))}
+
         if nodes_with_reqs:
             discard = set()  # lines to be discarded, cumulative for all nodes
             for node in nodes_with_reqs:
                 req = nodes_with_reqs[node]
-                # use longest line unless .all
+                # use longest line unless schemas.Requires.many:
                 if req in (schemas.Requires.one, schemas.Requires.specific, schemas.Requires.few):
                     # len, line if attributed schema is in the path:
                     ll = [(len(v), i) for i, (k, v) in enumerate(sp.items()) if node in v]
@@ -162,7 +164,7 @@ class SchemaNetworkClass():
     def complete_graph(self):
         """ Finish up the graph after all nodes have been added:
 
-            Compile all schemas and their variant/versions (vv) that are provided by a DApp.
+            Complete all schemas and their variant/versions (vv) that are provided by a DApp.
 
             For each range, check the corresponding schema for matching vv, and add 'fulfills' edges
             from the range to the vv. Go up the range's schema to find 
