@@ -114,7 +114,7 @@ async def add_costs(session, sris: list[SearchResultItem], subscribed: typing.It
     to_r = await fastapi_utils.submit1_asynch(session, 'http://localhost:8001', '/graph/to/'+'+'.join(dappids)+'?include_weights=True')
 
     for sri, (requires, calculated, weights) in zip(sris, to_r):
-        # TODO: all required despite schema annotations, require for cost calculation
+        # TODO XXX: all required despite schema annotations, require for cost calculation
         # requires, calculated = schemas.SchemaNetwork.dapps_required(sri.da, session.user)
         # print(f'add_costs: {sri=}, {requires=}, {calculated=}, {weights=}')
         sri.requires = set(requires)

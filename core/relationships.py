@@ -21,7 +21,8 @@ class Relation(str, enum.Enum):
 
 class Reference(DDHbaseModel):
     relation: Relation
-    target: keys.DDHkey  # TODO: Provides and requires have different DDHKey subclasses
+    # TODO: Provides and requires have different DDHKey subclasses (we currently key.cast when adding to the network)
+    target: keys.DDHkey
     qualities: set[Quality] = set()
 
     @classmethod
