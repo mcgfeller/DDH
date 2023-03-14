@@ -146,7 +146,6 @@ class SampleDApps(dapp_attrs.DApp):
                 estimatedCosts=dapp_attrs.EstimatedCosts.medium,
                 catalog=common_ids.CatalogCategory.finance,
             ).add_reference(relationships.Reference.requires(
-                # TODO: >= 0 -> unconstrained
                 keys.DDHkeyRange(key="//org/credit-suisse.com/clients/portfolio/account:::>=0"),
                 keys.DDHkeyRange(key="//org/ubs.com/switzerland/customer/account:::>=0"),
             )),

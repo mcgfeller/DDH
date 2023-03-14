@@ -162,7 +162,7 @@ class DDHkey(DDHbaseModel):
         elif cls == key.__class__:
             return key
         else:
-            return cls(key=str(key))
+            return cls(str(key))
 
     def up(self, retain_specifiers=False) -> DDHkey:
         """ return key up one level; if a top, bool(key) is False
