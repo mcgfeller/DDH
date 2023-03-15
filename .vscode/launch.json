@@ -15,7 +15,7 @@
             "type": "python",
             "request": "launch",
             "module": "main",
-            "justMyCode":false,
+            "justMyCode": false,
             "env": {
                 "_PYTEST_RAISE": "1"
             },
@@ -25,8 +25,11 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "purpose": ["debug-test"],
+            "purpose": [
+                "debug-test"
+            ],
             "console": "integratedTerminal",
+            "redirectOutput": true,
             "justMyCode": false,
             "env": {
                 "_PYTEST_RAISE": "1"
