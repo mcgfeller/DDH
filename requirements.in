@@ -1,0 +1,17 @@
+python-multipart
+fastapi
+uvicorn
+passlib[bcrypt]
+python-jose[pycryptodome]
+pydantic[email]
+pytest
+pytest-asyncio
+httpx
+glom
+networkx
+psutil
+cryptography
+matplotlib
+numpy
+pandas
+accept_types==0.4.*
