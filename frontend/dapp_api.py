@@ -180,7 +180,7 @@ async def dapps_from(
     from_dapps: str,
     details: bool = fastapi.Query(False),
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
-) -> typing.Iterable[principals.DAppId]:
+) -> list[list[principals.DAppId | dapp_attrs.DApp]]:
 
     s = []
     for dappid in from_dapps.split('+'):
@@ -190,7 +190,7 @@ async def dapps_from(
             if details:
                 s.append(x1)
             else:
-                s.append({x.id for x in x1})
+                s.append([x.id for x in x1])
     return s
 
 
@@ -199,7 +199,10 @@ async def dapps_required(
     for_dapps: str,
     include_weights: bool = fastapi.Query(False),
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
-) -> list[tuple[set[principals.DAppId], set[principals.DAppId]]]:
+) -> list[
+    tuple[list[principals.DAppId], list[principals.DAppId]] |
+    tuple[list[principals.DAppId], list[principals.DAppId], dict[principals.DAppId, float]]
+]:
 
     s = []
     for dappid in for_dapps.split('+'):

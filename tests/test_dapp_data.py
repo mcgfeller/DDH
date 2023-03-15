@@ -116,6 +116,18 @@ def test_graph_to(user1):
     return
 
 
+def test_graph_to_weights(user1):
+    r = user1.get('/graph/to/TaxCalc?include_weights=True')
+    r.raise_for_status()
+    d = r.json()
+    assert len(d) == 1, 'one app, one result'
+    assert len(d[0]) == 3
+    assert 'SBBempDApp' in d[0][0]
+    assert 'UBSaccount' in d[0][0]
+    assert d[0][2]['AccountAggregator'] > 1.0
+    return
+
+
 def test_schema_graph(user1):
     r = user1.get('/graph/draw?layout=shell_layout&size_h=1000')
     r.raise_for_status()
