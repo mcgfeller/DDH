@@ -22,7 +22,7 @@ SchemaNetwork: schema_network.SchemaNetworkClass = schema_network.SchemaNetworkC
 
 @enum.unique
 class Sensitivity(str, enum.Enum):
-    """ Sensitivity, according to Fung et al., of use in export restrictions and anonymization.
+    """ Sensitivity, according to Fung et al., of use in export restrictions and anonymizatiodict[str, set[str]]n.
     """
 
     eid = 'explicit id'
@@ -84,6 +84,10 @@ class MimeTypes(DDHbaseModel):
         return mt
 
 
+T_PathFields = dict[str, set[str]]
+T_PathFieldsData = dict[str, dict[str, typing.Any]]
+
+
 class SchemaAttributes(DDHbaseModel):
     """ Attributes of the Schema, but not part of the Schema itself. """
     variant: SchemaVariant | None = pydantic.Field(
@@ -95,8 +99,8 @@ class SchemaAttributes(DDHbaseModel):
     requires: Requires | None = None
     mimetypes: MimeTypes | None = None
     references: dict[str, keys.DDHkeyRange] = {}  # TODO:#17 key should be DDHkey
-    sensitivities: dict[Sensitivity, dict[str, set[str]]] = pydantic.Field(default={},
-                                                                           description="Sensitivities by Sensitivity, schema key, set of fields. We cannot use DDHKey for schema key, as the dict is not jsonable.")
+    sensitivities: dict[Sensitivity, T_PathFields] = pydantic.Field(default={},
+                                                                    description="Sensitivities by Sensitivity, schema key, set of fields. We cannot use DDHKey for schema key, as the dict is not jsonable.")
     capabilities: set[capabilities.Capabilities] = set()
 
     def add_reference(self, path: keys.DDHkey, reference: AbstractSchemaReference):
@@ -272,6 +276,12 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         if missing:
             raise errors.CapabilityMissing(f"Schema {self} does not support required capabilities; missing {missing}")
         return self.schema_attributes.capabilities.intersection(required_capabilities)
+
+    def extract_data_fields(self, path_fields: T_PathFields, data) -> T_PathFieldsData:
+        raise errors.SubClass
+
+    def insert_data_fields(self, path_fields_data: T_PathFieldsData, data) -> T_PathFieldsData:
+        raise errors.SubClass
 
     @property
     def format(self) -> SchemaFormat:
