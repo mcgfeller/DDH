@@ -9,7 +9,7 @@ import fastapi.security
 import pandas  # for example
 import pydantic
 from core import (common_ids, dapp_attrs, keys, nodes, permissions, users,
-                  relationships, schemas, errors, versions)
+                  relationships, schemas, errors, versions, capabilities)
 from schema_formats import py_schema
 from utils import key_utils
 from glom import Iter, S, T, glom  # transform
@@ -38,8 +38,10 @@ class MigrosDApp(dapp_attrs.DApp):
 
     def get_schemas(self) -> dict[keys.DDHkey, schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
+        caps = {capabilities.Capabilities.Anonymize, capabilities.Capabilities.Pseudonymize}
+        sa = schemas.SchemaAttributes(version=versions.Version(self.version), capabilities=caps)
         return {keys.DDHkeyVersioned0(key="//org/migros.ch"): py_schema.PySchema(schema_element=MigrosSchema,
-                                                                                 schema_attributes=schemas.SchemaAttributes(version=versions.Version(self.version)))}
+                                                                                 schema_attributes=sa)}
 
     def execute(self, req: dapp_attrs.ExecuteRequest):
         """ obtain data by recursing to schema """

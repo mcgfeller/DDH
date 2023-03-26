@@ -61,6 +61,21 @@ async def test_read_anon(user, user2):
 
 
 @pytest.mark.asyncio
+async def test_read_anon_migros(user, user2, migros_key_schema):
+    session = get_session(user)
+    session.reinit()  # ensure we have a clean slate
+    trx = session.new_transaction()
+    assert trx.read_consentees == transactions.DefaultReadConsentees
+
+    ddhkey1 = keys.DDHkey(key="/mgf/org/migros.ch/receipts")
+    # read anonymous
+    access = permissions.Access(ddhkey=ddhkey1, principal=user, modes={
+                                permissions.AccessMode.read, permissions.AccessMode.anonymous})
+    data = await facade.ddh_get(access, session)
+    return
+
+
+@pytest.mark.asyncio
 async def test_write_data_with_consent(user, user2):
     """ test write through facade.ddh_put() with three objects:
         - mgf/.../doc1

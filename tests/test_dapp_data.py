@@ -11,7 +11,7 @@ def test_get_data(user1):
     assert len(data['mgf']) > 10
     assert all(a in data['mgf'][5]
                for a in ('Datum_Zeit', 'Menge', 'Filiale'))  # these keys must be present
-    assert r.headers['content-location'] == str(user1.base_url)+'/ddh/mgf/org/migros.ch/receipts::PySchema:0'
+    assert r.headers['content-location'] == str(user1.base_url)+'/ddh/mgf/org/migros.ch/receipts::PySchema:0.2'
     return
 
 
