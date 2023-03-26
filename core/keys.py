@@ -203,8 +203,8 @@ class DDHkey(DDHbaseModel):
             return self
 
     def ens(self) -> typing.Self:
-        """ shortcut for ensure_fork(schema) """
-        return self.ensure_fork(ForkType.schema)
+        """ enusre key is a valid schema key - shortcut for without_owner().ensure_fork(schema) """
+        return self.without_owner().ensure_fork(ForkType.schema)
 
     def without_owner(self) -> DDHkey:
         """ return key without owner """

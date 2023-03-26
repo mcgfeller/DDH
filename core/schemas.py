@@ -133,6 +133,7 @@ class AbstractSchemaElement(DDHbaseModel, abc.ABC):
         """ Replace this PySchemaElement by a proper schema with attributes, store it, 
             and return the PySchemaReference to it, which can be used like a PySchemaElement.
         """
+        ddhkey = ddhkey.ens()
         s = cls.to_schema()
         if schema_attributes:
             s.schema_attributes = schema_attributes
@@ -415,10 +416,12 @@ class SchemaContainer(DDHbaseModel):
     @staticmethod
     def get_node_schema_key(ddhkey: keys.DDHkey, transaction) -> tuple[AbstractSchema, keys.DDHkey, keys.DDHkey, nodes.SchemaNode]:
         """ for a ddhkey, get the node, then get its schema and the fully qualified schema key, and the remainder """
+        schema_ddhkey = ddhkey.without_owner().ens()
         snode, split = keydirectory.NodeRegistry.get_node(
-            ddhkey, nodes.NodeSupports.schema, transaction)
+            schema_ddhkey, nodes.NodeSupports.schema, transaction)
         if snode:
             assert isinstance(snode, nodes.SchemaNode)
+            # FIXME: Why does schema_ddhkey cause errors???
             return snode.schemas.get_schema_key(ddhkey)+(ddhkey.remainder(split), snode)
         else:
             raise errors.NotFound(f'No schema node found for {ddhkey}')

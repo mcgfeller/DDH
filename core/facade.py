@@ -29,7 +29,8 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
 
     # fork-independent checks:
     # get schema and key with specifiers:
-    schema, access.ddhkey, *d = schemas.SchemaContainer.get_node_schema_key(access.ddhkey, transaction)
+    schema, access.ddhkey, * \
+        d = schemas.SchemaContainer.get_node_schema_key(access.ddhkey, transaction)
     mt = check_mimetype_schema(access.ddhkey, schema, accept_header)
     headers = {'Content-Location': str(access.ddhkey), 'Content-Type': mt, }
 
