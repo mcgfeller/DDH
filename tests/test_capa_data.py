@@ -61,17 +61,21 @@ async def test_read_anon(user, user2):
 
 
 @pytest.mark.asyncio
-async def test_read_anon_migros(user, user2, migros_key_schema):
+async def test_read_anon_migros(user, transaction, migros_key_schema, migros_data):
     session = get_session(user)
     session.reinit()  # ensure we have a clean slate
     trx = session.new_transaction()
     assert trx.read_consentees == transactions.DefaultReadConsentees
 
     ddhkey1 = keys.DDHkey(key="/mgf/org/migros.ch/receipts")
+    k, schema = migros_key_schema
+
     # read anonymous
     access = permissions.Access(ddhkey=ddhkey1, principal=user, modes={
                                 permissions.AccessMode.read, permissions.AccessMode.anonymous})
-    data = await facade.ddh_get(access, session)
+    # TODO: Consider mocking data access - fow now, call after_data_read with data directly instead
+    # data = await facade.ddh_get(access, session)
+    data = schema.after_data_read(access, transaction, migros_data)
     return
 
 
