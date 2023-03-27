@@ -143,3 +143,9 @@ class PySchema(schemas.AbstractSchema):
     def _add_fields(self, fields: dict[str, tuple]):
         """ Add the field in dict to the schema element """
         self.schema_element._add_fields(**fields)
+
+    def extract_data_fields(self, path_fields: schemas.T_PathFields, data) -> schemas.T_PathFieldsData:
+        raise NotImplementedError()
+
+    def insert_data_fields(self, path_fields_data: schemas.T_PathFieldsData, data) -> schemas.T_PathFieldsData:
+        raise NotImplementedError()
