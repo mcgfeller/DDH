@@ -267,7 +267,8 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
     def apply_capabilities(self, access, transaction, data):
         caps = self.select_capabilities(access, transaction, data)
         for cap in caps:
-            data = cap.apply(self, access, transaction, data)
+            cap_obj = capabilities.SchemaCapability.Capabilities[cap.name]
+            data = cap_obj.apply(self, access, transaction, data)
         return data
 
     def select_capabilities(self, access, transaction, data) -> typing.Iterable[capabilities.SchemaCapability]:
