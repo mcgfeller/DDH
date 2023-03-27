@@ -52,7 +52,7 @@ async def get_data(
     docpath: str = fastapi.Path(..., title="The ddh key of the data to get"),
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     accept: list[str] | None = fastapi.Header(default=None),
-    modes: set[permissions.AccessMode] = {permissions.AccessMode.read},
+    modes: set[permissions.AccessMode] = fastapi.Query({permissions.AccessMode.read}),
     q: str = fastapi.Query(None, alias="item-query"),
 ):
 
@@ -75,7 +75,7 @@ async def put_data(
     data: pydantic.Json,
     docpath: str = fastapi.Path(..., title="The ddh key of the data to put"),
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
-    modes: set[permissions.AccessMode] = {permissions.AccessMode.write},
+    modes: set[permissions.AccessMode] = fastapi.Query({permissions.AccessMode.write}),
     q: str = fastapi.Query(None, alias="item-query"),
 ):
     access = permissions.Access(op=permissions.Operation.put, ddhkey=keys.DDHkey(
