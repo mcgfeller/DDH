@@ -415,26 +415,31 @@ class SchemaContainer(DDHbaseModel):
 
     @staticmethod
     def get_node_schema_key(ddhkey: keys.DDHkey, transaction) -> tuple[AbstractSchema, keys.DDHkey, keys.DDHkey, nodes.SchemaNode]:
-        """ for a ddhkey, get the node, then get its schema and the fully qualified schema key, and the remainder """
-        schema_ddhkey = ddhkey.without_owner().ens()
+        """ for a ddhkey, get the node, then get its schema and the fully qualified key with the schema variant 
+            and version, and the remainder. The key returden will have the fork and owner of the original key, except 
+            there is no owner when the fork is schema.
+        """
+        schema_ddhkey = ddhkey.without_owner().ens()  # schema kwy to get the schema node
+        ddhkey = schema_ddhkey if ddhkey.fork == keys.ForkType.schema else ddhkey  # but return only if schema fork is asked for
         snode, split = keydirectory.NodeRegistry.get_node(
             schema_ddhkey, nodes.NodeSupports.schema, transaction)
         if snode:
             assert isinstance(snode, nodes.SchemaNode)
-            # FIXME: Why does schema_ddhkey cause errors???
-            return snode.schemas.get_schema_key(ddhkey)+(ddhkey.remainder(split), snode)
+            schema = snode.schemas.get_schema_key(schema_ddhkey)
+            # build key with actual variant and version:
+            fqkey = keys.DDHkey(ddhkey.key, specifiers=(
+                ddhkey.fork, schema.schema_attributes.variant, schema.schema_attributes.version))
+            return (schema, fqkey, ddhkey.remainder(split), snode)
         else:
             raise errors.NotFound(f'No schema node found for {ddhkey}')
 
-    def get_schema_key(self, ddhkey: keys.DDHkey) -> tuple[AbstractSchema, keys.DDHkey]:
-        """ for a ddhkey, get its schema and the fully qualified schema key """
+    def get_schema_key(self, ddhkey: keys.DDHkeyVersioned) -> AbstractSchema:
+        """ for a ddhkey, get its schema  """
         schema = self.get(ddhkey.variant, ddhkey.version)
-        if schema:
-            fqkey = keys.DDHkey(ddhkey.key, specifiers=(
-                ddhkey.fork, schema.schema_attributes.variant, schema.schema_attributes.version))
-            return (schema, fqkey)
-        else:
+        if not schema:
             raise errors.NotFound(f'No schema variant and version found for {ddhkey}')
+        else:
+            return schema
 
     @staticmethod
     def get_sub_schema(access: permissions.Access, transaction, create_intermediate: bool = False) -> AbstractSchema | None:
