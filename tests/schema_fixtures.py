@@ -1,8 +1,10 @@
 """ Fixtures for testing with actual microservices """
 
+import typing
 import pytest
 
-from core import keys, schemas, pillars, keydirectory, nodes, schema_root
+from core import keys, schemas, pillars, keydirectory, nodes, schema_root, dapp_proxy
+from schema_formats import py_schema
 from frontend import sessions
 
 
@@ -22,9 +24,13 @@ def ensure_root_node(transaction):
 
 
 @pytest.fixture(scope="session")
-def migros_key_schema():
+def migros_key_schema(transaction):
     """ retrieve Migros Schema"""
     from DApps import MigrosDApp
-    s = MigrosDApp.get_apps()[0].get_schemas()
-    k, ps = list(s.items())[0]
-    return k, ps
+    app = MigrosDApp.get_apps()[0]
+    s = app.get_schemas()
+    k, schema = list(s.items())[0]
+
+    # register in Schema Node, so tests can retrieve it:
+    dapp_proxy.DAppProxy.register_schema(k, schema, app.owner, transaction)
+    return k, schema

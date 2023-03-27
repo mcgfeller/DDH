@@ -37,12 +37,12 @@ class DAppProxy(DDHbaseModel):
             js = j.json()
             self.schemas = {keys.DDHkeyVersioned(k): schemas.AbstractSchema.create_schema(s, sf, sa)
                             for k, (sa, sf, s) in js.items()}
-            self.register_schema(session)
+            self.register_schemas(session)
             self.register_references(session, schemas.SchemaNetwork)
             schemas.SchemaNetwork.valid.invalidate()  # finished
         return
 
-    def register_schema(self, session) -> list[nodes.Node]:
+    def register_schemas(self, session) -> list[nodes.Node]:
         """ We register: 
             - SchemaNode for the Schemas our node provides, including transformed-into keys.
 
@@ -51,23 +51,31 @@ class DAppProxy(DDHbaseModel):
 
         snodes = []
         for schemakey, schema in self.schemas.items():
-            genkey = schemakey.without_variant_version()
-            snode = keydirectory.NodeRegistry[genkey].get(
-                nodes.NodeSupports.schema)  # need exact location, not up the tree
-            if snode:
-                snode = typing.cast(nodes.SchemaNode, snode.ensure_loaded(transaction))
-                snode.add_schema(schema)
-            else:
-                # create snode with our schema:
-                snode = nodes.SchemaNode(owner=self.attrs.owner, consents=schemas.AbstractSchema.get_schema_consents())
-                keydirectory.NodeRegistry[genkey] = snode
-                snode.add_schema(schema)
-                # hook into parent schema:
-                py_schema.PySchema.insert_schema_ref(transaction, genkey)
+            snode = self.register_schema(schemakey, schema, self.attrs.owner, transaction)
 
-                #
+            #
             snodes.append(snode)
         return snodes
+
+    @staticmethod
+    def register_schema(schemakey: keys.DDHkeyVersioned, schema: schemas.AbstractSchema, owner: principals.Principal, transaction):
+        """ register a single schema in its Schema Node, creating one if necessary. 
+            staticmethod so it can be called by test fixtures. 
+        """
+        genkey = schemakey.without_variant_version()
+        snode = keydirectory.NodeRegistry[genkey].get(
+            nodes.NodeSupports.schema)  # need exact location, not up the tree
+        if snode:
+            snode = typing.cast(nodes.SchemaNode, snode.ensure_loaded(transaction))
+            snode.add_schema(schema)
+        else:
+            # create snode with our schema:
+            snode = nodes.SchemaNode(owner=owner, consents=schemas.AbstractSchema.get_schema_consents())
+            keydirectory.NodeRegistry[genkey] = snode
+            snode.add_schema(schema)
+            # hook into parent schema:
+            py_schema.PySchema.insert_schema_ref(transaction, genkey)
+        return snode
 
     def register_references(self, session, schema_network: schema_network.SchemaNetworkClass):
         """ We register: 
