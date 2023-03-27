@@ -76,6 +76,7 @@ async def test_read_anon_migros(user, transaction, migros_key_schema, migros_dat
     # TODO: Consider mocking data access - fow now, call after_data_read with data directly instead
     # data = await facade.ddh_get(access, session)
     data = schema.after_data_read(access, transaction, migros_data)
+    assert 'mgf' not in data, 'eid must be anonymized'
     return
 
 
