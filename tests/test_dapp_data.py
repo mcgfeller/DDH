@@ -15,6 +15,21 @@ def test_get_data(user1):
     return
 
 
+def test_get_data_dapp_root(user1):
+    """ get data at DApp root level, i.e., one level up from actual data """
+    r = user1.get('/ddh/mgf/org/migros.ch')
+    r.raise_for_status()
+    data = r.json()
+    assert isinstance(data, dict)
+    assert len(data) == 1
+    # assert isinstance(data['mgf'], list)
+    # assert len(data['mgf']) > 10
+    # assert all(a in data['mgf'][5]
+    #            for a in ('Datum_Zeit', 'Menge', 'Filiale'))  # these keys must be present
+    assert r.headers['content-location'] == str(user1.base_url)+'/ddh/mgf/org/migros.ch::PySchema:0.2'
+    return
+
+
 def test_get_data_anon(user1):
     r = user1.get('/ddh/mgf/org/migros.ch/receipts?modes=read&modes=anonymous')
     r.raise_for_status()

@@ -60,7 +60,7 @@ class MigrosDApp(dapp_attrs.DApp):
         # print(f'MigrosSchema.get_data: {selection=}')
         root, resolve = Resolvers.most_specific(selection)
         if not resolve:
-            raise errors.NotFound(f'Incomplete key: {selection}')
+            raise errors.NotFound(f'Incomplete key: {selection}').to_http()
         remainder = selection.remainder(len(root.key))
         princs = user_auth.get_principals(access.ddhkey.owners)
         res = resolve(remainder, princs, q)
