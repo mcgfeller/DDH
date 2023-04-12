@@ -22,10 +22,12 @@ def test_get_data_dapp_root(user1):
     data = r.json()
     assert isinstance(data, dict)
     assert len(data) == 1
-    # assert isinstance(data['mgf'], list)
-    # assert len(data['mgf']) > 10
-    # assert all(a in data['mgf'][5]
-    #            for a in ('Datum_Zeit', 'Menge', 'Filiale'))  # these keys must be present
+    assert isinstance(data['mgf'], dict)
+    assert 'receipts' in data['mgf']
+    d = data['mgf']['receipts']
+    assert len(d) > 10
+    assert all(a in d[5]
+               for a in ('Datum_Zeit', 'Menge', 'Filiale'))  # these keys must be present
     assert r.headers['content-location'] == str(user1.base_url)+'/ddh/mgf/org/migros.ch::PySchema:0.2'
     return
 
