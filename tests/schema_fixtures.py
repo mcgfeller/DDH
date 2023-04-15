@@ -38,7 +38,7 @@ def migros_key_schema(transaction):
 
 @pytest.fixture(scope="session")
 def migrosddhkey():
-    return keys.DDHkey(key="/mgf/org/migros.ch/receipts")
+    return keys.DDHkey(key="/mgf/org/migros.ch")
 
 
 @pytest.fixture(scope="session")

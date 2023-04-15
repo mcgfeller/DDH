@@ -58,12 +58,14 @@ class MigrosDApp(dapp_attrs.DApp):
 
     def get_data(self, selection: keys.DDHkey, access: permissions.Access, q):
         # print(f'MigrosSchema.get_data: {selection=}')
-        root, resolve = Resolvers.most_specific(selection)
-        if not resolve:
-            raise errors.NotFound(f'Incomplete key: {selection}').to_http()
-        remainder = selection.remainder(len(root.key))
-        princs = user_auth.get_principals(access.ddhkey.owners)
-        res = resolve(remainder, princs, q)
+        top = MigrosSchema.descend_path(selection)
+        if not top:
+            raise errors.NotFound(f'Key not found: {selection}').to_http()
+        remainder = selection.remainder(len(selection.key))
+        principals = user_auth.get_principals(access.ddhkey.owners)
+        res = {}
+        for principal in principals:  # resolve per principal
+            res[principal.id] = top.resolve(remainder, principal, q)
         return res
 
     def get_and_transform(self, req: dapp_attrs.ExecuteRequest):
@@ -108,11 +110,8 @@ class Receipt(py_schema.PySchemaElement):
     Produkt: ProduktDetail | None = None
 
     @classmethod
-    def resolve(cls, remainder, principals, q):
-        data = {}
-        for principal in principals:
-            d = cls.get_cumulus_json(principal, q)
-            data[principal.id] = d
+    def resolve(cls, remainder, principal, q) -> dict:
+        data = cls.get_cumulus_json(principal, q)
         return data
 
     @classmethod
@@ -132,10 +131,15 @@ class MigrosSchema(py_schema.PySchemaElement):
     cumulus: int | None = pydantic.Field(None, sensitivity=schemas.Sensitivity.qid)
     receipts: list[Receipt] = []
 
-
-Resolvers = key_utils.LookupByKey({  # register the resolvers per schema key
-    keys.DDHkey('receipts'): Receipt.resolve,
-})
+    @classmethod
+    def resolve(cls, remainder, principal, q) -> dict:
+        # print(f'{cls}.resolve({remainder=}, {principal=}, {q=})')
+        if principal.id == 'mgf':  # we only have data for this guy here
+            d = super().resolve(remainder, principal, q)  # descend on all objects
+            d['cumulus'] = 423
+        else:
+            d = {}
+        return d
 
 
 MIGROS_DAPP = MigrosDApp(owner=users.User(id='migros', name='Migros (fake account)'),

@@ -67,11 +67,10 @@ async def test_read_anon_migros(user, transaction, migros_key_schema, migros_dat
     trx = session.new_transaction()
     assert trx.read_consentees == transactions.DefaultReadConsentees
 
-    ddhkey1 = keys.DDHkey(key="/mgf/org/migros.ch/receipts")
     k, schema = migros_key_schema
 
     # read anonymous
-    access = permissions.Access(ddhkey=ddhkey1, principal=user, modes={
+    access = permissions.Access(ddhkey=k.ensure_fork(keys.ForkType.data), principal=user, modes={
                                 permissions.AccessMode.read, permissions.AccessMode.anonymous})
     # TODO: Consider mocking data access - fow now, call after_data_read with data directly instead
     # data = await facade.ddh_get(access, session)

@@ -147,6 +147,14 @@ class AbstractSchemaElement(DDHbaseModel, abc.ABC):
         return schemaref
 
     @classmethod
+    def resolve(cls, remainder: keys.DDHkey, principal: principals.Principal, q) -> dict:
+        """ resolve on all subschemas, returning data.
+            If schema provides data at its level, refine .resolve() and
+            call super().resolve()
+        """
+        return {}
+
+    @classmethod
     def insert_as_schema(cls, transaction, ddhkey: keys.DDHkeyGeneric, schema_attributes: SchemaAttributes | None = None):
         ref = cls.store_as_schema(ddhkey, schema_attributes)
         return AbstractSchema.insert_schema_ref(transaction, ddhkey, ref)

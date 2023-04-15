@@ -62,6 +62,20 @@ class PySchemaElement(schemas.AbstractSchemaElement):
         return current
 
     @classmethod
+    def resolve(cls, remainder, principal, q) -> dict:
+        """ resolve on all subschemas, returning data.
+            If schema provides data at its level, refine .resolve() and
+            call super().resolve()
+        """
+        d = {}
+        for k, mf in cls.__fields__.items():
+            assert isinstance(mf, pydantic.fields.ModelField)
+            sub_elem = mf.type_
+            if issubclass(sub_elem, PySchemaElement):
+                d[k] = sub_elem.resolve(remainder[:-1], principal, q)  # then descend
+        return d
+
+    @classmethod
     def extract_attributes(cls, path: keys.DDHkey, atts: schemas.SchemaAttributes):
         """ Extract attributes and insert them to schema.schema_attributes
         """
