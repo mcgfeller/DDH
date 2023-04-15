@@ -7,7 +7,7 @@ authors = [
 description = "Digital Data Hub - Experimental Software"
 readme = "README.md"
 requires-python = ">=3.11"
-License = "MIT"
+license = "MIT"
 classifiers = [
     "Development Status :: 1 - Planning",
     "Programming Language :: Python :: 3",
@@ -18,7 +18,9 @@ classifiers = [
 
 homepage = "https://github.com/mcgfeller/DDH/"
 documentation = "https://github.com/mcgfeller/DDH/wiki"
-repository = "https://github.com/python-poetry/poetry"
+repository = "https://github.com/mcgfeller/DDH/"
+
+keywords = ["DDH", "data hub", "digital", "data", "privacy"]
 
 [project.urls]
 "Bug Tracker" = "https://github.com/mcgfeller/DDH/issues/"
