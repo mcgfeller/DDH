@@ -4,6 +4,8 @@ from __future__ import annotations
 import abc
 import enum
 import typing
+import secrets
+import datetime
 
 import pydantic
 from utils.pydantic_utils import DDHbaseModel
@@ -51,22 +53,55 @@ class Validate(SchemaCapability):
 class Anonymize(SchemaCapability):
     supports_modes = {permissions.AccessMode.anonymous}
 
-    def apply(self, schema, access, transaction, data):
-        for sensitivity, path_fields in schema.schema_attributes.sensitivities.items():
-            path_fields_data = schema.extract_data_fields(path_fields, data)
-            path_fields_data = self.anonymize(sensitivity, path_fields_data, access, transaction)
-            schema.insert_data_fields(path_fields_data, data)
-        return data
+    def apply(self, schema, access, transaction, data_by_principal):
+        """ Apply self.transform_value to sensitivities in schema, keeping
+            cache of mapped values, so same value always get's transformed into same
+            value.
+        """
+        cache = {}
+        new_data_by_principal = {}  # new data, since keys (=principals) are different
+        for principal_id, data in data_by_principal.items():  # data may have multiple principals
+            # transform principal_id first:
+            principal_id = self.transform_value(
+                principal_id, '', '', schemas.Sensitivity.eid, access, transaction, cache)
+            for sensitivity, path_fields in schema.schema_attributes.sensitivities.items():
+                # transform all path and fields for a sensitivity
+                data = schema.transform(path_fields, data, self.transform_value,
+                                        sensitivity, access, transaction, cache)
 
-    def anonymize(self, sensitivity, path_fields_data: schemas.T_PathFieldsData, access, transaction) -> schemas.T_PathFieldsData:
-        match sensitivity:
-            case schemas.Sensitivity.eid:
-                ...
-            case schemas.Sensitivity.qid:
-                ...
-            case schemas.Sensitivity.sa:
-                ...
-        return path_fields_data
+            new_data_by_principal[principal_id] = data
+
+        return new_data_by_principal
+
+    def transform_value(self, value, path, field, sensitivity, access, transaction, cache):
+        """ transform a single value. Keep a cache per location and value.
+        """
+        if value in (None, ''):  # we don't need to transform non-existent or empty values
+            v = None
+        else:
+            k = (path, field, value)
+            v = cache.get(k)
+            if v is None:
+
+                match value:
+                    case str():
+                        v = secrets.token_urlsafe(max(10, len(value)))  # replace by random string of similar length
+                    case int():
+                        # add a random number in similar range (but at least 10000 to ensure randomness):
+                        v = value + secrets.randbelow(max(10000, value))
+                    case float():  # apply a multiplicative factor
+                        factor = secrets.randbelow(10000)/5000  # 0...1
+                        v = value*factor
+                    case datetime.datetime():
+                        v = datetime.datetime.now()
+                    case datetime.date():
+                        v = datetime.date.today()
+                    case datetime.time():
+                        v = datetime.datetime.now().time()
+                    case _:  # anything else, just a random str:
+                        v = secrets.token_urlsafe(10)
+                cache[k] = v
+        return v
 
 
 class Pseudonymize(Anonymize):

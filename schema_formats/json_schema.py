@@ -66,9 +66,3 @@ class JsonSchema(schemas.AbstractSchema):
                     else:  # path continues beyond this point, so this is not found and not creatable
                         return None
         return current
-
-    def extract_data_fields(self, path_fields: schemas.T_PathFields, data) -> schemas.T_PathFieldsData:
-        raise NotImplementedError()
-
-    def insert_data_fields(self, path_fields_data: schemas.T_PathFieldsData, data) -> schemas.T_PathFieldsData:
-        raise NotImplementedError()

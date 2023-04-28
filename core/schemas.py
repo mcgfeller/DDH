@@ -85,7 +85,6 @@ class MimeTypes(DDHbaseModel):
 
 
 T_PathFields = dict[str, set[str]]
-T_PathFieldsData = dict[str, dict[str, typing.Any]]
 
 
 class SchemaAttributes(DDHbaseModel):
@@ -287,11 +286,28 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
             raise errors.CapabilityMissing(f"Schema {self} does not support required capabilities; missing {missing}")
         return self.schema_attributes.capabilities.intersection(required_capabilities)
 
-    def extract_data_fields(self, path_fields: T_PathFields, data) -> T_PathFieldsData:
-        raise errors.SubClass
-
-    def insert_data_fields(self, path_fields_data: T_PathFieldsData, data) -> T_PathFieldsData:
-        raise errors.SubClass
+    def transform(self, path_fields: T_PathFields, data, method, sensitivity, access, transaction, cache):
+        """ transform data in place by applying method to path_fields. 
+            Must be overwritten if data is not a Python dictionary (compatible with Python and JSON)
+        """
+        for path in path_fields:
+            for s in path.split('.'):  # access sub-parts of DDHkey
+                if s:
+                    subdata = data.get(s)
+                    if subdata is None:  # data is absent
+                        break
+                else:
+                    subdata = data
+                for field in path_fields[path]:
+                    if isinstance(subdata, list):  # iterate over list or tuple
+                        for i, x in enumerate(subdata):
+                            subdata[i][field] = method(x.get(field), path, field,
+                                                       sensitivity, access, transaction, cache)
+                    else:
+                        subdata[field] = method(subdata.get(field), path, field,
+                                                sensitivity, access, transaction, cache)
+                data[s] = subdata
+        return data
 
     @property
     def format(self) -> SchemaFormat:

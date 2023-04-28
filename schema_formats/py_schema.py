@@ -158,8 +158,19 @@ class PySchema(schemas.AbstractSchema):
         """ Add the field in dict to the schema element """
         self.schema_element._add_fields(**fields)
 
-    def extract_data_fields(self, path_fields: schemas.T_PathFields, data) -> schemas.T_PathFieldsData:
-        raise NotImplementedError()
-
-    def insert_data_fields(self, path_fields_data: schemas.T_PathFieldsData, data) -> schemas.T_PathFieldsData:
-        raise NotImplementedError()
+    def transform(self, path_fields: schemas.T_PathFields, data, method, sensitivity, access, transaction, cache):
+        """ transform data in place by applying method to path_fields. """
+        for path in path_fields:
+            for s in path.split('.'):
+                if s:
+                    subdata = data[s]
+                else:
+                    subdata = data
+                for field in path_fields[path]:
+                    if isinstance(subdata, list):
+                        for i, x in enumerate(subdata):
+                            subdata[i][field] = method(x[field], path, field, sensitivity, access, transaction, cache)
+                    else:
+                        subdata[field] = method(subdata[field], path, field, sensitivity, access, transaction, cache)
+                data[s] = subdata
+        return data
