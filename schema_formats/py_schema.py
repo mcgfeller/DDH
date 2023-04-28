@@ -157,20 +157,3 @@ class PySchema(schemas.AbstractSchema):
     def _add_fields(self, fields: dict[str, tuple]):
         """ Add the field in dict to the schema element """
         self.schema_element._add_fields(**fields)
-
-    def transform(self, path_fields: schemas.T_PathFields, data, method, sensitivity, access, transaction, cache):
-        """ transform data in place by applying method to path_fields. """
-        for path in path_fields:
-            for s in path.split('.'):
-                if s:
-                    subdata = data[s]
-                else:
-                    subdata = data
-                for field in path_fields[path]:
-                    if isinstance(subdata, list):
-                        for i, x in enumerate(subdata):
-                            subdata[i][field] = method(x[field], path, field, sensitivity, access, transaction, cache)
-                    else:
-                        subdata[field] = method(subdata[field], path, field, sensitivity, access, transaction, cache)
-                data[s] = subdata
-        return data
