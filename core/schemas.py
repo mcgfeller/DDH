@@ -286,27 +286,36 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
             raise errors.CapabilityMissing(f"Schema {self} does not support required capabilities; missing {missing}")
         return self.schema_attributes.capabilities.intersection(required_capabilities)
 
-    def transform(self, path_fields: T_PathFields, data, method, sensitivity, access, transaction, cache):
+    def transform(self, path_fields: T_PathFields, selection: str, data, method, sensitivity, access, transaction, cache):
         """ transform data in place by applying method to path_fields. 
             Must be overwritten if data is not a Python dictionary (compatible with Python and JSON)
         """
         for path in path_fields:
-            for s in path.split('.'):  # access sub-parts of DDHkey
-                if s:
-                    subdata = data.get(s)
-                    if subdata is None:  # data is absent
-                        break
-                else:
-                    subdata = data
-                for field in path_fields[path]:
-                    if isinstance(subdata, list):  # iterate over list or tuple
-                        for i, x in enumerate(subdata):
-                            subdata[i][field] = method(x.get(field), path, field,
-                                                       sensitivity, access, transaction, cache)
+            if path.startswith(selection):
+
+                spath = path.split('.')
+                spath = spath[bool(selection)+selection.count('.'):]
+                if not spath: spath = ['']
+                for s in spath:  # access sub-parts of DDHkey
+                    if s:
+                        subdata = data.get(s)
+                        if subdata is None:  # data is absent
+                            break
                     else:
-                        subdata[field] = method(subdata.get(field), path, field,
-                                                sensitivity, access, transaction, cache)
-                data[s] = subdata
+                        subdata = data
+                    for field in path_fields[path]:
+                        if isinstance(subdata, list):  # iterate over list or tuple
+                            for i, x in enumerate(subdata):
+                                subdata[i][field] = method(x.get(field), path, field,
+                                                           sensitivity, access, transaction, cache)
+                        else:
+                            subdata[field] = method(subdata.get(field), path, field,
+                                                    sensitivity, access, transaction, cache)
+                    if s:
+                        data[s] = subdata
+                    else:
+                        data = subdata
+
         return data
 
     @property

@@ -213,6 +213,8 @@ class Access(DDHbaseModel):
     granted:   bool | None = None
     byConsents: list[Consent] = []
     explanation: str | None = None
+    e_node:     DDHkey | None = None  # type: ignore
+    e_key_split: int | None
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)

@@ -144,6 +144,8 @@ async def get_enode(op: nodes.Ops, access: permissions.Access, transaction: tran
     if e_node:
         e_node = e_node.ensure_loaded(transaction)
         e_node = typing.cast(nodes.ExecutableNode, e_node)
+        access.e_node = e_node.key
+        access.e_key_split = e_key_split
         req = dapp_attrs.ExecuteRequest(
             op=op, access=access, transaction=transaction, key_split=e_key_split, data=data, q=q)
         data = await e_node.execute(req)

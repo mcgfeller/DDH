@@ -66,7 +66,8 @@ class Anonymize(SchemaCapability):
                 principal_id, '', '', schemas.Sensitivity.eid, access, transaction, cache)
             for sensitivity, path_fields in schema.schema_attributes.sensitivities.items():
                 # transform all path and fields for a sensitivity
-                data = schema.transform(path_fields, data, self.transform_value,
+                selection = str(access.ddhkey.without_variant_version().remainder(access.e_key_split))
+                data = schema.transform(path_fields, selection, data, self.transform_value,
                                         sensitivity, access, transaction, cache)
 
             new_data_by_principal[principal_id] = data
@@ -90,7 +91,7 @@ class Anonymize(SchemaCapability):
                         # add a random number in similar range (but at least 10000 to ensure randomness):
                         v = value + secrets.randbelow(max(10000, value))
                     case float():  # apply a multiplicative factor
-                        factor = secrets.randbelow(10000)/5000  # 0...1
+                        factor = secrets.randbelow(10000)/5000  # 0..2
                         v = value*factor
                     case datetime.datetime():
                         v = datetime.datetime.now()

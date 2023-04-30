@@ -57,11 +57,11 @@ class MigrosDApp(dapp_attrs.DApp):
         return d
 
     def get_data(self, selection: keys.DDHkey, access: permissions.Access, q):
-        # print(f'MigrosSchema.get_data: {selection=}')
         top = MigrosSchema.descend_path(selection)
         if not top:
             raise errors.NotFound(f'Key not found: {selection}').to_http()
         remainder = selection.remainder(len(selection.key))
+        print(f'MigrosSchema.get_data: {selection=}, {remainder=}')
         principals = user_auth.get_principals(access.ddhkey.owners)
         res = {}
         for principal in principals:  # resolve per principal
