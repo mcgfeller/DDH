@@ -288,21 +288,22 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
 
     def transform(self, path_fields: T_PathFields, selection: str, data, method, sensitivity, access, transaction, cache):
         """ transform data in place by applying method to path_fields. 
+            selection is a str path selecting into the schema. 
             Must be overwritten if data is not a Python dictionary (compatible with Python and JSON)
         """
         for path in path_fields:
-            if path.startswith(selection):
+            if path.startswith(selection):  # is the selection within the path?
 
-                spath = path.split('.')
-                spath = spath[bool(selection)+selection.count('.'):]
-                if not spath: spath = ['']
-                for s in spath:  # access sub-parts of DDHkey
-                    if s:
+                remaining_path = path.split('.')[bool(selection)+selection.count('.'):]
+                if not remaining_path: remaining_path = ['']  # we have selected a leaf
+                for s in remaining_path:  # access sub-parts of DDHkey
+                    if s:  # working at non-leaf
                         subdata = data.get(s)
                         if subdata is None:  # data is absent
                             break
-                    else:
+                    else:  # leaf
                         subdata = data
+                    # now working through fields, which may be lists:
                     for field in path_fields[path]:
                         if isinstance(subdata, list):  # iterate over list or tuple
                             for i, x in enumerate(subdata):
@@ -311,6 +312,7 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
                         else:
                             subdata[field] = method(subdata.get(field), path, field,
                                                     sensitivity, access, transaction, cache)
+                    # Merge back:
                     if s:
                         data[s] = subdata
                     else:
