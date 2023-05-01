@@ -10,7 +10,7 @@ import datetime
 import pydantic
 from utils.pydantic_utils import DDHbaseModel
 
-from . import (errors, versions, permissions, schemas)
+from . import (errors, versions, permissions, schemas, transactions)
 
 
 class Capability(DDHbaseModel):
@@ -53,7 +53,11 @@ class Validate(SchemaCapability):
 class Anonymize(SchemaCapability):
     supports_modes = {permissions.AccessMode.anonymous}
 
-    def apply(self, schema, access, transaction, data_by_principal):
+    def apply(self, schema, access, transaction, data_by_principal: dict):
+        cache = {}
+        return self.transform(schema, access, transaction, data_by_principal, cache)
+
+    def transform(self, schema, access, transaction, data_by_principal: dict, cache: dict) -> dict:
         """ Apply self.transform_value to sensitivities in schema, keeping
             cache of mapped values, so same value always get's transformed into same
             value.
@@ -61,7 +65,6 @@ class Anonymize(SchemaCapability):
         # selection is the path remaining after dispatching of the e_node:
         selection = str(access.ddhkey.without_variant_version().remainder(access.e_key_split))
 
-        cache = {}
         new_data_by_principal = {}  # new data, since keys (=principals) are different
         for principal_id, data in data_by_principal.items():  # data may have multiple principals
             # transform principal_id first:
@@ -109,6 +112,10 @@ class Anonymize(SchemaCapability):
 
 class Pseudonymize(Anonymize):
     supports_modes = {permissions.AccessMode.pseudonym}
+
+    def apply(self, schema, access, transaction, data_by_principal: dict):
+        cache = {}
+        return self.transform(schema, access, transaction, data_by_principal, cache)
 
 
 # Enum with all available Capabilities:
