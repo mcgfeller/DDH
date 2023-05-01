@@ -58,6 +58,9 @@ class Anonymize(SchemaCapability):
             cache of mapped values, so same value always get's transformed into same
             value.
         """
+        # selection is the path remaining after dispatching of the e_node:
+        selection = str(access.ddhkey.without_variant_version().remainder(access.e_key_split))
+
         cache = {}
         new_data_by_principal = {}  # new data, since keys (=principals) are different
         for principal_id, data in data_by_principal.items():  # data may have multiple principals
@@ -66,7 +69,6 @@ class Anonymize(SchemaCapability):
                 principal_id, '', '', schemas.Sensitivity.eid, access, transaction, cache)
             for sensitivity, path_fields in schema.schema_attributes.sensitivities.items():
                 # transform all path and fields for a sensitivity
-                selection = str(access.ddhkey.without_variant_version().remainder(access.e_key_split))
                 data = schema.transform(path_fields, selection, data, self.transform_value,
                                         sensitivity, access, transaction, cache)
 
