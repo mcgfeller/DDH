@@ -11,6 +11,7 @@ import pydantic
 from utils.pydantic_utils import DDHbaseModel
 
 from . import (errors, versions, permissions, schemas, transactions)
+from backend import persistable
 
 
 class Capability(DDHbaseModel):
@@ -114,8 +115,21 @@ class Pseudonymize(Anonymize):
     supports_modes = {permissions.AccessMode.pseudonym}
 
     def apply(self, schema, access, transaction, data_by_principal: dict):
-        cache = {}
-        return self.transform(schema, access, transaction, data_by_principal, cache)
+        pm = PseudonymMap.create(access, transaction, data_by_principal)
+        r = self.transform(schema, access, transaction, data_by_principal, pm.cache)
+        transaction.add(persistable.PersistAction(obj=pm))
+        return r
+
+
+class PseudonymMap(persistable.Persistable):
+
+    cache: dict
+
+    @classmethod
+    def create(cls, access, transaction: transactions.Transaction, data_by_principal: dict) -> typing.Self:
+        cache = {('', '', pid): transaction.trxid+'/'+secrets.token_urlsafe(max(10, len(pid)))
+                 for pid in data_by_principal.keys()}
+        return PseudonymMap(cache=cache)
 
 
 # Enum with all available Capabilities:
