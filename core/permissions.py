@@ -277,7 +277,5 @@ class Access(DDHbaseModel):
 
 from . import keys
 from . import nodes
-from . import keydirectory
-from . import transactions
 from frontend import user_auth
 Access.update_forward_refs()

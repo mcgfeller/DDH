@@ -21,7 +21,7 @@ class StorageClass(DDHbaseModel):
 
     byId: dict[common_ids.PersistId, StorageBlock] = {}
 
-    def __contains__(self, id: common_ids.PersistId):
+    def __contains__(self, id: common_ids.PersistId) -> bool:
         """ does id exist in storage? """
         return id in self.byId
 

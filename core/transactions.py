@@ -32,6 +32,8 @@ class Transaction(DDHbaseModel):
     # same as read_consentees, but not modified during transaction
     initial_read_consentees:  set[common_ids.PrincipalId] = DefaultReadConsentees
 
+    actions: list[Action] = pydantic.Field(default=[], description="list of actions to be performed at commit")
+
     # https://github.com/pydantic/pydantic/issues/3679#issuecomment-1337575645
     Transactions: typing.ClassVar[dict[common_ids.TrxId, typing.Any]] = {}
     # Transactions : typing.ClassVar[dict[common_ids.TrxId,'Transaction']] = {}
@@ -98,3 +100,43 @@ class Transaction(DDHbaseModel):
         else:
             self.read_consentees &= read_consentees
         return
+
+    def add(self, action: Action):
+        """ Add action to this transaction """
+        if action.add_ok(self):
+            self.actions.append(action)
+            action.added(self)
+        else:
+            raise TrxAccessError(f'action {action} cannot be added to {self}')
+
+    def commit(self):
+        """ commit a transaction by committing all actions """
+        for action in self.actions:
+            action.commit(self)
+
+        return
+
+
+class Action(DDHbaseModel):
+    """ actions for a transaction """
+
+    def added(self, trx: Transaction):
+        """ Callback after transaction is added """
+        return
+
+    def add_ok(self, trx: Transaction) -> bool:
+        """ Callback to determine whether it is ok to add action to trx """
+        return True
+
+    def commit(self, transaction):
+        """ commit an action, called by transaction.commit() """
+
+        return
+
+    def rollback(self, transaction):
+        """ rollback an action, called by transaction.rollback() """
+
+        return
+
+
+Transaction.update_forward_refs()

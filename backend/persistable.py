@@ -107,3 +107,11 @@ class PersistableProxy(DDHbaseModel):
     def get_proxy(self) -> PersistableProxy:
         """ this is already a proxy """
         return self
+
+
+class PersistAction(transactions.Action):
+
+    obj: Persistable
+
+    def commit(self, transaction):
+        self.obj.store(transaction)
