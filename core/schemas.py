@@ -453,8 +453,8 @@ class SchemaContainer(DDHbaseModel):
     @staticmethod
     def get_node_schema_key(ddhkey: keys.DDHkey, transaction) -> tuple[AbstractSchema, keys.DDHkey, int, nodes.SchemaNode]:
         """ for a ddhkey, get the node, then get its schema and the fully qualified key with the schema variant 
-            and version, and the remainder. The key returden will have the fork and owner of the original key, except 
-            there is no owner when the fork is schema.
+            and version, and the split separting the schema and the key into the schema. 
+            The key returned will have the fork and owner of the original key, except there is no owner when the fork is schema.
         """
         schema_ddhkey = ddhkey.without_owner().ens()  # schema key to get the schema node
         ddhkey = schema_ddhkey if ddhkey.fork == keys.ForkType.schema else ddhkey  # but return only if schema fork is asked for
