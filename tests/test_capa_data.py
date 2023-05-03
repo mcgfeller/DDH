@@ -75,7 +75,7 @@ async def test_read_anon_migros(user, transaction, migros_key_schema, migros_dat
     # TODO: Consider mocking data access - fow now, call after_data_read with data directly instead
     # data = await facade.ddh_get(access, session)
     cumulus = migros_data['mgf']['cumulus']
-    access.e_key_split = 4
+    access.schema_key_split = 4
     data = schema.after_data_read(access, transaction, migros_data)
     assert 'mgf' not in data, 'eid must be anonymized'
     d = list(data.values())[0]
@@ -99,7 +99,7 @@ async def test_read_pseudo_migros(user, transaction, migros_key_schema, migros_d
     # TODO: Consider mocking data access - fow now, call after_data_read with data directly instead
     # data = await facade.ddh_get(access, session)
     cumulus = migros_data['mgf']['cumulus']
-    access.e_key_split = 4
+    access.schema_key_split = 4
     data = schema.after_data_read(access, transaction, migros_data)
     assert 'mgf' not in data, 'eid must be anonymized'
     d = list(data.values())[0]
@@ -123,7 +123,7 @@ async def test_read_anon_migros_rec(user, transaction, migros_key_schema, migros
     # TODO: Consider mocking data access - fow now, call after_data_read with data directly instead
     # data = await facade.ddh_get(access, session)
     m_data = {'mgf': migros_data['mgf']['receipts']}
-    access.e_key_split = 4
+    access.schema_key_split = 4
     data = schema.after_data_read(access, transaction, m_data)
     assert 'mgf' not in data, 'eid must be anonymized'
     d = list(data.values())[0]

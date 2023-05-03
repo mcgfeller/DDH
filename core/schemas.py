@@ -366,9 +366,10 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         """
         ddhkey = ddhkey.ensure_fork(keys.ForkType.schema)
         # get a parent scheme to hook into:
-        parent, key, remainder, node = SchemaContainer.get_node_schema_key(ddhkey.up(), transaction)
+        parent, key, split, node = SchemaContainer.get_node_schema_key(ddhkey.up(), transaction)
         if not parent:
             raise errors.NotFound(f'No parent for {ddhkey}')
+        remainder = ddhkey.remainder(split)
 
         if not schemaref:  # create schema ref in parent's schema format:
             schemaref = parent.get_reference_class().create_from_key(ddhkey=ddhkey)
@@ -450,12 +451,12 @@ class SchemaContainer(DDHbaseModel):
         return self.get()
 
     @staticmethod
-    def get_node_schema_key(ddhkey: keys.DDHkey, transaction) -> tuple[AbstractSchema, keys.DDHkey, keys.DDHkey, nodes.SchemaNode]:
+    def get_node_schema_key(ddhkey: keys.DDHkey, transaction) -> tuple[AbstractSchema, keys.DDHkey, int, nodes.SchemaNode]:
         """ for a ddhkey, get the node, then get its schema and the fully qualified key with the schema variant 
             and version, and the remainder. The key returden will have the fork and owner of the original key, except 
             there is no owner when the fork is schema.
         """
-        schema_ddhkey = ddhkey.without_owner().ens()  # schema kwy to get the schema node
+        schema_ddhkey = ddhkey.without_owner().ens()  # schema key to get the schema node
         ddhkey = schema_ddhkey if ddhkey.fork == keys.ForkType.schema else ddhkey  # but return only if schema fork is asked for
         snode, split = keydirectory.NodeRegistry.get_node(
             schema_ddhkey, nodes.NodeSupports.schema, transaction)
@@ -465,7 +466,7 @@ class SchemaContainer(DDHbaseModel):
             # build key with actual variant and version:
             fqkey = keys.DDHkey(ddhkey.key, specifiers=(
                 ddhkey.fork, schema.schema_attributes.variant, schema.schema_attributes.version))
-            return (schema, fqkey, ddhkey.remainder(split), snode)
+            return (schema, fqkey, split, snode)
         else:
             raise errors.NotFound(f'No schema node found for {ddhkey}')
 
@@ -480,11 +481,12 @@ class SchemaContainer(DDHbaseModel):
     @staticmethod
     def get_sub_schema(access: permissions.Access, transaction, create_intermediate: bool = False) -> AbstractSchema | None:
         schema = None
-        parent_schema, access.ddhkey, remainder, snode = SchemaContainer.get_node_schema_key(
+        parent_schema, access.ddhkey, split, snode = SchemaContainer.get_node_schema_key(
             access.ddhkey, transaction)
         if parent_schema:
             access.raise_if_not_permitted(keydirectory.NodeRegistry._get_consent_node(
                 access.ddhkey.without_variant_version(), nodes.NodeSupports.schema, snode, transaction))
+            remainder = access.ddhkey.remainder(split)
             schema_element = parent_schema.__getitem__(remainder, create_intermediate=create_intermediate)
             if schema_element:
                 schema = schema_element.to_schema()

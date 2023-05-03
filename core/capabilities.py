@@ -64,7 +64,7 @@ class Anonymize(SchemaCapability):
             value.
         """
         # selection is the path remaining after dispatching of the e_node:
-        selection = str(access.ddhkey.without_variant_version().remainder(access.e_key_split))
+        selection = str(access.ddhkey.without_variant_version().remainder(access.schema_key_split))
 
         new_data_by_principal = {}  # new data, since keys (=principals) are different
         for principal_id, data in data_by_principal.items():  # data may have multiple principals

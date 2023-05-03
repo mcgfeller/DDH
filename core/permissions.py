@@ -213,10 +213,8 @@ class Access(DDHbaseModel):
     granted:   bool | None = None
     byConsents: list[Consent] = []
     explanation: str | None = None
-    e_node:     DDHkey | None = pydantic.Field(
-        default=None, description="DDHkey of e_node obtaining the data")  # type: ignore
-    e_key_split: int | None = pydantic.Field(
-        default=None, description="Split into DDHKey passed to e_node; left side identifies e_node")
+    schema_key_split: int | None = pydantic.Field(
+        default=None, description="Split into DDHKey for schema and path into schema")
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
