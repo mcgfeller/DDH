@@ -39,7 +39,7 @@ def build_root_schemas():
                ['',  # no owner
                 ['org',  # organizational tree, next level are org domains
                  ['private',  # for the user him/herself
-                  ['documents']
+                  ['documents']  # this is DocSave RIP
                   ],
                  ],
                    ['p',  # personal tree, next level are data models

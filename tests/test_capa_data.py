@@ -29,7 +29,11 @@ def get_session(user):
 
 
 @pytest.mark.asyncio
-async def test_read_anon(user, user2):
+async def test_read_anon_failures(user, user2):
+    """ Test must failures for anonymous access:
+        - must invoke anonymous if shared so
+        - private schema has no anonymous capability
+    """
     session = get_session(user)
     # first, set up some data:
     await test_write_data_with_consent(user, user2)
@@ -44,7 +48,7 @@ async def test_read_anon(user, user2):
     # read anonymous
     access = permissions.Access(ddhkey=ddhkey1, principal=user, modes={
                                 permissions.AccessMode.read, permissions.AccessMode.anonymous})
-    with pytest.raises(errors.CapabilityMissing):
+    with pytest.raises(errors.CapabilityMissing):  # private schema does not have this capability
         await facade.ddh_get(access, session)
 
     # granted only with read anonymous
@@ -55,7 +59,8 @@ async def test_read_anon(user, user2):
 
     access = permissions.Access(ddhkey=ddhkey2, principal=user, modes={
                                 permissions.AccessMode.read, permissions.AccessMode.anonymous})
-    with pytest.raises(errors.CapabilityMissing):  # TODO Once we have the capable Schema, this must not raise error
+
+    with pytest.raises(errors.CapabilityMissing):  # private schema does not have this capability
         await facade.ddh_get(access, session)
     return
 
