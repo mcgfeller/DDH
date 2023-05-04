@@ -80,12 +80,13 @@ async def check_data_with_mode(user, transaction, migros_key_schema, migros_data
         m_data = migros_data
     # read anonymous
     access = permissions.Access(ddhkey=k.ensure_fork(keys.ForkType.data), principal=user, modes=modes)
-    # TODO: Consider mocking data access - fow now, call after_data_read with data directly instead
+    # TODO: Consider mocking enode access - fow now, call after_data_read with data directly instead
     # data = await facade.ddh_get(access, session)
     cumulus = migros_data[user.id]['cumulus']
-    access.schema_key_split = 4
-    data = schema.after_data_read(access, trx, m_data)
+    access.schema_key_split = 4  # split after the migros.org
+    data = schema.after_data_read(access, trx, m_data)  # capability processing happens here
     assert user.id not in data, 'eid must be anonymized'
+    assert len(data) == 1, 'one user only'
     d = list(data.values())[0]
     if not remainder:
         assert cumulus != d['cumulus'], 'qid must be anonymized'

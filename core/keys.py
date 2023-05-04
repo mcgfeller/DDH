@@ -223,7 +223,7 @@ class DDHkey(DDHbaseModel):
         if isinstance(self, DDHkeyGeneric):
             k = self
         elif self.version == versions.Unspecified and self.variant == DefaultVariant:
-            # XXX: is actually generic, but we cannot change class:
+            # Key is actually generic, but we cannot change class for Pydantic objects, so must recreate:
             k = DDHkeyGeneric(self.key, fork=self.fork, variant=DefaultVariant, version=versions.Unspecified)
         else:
             k = DDHkeyGeneric(self.key, fork=self.fork, variant=DefaultVariant, version=versions.Unspecified)

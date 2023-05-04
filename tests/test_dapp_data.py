@@ -44,6 +44,7 @@ def test_get_data_anon(user1):
     assert len(d) > 10
     assert all(a in d[5]
                for a in ('Datum_Zeit', 'Menge', 'Filiale'))  # these keys must be present
+    assert not any(rec['Filiale'].startswith('MM ') for rec in d), 'sa Filiale must be anonymized'
     assert r.headers['content-location'] == str(user1.base_url)+'/ddh/mgf/org/migros.ch/receipts::PySchema:0.2'
     return
 
