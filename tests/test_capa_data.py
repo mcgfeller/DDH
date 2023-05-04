@@ -60,75 +60,60 @@ async def test_read_anon(user, user2):
     return
 
 
-@pytest.mark.asyncio
-async def test_read_anon_migros(user, transaction, migros_key_schema, migros_data):
+async def check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, remainder=None) -> transactions.Transaction:
+
     session = get_session(user)
     session.reinit()  # ensure we have a clean slate
     trx = session.new_transaction()
     assert trx.read_consentees == transactions.DefaultReadConsentees
 
     k, schema = migros_key_schema
-
+    if remainder:
+        k = k + remainder
+        m_data = {user.id: migros_data[user.id][remainder]}
+    else:
+        m_data = migros_data
     # read anonymous
-    access = permissions.Access(ddhkey=k.ensure_fork(keys.ForkType.data), principal=user, modes={
-                                permissions.AccessMode.read, permissions.AccessMode.anonymous})
+    access = permissions.Access(ddhkey=k.ensure_fork(keys.ForkType.data), principal=user, modes=modes)
     # TODO: Consider mocking data access - fow now, call after_data_read with data directly instead
     # data = await facade.ddh_get(access, session)
-    cumulus = migros_data['mgf']['cumulus']
+    cumulus = migros_data[user.id]['cumulus']
     access.schema_key_split = 4
-    data = schema.after_data_read(access, transaction, migros_data)
-    assert 'mgf' not in data, 'eid must be anonymized'
+    data = schema.after_data_read(access, trx, m_data)
+    assert user.id not in data, 'eid must be anonymized'
     d = list(data.values())[0]
-    assert cumulus != d['cumulus'], 'qid must be anonymized'
-    assert not any(x['Filiale'].startswith('MM ') for x in d['receipts']), 'sa Filiale must be anonymized'
+    if not remainder:
+        assert cumulus != d['cumulus'], 'qid must be anonymized'
+        receipts = d['receipts']
+    else:
+        receipts = d
+    assert not any(rec['Filiale'].startswith('MM ') for rec in receipts), 'sa Filiale must be anonymized'
+    return trx
+
+
+@pytest.mark.asyncio
+async def test_read_anon_migros(user, transaction, migros_key_schema, migros_data):
+    """ read anonymous whole schema """
+    modes = {permissions.AccessMode.read, permissions.AccessMode.anonymous}
+    await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes)
     return
 
 
 @pytest.mark.asyncio
 async def test_read_pseudo_migros(user, transaction, migros_key_schema, migros_data):
-    session = get_session(user)
-    session.reinit()  # ensure we have a clean slate
-    trx = session.new_transaction()
-    assert trx.read_consentees == transactions.DefaultReadConsentees
-
-    k, schema = migros_key_schema
-
-    # read anonymous
-    access = permissions.Access(ddhkey=k.ensure_fork(keys.ForkType.data), principal=user, modes={
-                                permissions.AccessMode.read, permissions.AccessMode.pseudonym})
-    # TODO: Consider mocking data access - fow now, call after_data_read with data directly instead
-    # data = await facade.ddh_get(access, session)
-    cumulus = migros_data['mgf']['cumulus']
-    access.schema_key_split = 4
-    data = schema.after_data_read(access, transaction, migros_data)
-    assert 'mgf' not in data, 'eid must be anonymized'
-    d = list(data.values())[0]
-    assert cumulus != d['cumulus'], 'qid must be anonymized'
-    assert not any(x['Filiale'].startswith('MM ') for x in d['receipts']), 'sa Filiale must be anonymized'
+    """ read pseudonymous whole schema """
+    modes = {permissions.AccessMode.read, permissions.AccessMode.pseudonym}
+    trx = await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes)
+    assert trx.actions
+    assert trx.actions[0].obj.__class__.__name__ == 'PseudonymMap'
     return
 
 
 @pytest.mark.asyncio
 async def test_read_anon_migros_rec(user, transaction, migros_key_schema, migros_data):
-    session = get_session(user)
-    session.reinit()  # ensure we have a clean slate
-    trx = session.new_transaction()
-    assert trx.read_consentees == transactions.DefaultReadConsentees
-
-    k, schema = migros_key_schema
-    k = k + 'receipts'
-    # read anonymous
-    access = permissions.Access(ddhkey=k.ensure_fork(keys.ForkType.data), principal=user, modes={
-                                permissions.AccessMode.read, permissions.AccessMode.anonymous})
-    # TODO: Consider mocking data access - fow now, call after_data_read with data directly instead
-    # data = await facade.ddh_get(access, session)
-    m_data = {'mgf': migros_data['mgf']['receipts']}
-    access.schema_key_split = 4
-    data = schema.after_data_read(access, transaction, m_data)
-    assert 'mgf' not in data, 'eid must be anonymized'
-    d = list(data.values())[0]
-    # assert cumulus != d['cumulus'], 'qid must be anonymized'
-    assert not any(x['Filiale'].startswith('MM ') for x in d), 'sa Filiale must be anonymized'
+    """ read anononymous within schema """
+    modes = {permissions.AccessMode.read, permissions.AccessMode.anonymous}
+    await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, remainder='receipts')
     return
 
 
