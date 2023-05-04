@@ -29,7 +29,8 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
 
     # fork-independent checks:
     # get schema and key with specifiers:
-    schema, access.ddhkey, *d = schemas.SchemaContainer.get_node_schema_key(access.ddhkey, transaction)
+    schema, access.ddhkey, access.schema_key_split, * \
+        d = schemas.SchemaContainer.get_node_schema_key(access.ddhkey, transaction)
     mt = check_mimetype_schema(access.ddhkey, schema, accept_header)
     headers = {'Content-Location': str(access.ddhkey), 'Content-Type': mt, }
 
@@ -47,6 +48,7 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
             data = await get_data(access, transaction, q)
             # pass data to enode and get result:
             data = await get_enode(nodes.Ops.get, access, transaction, data, q)
+            # TODO: This is raw JSON, not schemaed JSON (e.g., datetime remains str)
             data = schema.after_data_read(access, transaction, data)
 
     return data, headers
