@@ -1,5 +1,5 @@
 """ Set up some Test data """
-from core import keys, permissions, facade, errors, transactions, principals
+from core import keys, permissions, facade, errors, transactions, principals, capabilities
 from core import pillars
 from frontend import user_auth, sessions
 from backend import keyvault
@@ -111,7 +111,11 @@ async def test_read_pseudo_migros(user, transaction, migros_key_schema, migros_d
     modes = {permissions.AccessMode.read, permissions.AccessMode.pseudonym}
     trx = await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes)
     assert trx.actions
-    assert trx.actions[0].obj.__class__.__name__ == 'PseudonymMap'
+    pm = trx.actions[0].obj
+    assert isinstance(pm, capabilities.PseudonymMap)
+    trx.commit()  # store map
+    pm2 = capabilities.PseudonymMap.load(pm.id, trx)  # retrieve it
+    assert len(pm.cache) == len(pm2.cache)  # datatype may vary slightly...
     return
 
 

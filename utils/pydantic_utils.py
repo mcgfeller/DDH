@@ -3,6 +3,7 @@
 from __future__ import annotations
 import pydantic
 import typing
+import datetime
 
 
 class DDHbaseModel(pydantic.BaseModel):
@@ -54,3 +55,31 @@ class DDHbaseModel(pydantic.BaseModel):
         cls.__annotations__.update(new_annotations)
         cls.__schema_cache__.clear()
         return
+
+
+# aux values for tuple_key_to_str() and str_to_tuple_key()
+_t_delim: str = chr(0)+chr(1)  # separator between key, separator between key type and key value
+# map between type.__name__ and type:
+_type_map: dict[str, function | type] = {'str': str, 'int': int, 'float': float, 'datetime': datetime.datetime.fromisoformat,
+                                         'date': datetime.date.fromisoformat, 'time': datetime.time.fromisoformat,
+                                         'Timestamp': datetime.datetime.fromisoformat, }
+
+
+def tuple_key_to_str(seq: typing.Sequence) -> str:
+    """ convert a sequence (or tuple) of keys to a jsonable string, usable to json
+        dicts with tuple keys. Retains data types by encoding their name into the str.
+        Inverse to str_to_tuple_key().
+        See also #17 - perhaps Pydantic 2 will adress this. 
+    """
+    return _t_delim[0].join([type(s).__name__+_t_delim[1]+str(s) for s in seq])
+
+
+def str_to_tuple_key(s: str) -> tuple:
+    """ Inverse to tuple_key_to_str(), restores tuple """
+    r = []
+    for tv in s.split(_t_delim[0]):
+
+        tn, v = tv.split(_t_delim[1], 1)
+        t = _type_map.get(tn, str)
+        r.append(t(v))
+    return tuple(r)

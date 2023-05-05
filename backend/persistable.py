@@ -54,7 +54,7 @@ class Persistable(DDHbaseModel):
         return
 
     @classmethod
-    def load(cls, id: common_ids.PersistId,  transaction: transactions.Transaction):
+    def load(cls, id: common_ids.PersistId,  transaction: transactions.Transaction) -> typing.Self:
         d = storage.Storage.load(id, transaction)
         o = cls.from_compressed(d)
         return o

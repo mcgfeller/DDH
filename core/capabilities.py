@@ -8,7 +8,7 @@ import secrets
 import datetime
 
 import pydantic
-from utils.pydantic_utils import DDHbaseModel
+from utils.pydantic_utils import DDHbaseModel, tuple_key_to_str, str_to_tuple_key
 
 from . import (errors, versions, permissions, schemas, transactions)
 from backend import persistable
@@ -117,6 +117,7 @@ class Pseudonymize(Anonymize):
     def apply(self, schema, access, transaction, data_by_principal: dict):
         pm = PseudonymMap.create(access, transaction, data_by_principal)
         r = self.transform(schema, access, transaction, data_by_principal, pm.cache)
+        # the cache was filled during the transform - save it
         transaction.add(persistable.PersistAction(obj=pm))
         return r
 
@@ -127,9 +128,25 @@ class PseudonymMap(persistable.Persistable):
 
     @classmethod
     def create(cls, access, transaction: transactions.Transaction, data_by_principal: dict) -> typing.Self:
+        """ create cache and prime it with an entry for the eid, encoding both the transaction and 
+            the principal. 
+        """
         cache = {('', '', pid): transaction.trxid+'/'+secrets.token_urlsafe(max(10, len(pid)))
                  for pid in data_by_principal.keys()}
         return PseudonymMap(cache=cache)
+
+    def to_json(self) -> str:
+        """ JSON export doesn't support dicts with tuple keyes. So convert them to str and convert back in .from_json() """
+        e = self.copy()
+        e.cache = {tuple_key_to_str(k): v for k, v in e.cache.items()}
+        return e.json()
+
+    @classmethod
+    def from_json(cls, j: str) -> typing.Self:
+        """ Convert back dict keys encoded in .to_json() """
+        o = cls.parse_raw(j)
+        o.cache = {str_to_tuple_key(k): v for k, v in o.cache.items()}
+        return o
 
 
 # Enum with all available Capabilities:
