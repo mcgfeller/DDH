@@ -16,6 +16,7 @@ import secrets
 
 
 class TrxAccessError(errors.AccessError): ...
+class TrxOpenError(errors.DDHerror): ...
 
 
 DefaultReadConsentees = {principals.AllPrincipal.id}  # by default, nothing is readable by everybody
@@ -67,10 +68,14 @@ class Transaction(DDHbaseModel):
 
     def end(self):
         """ end this transaction """
+        if self.actions:
+            raise TrxOpenError(f'Transaction has {len(self.actions)} pending actions. Either .commit() or .abort() it.')
         self.Transactions.pop(self.trxid, None)
         return
 
     def abort(self):
+        for action in self.actions:
+            action.rollback(self)
         self.end()
 
     def __del__(self):

@@ -89,7 +89,7 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                     # - Data within schema that includes schema reference only if schema can be expanded
                     data = json.loads(data)  # make dict
                     # check data against Schema
-                    data = schema.after_data_read(access, transaction, data)
+                    data = schema.before_data_write(access, transaction, data)
 
                     # first e_node to transform data:
                     data = await get_enode(nodes.Ops.put, access, transaction, data, q)
