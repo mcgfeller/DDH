@@ -73,13 +73,37 @@ class Transaction(DDHbaseModel):
         self.Transactions.pop(self.trxid, None)
         return
 
-    def abort(self):
+    async def commit(self):
+        """ commit a transaction by committing all actions """
         for action in self.actions:
-            action.rollback(self)
+            await action.commit(self)
+
+        return
+
+    async def abort(self):
+        for action in self.actions:
+            await action.rollback(self)
         self.end()
 
-    def __del__(self):
-        self.abort()
+    async def __del__(self):
+        await self.abort()
+
+    async def __aenter__(self):
+        """ use as async context - note that there is currently no awaitable ressource, but 
+            this might change with storages.  
+
+            Note: There is no sync variant - you have to use an async context. 
+        """
+        self.begin()
+        return self
+
+    async def __aexit__(self, exc_type, exc_value, traceback):
+        """ Note: There is no sync variant - you have to use an async context.  
+        """
+        if exc_type is None:
+            await self.commit()
+        else:
+            await self.abort()
 
     def use(self):
         if datetime.datetime.now() > self.exp:
@@ -114,13 +138,6 @@ class Transaction(DDHbaseModel):
         else:
             raise TrxAccessError(f'action {action} cannot be added to {self}')
 
-    def commit(self):
-        """ commit a transaction by committing all actions """
-        for action in self.actions:
-            action.commit(self)
-
-        return
-
 
 class Action(DDHbaseModel):
     """ actions for a transaction """
@@ -133,12 +150,12 @@ class Action(DDHbaseModel):
         """ Callback to determine whether it is ok to add action to trx """
         return True
 
-    def commit(self, transaction):
+    async def commit(self, transaction):
         """ commit an action, called by transaction.commit() """
 
         return
 
-    def rollback(self, transaction):
+    async def rollback(self, transaction):
         """ rollback an action, called by transaction.rollback() """
 
         return

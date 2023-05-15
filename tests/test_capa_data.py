@@ -113,7 +113,7 @@ async def test_read_pseudo_migros(user, transaction, migros_key_schema, migros_d
     assert trx.actions
     pm = trx.actions[0].obj
     assert isinstance(pm, capabilities.PseudonymMap)
-    trx.commit()  # store map
+    await trx.commit()  # store map
     pm2 = capabilities.PseudonymMap.load(pm.id, trx)  # retrieve it
     assert len(pm.cache) == len(pm2.cache)  # datatype may vary slightly...
     return

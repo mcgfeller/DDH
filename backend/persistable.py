@@ -113,5 +113,7 @@ class PersistAction(transactions.Action):
 
     obj: Persistable
 
-    def commit(self, transaction):
+    async def commit(self, transaction):
+        """ store has currently not async support """
         self.obj.store(transaction)
+        return

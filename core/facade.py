@@ -22,34 +22,33 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
         First we get the data (and consent), then we pass it to an enode if an enode is found.
 
     """
+    async with session.get_or_create_transaction(for_user=access.principal) as transaction:
+        access.include_mode(permissions.AccessMode.read)
+        transaction.add_and_validate(access)
 
-    access.include_mode(permissions.AccessMode.read)
-    transaction = session.get_or_create_transaction(for_user=access.principal)
-    transaction.add_and_validate(access)
+        # fork-independent checks:
+        # get schema and key with specifiers:
+        schema, access.ddhkey, access.schema_key_split, * \
+            d = schemas.SchemaContainer.get_node_schema_key(access.ddhkey, transaction)
+        mt = check_mimetype_schema(access.ddhkey, schema, accept_header)
+        headers = {'Content-Location': str(access.ddhkey), 'Content-Type': mt, }
 
-    # fork-independent checks:
-    # get schema and key with specifiers:
-    schema, access.ddhkey, access.schema_key_split, * \
-        d = schemas.SchemaContainer.get_node_schema_key(access.ddhkey, transaction)
-    mt = check_mimetype_schema(access.ddhkey, schema, accept_header)
-    headers = {'Content-Location': str(access.ddhkey), 'Content-Type': mt, }
+        match access.ddhkey.fork:
+            case keys.ForkType.schema:  # if we ask for schema, we don't need an owner:
+                data = get_schema(access, transaction, schemaformat=schemas.SchemaFormat.json)
 
-    match access.ddhkey.fork:
-        case keys.ForkType.schema:  # if we ask for schema, we don't need an owner:
-            data = get_schema(access, transaction, schemaformat=schemas.SchemaFormat.json)
+            case keys.ForkType.consents:
+                access.ddhkey.raise_if_no_owner()
+                data = await get_data(access, transaction, q)
 
-        case keys.ForkType.consents:
-            access.ddhkey.raise_if_no_owner()
-            data = await get_data(access, transaction, q)
-
-        case keys.ForkType.data:
-            access.ddhkey.raise_if_no_owner()
-            # get data node first
-            data = await get_data(access, transaction, q)
-            # pass data to enode and get result:
-            data = await get_enode(nodes.Ops.get, access, transaction, data, q)
-            # TODO: This is raw JSON, not schemaed JSON (e.g., datetime remains str)
-            data = schema.after_data_read(access, transaction, data)
+            case keys.ForkType.data:
+                access.ddhkey.raise_if_no_owner()
+                # get data node first
+                data = await get_data(access, transaction, q)
+                # pass data to enode and get result:
+                data = await get_enode(nodes.Ops.get, access, transaction, data, q)
+                # TODO: This is raw JSON, not schemaed JSON (e.g., datetime remains str)
+                data = schema.after_data_read(access, transaction, data)
 
     return data, headers
 
@@ -58,43 +57,43 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
     """ Service utility to store data.
 
     """
-    access.include_mode(permissions.AccessMode.write)
-    transaction = session.get_or_create_transaction(for_user=access.principal)
-    transaction.add_and_validate(access)
+    async with session.get_or_create_transaction(for_user=access.principal) as transaction:
+        access.include_mode(permissions.AccessMode.write)
+        transaction.add_and_validate(access)
 
-    # We need a data node, even for a schema, as it carries the consents:
-    data_node, d_key_split, remainder = get_or_create_dnode(access, transaction)
-    access.raise_if_not_permitted(data_node)
-    headers = {}
+        # We need a data node, even for a schema, as it carries the consents:
+        data_node, d_key_split, remainder = get_or_create_dnode(access, transaction)
+        access.raise_if_not_permitted(data_node)
+        headers = {}
 
-    match access.ddhkey.fork:
-        case keys.ForkType.schema:
-            schema = typing.cast(schemas.AbstractSchema, data)
-            put_schema(access, transaction, schema)
+        match access.ddhkey.fork:
+            case keys.ForkType.schema:
+                schema = typing.cast(schemas.AbstractSchema, data)
+                put_schema(access, transaction, schema)
 
-        case keys.ForkType.consents | keys.ForkType.data:
-            schema, access.ddhkey, access.schema_key_split, * \
-                d = schemas.SchemaContainer.get_node_schema_key(access.ddhkey, transaction)
-            check_mimetype_schema(access.ddhkey, schema, accept_header)
+            case keys.ForkType.consents | keys.ForkType.data:
+                schema, access.ddhkey, access.schema_key_split, * \
+                    d = schemas.SchemaContainer.get_node_schema_key(access.ddhkey, transaction)
+                check_mimetype_schema(access.ddhkey, schema, accept_header)
 
-            match access.ddhkey.fork:
-                case keys.ForkType.consents:
-                    consents = permissions.Consents.parse_raw(data)
-                    data_node.update_consents(access, transaction, remainder, consents)
+                match access.ddhkey.fork:
+                    case keys.ForkType.consents:
+                        consents = permissions.Consents.parse_raw(data)
+                        data_node.update_consents(access, transaction, remainder, consents)
 
-                case keys.ForkType.data:
-                    # TODO: Checks
-                    # + Schema exists for data version
-                    # - non-latest version only if upgrade exists (consider again: New Schema may make everything fail)
-                    # - Data within schema that includes schema reference only if schema can be expanded
-                    data = json.loads(data)  # make dict
-                    # check data against Schema
-                    data = schema.before_data_write(access, transaction, data)
+                    case keys.ForkType.data:
+                        # TODO: Checks
+                        # + Schema exists for data version
+                        # - non-latest version only if upgrade exists (consider again: New Schema may make everything fail)
+                        # - Data within schema that includes schema reference only if schema can be expanded
+                        data = json.loads(data)  # make dict
+                        # check data against Schema
+                        data = schema.before_data_write(access, transaction, data)
 
-                    # first e_node to transform data:
-                    data = await get_enode(nodes.Ops.put, access, transaction, data, q)
-                    if data:
-                        data_node.execute(nodes.Ops.put, access, transaction, d_key_split, data, q)
+                        # first e_node to transform data:
+                        data = await get_enode(nodes.Ops.put, access, transaction, data, q)
+                        if data:
+                            data_node.execute(nodes.Ops.put, access, transaction, d_key_split, data, q)
 
     return data, headers
 
