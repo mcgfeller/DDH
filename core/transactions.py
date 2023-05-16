@@ -6,6 +6,7 @@ import typing
 import time
 import datetime
 import pydantic
+import asyncio
 
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import DDHbaseModel
@@ -85,8 +86,17 @@ class Transaction(DDHbaseModel):
             await action.rollback(self)
         self.end()
 
-    async def __del__(self):
-        await self.abort()
+    def __del__(self):
+        """ Async close if transaction is destroyed """
+        print(f'__del__ {self=}')
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                loop.create_task(self.abort())
+            else:
+                loop.run_until_complete(self.abort())
+        except Exception:
+            pass
 
     async def __aenter__(self):
         """ use as async context - note that there is currently no awaitable ressource, but 
