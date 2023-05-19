@@ -66,3 +66,7 @@ class JsonSchema(schemas.AbstractSchema):
                     else:  # path continues beyond this point, so this is not found and not creatable
                         return None
         return current
+
+    def parse_and_validate(self, data: bytes) -> dict:
+        d = json.loads(data)  # make dict
+        return d

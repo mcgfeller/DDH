@@ -45,15 +45,18 @@ class MigrosDApp(dapp_attrs.DApp):
 
     def execute(self, req: dapp_attrs.ExecuteRequest):
         """ obtain data by recursing to schema """
-        if req.op == nodes.Ops.get:
-            here, selection = req.access.ddhkey.split_at(req.key_split)
-            # key we transform into?
-            if req.access.ddhkey.without_owner().without_variant_version() == self.transforms_into.without_variant_version():
-                d = self.get_and_transform(req)
-            else:  # key we provide, call schema descent to resolve:
-                d = self.get_data(selection, req.access, req.q)
-        else:
-            raise ValueError(f'Unsupported {req.op=}')
+        match req.op:
+            case nodes.Ops.get:
+                here, selection = req.access.ddhkey.split_at(req.key_split)
+                # key we transform into?
+                if req.access.ddhkey.without_owner().without_variant_version() == self.transforms_into.without_variant_version():
+                    d = self.get_and_transform(req)
+                else:  # key we provide, call schema descent to resolve:
+                    d = self.get_data(selection, req.access, req.q)
+            case nodes.Ops.put:
+                d = req.data  # don't do anything at the moment
+            case _:
+                raise ValueError(f'Unsupported {req.op=}')
         return d
 
     def get_data(self, selection: keys.DDHkey, access: permissions.Access, q):

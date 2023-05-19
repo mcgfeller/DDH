@@ -228,6 +228,10 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
             element.extract_attributes(path, self.schema_attributes)
         return
 
+    def parse_and_validate(self, data: bytes) -> dict:
+        """ Parse and validate raw data, may raise errors.ValidationError. """
+        raise errors.SubClass
+
     def after_schema_read(self, access: permissions.Access, transaction) -> AbstractSchema:
         """ Prepare Schema for get, returning this or modified schema """
         schema = self.expand_references()
@@ -456,7 +460,7 @@ class SchemaContainer(DDHbaseModel):
             and version, and the split separting the schema and the key into the schema. 
             The key returned will have the fork and owner of the original key, except there is no owner when the fork is schema.
         """
-        schema_ddhkey = ddhkey.without_owner().ens()  # schema key to get the schema node
+        schema_ddhkey = ddhkey.ens()  # schema key to get the schema node
         ddhkey = schema_ddhkey if ddhkey.fork == keys.ForkType.schema else ddhkey  # but return only if schema fork is asked for
         snode, split = keydirectory.NodeRegistry.get_node(
             schema_ddhkey, nodes.NodeSupports.schema, transaction)

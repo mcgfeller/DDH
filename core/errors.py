@@ -57,6 +57,11 @@ class NotAcceptable(DDHerror):
     http_status = 406
 
 
+class ValidationError(DDHerror):
+    """ The data cannot be validated against the schema. """
+    http_status = 422
+
+
 class DAppError(DDHerror): pass
 
 

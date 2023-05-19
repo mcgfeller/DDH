@@ -53,7 +53,7 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
     return data, headers
 
 
-async def ddh_put(access: permissions.Access, session: sessions.Session, data: pydantic.Json, q: str | None = None, accept_header: list[str] | None = None) -> tuple[typing.Any, dict]:
+async def ddh_put(access: permissions.Access, session: sessions.Session, data: pydantic.Json, q: str | None = None, content_type: str = '*/*') -> tuple[typing.Any, dict]:
     """ Service utility to store data.
 
     """
@@ -74,7 +74,7 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
             case keys.ForkType.consents | keys.ForkType.data:
                 schema, access.ddhkey, access.schema_key_split, * \
                     d = schemas.SchemaContainer.get_node_schema_key(access.ddhkey, transaction)
-                check_mimetype_schema(access.ddhkey, schema, accept_header)
+                check_mimetype_schema(access.ddhkey, schema, [content_type], header_field='Content-Type')
 
                 match access.ddhkey.fork:
                     case keys.ForkType.consents:
@@ -86,7 +86,10 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                         # + Schema exists for data version
                         # - non-latest version only if upgrade exists (consider again: New Schema may make everything fail)
                         # - Data within schema that includes schema reference only if schema can be expanded
-                        data = json.loads(data)  # make dict
+                        try:
+                            data = schema.parse_and_validate(data)
+                        except Exception as e:
+                            raise errors.ValidationError(e)
                         # check data against Schema
                         data = schema.before_data_write(access, transaction, data)
 
@@ -180,12 +183,14 @@ def put_schema(access: permissions.Access, transaction: transactions.Transaction
     return
 
 
-def check_mimetype_schema(ddhkey: keys.DDHkey, schema: schemas.AbstractSchema, accept_header: list[str] | None) -> str:
+def check_mimetype_schema(ddhkey: keys.DDHkey, schema: schemas.AbstractSchema, accept_header: list[str] | None, header_field: str = 'Accept') -> str:
     """ raise error if selected schema variant's mimetype is not acceptable in accept_header.
         Design decision:
             We could also look up the variant which  corresponds to the accept_header when no variant is
             specified in the ddhkey. However, we consider this too implicit and potentially surprising.
-        return primary contens mimetype 
+        return primary contents mimetype 
+
+        header_field: A string mentioning the header field, only used for the error message.
     """
     mt = schema.schema_attributes.mimetypes
     assert mt
@@ -195,7 +200,7 @@ def check_mimetype_schema(ddhkey: keys.DDHkey, schema: schemas.AbstractSchema, a
         # we provide one mimetype - is it acceptable?
         if not accept_types.get_best_match(amt, smt):
             raise errors.NotAcceptable(f'The mime types {", ".join(smt[0])} of the selected schema variant {schema.schema_attributes.variant} ' +
-                                       f'does not correspond to the Accept header media types {amt}; try an alternate schema variant.')
+                                       f'does not correspond to the {header_field} header media types {amt}; try an alternate schema variant.')
     return smt[0]
 
 

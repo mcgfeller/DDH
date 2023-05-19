@@ -72,7 +72,9 @@ async def get_data(
 async def put_data(
     response: fastapi.Response,
     request: fastapi.Request,
-    data: pydantic.Json,
+    # data is not typed, but will be passed to the schema for parsing and conversion:
+    data: typing.Any = fastapi.Body(..., media_type="*/*", title="The data in schema specific format, usually JSON"),
+    content_type: str = fastapi.Header(default='application/json'),
     docpath: str = fastapi.Path(..., title="The ddh key of the data to put"),
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     modes: set[permissions.AccessMode] = fastapi.Query({permissions.AccessMode.write}),
@@ -80,8 +82,9 @@ async def put_data(
 ):
     access = permissions.Access(op=permissions.Operation.put, ddhkey=keys.DDHkey(
         docpath), principal=session.user, modes=modes, byDApp=session.dappid)
+    # data = await request.body()
     try:
-        d, headers = facade.ddh_put(access, session, data, q)
+        d, headers = await facade.ddh_put(access, session, data, q, content_type)
     except errors.DDHerror as e:
         raise e.to_http()
 
@@ -214,7 +217,7 @@ async def dapps_required(
                          {x.id: x.get_weight() for x in x2}))
             else:
                 s.append(({x.id for x in x1}, {x.id for x in x2}))
-    #print(f'dapps_required {for_dapps=}, {s=}')
+    # print(f'dapps_required {for_dapps=}, {s=}')
     return s
 
 
