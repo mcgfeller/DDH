@@ -228,7 +228,7 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
             element.extract_attributes(path, self.schema_attributes)
         return
 
-    def parse_and_validate(self, data: bytes) -> dict:
+    def parse_and_validate(self, remainder: keys.DDHkey, data: bytes) -> dict:
         """ Parse and validate raw data, may raise errors.ValidationError. """
         raise errors.SubClass
 

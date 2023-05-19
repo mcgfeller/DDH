@@ -159,6 +159,10 @@ class PySchema(schemas.AbstractSchema):
         """ Add the field in dict to the schema element """
         self.schema_element._add_fields(**fields)
 
-    def parse_and_validate(self, data: bytes) -> dict:
-        d = json.loads(data)  # make dict
+    def parse_and_validate(self, remainder: keys.DDHkey, data: bytes) -> dict:
+        subs = self.schema_element.descend_path(remainder)
+        if isinstance(data, dict):
+            d = data
+        else:
+            d = json.loads(data)  # make dict
         return d

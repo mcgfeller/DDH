@@ -87,7 +87,7 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                         # - non-latest version only if upgrade exists (consider again: New Schema may make everything fail)
                         # - Data within schema that includes schema reference only if schema can be expanded
                         try:
-                            data = schema.parse_and_validate(data)
+                            data = schema.parse_and_validate(remainder, data)
                         except Exception as e:
                             raise errors.ValidationError(e)
                         # check data against Schema
