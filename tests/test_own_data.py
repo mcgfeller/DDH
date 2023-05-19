@@ -115,8 +115,8 @@ async def test_read_and_write_data(user, user2):
     session = get_session(user)
     # first, set up some data:
     await test_write_data_with_consent(user, user2)
-    session.reinit()  # ensure we have a clean slate
-    trx = session.new_transaction()
+    await session.reinit()  # ensure we have a clean slate
+    trx = await session.ensure_new_transaction()
     assert trx.read_consentees == transactions.DefaultReadConsentees
 
     ddhkey1 = keys.DDHkey(key="/mgf/org/private/documents/doc1")
@@ -148,8 +148,8 @@ async def test_read_and_write_data2(user, user2):
     session = get_session(user)
     # first, set up some data:
     await test_write_data_with_consent(user, user2)
-    session.reinit()  # ensure we have a clean slate
-    trx = session.new_transaction(for_user=user)
+    await session.reinit()  # ensure we have a clean slate
+    trx = await session.ensure_new_transaction(for_user=user)
 
     ddhkey1 = keys.DDHkey(key="/mgf/org/private/documents/doc1")
     access = permissions.Access(ddhkey=ddhkey1, principal=user, modes={permissions.AccessMode.read})
@@ -161,7 +161,7 @@ async def test_read_and_write_data2(user, user2):
     access = permissions.Access(ddhkey=ddhkey2, principal=user2, modes={permissions.AccessMode.read})
     await facade.ddh_get(access, session)
 
-    trx = session.new_transaction(for_user=user2)
+    trx = await session.ensure_new_transaction(for_user=user2)
 
     # and not as user2 because we have existing object doc1 that user2 has no access to:
     ddhkeyW2 = keys.DDHkey(key="/another/org/private/documents/docnew")
@@ -171,14 +171,14 @@ async def test_read_and_write_data2(user, user2):
         await facade.ddh_put(access, session, data)
 
     # even with a new transaction
-    session.new_transaction()
+    await session.ensure_new_transaction()
     access = permissions.Access(ddhkey=ddhkeyW2, principal=user2, modes={permissions.AccessMode.write})
     with pytest.raises(transactions.TrxAccessError):
         await facade.ddh_put(access, session, data)
 
     # but with a reinit
-    session.reinit()
-    session.new_transaction(for_user=user2)
+    await session.reinit()
+    await session.ensure_new_transaction(for_user=user2)
     access = permissions.Access(ddhkey=ddhkeyW2, principal=user2, modes={permissions.AccessMode.write})
     await facade.ddh_put(access, session, data)
     return

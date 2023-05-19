@@ -37,8 +37,8 @@ async def test_read_anon_failures(user, user2):
     session = get_session(user)
     # first, set up some data:
     await test_write_data_with_consent(user, user2)
-    session.reinit()  # ensure we have a clean slate
-    trx = session.new_transaction()
+    await session.reinit()  # ensure we have a clean slate
+    trx = await session.ensure_new_transaction()
     assert trx.read_consentees == transactions.DefaultReadConsentees
 
     ddhkey1 = keys.DDHkey(key="/mgf/org/private/documents/doc10")
@@ -68,8 +68,8 @@ async def test_read_anon_failures(user, user2):
 async def check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, remainder=None) -> transactions.Transaction:
 
     session = get_session(user)
-    session.reinit()  # ensure we have a clean slate
-    trx = session.new_transaction()
+    await session.reinit()  # ensure we have a clean slate
+    trx = await session.ensure_new_transaction()
     assert trx.read_consentees == transactions.DefaultReadConsentees
 
     k, schema = migros_key_schema

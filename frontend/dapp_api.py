@@ -100,7 +100,7 @@ async def create_transaction(
 
 ):
     try:
-        trx = session.new_transaction(for_user)
+        trx = await session.ensure_new_transaction(for_user)
     except errors.DDHerror as e:
         raise e.to_http()
 
@@ -114,7 +114,7 @@ async def reinitialize(
 
 ):
     try:
-        trx = session.new_transaction(for_user)
+        trx = await session.ensure_new_transaction(for_user)
     except errors.DDHerror as e:
         raise e.to_http()
 

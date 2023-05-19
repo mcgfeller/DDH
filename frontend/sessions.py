@@ -35,36 +35,52 @@ class Session(DDHbaseModel):
         if trx:
             return trx.use()
         elif create:
-            return self.new_transaction(for_user=for_user)
+            return self.create_transaction(for_user=for_user)
         else:
             return None
 
     def get_or_create_transaction(self, for_user: principals.Principal | None = None) -> transactions.Transaction:
         """ always returns transaction, for easier type checking """
         trx = self.get_transaction(for_user=for_user, create=True)
-        trx = typing.cast(transactions.Transaction, trx)
+        assert trx
         return trx
 
-    def new_transaction(self, for_user: principals.Principal | None = None) -> transactions.Transaction:
+    def create_transaction(self, for_user: principals.Principal | None = None, initial_read_consentees=transactions.DefaultReadConsentees) -> transactions.Transaction:
+        """ create a new transaction. raises transactions.TrxOpenError if transaction exists (abort would make the whole thing async). """
+        if self.current_trx:
+            raise transactions.TrxOpenError('transaction exists, use session.ensure_ensure_new_transaction()')
+        else:
+            for_user = for_user or self.user
+            new_trx = transactions.Transaction.create(
+                for_user=for_user, initial_read_consentees=initial_read_consentees)
+            self.trxs_for_user[for_user] = new_trx
+            self.current_trx = new_trx
+            return new_trx.use()
+
+    async def ensure_new_transaction(self, for_user: principals.Principal | None = None) -> transactions.Transaction:
+        """ abort any existing and create a new transaction.
+            must be awaited, since trx.abort() is async.
+        """
         for_user = for_user or self.user
         prev_trx = self.current_trx  # self.trxs_for_user.get(for_user)
         if prev_trx:
             # previous transaction in session
             prev_read_consentees = prev_trx.read_consentees
-            prev_trx.abort()
+            await prev_trx.abort()
+            self.trxs_for_user.pop(for_user, None)
+            self.current_trx = None
         else:
             prev_read_consentees = transactions.DefaultReadConsentees
-        new_trx = transactions.Transaction.create(for_user=for_user, initial_read_consentees=prev_read_consentees)
-        self.trxs_for_user[for_user] = new_trx  # TODO: Decide
-        self.current_trx = new_trx
-        return new_trx.use()
+        return self.create_transaction(for_user, initial_read_consentees=prev_read_consentees)
 
-    def reinit(self):
+    async def reinit(self):
         prev_trx = self.current_trx  # self.trxs_for_user.get(self.user)
         if prev_trx:
             # abort and clean previous transaction in session
-            prev_trx.abort()
+            await prev_trx.abort()
             prev_trx.read_consentees = transactions.DefaultReadConsentees
+            self.trxs_for_user.pop(prev_trx.for_user, None)
+            self.current_trx = None
         return
 
 
