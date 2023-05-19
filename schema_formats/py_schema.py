@@ -2,6 +2,7 @@
 from __future__ import annotations
 import typing
 import pydantic
+import json
 
 from core import schemas, keys, errors
 
@@ -157,3 +158,7 @@ class PySchema(schemas.AbstractSchema):
     def _add_fields(self, fields: dict[str, tuple]):
         """ Add the field in dict to the schema element """
         self.schema_element._add_fields(**fields)
+
+    def parse_and_validate(self, data: bytes) -> dict:
+        d = json.loads(data)  # make dict
+        return d
