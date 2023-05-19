@@ -199,7 +199,7 @@ def check_mimetype_schema(ddhkey: keys.DDHkey, schema: schemas.AbstractSchema, a
         amt = ', '.join(accept_header)
         # we provide one mimetype - is it acceptable?
         if not accept_types.get_best_match(amt, smt):
-            raise errors.NotAcceptable(f'The mime types {", ".join(smt[0])} of the selected schema variant {schema.schema_attributes.variant} ' +
+            raise errors.NotAcceptable(f'The mime types {", ".join(smt)} of the selected schema variant {schema.schema_attributes.variant} ' +
                                        f'does not correspond to the {header_field} header media types {amt}; try an alternate schema variant.')
     return smt[0]
 

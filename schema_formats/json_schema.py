@@ -68,5 +68,8 @@ class JsonSchema(schemas.AbstractSchema):
         return current
 
     def parse_and_validate(self, data: bytes) -> dict:
-        d = json.loads(data)  # make dict
+        if isinstance(data, dict):
+            return data
+        else:
+            d = json.loads(data)  # make dict
         return d
