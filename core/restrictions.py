@@ -78,17 +78,17 @@ class MustReview(SchemaRestriction):
     by_roles: set[str] = set()
 
     def merge(self, other: MustReview) -> typing.Self:
-        """ return the stronger of self and other restrictions, creating a new combined 
-            restrictions.
+        """ return the stronger between self and other restrictions, creating a new combined 
+            restriction. Any role is stronger than when no roles are specified. 
         """
         may_overwrite = self.may_overwrite and other.may_overwrite  # stronger
         if self.by_roles == other.by_roles and self.may_overwrite == may_overwrite:
-            return self
+            return self  # roles and may_overwrite match
         elif not self.by_roles and other.may_overwrite == may_overwrite:
-            return other
+            return other  # self has no roles, other may and wins:
         elif not other.by_roles and self.may_overwrite == may_overwrite:
-            return self
-        else:  # combine the roles
+            return self  # other has no roles, self may and wins:
+        else:  # combine the roles - catches all possiblities, but makes new object
             return self.__class__(may_overwrite=may_overwrite, by_roles=self.by_roles | other.by_roles)
 
 
