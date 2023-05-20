@@ -36,16 +36,17 @@ class Restrictions(DDHbaseModel):
 
     def merge(self, other: Restrictions) -> typing.Self:
         """ return the stronger of self and other restrictions, creating a new combined 
-            restrictions.
+            Restrictions.
         """
         if self._by_name == other._by_name:
             return self
-        else:
-            s = set(self._by_name)
-            common = [self._by_name[common].merge(other._by_name[common]) for common in s.intersection(other._by_name)]
-            s1 = [self._by_name[n] for n in s.difference(other._by_name)]
-            s2 = [other._by_name[n] for n in set(other._by_name).difference(s)]
-            r = self.__class__(restrictions=common+s1+s2)
+        else:  # merge those in common, then add those only in each set:
+            s1 = set(self._by_name)
+            s2 = set(other._by_name)
+            common = [self._by_name[common].merge(other._by_name[common]) for common in s1 & s2]
+            r1 = [self._by_name[n] for n in s1 - s2]  # only in self
+            r2 = [other._by_name[n] for n in s2 - s1]  # only in other
+            r = self.__class__(restrictions=common+r1+r2)
             return r
 
 
