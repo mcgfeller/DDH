@@ -165,4 +165,6 @@ class PySchema(schemas.AbstractSchema):
             d = data
         else:
             d = json.loads(data)  # make dict
+        if subs:
+            print(f'parse_and_validate {remainder=} {d=}')
         return d

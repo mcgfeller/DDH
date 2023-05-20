@@ -10,7 +10,7 @@ from frontend import user_auth
 from utils.pydantic_utils import DDHbaseModel
 
 from . import (errors, keydirectory, keys, nodes, permissions, principals,
-               versions, capabilities, schema_network)
+               versions, capabilities, restrictions, schema_network)
 
 import logging
 
@@ -101,6 +101,7 @@ class SchemaAttributes(DDHbaseModel):
     sensitivities: dict[Sensitivity, T_PathFields] = pydantic.Field(default={},
                                                                     description="Sensitivities by Sensitivity, schema key, set of fields. We cannot use DDHKey for schema key, as the dict is not jsonable.")
     capabilities: set[capabilities.Capabilities] = set()
+    restrictions: restrictions.Restrictions = restrictions.DefaultRestrictions
 
     def add_reference(self, path: keys.DDHkey, reference: AbstractSchemaReference):
         print(f'SchemaAttributes.add_reference {path=}, {reference=}')
