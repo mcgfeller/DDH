@@ -9,6 +9,7 @@ import datetime
 
 import pydantic
 from utils.pydantic_utils import DDHbaseModel, tuple_key_to_str, str_to_tuple_key
+from utils import utils
 
 from . import (errors, versions, permissions, schemas, transactions)
 
@@ -48,6 +49,10 @@ class Restrictions(DDHbaseModel):
             r2 = [other._by_name[n] for n in s2 - s1]  # only in other
             r = self.__class__(restrictions=common+r1+r2)
             return r
+
+    def __add__(self, restriction: Restriction | list[Restriction]) -> typing.Self:
+        """ add restriction by merging """
+        return self.merge(self.__class__(restrictions=utils.ensureTuple(restriction)))
 
 
 class SchemaRestriction(Restriction):
@@ -99,4 +104,5 @@ class NoExtraElements(SchemaRestriction):
 
 DefaultRestrictions = Restrictions()
 HighPrivacyRestrictions = Restrictions(restrictions=[NoExtraElements(), MustHaveSensitivites(), MustReview(),])
-HighestPrivacyRestrictions = HighPrivacyRestrictions.merge(Restrictions(restrictions=[MustReview(by_roles={'senior'})]))
+# Ensure we have a senior reviewer:
+HighestPrivacyRestrictions = HighPrivacyRestrictions+MustReview(by_roles={'senior'})
