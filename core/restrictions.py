@@ -92,6 +92,11 @@ class MustHaveSensitivites(SchemaRestriction):
     ...
 
 
+class NoExtraElements(SchemaRestriction):
+    """ Schema validation will reject extra elements not specified in the schema """
+    ...
+
+
 DefaultRestrictions = Restrictions()
-HighPrivacyRestrictions = Restrictions(restrictions=[MustReview(), MustHaveSensitivites()])
-HighestPrivacyRestrictions = Restrictions(restrictions=[MustReview(by_roles={'senior'}), MustHaveSensitivites()])
+HighPrivacyRestrictions = Restrictions(restrictions=[NoExtraElements(), MustHaveSensitivites(), MustReview(),])
+HighestPrivacyRestrictions = HighPrivacyRestrictions.merge(Restrictions(restrictions=[MustReview(by_roles={'senior'})]))
