@@ -130,13 +130,14 @@ class AbstractSchemaElement(DDHbaseModel, abc.ABC):
 
     @classmethod
     def store_as_schema(cls, ddhkey: keys.DDHkeyGeneric, schema_attributes: SchemaAttributes | None = None) -> type[AbstractSchemaReference]:
-        """ Replace this PySchemaElement by a proper schema with attributes, store it, 
-            and return the PySchemaReference to it, which can be used like a PySchemaElement.
+        """ Replace this SchemaElement by a proper schema with attributes, store it, 
+            and return the SchemaReference to it, which can be used like a SchemaElement.
         """
         ddhkey = ddhkey.ens()
         s = cls.to_schema()
         if schema_attributes:
             s.schema_attributes = schema_attributes
+            s.update_schema_attributes()
         snode = nodes.SchemaNode(owner=principals.RootPrincipal,
                                  consents=AbstractSchema.get_schema_consents())
         keydirectory.NodeRegistry[ddhkey] = snode  # sets snode.key
