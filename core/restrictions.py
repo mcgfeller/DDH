@@ -13,13 +13,22 @@ from utils import utils
 
 from . import (errors, versions, permissions, schemas, transactions)
 
+Tsubject = typing.TypeVar('Tsubject')  # subject of apply
+
 
 class Restriction(DDHbaseModel):
+
+    may_overwrite: bool = pydantic.Field(
+        default=False, description="restriction may be overwritten explicitly in lower schema")
+
     def merge(self, other: Restriction) -> typing.Self:
         """ return the stronger of self and other restrictions, creating a new combined 
             restrictions.
         """
         return self
+
+    def apply(self, subject: Tsubject, restrictions: Restrictions, *a, **kw) -> Tsubject:
+        return subject
 
 
 SchemaRestriction = typing.ForwardRef('SchemaRestriction')
@@ -49,7 +58,7 @@ class Restrictions(DDHbaseModel):
             s1 = set(self._by_name)
             s2 = set(other._by_name)
             common = [self._by_name[common].merge(other._by_name[common]) for common in s1 & s2]
-            r1 = [self._by_name[n] for n in s1 - s2]  # only in self
+            r1 = [r for n in s1 - s2 if not (r := self._by_name[n]).may_overwrite]  # only in self
             r2 = [other._by_name[n] for n in s2 - s1]  # only in other
             r = self.__class__(restrictions=common+r1+r2)
             return r
@@ -58,12 +67,16 @@ class Restrictions(DDHbaseModel):
         """ add restriction by merging """
         return self.merge(self.__class__(restrictions=utils.ensureTuple(restriction)))
 
+    def apply(self, restriction_class: type[Restriction], subject: Tsubject, *a, **kw) -> Tsubject:
+        """ apply restrictions in turn """
+        for restriction in self.restrictions:
+            if isinstance(restriction, restriction_class):
+                subject = restriction.apply(subject, self, *a, **kw)
+        return subject
+
 
 class SchemaRestriction(Restriction):
     """ Restriction used for Schemas """
-
-    may_overwrite: bool = pydantic.Field(
-        default=False, description="restriction may be overwritten explicitly in lower schema")
 
     def merge(self, other: SchemaRestriction) -> typing.Self:
         """ return the stronger of self and other restrictions, creating a new combined 
@@ -74,7 +87,14 @@ class SchemaRestriction(Restriction):
         else:  # all other case are equal
             return self
 
-    def apply(self, schema: schemas.AbstractSchema, access, transaction, data):
+    def apply(self, schema: schemas.AbstractSchema, restrictions: Restrictions, access, transaction, ) -> schemas.AbstractSchema:
+        return schema
+
+
+class DataRestriction(SchemaRestriction):
+    """ Restrictions on data for a schema """
+
+    def apply(self, data: Tsubject, restrictions: Restrictions, schema: schemas.AbstractSchema, access, transaction) -> Tsubject:
         return data
 
 
@@ -101,12 +121,23 @@ class MustHaveSensitivites(SchemaRestriction):
     ...
 
 
-class NoExtraElements(SchemaRestriction):
-    """ Schema validation will reject extra elements not specified in the schema """
+class MustValidate(DataRestriction):
+    """ Data must be validated """
+
+    def apply(self, schema: schemas.AbstractSchema, access, transaction, restrictions: Restrictions, data):
+        no_extra = NoExtraElements in restrictions
+        return data
+
+
+class NoExtraElements(DataRestriction):
+    """ Schema validation will reject extra elements not specified in the schema;
+        marker applied by MustValidate
+    """
     ...
 
 
-DefaultRestrictions = Restrictions()
-HighPrivacyRestrictions = Restrictions(restrictions=[NoExtraElements(), MustHaveSensitivites(), MustReview(),])
+DefaultRestrictions = Restrictions(restrictions=[MustValidate(), NoExtraElements()])
+RootRestrictions = Restrictions(restrictions=[MustValidate(may_overwrite=True), NoExtraElements(may_overwrite=True)])
+HighPrivacyRestrictions = DefaultRestrictions+[MustHaveSensitivites(), MustReview(),]
 # Ensure we have a senior reviewer:
 HighestPrivacyRestrictions = HighPrivacyRestrictions+MustReview(by_roles={'senior'})

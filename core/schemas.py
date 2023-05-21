@@ -249,6 +249,8 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
 
         """
         schema = self
+        schema = self.schema_attributes.restrictions.apply(
+            restrictions.SchemaRestriction, schema, self, access, transaction)
         return schema
 
     def after_data_read(self, access: permissions.Access, transaction, data):
@@ -263,6 +265,7 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
                 data under schema reference only if schema reprs are compatible
 
         """
+        data = self.schema_attributes.restrictions.apply(restrictions.DataRestriction, data, self, access, transaction)
         data = self.apply_capabilities(access, transaction, data)
         return data
 

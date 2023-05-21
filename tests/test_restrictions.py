@@ -42,3 +42,13 @@ def test_restrictions():
     R13 = restrictions.Restrictions(restrictions=[r1, r3])
     assert R1.merge(R13) == restrictions.Restrictions(restrictions=[r1, r3])
     assert R2.merge(R13) == restrictions.Restrictions(restrictions=[r2, r3])
+
+
+def test_restrictions_overwrite():
+    r1 = restrictions.MustReview(may_overwrite=True)
+    r2 = restrictions.MustHaveSensitivites()
+    R1 = restrictions.Restrictions(restrictions=[r1, r2])
+    R2 = restrictions.Restrictions()
+    RM = R1.merge(R2)
+    assert restrictions.MustReview not in RM  # omitted by overwrite
+    assert restrictions.MustHaveSensitivites in RM  # may not overwritten

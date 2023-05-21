@@ -27,6 +27,7 @@ def register_schema() -> nodes.SchemaNode:
         root_node = nodes.SchemaNode(owner=principals.RootPrincipal,
                                      consents=schemas.AbstractSchema.get_schema_consents())
         keydirectory.NodeRegistry[root] = root_node
+        schema.schema_attributes.restrictions = restrictions.RootRestrictions  # set restrictions on root
         root_node.add_schema(schema)
         schemas.SchemaNetwork.valid.invalidate()  # finished
         logger.info('AbstractSchema Root built')
@@ -83,6 +84,7 @@ def build_root_schemas():
 
 def descend_schema(tree: list, schema_attributes: dict, parents=()) -> type[schemas.AbstractSchemaElement]:
     """ Descent on our tree representation, returning model """
+    # TODO: Need to merge schema once subtree is complete (on result), update schema with merged schema_attributes
     key = parents+(tree[0],)  # new key, from parents down
     elements = {t[0]: (descend_schema(t, schema_attributes, parents=key), None)
                 for t in tree[1:]}  # descend on subtree, build dict of {head_name  : subtree}
