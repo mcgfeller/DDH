@@ -101,7 +101,7 @@ class SchemaAttributes(DDHbaseModel):
     sensitivities: dict[Sensitivity, T_PathFields] = pydantic.Field(default={},
                                                                     description="Sensitivities by Sensitivity, schema key, set of fields. We cannot use DDHKey for schema key, as the dict is not jsonable.")
     capabilities: set[capabilities.Capabilities] = set()
-    restrictions: restrictions.Restrictions = restrictions.DefaultRestrictions
+    restrictions: restrictions.Restrictions = restrictions.NoRestrictions
 
     def add_reference(self, path: keys.DDHkey, reference: AbstractSchemaReference):
         print(f'SchemaAttributes.add_reference {path=}, {reference=}')

@@ -56,7 +56,9 @@ class Restrictions(DDHbaseModel):
     _by_name: dict[str, Restriction] = {}
 
     def __init__(self, *a, **kw):
-        super().__init__(*a, **kw)
+        if a:  # shortcut to allow Restriction as args
+            kw['restrictions'] = list(a)+kw.get('restrictions', [])
+        super().__init__(**kw)
         self._by_name = {r.__class__.__name__: r for r in self.restrictions}
 
     def __contains__(self, restriction: type[Restriction]) -> bool:
@@ -147,8 +149,10 @@ class NoExtraElements(DataRestriction):
     ...
 
 
-DefaultRestrictions = Restrictions(restrictions=[MustValidate(), NoExtraElements()])
-RootRestrictions = Restrictions(restrictions=[MustValidate(may_overwrite=True), NoExtraElements(may_overwrite=True)])
-HighPrivacyRestrictions = DefaultRestrictions+[MustHaveSensitivites(), MustReview(),]
+NoRestrictions = Restrictions()
+# Root restrictions may be overwritten:
+RootRestrictions = Restrictions(MustValidate(may_overwrite=True), NoExtraElements(may_overwrite=True))
+NoValidation = Restrictions(~MustValidate(may_overwrite=True), ~NoExtraElements(may_overwrite=True))
+HighPrivacyRestrictions = Restrictions(MustValidate(), NoExtraElements(), MustHaveSensitivites(), MustReview())
 # Ensure we have a senior reviewer:
 HighestPrivacyRestrictions = HighPrivacyRestrictions+MustReview(by_roles={'senior'})

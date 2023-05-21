@@ -76,7 +76,7 @@ def build_root_schemas():
         ('root', '', 'p', 'finance', 'holdings', 'portfolio'): schemas.SchemaAttributes(requires=schemas.Requires.specific),
         ('root', '', 'p', 'health'): schemas.SchemaAttributes(restrictions=restrictions.HighestPrivacyRestrictions),
         ('root', '', 'p', 'finance'): schemas.SchemaAttributes(restrictions=restrictions.HighPrivacyRestrictions),
-        ('root', '', 'org', 'private', 'documents'): schemas.SchemaAttributes(restrictions=restrictions.Restrictions()),  # no restrictions
+        ('root', '', 'org', 'private', 'documents'): schemas.SchemaAttributes(restrictions=restrictions.NoValidation),  # cancel validation
     }
     root = py_schema.PySchema(schema_element=descend_schema(treetop, attributes))
     assert root.schema_element.schema_json()
