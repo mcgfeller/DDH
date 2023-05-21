@@ -6,6 +6,7 @@ import enum
 import typing
 import secrets
 import datetime
+import copy
 
 import pydantic
 from utils.pydantic_utils import DDHbaseModel, tuple_key_to_str, str_to_tuple_key
@@ -20,12 +21,26 @@ class Restriction(DDHbaseModel):
 
     may_overwrite: bool = pydantic.Field(
         default=False, description="restriction may be overwritten explicitly in lower schema")
+    cancel: bool = pydantic.Field(
+        default=False, description="cancels this restriction in merge; set using ~restriction")
 
-    def merge(self, other: Restriction) -> typing.Self:
-        """ return the stronger of self and other restrictions, creating a new combined 
-            restrictions.
+    def __invert__(self) -> typing.Self:
+        """ invert the cancel flag """
+        r = copy.copy(self)
+        r.cancel = not self.cancel
+        return r
+
+    def merge(self, other: Restriction) -> typing.Self | None:
+        """ return the stronger of self and other restrictions if self.may_overwrite,
+            or None if self.may_overwrite and cancels. 
         """
-        return self
+        if self.may_overwrite:
+            if other.cancel:
+                return None
+            else:
+                return other
+        else:  # all other case are equal
+            return self
 
     def apply(self, subject: Tsubject, restrictions: Restrictions, *a, **kw) -> Tsubject:
         return subject
@@ -57,8 +72,9 @@ class Restrictions(DDHbaseModel):
         else:  # merge those in common, then add those only in each set:
             s1 = set(self._by_name)
             s2 = set(other._by_name)
-            common = [self._by_name[common].merge(other._by_name[common]) for common in s1 & s2]
-            r1 = [r for n in s1 - s2 if not (r := self._by_name[n]).may_overwrite]  # only in self
+            # merge, or cancel:
+            common = [r for common in s1 & s2 if (r := self._by_name[common].merge(other._by_name[common])) is not None]
+            r1 = [self._by_name[n] for n in s1 - s2]  # only in self
             r2 = [other._by_name[n] for n in s2 - s1]  # only in other
             r = self.__class__(restrictions=common+r1+r2)
             return r
@@ -78,15 +94,6 @@ class Restrictions(DDHbaseModel):
 class SchemaRestriction(Restriction):
     """ Restriction used for Schemas """
 
-    def merge(self, other: SchemaRestriction) -> typing.Self:
-        """ return the stronger of self and other restrictions, creating a new combined 
-            restrictions.
-        """
-        if not other.may_overwrite:
-            return other
-        else:  # all other case are equal
-            return self
-
     def apply(self, schema: schemas.AbstractSchema, restrictions: Restrictions, access, transaction, ) -> schemas.AbstractSchema:
         return schema
 
@@ -101,19 +108,19 @@ class DataRestriction(SchemaRestriction):
 class MustReview(SchemaRestriction):
     by_roles: set[str] = set()
 
-    def merge(self, other: MustReview) -> typing.Self:
+    def merge(self, other: MustReview) -> typing.Self | None:
         """ return the stronger between self and other restrictions, creating a new combined 
             restriction. Any role is stronger than when no roles are specified. 
         """
-        may_overwrite = self.may_overwrite and other.may_overwrite  # stronger
-        if self.by_roles == other.by_roles and self.may_overwrite == may_overwrite:
-            return self  # roles and may_overwrite match
-        elif not self.by_roles and other.may_overwrite == may_overwrite:
-            return other  # self has no roles, other may and wins:
-        elif not other.by_roles and self.may_overwrite == may_overwrite:
-            return self  # other has no roles, self may and wins:
-        else:  # combine the roles - catches all possiblities, but makes new object
-            return self.__class__(may_overwrite=may_overwrite, by_roles=self.by_roles | other.by_roles)
+        r = super().merge(other)
+        if r is not None:
+            if r.by_roles != other.by_roles:
+                r = copy.copy(r)
+                if self.may_overwrite:
+                    r.by_roles = other.by_roles
+                else:
+                    r.by_roles.update(other.by_roles)
+        return r
 
 
 class MustHaveSensitivites(SchemaRestriction):
