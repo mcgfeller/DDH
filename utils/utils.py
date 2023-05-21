@@ -1,5 +1,5 @@
 """ Utilities """
-import types, sys, operator, threading, struct, traceback, collections, inspect, typing
+import sys, threading, traceback, collections, inspect, typing
 from time import time as _time, sleep as _sleep
 import heapq
 import logging
@@ -11,7 +11,7 @@ def isPyPy():
     return not hasattr(sys, 'getrefcount')
 
 
-def loadModule(modulename, raiseError=True):
+def load_module(modulename, raiseError=True):
     """ Dynamically load a module, return module
         If raiseError is False, error is logged and None is returned.
     """
@@ -33,11 +33,11 @@ def loadModule(modulename, raiseError=True):
     return module
 
 
-def loadClass(modulename: str, classname: str) -> type:
+def load_class(modulename: str, classname: str) -> type:
 
     module = sys.modules.get(modulename, None)
     if module is None:
-        module = loadModule(modulename)
+        module = load_module(modulename)
     cls = getattr(module, classname)
     return cls
 
@@ -56,7 +56,7 @@ def typecheck(obj, cls, allowNone=False):
     return
 
 
-def ensureTuple(seq):
+def ensure_tuple(seq):
     """ ensure seq is a tuple, converting strings and other simple elements to 1-elem tuples """
     if type(seq) in (list, tuple, set, frozenset):
         return tuple(seq)
@@ -81,7 +81,7 @@ def anyin(a, b):
     return True in [x in b for x in a]
 
 
-def raiseIfError(exception):
+def raise_if_error(exception):
     """ raise exception unless None. Would be nice if Python did it that way. """
     if exception:
         raise exception
@@ -89,7 +89,7 @@ def raiseIfError(exception):
         return
 
 
-def consumeIterator(iterator):
+def consume_iterator(iterator):
     """ consume an iterator to the end efficiently """
     # feed the entire iterator into a zero-length deque
     collections.deque(iterator, maxlen=0)
@@ -165,7 +165,7 @@ def topological_sort(items, partial_order):
     return tsorted
 
 
-def formattedStack(maxdepth=None):
+def formatted_stack(maxdepth=None):
     try:
         s = inspect.stack()
     except: return []

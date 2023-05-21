@@ -65,7 +65,7 @@ class Restrictions(DDHbaseModel):
 
     def __add__(self, restriction: Restriction | list[Restriction]) -> typing.Self:
         """ add restriction by merging """
-        return self.merge(self.__class__(restrictions=utils.ensureTuple(restriction)))
+        return self.merge(self.__class__(restrictions=utils.ensure_tuple(restriction)))
 
     def apply(self, restriction_class: type[Restriction], subject: Tsubject, *a, **kw) -> Tsubject:
         """ apply restrictions in turn """

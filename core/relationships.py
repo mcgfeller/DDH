@@ -27,7 +27,7 @@ class Reference(DDHbaseModel):
 
     @classmethod
     def multiple(cls, relation: Relation, *ddhkeys: typing.Iterable[keys.DDHkey], qualities: set[Quality] = set()) -> list['Reference']:
-        ddhkeys = utils.ensureTuple(ddhkeys)
+        ddhkeys = utils.ensure_tuple(ddhkeys)
         return [cls(relation=relation, target=k) for k in ddhkeys]
 
     @classmethod
