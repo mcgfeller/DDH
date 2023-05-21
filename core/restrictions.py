@@ -35,6 +35,10 @@ class Restrictions(DDHbaseModel):
         super().__init__(*a, **kw)
         self._by_name = {r.__class__.__name__: r for r in self.restrictions}
 
+    def __contains__(self, restriction: type[Restriction]) -> bool:
+        """ returns whether restriction class is in self """
+        return restriction.__name__ in self._by_name
+
     def merge(self, other: Restrictions) -> typing.Self:
         """ return the stronger of self and other restrictions, creating a new combined 
             Restrictions.

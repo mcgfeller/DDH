@@ -30,6 +30,8 @@ def test_restrictions():
     r2 = restrictions.MustReview(by_roles={'boss'})
     r3 = restrictions.MustHaveSensitivites()
     R1 = restrictions.Restrictions(restrictions=[r1])
+    assert restrictions.MustReview in R1
+    assert restrictions.MustHaveSensitivites not in R1
     R1a = restrictions.Restrictions(restrictions=[r1])
     assert R1 == R1a
     assert R1.merge(R1) is R1
