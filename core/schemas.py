@@ -229,9 +229,15 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
             element.extract_attributes(path, self.schema_attributes)
         return
 
-    def parse_and_validate(self, remainder: keys.DDHkey, data: bytes) -> dict:
-        """ Parse and validate raw data, may raise errors.ValidationError. """
+    def parse(self, data: bytes) -> dict:
+        """ Parse raw data, may raise errors.ParseError.
+            Does not validate, this is done by a restriction. 
+        """
         raise errors.SubClass
+
+    def validate_data(self, data: dict, remainder: keys.DDHkey, no_extra: bool = True) -> dict:
+        """ validate - called by Restriction """
+        return data
 
     def after_schema_read(self, access: permissions.Access, transaction) -> AbstractSchema:
         """ Prepare Schema for get, returning this or modified schema """

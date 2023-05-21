@@ -67,12 +67,14 @@ class JsonSchema(schemas.AbstractSchema):
                         return None
         return current
 
-    def parse_and_validate(self, remainder: keys.DDHkey, data: bytes) -> dict:
-        subs = self._descend_path(self.json_schema, remainder)
+    def parse(self, data: bytes) -> dict:
         if isinstance(data, dict):
             d = data
         else:
             d = json.loads(data)  # make dict
-        if subs:
-            print(f'parse_and_validate {remainder=} {d=}')
         return d
+
+    def validate_data(self, data: dict, remainder: keys.DDHkey, no_extra: bool = True) -> dict:
+        subs = self._descend_path(self.json_schema, remainder)
+        print(f'{self.__class__.__name__}.validate_data({type(data)}, {remainder=}, {no_extra=}, {subs=})')
+        return data

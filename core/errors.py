@@ -62,6 +62,11 @@ class ValidationError(DDHerror):
     http_status = 422
 
 
+class ParseError(ValidationError):
+    """ The data cannot be parsed """
+    ...
+
+
 class DAppError(DDHerror): pass
 
 

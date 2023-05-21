@@ -124,8 +124,12 @@ class MustHaveSensitivites(SchemaRestriction):
 class MustValidate(DataRestriction):
     """ Data must be validated """
 
-    def apply(self, schema: schemas.AbstractSchema, access, transaction, restrictions: Restrictions, data):
-        no_extra = NoExtraElements in restrictions
+    def apply(self, data: Tsubject, restrictions: Restrictions, schema: schemas.AbstractSchema, access, transaction) -> Tsubject:
+        remainder = access.ddhkey.remainder(access.schema_key_split)
+        try:
+            data = schema.validate_data(data, remainder, no_extra=NoExtraElements in restrictions)
+        except Exception as e:
+            raise errors.ValidationError(e)
         return data
 
 
