@@ -149,6 +149,12 @@ class NoExtraElements(DataRestriction):
     ...
 
 
+class LatestVersion(DataRestriction):
+    """ Data must match latest version of schema or must be upgradable.
+    """
+    ...
+
+
 NoRestrictions = Restrictions()
 # Root restrictions may be overwritten:
 RootRestrictions = Restrictions(MustValidate(may_overwrite=True), NoExtraElements(may_overwrite=True))
