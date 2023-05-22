@@ -1,6 +1,8 @@
-import functools
-from core import restrictions
+""" Test combination and application of restrictions """
+
 import pytest
+from core import restrictions, schemas, keys
+from frontend import sessions
 
 
 def test_simple_restriction():
@@ -51,3 +53,22 @@ def test_restrictions_overwrite():
     RM = R1.merge(R2)
     assert restrictions.MustReview not in RM  # omitted by overwrite
     assert restrictions.MustHaveSensitivites in RM  # may not overwritten
+
+
+@pytest.mark.parametrize('ddhkey,expected', [
+    ('//p/finance/holdings/portfolio', restrictions.HighPrivacyRestrictions),
+    ('//org/private/documents', restrictions.NoRestrictions),
+    ('//p/living/shopping/receipts', restrictions.RootRestrictions),
+    ('//p/health/bloodworks', restrictions.HighestPrivacyRestrictions),
+], ids=lambda x: x if isinstance(x, str) else '')
+def test_root_restrictions(ddhkey: str, expected: restrictions.Restrictions, transaction):
+    """ test restrictions in standard tree against expected results """
+    schema, *d = schemas.SchemaContainer.get_node_schema_key(keys.DDHkey(ddhkey), transaction)
+    restrictions = schema.schema_attributes.restrictions
+    assert restrictions == expected
+
+
+@pytest.fixture(scope='module')
+def transaction():
+    session = sessions.get_system_session()
+    return session.get_or_create_transaction()

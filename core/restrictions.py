@@ -51,7 +51,9 @@ Restrictions = typing.ForwardRef('Restrictions')
 
 
 class Restrictions(DDHbaseModel):
-    """ A collection of Restriction """
+    """ A collection of Restriction.
+        Restriction is not hashable, so we keep a list and build a dict with the class names. 
+    """
     restrictions: list[Restriction] = []
     _by_name: dict[str, Restriction] = {}
 
@@ -64,6 +66,13 @@ class Restrictions(DDHbaseModel):
     def __contains__(self, restriction: type[Restriction]) -> bool:
         """ returns whether restriction class is in self """
         return restriction.__name__ in self._by_name
+
+    def __eq__(self, other) -> bool:
+        """ must compare ._by_name as list order doesn't matter """
+        if isinstance(other, Restrictions):
+            return self._by_name == other._by_name
+        else:
+            return False
 
     def merge(self, other: Restrictions) -> typing.Self:
         """ return the stronger of self and other restrictions, creating a new combined 

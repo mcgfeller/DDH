@@ -29,8 +29,10 @@ def register_schema() -> nodes.SchemaNode:
         keydirectory.NodeRegistry[root] = root_node
         schema.schema_attributes.restrictions = restrictions.RootRestrictions  # set restrictions on root
         root_node.add_schema(schema)
+        inherit_attributes(schema, transaction)
         schemas.SchemaNetwork.valid.invalidate()  # finished
         logger.info('AbstractSchema Root built')
+
     return root_node
 
 
@@ -78,14 +80,15 @@ def build_root_schemas():
         ('root', '', 'p', 'finance'): schemas.SchemaAttributes(restrictions=restrictions.HighPrivacyRestrictions),
         ('root', '', 'org', 'private', 'documents'): schemas.SchemaAttributes(restrictions=restrictions.NoValidation),  # cancel validation
     }
-    root = py_schema.PySchema(schema_element=descend_schema(treetop, attributes))
+    schema_element = descend_schema(treetop, attributes)
+    root = py_schema.PySchema(schema_element=schema_element)
     assert root.schema_element.schema_json()
+
     return root
 
 
 def descend_schema(tree: list, schema_attributes: dict, parents=()) -> type[schemas.AbstractSchemaElement]:
     """ Descent on our tree representation, returning model """
-    # TODO: Need to merge schema once subtree is complete (on result), update schema with merged schema_attributes
     key = parents+(tree[0],)  # new key, from parents down
     elements = {t[0]: (descend_schema(t, schema_attributes, parents=key), None)
                 for t in tree[1:]}  # descend on subtree, build dict of {head_name  : subtree}
@@ -95,6 +98,20 @@ def descend_schema(tree: list, schema_attributes: dict, parents=()) -> type[sche
         dkey = keys.DDHkeyGeneric(('', '')+key[2:], fork=keys.ForkType.schema)  # 'root' is '' in key
         se = se.store_as_schema(dkey, sa)
     return se
+
+
+def inherit_attributes(top: schemas.AbstractSchema, transaction):
+    """ recurse on schema to update restrictions from top-down (cannot do this in descend_schema, because we build
+        bottom-up).
+    """
+    for ref in top.schema_attributes.references.values():
+        subkey = keys.DDHkey(ref).ens()
+        subschema, *d = schemas.SchemaContainer.get_node_schema_key(subkey, transaction)
+        assert subschema is not top, 'schema must not reference itself'
+        subschema.schema_attributes.restrictions = top.schema_attributes.restrictions.merge(
+            subschema.schema_attributes.restrictions)
+        inherit_attributes(subschema, transaction)
+    return
 
 
 register_schema()
