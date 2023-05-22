@@ -22,7 +22,8 @@ class PySchemaElement(schemas.AbstractSchemaElement):
             assert isinstance(mf, pydantic.fields.ModelField)
             sub_elem = mf.type_
             if issubclass(sub_elem, PySchemaElement):
-                yield from sub_elem.iter_paths(pk+(k,))  # then descend
+
+                yield from sub_elem.iter_paths(pk+((k,) if k else ()))  # then descend
         return
 
     @classmethod
