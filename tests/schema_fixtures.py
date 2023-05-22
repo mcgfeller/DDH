@@ -52,3 +52,14 @@ def migros_data(migrosddhkey, transaction):
     h, s = migrosddhkey.split_at(4)
     d = app.get_data(s, access, None)
     return d
+
+
+@pytest.fixture(scope='module')
+def node_registry():
+    """ store away node registory during test and restore at end. Perhaps we should use Mock? """
+    prev = keydirectory.NodeRegistry
+    reg = keydirectory._NodeRegistry()
+    keydirectory.NodeRegistry = reg
+    yield reg
+    keydirectory.NodeRegistry = prev
+    return

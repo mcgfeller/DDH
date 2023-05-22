@@ -1,3 +1,5 @@
+import pytest
+
 from core import keys, nodes, permissions, schemas, facade, keydirectory, transactions, users
 from frontend import sessions
 from schema_formats import py_schema
@@ -6,7 +8,7 @@ from schema_formats import py_schema
 class DummyElement(py_schema.PySchemaElement): ...
 
 
-def test_nodes():
+def test_nodes(node_registry):
     schema = py_schema.PySchema(schema_element=DummyElement)
     user = users.User(id='1', name='martin', email='martin.gfeller@swisscom.com')
     user2 = users.User(id='2', name='roman', email='roman.stoessel@swisscom.com')
@@ -27,7 +29,7 @@ def test_nodes():
     return
 
 
-def test_schema_node():
+def test_schema_node(node_registry):
     """ Retrieval of schema and application of get_sub_schema() 
     """
     schema = py_schema.PySchema(schema_element=DummyElement)
@@ -47,7 +49,3 @@ def test_schema_node():
     assert schemas.SchemaContainer.get_sub_schema(
         access, transaction) is None, 'missing intermediate nodes must not be created'
     assert facade.get_schema(access, transaction) is None  # this should be same in one go.
-
-
-if __name__ == '__main__':
-    test_nodes()

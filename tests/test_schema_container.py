@@ -20,7 +20,7 @@ def test_container():
     assert schema is sc.get(variant=sa.variant, version=sa.version)
 
 
-def test_schema_multiple_versions():
+def test_schema_multiple_versions(node_registry):
     schema_r0 = py_schema.PySchema(schema_element=DummyElement, schema_attributes=schemas.SchemaAttributes(
         variant='rec', variant_usage=schemas.SchemaVariantUsage.recommended, version=versions.Version(0)))
     schema_r1 = py_schema.PySchema(schema_element=DummyElement, schema_attributes=schemas.SchemaAttributes(
