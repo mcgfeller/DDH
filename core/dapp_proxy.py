@@ -74,7 +74,8 @@ class DAppProxy(DDHbaseModel):
             keydirectory.NodeRegistry[genkey] = snode
             snode.add_schema(schema)
             # hook into parent schema:
-            py_schema.PySchema.insert_schema_ref(transaction, genkey)
+            parent, split = schemas.AbstractSchema.get_parent_schema(transaction, genkey)
+            parent.insert_schema_ref(transaction, genkey, split)
         return snode
 
     def register_references(self, session, schema_network: schema_network.SchemaNetworkClass):

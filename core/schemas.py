@@ -129,7 +129,7 @@ class AbstractSchemaElement(DDHbaseModel, abc.ABC):
         raise errors.SubClass
 
     @classmethod
-    def store_as_schema(cls, ddhkey: keys.DDHkeyGeneric, schema_attributes: SchemaAttributes | None = None) -> type[AbstractSchemaReference]:
+    def store_as_schema(cls, ddhkey: keys.DDHkeyGeneric, schema_attributes: SchemaAttributes | None = None, parent: AbstractSchema | None = None) -> type[AbstractSchemaReference]:
         """ Replace this SchemaElement by a proper schema with attributes, store it, 
             and return the SchemaReference to it, which can be used like a SchemaElement.
         """
@@ -138,6 +138,9 @@ class AbstractSchemaElement(DDHbaseModel, abc.ABC):
         if schema_attributes:
             s.schema_attributes = schema_attributes
             s.update_schema_attributes()
+        if parent:  # inherit restrictions
+            s.schema_attributes.restrictions = parent.schema_attributes.restrictions.merge(
+                s.schema_attributes.restrictions)
         snode = nodes.SchemaNode(owner=principals.RootPrincipal,
                                  consents=AbstractSchema.get_schema_consents())
         keydirectory.NodeRegistry[ddhkey] = snode  # sets snode.key
@@ -157,8 +160,10 @@ class AbstractSchemaElement(DDHbaseModel, abc.ABC):
 
     @classmethod
     def insert_as_schema(cls, transaction, ddhkey: keys.DDHkeyGeneric, schema_attributes: SchemaAttributes | None = None):
-        ref = cls.store_as_schema(ddhkey, schema_attributes)
-        return AbstractSchema.insert_schema_ref(transaction, ddhkey, ref)
+        ddhkey = ddhkey.ens()
+        parent, split = AbstractSchema.get_parent_schema(transaction, ddhkey)
+        ref = cls.store_as_schema(ddhkey, schema_attributes, parent)
+        return parent.insert_schema_ref(transaction, ddhkey, split, ref)
 
     @classmethod
     def extract_attributes(cls, path: keys.DDHkey, atts: SchemaAttributes):
@@ -374,24 +379,26 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         """ Schema world read access consents """
         return permissions.Consents(consents=[permissions.Consent(grantedTo=[principals.AllPrincipal], withModes={permissions.AccessMode.read})])
 
-    @staticmethod
-    def insert_schema_ref(transaction, ddhkey: keys.DDHkey, schemaref: type[AbstractSchemaReference] | None = None) -> type[AbstractSchemaReference]:
-        """ Add a schema reference to its parent schema; 
+    def insert_schema_ref(self, transaction, ddhkey: keys.DDHkey, split: int, schemaref: type[AbstractSchemaReference] | None = None) -> type[AbstractSchemaReference]:
+        """ Add a schema reference to self (=parent schema); 
             if schemaref is not given, it is created pointing to ddhkey.
         """
-        ddhkey = ddhkey.ensure_fork(keys.ForkType.schema)
-        # get a parent scheme to hook into:
-        parent, key, split, node = SchemaContainer.get_node_schema_key(ddhkey.up(), transaction)
-        if not parent:
-            raise errors.NotFound(f'No parent for {ddhkey}')
         remainder = ddhkey.remainder(split)
 
         if not schemaref:  # create schema ref in parent's schema format:
-            schemaref = parent.get_reference_class().create_from_key(ddhkey=ddhkey)
+            schemaref = self.get_reference_class().create_from_key(ddhkey=ddhkey)
 
         # now insert our schema into the parent's:
-        parent.__setitem__(remainder, schemaref, create_intermediate=True)
+        self.__setitem__(remainder, schemaref, create_intermediate=True)
         return schemaref
+
+    @staticmethod
+    def get_parent_schema(transaction, ddhkey: keys.DDHkey) -> tuple[AbstractSchema, int]:
+        """ get parent scheme of scheme at ddhkey, return [parent,split] """
+        parent, key, split, node = SchemaContainer.get_node_schema_key(ddhkey.up(), transaction)
+        if not parent:
+            raise errors.NotFound(f'No parent for {ddhkey}')
+        return parent, split
 
     @classmethod
     def create_schema(cls, s: str, format: SchemaFormat, sa: dict) -> AbstractSchema:

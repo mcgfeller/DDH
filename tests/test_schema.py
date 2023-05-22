@@ -28,7 +28,8 @@ def test_insert_schema_ref(ensure_root_node, migros_key_schema, transaction):
     assert ensure_root_node
     k, schema = migros_key_schema
     # store_as_schema --> by with JsonSchema
-    py_schema.PySchema.insert_schema_ref(transaction, k)
+    parent, split = schemas.AbstractSchema.get_parent_schema(transaction, k)
+    parent.insert_schema_ref(transaction, k, split)
     check_schema(schema)
 
 
@@ -59,7 +60,8 @@ def test_insert_py_schemaelement_intermediate(ensure_root_node, migros_key_schem
 def test_insert_py_reference(ensure_root_node, migros_key_schema, transaction):
     assert ensure_root_node
     k, schema = migros_key_schema
-    s = Garantie.store_as_schema(k+'refgarantie')
+    parent, split = schemas.AbstractSchema.get_parent_schema(transaction, k)
+    s = Garantie.store_as_schema(k+'refgarantie', parent=parent)
     schema[keys.DDHkey('Garantie')] = s
     check_schema(schema)
 
