@@ -75,6 +75,9 @@ class DAppProxy(DDHbaseModel):
             snode.add_schema(schema)
             # hook into parent schema:
             parent, split = schemas.AbstractSchema.get_parent_schema(transaction, genkey)
+            # inherit restrictions:
+            schema.schema_attributes.restrictions = parent.schema_attributes.restrictions.merge(
+                schema.schema_attributes.restrictions)
             parent.insert_schema_ref(transaction, genkey, split)
         return snode
 
