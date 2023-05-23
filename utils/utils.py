@@ -1,5 +1,5 @@
 """ Utilities """
-import sys, threading, traceback, collections, inspect, typing
+import sys, threading, traceback, collections, inspect, typing, itertools
 from time import time as _time, sleep as _sleep
 import heapq
 import logging
@@ -64,11 +64,14 @@ def ensure_tuple(seq):
         return (seq,)
 
 
-def cutlist(lst, max):
-    """ Cut a list or string into a list of lists / strings so that the sublists are at most max long """
-    s = list(range(0, len(lst), max))
-    e = s[1:] + [len(lst)]
-    return [lst[i0:i1] for (i0, i1) in zip(s, e)]
+def batched(iterable, n):
+    # TODO: Python 3.12 -> replace by itertools.batched()
+    # batched('ABCDEFG', 3) --> ABC DEF G
+    if n < 1:
+        raise ValueError('n must be at least one')
+    it = iter(iterable)
+    while batch := tuple(itertools.islice(it, n)):
+        yield batch
 
 
 def allin(a, b):
