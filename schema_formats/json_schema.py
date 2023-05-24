@@ -3,6 +3,8 @@ from __future__ import annotations
 import typing
 import pydantic
 import json
+import jsonschema
+import jsonschema.validators
 
 
 from core import schemas, keys, errors
@@ -76,5 +78,12 @@ class JsonSchema(schemas.AbstractSchema):
 
     def validate_data(self, data: dict, remainder: keys.DDHkey, no_extra: bool = True) -> dict:
         subs = self._descend_path(self.json_schema, remainder)
+        if not subs:
+            raise errors.ValidationError(f'Path {remainder} is not in schema')
         print(f'{self.__class__.__name__}.validate_data({type(data)}, {remainder=}, {no_extra=}, {subs=})')
+        jsonschema.validate(instance=data['mgf'], schema=subs)
         return data
+
+    def validate_schema(self):
+        vcls = jsonschema.validators.validator_for(self.json_schema)
+        vcls.check_schema(self.json_schema)
