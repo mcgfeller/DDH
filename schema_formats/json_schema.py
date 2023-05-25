@@ -81,7 +81,7 @@ class JsonSchema(schemas.AbstractSchema):
         if not subs:
             raise errors.ValidationError(f'Path {remainder} is not in schema')
         print(f'{self.__class__.__name__}.validate_data({type(data)}, {remainder=}, {no_extra=}, {subs=})')
-        jsonschema.validate(instance=data['mgf'], schema=subs)
+        jsonschema.validate(instance=data, schema=subs)
         return data
 
     def validate_schema(self):

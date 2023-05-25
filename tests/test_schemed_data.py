@@ -6,5 +6,5 @@ def test_get_and_putdata(user1):
     r = user1.get('/ddh/mgf/org/migros.ch')
     r.raise_for_status()
     data = r.json()
-    r = user1.put('/ddh/mgf/org/migros.ch', json=data)
+    r = user1.put('/ddh/mgf/org/migros.ch', json=data, params={'omit_owner': False})
     r.raise_for_status()

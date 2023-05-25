@@ -144,10 +144,12 @@ class MustValidate(DataRestriction):
 
     def apply(self, data: Tsubject, restrictions: Restrictions, schema: schemas.AbstractSchema, access, transaction) -> Tsubject:
         remainder = access.ddhkey.remainder(access.schema_key_split)
-        try:
-            data = schema.validate_data(data, remainder, no_extra=NoExtraElements in restrictions)
-        except Exception as e:
-            raise errors.ValidationError(e)
+        for owner, d in data.items():  # loop through owners, as schema doesn't contain owner
+            try:
+                data[owner] = schema.validate_data(d, remainder, no_extra=NoExtraElements in restrictions)
+            except Exception as e:
+                raise errors.ValidationError(e)
+
         return data
 
 

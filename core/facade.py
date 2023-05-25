@@ -53,7 +53,7 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
     return data, headers
 
 
-async def ddh_put(access: permissions.Access, session: sessions.Session, data: pydantic.Json, q: str | None = None, content_type: str = '*/*') -> tuple[typing.Any, dict]:
+async def ddh_put(access: permissions.Access, session: sessions.Session, data: pydantic.Json, q: str | None = None, content_type: str = '*/*', omit_owner: bool = True) -> tuple[typing.Any, dict]:
     """ Service utility to store data.
 
     """
@@ -90,6 +90,8 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                             data = schema.parse(data)
                         except Exception as e:
                             raise errors.ParseError(e)
+                        if omit_owner:  # add owner if omitted in data
+                            data = {access.principal: data}
                         # check data against Schema
                         data = schema.before_data_write(access, transaction, data)
 
