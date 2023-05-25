@@ -108,7 +108,7 @@ class Receipt(py_schema.PySchemaElement):
     Transaktionsnummer: int
     Artikel:    str
     Menge:      float = 1
-    Aktion:     int = 0
+    Aktion:     float = 0
     Umsatz:     float = 0
     Produkt: ProduktDetail | None = None
 
