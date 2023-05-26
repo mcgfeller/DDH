@@ -91,7 +91,7 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                         except Exception as e:
                             raise errors.ParseError(e)
                         if omit_owner:  # add owner if omitted in data
-                            data = {access.principal: data}
+                            data = {str(access.principal): data}
                         # check data against Schema
                         data = schema.before_data_write(access, transaction, data)
 
