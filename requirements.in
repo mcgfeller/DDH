@@ -15,4 +15,4 @@ matplotlib
 numpy
 pandas
 accept_types
-jsonschema
+jsonschema[format-nongpl]

@@ -10,18 +10,19 @@ anyio==3.6.2
     # via
     #   httpcore
     #   starlette
-attrs==22.2.0
+arrow==1.2.3
+    # via isoduration
+attrs==23.1.0
     # via
     #   glom
     #   jsonschema
-    #   pytest
 bcrypt==4.0.1
     # via passlib
 boltons==23.0.0
     # via
     #   face
     #   glom
-certifi==2022.12.7
+certifi==2023.5.7
     # via
     #   httpcore
     #   httpx
@@ -35,7 +36,7 @@ colorama==0.4.6
     #   pytest
 contourpy==1.0.7
     # via matplotlib
-cryptography==39.0.2
+cryptography==40.0.2
     # via -r requirements.in
 cycler==0.11.0
     # via matplotlib
@@ -43,68 +44,75 @@ dnspython==2.3.0
     # via email-validator
 ecdsa==0.18.0
     # via python-jose
-email-validator==1.3.1
+email-validator==2.0.0.post2
     # via pydantic
 face==20.1.1
     # via glom
-fastapi==0.94.1
+fastapi==0.95.2
     # via -r requirements.in
-fonttools==4.39.0
+fonttools==4.39.4
     # via matplotlib
-glom==23.1.1
+fqdn==1.5.1
+    # via jsonschema
+glom==23.3.0
     # via -r requirements.in
 h11==0.14.0
     # via
     #   httpcore
     #   uvicorn
-httpcore==0.16.3
+httpcore==0.17.2
     # via httpx
-httpx==0.23.3
+httpx==0.24.1
     # via -r requirements.in
 idna==3.4
     # via
     #   anyio
     #   email-validator
-    #   rfc3986
+    #   httpx
+    #   jsonschema
 iniconfig==2.0.0
     # via pytest
-jsonschema==4.17.3
+isoduration==20.11.0
+    # via jsonschema
+jsonpointer==2.3
+    # via jsonschema
+jsonschema[format-nongpl]==4.17.3
     # via -r requirements.in
 kiwisolver==1.4.4
     # via matplotlib
 matplotlib==3.7.1
     # via -r requirements.in
-networkx==3.0
+networkx==3.1
     # via -r requirements.in
-numpy==1.24.2
+numpy==1.24.3
     # via
     #   -r requirements.in
     #   contourpy
     #   matplotlib
     #   pandas
-packaging==23.0
+packaging==23.1
     # via
     #   matplotlib
     #   pytest
-pandas==1.5.3
+pandas==2.0.1
     # via -r requirements.in
 passlib[bcrypt]==1.7.4
     # via -r requirements.in
-pillow==9.4.0
+pillow==9.5.0
     # via matplotlib
 pluggy==1.0.0
     # via pytest
-psutil==5.9.4
+psutil==5.9.5
     # via -r requirements.in
-pyasn1==0.4.8
+pyasn1==0.5.0
     # via
     #   python-jose
     #   rsa
 pycparser==2.21
     # via cffi
-pycryptodome==3.17
+pycryptodome==3.18.0
     # via python-jose
-pydantic[email]==1.10.6
+pydantic[email]==1.10.8
     # via
     #   -r requirements.in
     #   fastapi
@@ -112,38 +120,48 @@ pyparsing==3.0.9
     # via matplotlib
 pyrsistent==0.19.3
     # via jsonschema
-pytest==7.2.2
+pytest==7.3.1
     # via
     #   -r requirements.in
     #   pytest-asyncio
-pytest-asyncio==0.20.3
+pytest-asyncio==0.21.0
     # via -r requirements.in
 python-dateutil==2.8.2
     # via
+    #   arrow
     #   matplotlib
     #   pandas
 python-jose[pycryptodome]==3.3.0
     # via -r requirements.in
 python-multipart==0.0.6
     # via -r requirements.in
-pytz==2022.7.1
+pytz==2023.3
     # via pandas
-rfc3986[idna2008]==1.5.0
-    # via httpx
+rfc3339-validator==0.1.4
+    # via jsonschema
+rfc3986-validator==0.1.1
+    # via jsonschema
 rsa==4.9
     # via python-jose
 six==1.16.0
     # via
     #   ecdsa
     #   python-dateutil
+    #   rfc3339-validator
 sniffio==1.3.0
     # via
     #   anyio
     #   httpcore
     #   httpx
-starlette==0.26.1
+starlette==0.27.0
     # via fastapi
-typing-extensions==4.5.0
+typing-extensions==4.6.2
     # via pydantic
-uvicorn==0.21.0
+tzdata==2023.3
+    # via pandas
+uri-template==1.2.0
+    # via jsonschema
+uvicorn==0.22.0
     # via -r requirements.in
+webcolors==1.13
+    # via jsonschema
