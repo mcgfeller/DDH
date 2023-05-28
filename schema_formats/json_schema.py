@@ -5,6 +5,11 @@ import pydantic
 import json
 import jsonschema
 import jsonschema.validators
+import jsonschema.exceptions
+
+# to overwrite jsonschema datetime format checker:
+import jsonschema._format
+from pydantic import datetime_parse
 
 
 from core import schemas, keys, errors
@@ -24,6 +29,7 @@ class JsonSchema(schemas.AbstractSchema):
     mimetypes: typing.ClassVar[schemas.MimeTypes] = schemas.MimeTypes(
         of_schema=['application/openapi', 'application/json'], of_data=['application/json'])
     json_schema: pydantic.Json
+    _v_validators: dict[keys.DDHkey, json_schema.validators.Validator] = {}  # Cache
 
     def __getitem__(self, key: keys.DDHkey, default=None, create_intermediate: bool = False) -> type[JsonSchemaElement] | None:
         return JsonSchemaElement(definition=self._descend_path(self.json_schema, key))
@@ -77,13 +83,41 @@ class JsonSchema(schemas.AbstractSchema):
         return d
 
     def validate_data(self, data: dict, remainder: keys.DDHkey, no_extra: bool = True) -> dict:
-        subs = self._descend_path(self.json_schema, remainder)
-        if not subs:
-            raise errors.ValidationError(f'Path {remainder} is not in schema')
-        print(f'{self.__class__.__name__}.validate_data({type(data)}, {remainder=}, {no_extra=}, {subs=})')
-        jsonschema.validate(instance=data, schema=subs)
+        """ Validate data at subschema path remainder. 
+            data is already parsed as dict. 
+        """
+
+        print(f'{self.__class__.__name__}.validate_data({type(data)}, {remainder=}, {no_extra=})')
+        validator = self._v_validators.get(remainder)  # cached?
+        if not validator:
+            subs = self._descend_path(self.json_schema, remainder)
+            if not subs:
+                raise errors.ValidationError(f'Path {remainder} is not in schema')
+            vcls = jsonschema.validators.validator_for(subs)  # find correct validator for schema.
+            validator = vcls(subs, format_checker=vcls.FORMAT_CHECKER)  # instantiate for subschema
+            self._v_validators[remainder] = validator  # cache it
+        error = jsonschema.exceptions.best_match(validator.iter_errors(data))
+        if error is not None:
+            raise error
+
         return data
 
     def validate_schema(self):
+        """ validate and cache root schema """
         vcls = jsonschema.validators.validator_for(self.json_schema)
         vcls.check_schema(self.json_schema)
+        validator = vcls(self.json_schema, format_checker=vcls.FORMAT_CHECKER)
+        self._v_validators[keys.DDHkey(())] = validator  # cache it
+
+
+@jsonschema._format._checks_drafts(name="date-time")
+def is_datetime(instance: object) -> bool:
+    """ json_schema DateTime format check is more restrictive than and not compatible
+        with Pydantic; i.e., it requires a timezone designator for datetimes.
+        Overwrite the date-time format check using Pydantic's datetime_parse.
+    """
+    try:
+        d = datetime_parse.parse_datetime(instance)  # type:ignore
+        return True
+    except ValueError:
+        return False
