@@ -6,17 +6,15 @@ import typing
 import abc
 
 import pydantic
-from utils.pydantic_utils import DDHbaseModel
 
-from . import errors
+from core import errors, assignable
 
 _Privilege = typing.ForwardRef('_Privilege')  # type: ignore
 _DAppPrivilege = typing.ForwardRef('_DAppPrivilege')  # type: ignore
 
 
-class _Privilege(DDHbaseModel, typing.Hashable):
-    class Config:
-        frozen = True  # privileges are not mutable, and we need a hash function to build  a set
+class _Privilege(assignable.Assignable):
+    ...
 
 
 class _DAppPrivilege(_Privilege):

@@ -102,7 +102,7 @@ class JsonSchema(schemas.AbstractSchema):
 
         return data
 
-    def validate_schema(self):
+    def validate_schema(self, no_extra: bool = True):
         """ validate and cache root schema """
         vcls = jsonschema.validators.validator_for(self.json_schema)
         vcls.check_schema(self.json_schema)
