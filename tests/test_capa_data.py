@@ -1,6 +1,8 @@
 """ Set up some Test data """
-from core import keys, permissions, facade, errors, transactions, principals, capabilities
+
+from core import keys, permissions, facade, errors, transactions, principals
 from core import pillars
+from assignables import capabilities
 from frontend import user_auth, sessions
 from backend import keyvault
 import pytest

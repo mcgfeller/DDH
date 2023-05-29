@@ -8,8 +8,10 @@ import fastapi
 import fastapi.security
 import pandas  # for example
 import pydantic
+
 from core import (common_ids, dapp_attrs, keys, nodes, permissions, users,
-                  relationships, schemas, errors, versions, capabilities)
+                  relationships, schemas, errors, versions)
+from assignables import capabilities
 from schema_formats import py_schema
 from utils import key_utils
 from glom import Iter, S, T, glom  # transform

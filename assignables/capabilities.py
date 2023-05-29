@@ -10,7 +10,7 @@ import datetime
 import pydantic
 from utils.pydantic_utils import DDHbaseModel, tuple_key_to_str, str_to_tuple_key
 
-from . import (errors, versions, permissions, schemas, transactions, assignable)
+from core import (errors, versions, permissions, schemas, transactions, assignable)
 from backend import persistable
 
 

@@ -6,12 +6,14 @@ import enum
 import typing
 
 import pydantic
+
 from frontend import user_auth
 from utils.pydantic_utils import DDHbaseModel
 
 from . import (errors, keydirectory, keys, nodes, permissions, principals,
-               versions, capabilities, restrictions, schema_network)
-from assignables import schema_restrictions
+               versions, restrictions, schema_network)
+from assignables import schema_restrictions, capabilities
+
 
 import logging
 
