@@ -5,7 +5,9 @@ import enum
 import typing
 import pydantic
 
-from core import keys, schemas, policies, principals, relationships, common_ids, versions, permissions, transactions, privileges
+
+from core import keys, schemas, policies, principals, relationships, common_ids, versions, permissions, transactions
+from assignables import privileges
 from utils.pydantic_utils import DDHbaseModel
 
 

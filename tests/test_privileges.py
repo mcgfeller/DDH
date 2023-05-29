@@ -1,5 +1,7 @@
 import functools
-from core import privileges, assignable
+
+from core import assignable
+from assignables import privileges
 import pytest
 
 
