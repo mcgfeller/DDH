@@ -56,5 +56,8 @@ class SensitiveDataRead(_DAppPrivilege):
     ...
 
 
-# Enum with all available Privileges:
-DAppPrivileges = enum.Enum('DAppPrivileges', [(n, n) for n in _DAppPrivilege.Privileges], type=str, module=__name__)
+class DAppPrivileges(assignable.Assignables):
+    pass
+
+
+NoPrivileges = DAppPrivileges()

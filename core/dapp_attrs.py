@@ -89,9 +89,9 @@ class DApp(DAppOrFamily):
     references: list[relationships.Reference] = []
     transforms_into: keys.DDHkeyVersioned0 | None = None  # Versioned0 here to avoid errors for incomplete DApps
     estimatedCosts: EstimatedCosts = EstimatedCosts.free
-    requested_privileges: set[privileges.DAppPrivileges] = set()
-    granted_privileges: set[privileges.DAppPrivileges] = pydantic.Field(
-        default=set(), const=True, description="privileges actually granted, cannot be set")
+    requested_privileges: privileges.DAppPrivileges = privileges.NoPrivileges
+    granted_privileges: privileges.DAppPrivileges = pydantic.Field(
+        default=privileges.NoPrivileges, const=True, description="privileges actually granted, cannot be set")
 
     def __init__(self, *a, **kw):
         """ Add to family as member """

@@ -13,16 +13,10 @@ from utils.pydantic_utils import DDHbaseModel, tuple_key_to_str, str_to_tuple_ke
 from core import (errors, versions, permissions, schemas, transactions, assignable)
 from backend import persistable
 
-
-class Capability(assignable.Assignable):
-    ...
-
-
 SchemaCapability = typing.ForwardRef('SchemaCapability')
-Capabilities = typing.ForwardRef('Capabilities')
 
 
-class SchemaCapability(Capability):
+class SchemaCapability(assignable.Assignable):
     """ Capability used for Schemas """
     supports_modes: typing.ClassVar[set[permissions.AccessMode]]  # supports_modes is a mandatory class variable
     all_by_modes: typing.ClassVar[dict[permissions.AccessMode, set[str]]] = {}

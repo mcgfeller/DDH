@@ -1,10 +1,9 @@
 """ Qualities that can be assigned to an object """
 from __future__ import annotations
 
-import enum
+
 import typing
-import abc
-import copy
+
 
 import pydantic
 from utils.pydantic_utils import DDHbaseModel
