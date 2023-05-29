@@ -11,6 +11,7 @@ from utils.pydantic_utils import DDHbaseModel
 
 from . import (errors, keydirectory, keys, nodes, permissions, principals,
                versions, capabilities, restrictions, schema_network)
+from assignables import schema_restrictions
 
 import logging
 
@@ -101,7 +102,7 @@ class SchemaAttributes(DDHbaseModel):
     sensitivities: dict[Sensitivity, T_PathFields] = pydantic.Field(default={},
                                                                     description="Sensitivities by Sensitivity, schema key, set of fields. We cannot use DDHKey for schema key, as the dict is not jsonable.")
     capabilities: set[capabilities.Capabilities] = set()
-    restrictions: restrictions.Restrictions = restrictions.NoRestrictions
+    restrictions: restrictions.Restrictions = schema_restrictions.NoRestrictions
 
     def add_reference(self, path: keys.DDHkey, reference: AbstractSchemaReference):
         print(f'SchemaAttributes.add_reference {path=}, {reference=}')
@@ -262,7 +263,7 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         """
         schema = self
         schema = self.schema_attributes.restrictions.apply(
-            restrictions.SchemaRestriction, schema, self, access, transaction)
+            schema_restrictions.SchemaRestriction, schema, self, access, transaction)
         return schema
 
     def after_data_read(self, access: permissions.Access, transaction, data):
@@ -277,7 +278,8 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
                 data under schema reference only if schema reprs are compatible
 
         """
-        data = self.schema_attributes.restrictions.apply(restrictions.DataRestriction, data, self, access, transaction)
+        data = self.schema_attributes.restrictions.apply(
+            schema_restrictions.DataRestriction, data, self, access, transaction)
         data = self.apply_capabilities(access, transaction, data)
         return data
 

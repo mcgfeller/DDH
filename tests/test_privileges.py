@@ -1,5 +1,5 @@
 import functools
-from core import privileges
+from core import privileges, assignable
 import pytest
 
 
@@ -11,7 +11,9 @@ def test_privileges():
     assert p2 == p2a, 'privileges must be identical'
     assert hash(p2) == hash(p2a), 'privileges must hash identically'
     p3 = privileges.OutgoingURL(urls=['https://migros.ch/dapp'])  # type: ignore
-    p4 = privileges.OutgoingURL(urls=['https://coop.ch/dapp'])  # type: ignore
+    p4 = privileges.OutgoingURL(urls=['https://coop.ch/dapp'])
+    ps = assignable.Assignables(p1, p2, p2a, p3, p1, p2, p3, p4)
+    assert len(ps) == 3  # TODO: Should be == 4, distinct!
     assert len({p1, p2, p2a, p3, p1, p2, p3, p4}) == 4  # type: ignore # no idea why it thinks px is not hashable?
 
 

@@ -58,6 +58,9 @@ class Assignables(DDHbaseModel):
         """ returns whether assignable class is in self """
         return assignable.__name__ in self._by_name
 
+    def __len__(self) -> int:
+        return len(self._by_name)
+
     def __eq__(self, other) -> bool:
         """ must compare ._by_name as list order doesn't matter """
         if isinstance(other, Assignables):

@@ -8,6 +8,7 @@ import logging
 
 from core import keys, schemas, nodes, keydirectory, principals, versions, restrictions
 from schema_formats import py_schema
+from assignables import schema_restrictions
 from frontend import sessions
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ def register_schema() -> nodes.SchemaNode:
         root_node = nodes.SchemaNode(owner=principals.RootPrincipal,
                                      consents=schemas.AbstractSchema.get_schema_consents())
         keydirectory.NodeRegistry[root] = root_node
-        schema.schema_attributes.restrictions = restrictions.RootRestrictions  # set restrictions on root
+        schema.schema_attributes.restrictions = schema_restrictions.RootRestrictions  # set restrictions on root
         root_node.add_schema(schema)
         inherit_attributes(schema, transaction)
         schemas.SchemaNetwork.valid.invalidate()  # finished
@@ -76,9 +77,10 @@ def build_root_schemas():
     attributes = {
         ('root', '', 'p', 'employment', 'salary', 'statements'): schemas.SchemaAttributes(requires=schemas.Requires.specific),
         ('root', '', 'p', 'finance', 'holdings', 'portfolio'): schemas.SchemaAttributes(requires=schemas.Requires.specific),
-        ('root', '', 'p', 'health'): schemas.SchemaAttributes(restrictions=restrictions.HighestPrivacyRestrictions),
-        ('root', '', 'p', 'finance'): schemas.SchemaAttributes(restrictions=restrictions.HighPrivacyRestrictions),
-        ('root', '', 'org', 'private', 'documents'): schemas.SchemaAttributes(restrictions=restrictions.NoValidation),  # cancel validation
+        ('root', '', 'p', 'health'): schemas.SchemaAttributes(restrictions=schema_restrictions.HighestPrivacyRestrictions),
+        ('root', '', 'p', 'finance'): schemas.SchemaAttributes(restrictions=schema_restrictions.HighPrivacyRestrictions),
+        # cancel validation
+        ('root', '', 'org', 'private', 'documents'): schemas.SchemaAttributes(restrictions=schema_restrictions.NoValidation),
     }
     schema_element = descend_schema(treetop, attributes)
     root = py_schema.PySchema(schema_element=schema_element)
