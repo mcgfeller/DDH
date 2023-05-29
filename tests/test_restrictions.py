@@ -1,7 +1,7 @@
 """ Test combination and application of restrictions """
 
 import pytest
-from core import restrictions, schemas, keys
+from core import schemas, keys
 from assignables import schema_restrictions
 from frontend import sessions
 
@@ -31,26 +31,26 @@ def test_restrictions():
     r1 = schema_restrictions.MustReview()
     r2 = schema_restrictions.MustReview(by_roles={'boss'})
     r3 = schema_restrictions.MustHaveSensitivites()
-    R1 = restrictions.Restrictions(assignables=[r1])
+    R1 = schema_restrictions.Restrictions(assignables=[r1])
     assert schema_restrictions.MustReview in R1
     assert schema_restrictions.MustHaveSensitivites not in R1
-    R1a = restrictions.Restrictions(assignables=[r1])
+    R1a = schema_restrictions.Restrictions(assignables=[r1])
     assert R1 == R1a
     assert R1.merge(R1) is R1
     assert R1.merge(R1a) is R1
 
-    R2 = restrictions.Restrictions(assignables=[r2])
-    assert R1.merge(R2) == restrictions.Restrictions(assignables=[r2])  # r1 is weaker than r2
-    R13 = restrictions.Restrictions(assignables=[r1, r3])
-    assert R1.merge(R13) == restrictions.Restrictions(assignables=[r1, r3])
-    assert R2.merge(R13) == restrictions.Restrictions(assignables=[r2, r3])
+    R2 = schema_restrictions.Restrictions(assignables=[r2])
+    assert R1.merge(R2) == schema_restrictions.Restrictions(assignables=[r2])  # r1 is weaker than r2
+    R13 = schema_restrictions.Restrictions(assignables=[r1, r3])
+    assert R1.merge(R13) == schema_restrictions.Restrictions(assignables=[r1, r3])
+    assert R2.merge(R13) == schema_restrictions.Restrictions(assignables=[r2, r3])
 
 
 def test_restrictions_overwrite():
     r1 = schema_restrictions.MustReview(may_overwrite=True)
     r2 = schema_restrictions.MustHaveSensitivites()
-    R1 = restrictions.Restrictions(assignables=[r1, r2])
-    R2 = restrictions.Restrictions(assignables=[~r1])
+    R1 = schema_restrictions.Restrictions(assignables=[r1, r2])
+    R2 = schema_restrictions.Restrictions(assignables=[~r1])
     RM = R1.merge(R2)
     assert schema_restrictions.MustReview not in RM  # omitted by overwrite
     assert schema_restrictions.MustHaveSensitivites in RM  # may not overwritten
@@ -62,7 +62,7 @@ def test_restrictions_overwrite():
     ('//p/living/shopping/receipts', schema_restrictions.RootRestrictions),
     ('//p/health/bloodworks', schema_restrictions.HighestPrivacyRestrictions),
 ], ids=lambda x: x if isinstance(x, str) else '')
-def test_root_restrictions(ddhkey: str, expected: restrictions.Restrictions, transaction):
+def test_root_restrictions(ddhkey: str, expected: schema_restrictions.Restrictions, transaction):
     """ test restrictions in standard tree against expected results """
     schema, *d = schemas.SchemaContainer.get_node_schema_key(keys.DDHkey(ddhkey), transaction)
     restrictions = schema.schema_attributes.restrictions
