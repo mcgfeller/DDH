@@ -38,7 +38,7 @@ class MigrosDApp(dapp_attrs.DApp):
 
     def get_schemas(self) -> dict[keys.DDHkey, schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
-        caps = {capabilities.Capabilities.Anonymize, capabilities.Capabilities.Pseudonymize}
+        caps = capabilities.Capabilities(capabilities.Anonymize(), capabilities.Pseudonymize())
         sa = schemas.SchemaAttributes(version=versions.Version(self.version), capabilities=caps)
         return {keys.DDHkeyVersioned0(key="//org/migros.ch"): py_schema.PySchema(schema_element=MigrosSchema,
                                                                                  schema_attributes=sa)}

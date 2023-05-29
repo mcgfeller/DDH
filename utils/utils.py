@@ -56,7 +56,10 @@ def typecheck(obj, cls, allowNone=False):
     return
 
 
-def ensure_tuple(seq):
+T = typing.TypeVar('T')
+
+
+def ensure_tuple(seq: typing.Iterable[T] | T) -> tuple[T]:
     """ ensure seq is a tuple, converting strings and other simple elements to 1-elem tuples """
     if type(seq) in (list, tuple, set, frozenset):
         return tuple(seq)

@@ -17,10 +17,33 @@ class Assignable(DDHbaseModel, typing.Hashable):
     class Config:
         frozen = True  # Assignables are not mutable, and we need a hash function to build  a set
 
+    # keep a class by classname, so we can recreate JSON'ed object in correct class
+    _cls_by_name: typing.ClassVar[dict[str, type]] = {}
+
+    classname: str | None = None
     may_overwrite: bool = pydantic.Field(
         default=False, description="assignable may be overwritten explicitly in lower schema")
     cancel: bool = pydantic.Field(
         default=False, description="cancels this assignable in merge; set using ~assignable")
+
+    @classmethod
+    def __init_subclass__(cls):
+        """ register all potential class names """
+        cls._cls_by_name[cls.__name__] = cls
+
+    def _correct_class(self) -> typing.Self:
+        """ Recreate JSON'ed object in correct class, based on .classname attribute """
+        if self.classname and self.classname != self.__class__.__name__:
+            cls = self._cls_by_name[self.classname]
+            return cls(**self.dict())
+        else:
+            return self
+
+    def __init__(self, *a, **kw):
+        """ Ensure classname records name of concrete class """
+        if 'classname' not in kw:
+            kw['classname'] = self.__class__.__name__
+        super().__init__(*a, **kw)
 
     def __invert__(self) -> typing.Self:
         """ invert the cancel flag """
@@ -52,6 +75,7 @@ class Assignables(DDHbaseModel):
         if a:  # shortcut to allow Assignable as args
             kw['assignables'] = list(a)+kw.get('assignables', [])
         super().__init__(**kw)
+        self.assignables = [a._correct_class() for a in self.assignables]
         self._by_name = {r.__class__.__name__: r for r in self.assignables}
 
     def __contains__(self, assignable: type[Assignable]) -> bool:
@@ -86,4 +110,5 @@ class Assignables(DDHbaseModel):
 
     def __add__(self, assignable: Assignable | list[Assignable]) -> typing.Self:
         """ add assignable by merging """
-        return self.merge(self.__class__(assignables=utils.ensure_tuple(assignable)))
+        assignables = [a._correct_class() for a in utils.ensure_tuple(assignable)]
+        return self.merge(self.__class__(assignables=assignables))

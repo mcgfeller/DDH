@@ -10,11 +10,11 @@ import datetime
 import pydantic
 from utils.pydantic_utils import DDHbaseModel, tuple_key_to_str, str_to_tuple_key
 
-from . import (errors, versions, permissions, schemas, transactions)
+from . import (errors, versions, permissions, schemas, transactions, assignable)
 from backend import persistable
 
 
-class Capability(DDHbaseModel):
+class Capability(assignable.Assignable):
     ...
 
 
@@ -24,27 +24,42 @@ Capabilities = typing.ForwardRef('Capabilities')
 
 class SchemaCapability(Capability):
     """ Capability used for Schemas """
-    Capabilities: typing.ClassVar[dict[str, SchemaCapability]] = {}
     supports_modes: typing.ClassVar[set[permissions.AccessMode]]  # supports_modes is a mandatory class variable
-    by_modes: typing.ClassVar[dict[permissions.AccessMode, set[str]]] = {}
+    all_by_modes: typing.ClassVar[dict[permissions.AccessMode, set[str]]] = {}
 
     @classmethod
     def __init_subclass__(cls):
-        """ register subclass as .Capabilities """
-        instance = cls()
-        cls.Capabilities[cls.__name__] = instance
-        # register instance in a set of mode supporters:
-        [cls.by_modes.setdefault(m, set()).add(cls.__name__) for m in cls.supports_modes]
+        """ register all Capabilities by Mode """
+        super().__init_subclass__()
+        [cls.all_by_modes.setdefault(m, set()).add(cls.__name__) for m in cls.supports_modes]
         return
 
     @classmethod
-    def capabilities_for_modes(cls, modes: typing.Iterable[permissions.AccessMode]) -> set[Capabilities]:
+    def capabilities_for_modes(cls, modes: typing.Iterable[permissions.AccessMode]) -> set[str]:
         """ return the capabilities required for the access modes """
-        caps = set.union(set(), *[c for m in modes if (c := cls.by_modes.get(m))])
-        return {Capabilities(c) for c in caps}  # to Enum
+        caps = set.union(set(), *[c for m in modes if (c := cls.all_by_modes.get(m))])
+        return caps
 
-    def apply(self, schema: schemas.AbstractSchema, access, transaction, data):
+    def apply(self, schema, access, transaction, data_by_principal: dict):
+        return data_by_principal  # TODO: Check method in superclass
+
+
+class Capabilities(assignable.Assignables):
+
+    def apply_capabilities(self, schema, access, transaction, data):
+        caps = self.select_capabilities(schema, access, transaction, data)
+        for cap in caps:
+            data = cap.apply(schema, access, transaction, data)
         return data
+
+    def select_capabilities(self, schema, access, transaction, data) -> typing.Iterable[SchemaCapability]:
+        # join the capabilities from each mode:
+        required_capabilities = SchemaCapability.capabilities_for_modes(access.modes)
+        byname = set(self._by_name)
+        missing = required_capabilities - byname
+        if missing:
+            raise errors.CapabilityMissing(f"Schema {self} does not support required capabilities; missing {missing}")
+        return [self._by_name[c] for c in byname.intersection(required_capabilities)]
 
 
 class Validate(SchemaCapability):
@@ -149,5 +164,4 @@ class PseudonymMap(persistable.Persistable):
         return o
 
 
-# Enum with all available Capabilities:
-Capabilities = enum.Enum('Capabilities', [(n, n) for n in SchemaCapability.Capabilities], type=str, module=__name__)
+NoCapabilities = Capabilities()
