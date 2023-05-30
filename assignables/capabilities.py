@@ -18,7 +18,7 @@ SchemaCapability = typing.ForwardRef('SchemaCapability')
 
 class SchemaCapability(assignable.Assignable):
     """ Capability used for Schemas """
-    supports_modes: typing.ClassVar[set[permissions.AccessMode]]  # supports_modes is a mandatory class variable
+    supports_modes: typing.ClassVar[frozenset[permissions.AccessMode]]  # supports_modes is a mandatory class variable
     all_by_modes: typing.ClassVar[dict[permissions.AccessMode, set[str]]] = {}
 
     @classmethod
@@ -57,7 +57,7 @@ class Capabilities(assignable.Assignables):
 
 
 class Validate(SchemaCapability):
-    supports_modes = set()
+    supports_modes = frozenset()
 
 
 class Anonymize(SchemaCapability):

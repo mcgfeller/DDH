@@ -43,7 +43,7 @@ class DataRestriction(SchemaRestriction):
 
 
 class MustReview(SchemaRestriction):
-    by_roles: set[str] = set()
+    by_roles: frozenset[str] = frozenset()
 
     def merge(self, other: MustReview) -> typing.Self | None:
         """ return the stronger between self and other restrictions, creating a new combined 
@@ -52,11 +52,12 @@ class MustReview(SchemaRestriction):
         r = super().merge(other)
         if r is not None:
             if r.by_roles != other.by_roles:
-                r = copy.copy(r)
+                d = self.dict()
                 if self.may_overwrite:
-                    r.by_roles = other.by_roles
+                    d['by_roles'] = other.by_roles
                 else:
-                    r.by_roles.update(other.by_roles)
+                    d['by_roles'] = self.by_roles | other.by_roles
+                r = self.__class__(**d)
         return r
 
 

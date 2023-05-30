@@ -67,15 +67,30 @@ class Assignables(DDHbaseModel):
     """ A collection of Assignable.
         Assignable is not hashable, so we keep a list and build a dict with the class names. 
     """
-    assignables: list[Assignable] = []
+    assignables: set[Assignable] = set()
     _by_name: dict[str, Assignable] = {}
 
     def __init__(self, *a, **kw):
         if a:  # shortcut to allow Assignable as args
-            kw['assignables'] = list(a)+kw.get('assignables', [])
+            kw['assignables'] = set(list(a)+kw.get('assignables', []))
         super().__init__(**kw)
-        self.assignables = [a._correct_class() for a in self.assignables]
+        self.assignables = self._correct_set(self.assignables)
         self._by_name = {r.__class__.__name__: r for r in self.assignables}
+
+    @staticmethod
+    def _correct_set(assignables: typing.Iterable[Assignable]) -> set[Assignable]:
+        """ ensure correct classes for all assignables """
+        return {a._correct_class() for a in assignables}
+
+    def dict(self, *a, **kw):
+        """ Due to https://github.com/pydantic/pydantic/issues/1090, we cannot have a set 
+            as a field. We redefine .dict() and take advantage to exclude_defaults in
+            the assignables.
+        """
+        d = dict(self)
+        d['assignables'] = [a.dict(exclude_defaults=True) for a in self.assignables]
+        assert isinstance(self.assignables, set)
+        return d
 
     def __contains__(self, assignable: type[Assignable]) -> bool:
         """ returns whether assignable class is in self """
@@ -109,5 +124,5 @@ class Assignables(DDHbaseModel):
 
     def __add__(self, assignable: Assignable | list[Assignable]) -> typing.Self:
         """ add assignable by merging """
-        assignables = [a._correct_class() for a in utils.ensure_tuple(assignable)]
+        assignables = self._correct_set(utils.ensure_tuple(assignable))
         return self.merge(self.__class__(assignables=assignables))
