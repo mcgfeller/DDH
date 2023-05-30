@@ -14,9 +14,26 @@ def test_privileges():
     assert hash(p2) == hash(p2a), 'privileges must hash identically'
     p3 = privileges.OutgoingURL(urls=['https://migros.ch/dapp'])  # type: ignore
     p4 = privileges.OutgoingURL(urls=['https://coop.ch/dapp'])
-    ps = assignable.Assignables(p1, p2, p2a, p3, p1, p2, p3, p4)
-    assert len(ps) == 4  # distinct capabilties
-    assert len(ps._by_classname) == 3  # of 3 classes
+    assert len({p1, p2, p2a, p3, p1, p2, p3, p4}) == 4  # type: ignore
+    with pytest.raises(ValueError):  # non-unique classes
+        ps = assignable.Assignables(p1, p2, p2a, p3, p1, p2, p3, p4)
+    return
+
+
+def test_merge():
+    p3 = privileges.OutgoingURL(urls=['https://migros.ch/dapp'])  # type: ignore
+    p4 = privileges.OutgoingURL(urls=['https://coop.ch/dapp'])
+    assert p3 is p3.merge(p3)
+    pboth = privileges.OutgoingURL(urls=['https://migros.ch/dapp', 'https://coop.ch/dapp'])
+    assert p3.merge(p4) == pboth
+
+    P3 = assignable.Assignables(p3)
+    P4 = assignable.Assignables(p4)
+    PM = P3.merge(P4)
+    assert len(PM.assignables) == 1
+    e = list(PM.assignables)[0]
+    assert e == pboth
+    return
 
 
 def test_abstract():

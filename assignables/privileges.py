@@ -38,7 +38,16 @@ class System(_DAppPrivilege):
 
 
 class _Ports(_DAppPrivilege):
-    urls: tuple[pydantic.AnyUrl] = []
+    urls: frozenset[pydantic.AnyUrl] = frozenset()
+
+    def merge(self, other: _Ports) -> typing.Self:
+        """ return the stronger of self and other assignables, creating a new combined 
+            Assignables.
+        """
+        if self == other:
+            return self
+        else:
+            return self.__class__(urls=self.urls | other.urls)
 
 
 class IncomingURL(_Ports):

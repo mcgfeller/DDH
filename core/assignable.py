@@ -76,6 +76,9 @@ class Assignables(DDHbaseModel):
         super().__init__(**kw)
         self.assignables = {a._correct_class() for a in self.assignables}
         self._by_classname = {r.__class__.__name__: r for r in self.assignables}
+        if len(self.assignables) != len(self._by_classname):
+            raise ValueError('Assignables not of unique class')
+        return
 
     def dict(self, *a, **kw):
         """ Due to https://github.com/pydantic/pydantic/issues/1090, we cannot have a set 
