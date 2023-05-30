@@ -49,11 +49,11 @@ class Capabilities(assignable.Assignables):
     def select_capabilities(self, schema, access, transaction, data) -> typing.Iterable[SchemaCapability]:
         # join the capabilities from each mode:
         required_capabilities = SchemaCapability.capabilities_for_modes(access.modes)
-        byname = set(self._by_name)
+        byname = set(self._by_classname)
         missing = required_capabilities - byname
         if missing:
             raise errors.CapabilityMissing(f"Schema {self} does not support required capabilities; missing {missing}")
-        return [self._by_name[c] for c in byname.intersection(required_capabilities)]
+        return [self._by_classname[c] for c in byname.intersection(required_capabilities)]
 
 
 class Validate(SchemaCapability):

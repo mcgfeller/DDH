@@ -15,8 +15,8 @@ def test_privileges():
     p3 = privileges.OutgoingURL(urls=['https://migros.ch/dapp'])  # type: ignore
     p4 = privileges.OutgoingURL(urls=['https://coop.ch/dapp'])
     ps = assignable.Assignables(p1, p2, p2a, p3, p1, p2, p3, p4)
-    assert len(ps) == 3  # TODO: Should be == 4, distinct!
-    assert len({p1, p2, p2a, p3, p1, p2, p3, p4}) == 4  # type: ignore # no idea why it thinks px is not hashable?
+    assert len(ps) == 4  # distinct capabilties
+    assert len(ps._by_classname) == 3  # of 3 classes
 
 
 def test_abstract():

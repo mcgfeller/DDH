@@ -68,19 +68,14 @@ class Assignables(DDHbaseModel):
         Assignable is not hashable, so we keep a list and build a dict with the class names. 
     """
     assignables: set[Assignable] = set()
-    _by_name: dict[str, Assignable] = {}
+    _by_classname: dict[str, Assignable] = {}
 
     def __init__(self, *a, **kw):
         if a:  # shortcut to allow Assignable as args
             kw['assignables'] = set(list(a)+kw.get('assignables', []))
         super().__init__(**kw)
-        self.assignables = self._correct_set(self.assignables)
-        self._by_name = {r.__class__.__name__: r for r in self.assignables}
-
-    @staticmethod
-    def _correct_set(assignables: typing.Iterable[Assignable]) -> set[Assignable]:
-        """ ensure correct classes for all assignables """
-        return {a._correct_class() for a in assignables}
+        self.assignables = {a._correct_class() for a in self.assignables}
+        self._by_classname = {r.__class__.__name__: r for r in self.assignables}
 
     def dict(self, *a, **kw):
         """ Due to https://github.com/pydantic/pydantic/issues/1090, we cannot have a set 
@@ -92,17 +87,22 @@ class Assignables(DDHbaseModel):
         assert isinstance(self.assignables, set)
         return d
 
-    def __contains__(self, assignable: type[Assignable]) -> bool:
-        """ returns whether assignable class is in self """
-        return assignable.__name__ in self._by_name
+    def __contains__(self, assignable: Assignable | type[Assignable]) -> bool:
+        """ returns whether assignable class or object is in self """
+        if isinstance(assignable, Assignable):
+            return assignable in self.assignables
+        elif issubclass(assignable, Assignable):
+            return assignable.__name__ in self._by_classname
+        else:
+            return False
 
     def __len__(self) -> int:
-        return len(self._by_name)
+        return len(self.assignables)
 
     def __eq__(self, other) -> bool:
-        """ must compare ._by_name as list order doesn't matter """
+        """ must compare ._by_classname as list order doesn't matter """
         if isinstance(other, Assignables):
-            return self._by_name == other._by_name
+            return self.assignables == other.assignables
         else:
             return False
 
@@ -110,19 +110,20 @@ class Assignables(DDHbaseModel):
         """ return the stronger of self and other assignables, creating a new combined 
             Assignables.
         """
-        if self._by_name == other._by_name:
+        if self == other:
             return self
         else:  # merge those in common, then add those only in each set:
-            s1 = set(self._by_name)
-            s2 = set(other._by_name)
+            s1 = set(self._by_classname)
+            s2 = set(other._by_classname)
             # merge, or cancel:
-            common = [r for common in s1 & s2 if (r := self._by_name[common].merge(other._by_name[common])) is not None]
-            r1 = [self._by_name[n] for n in s1 - s2]  # only in self
-            r2 = [other._by_name[n] for n in s2 - s1]  # only in other
+            common = [r for common in s1 & s2 if (
+                r := self._by_classname[common].merge(other._by_classname[common])) is not None]
+            r1 = [self._by_classname[n] for n in s1 - s2]  # only in self
+            r2 = [other._by_classname[n] for n in s2 - s1]  # only in other
             r = self.__class__(assignables=common+r1+r2)
             return r
 
     def __add__(self, assignable: Assignable | list[Assignable]) -> typing.Self:
         """ add assignable by merging """
-        assignables = self._correct_set(utils.ensure_tuple(assignable))
+        assignables = utils.ensure_tuple(assignable)
         return self.merge(self.__class__(assignables=assignables))
