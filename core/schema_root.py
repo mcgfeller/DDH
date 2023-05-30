@@ -6,8 +6,9 @@ import datetime
 import typing
 import logging
 
-from core import keys, schemas, nodes, keydirectory, principals, versions, restrictions
+from core import keys, schemas, nodes, keydirectory, principals, versions
 from schema_formats import py_schema
+from assignables import restrictions
 from frontend import sessions
 logger = logging.getLogger(__name__)
 
@@ -78,7 +79,8 @@ def build_root_schemas():
         ('root', '', 'p', 'finance', 'holdings', 'portfolio'): schemas.SchemaAttributes(requires=schemas.Requires.specific),
         ('root', '', 'p', 'health'): schemas.SchemaAttributes(restrictions=restrictions.HighestPrivacyRestrictions),
         ('root', '', 'p', 'finance'): schemas.SchemaAttributes(restrictions=restrictions.HighPrivacyRestrictions),
-        ('root', '', 'org', 'private', 'documents'): schemas.SchemaAttributes(restrictions=restrictions.NoValidation),  # cancel validation
+        # cancel validation
+        ('root', '', 'org', 'private', 'documents'): schemas.SchemaAttributes(restrictions=restrictions.NoValidation),
     }
     schema_element = descend_schema(treetop, attributes)
     root = py_schema.PySchema(schema_element=schema_element)

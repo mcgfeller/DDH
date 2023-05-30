@@ -9,11 +9,10 @@ import abc
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import DDHbaseModel
 
-from . import permissions
-from . import nodes
+from . import permissions, nodes, assignable
 
 
-class Policy(DDHbaseModel):
+class Policy(assignable.Assignable):
     """ WIP: 
         The policy of a service or a DApp.
         Encompasses the required consent, the update policy

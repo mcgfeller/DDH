@@ -6,11 +6,14 @@ import enum
 import typing
 
 import pydantic
+
 from frontend import user_auth
 from utils.pydantic_utils import DDHbaseModel
 
 from . import (errors, keydirectory, keys, nodes, permissions, principals,
-               versions, capabilities, restrictions, schema_network)
+               versions, schema_network)
+from assignables import restrictions, capabilities
+
 
 import logging
 
@@ -100,7 +103,7 @@ class SchemaAttributes(DDHbaseModel):
     references: dict[str, keys.DDHkeyRange] = {}  # TODO:#17 key should be DDHkey
     sensitivities: dict[Sensitivity, T_PathFields] = pydantic.Field(default={},
                                                                     description="Sensitivities by Sensitivity, schema key, set of fields. We cannot use DDHKey for schema key, as the dict is not jsonable.")
-    capabilities: set[capabilities.Capabilities] = set()
+    capabilities: capabilities.Capabilities = capabilities.NoCapabilities
     restrictions: restrictions.Restrictions = restrictions.NoRestrictions
 
     def add_reference(self, path: keys.DDHkey, reference: AbstractSchemaReference):
@@ -267,7 +270,7 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
 
     def after_data_read(self, access: permissions.Access, transaction, data):
         """ check data obtained through Schema; may be used to apply capabilities """
-        data = self.apply_capabilities(access, transaction, data)
+        data = self.schema_attributes.capabilities.apply_capabilities(self, access, transaction, data)
         return data
 
     def before_data_write(self, access: permissions.Access, transaction, data):
@@ -277,8 +280,9 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
                 data under schema reference only if schema reprs are compatible
 
         """
-        data = self.schema_attributes.restrictions.apply(restrictions.DataRestriction, data, self, access, transaction)
-        data = self.apply_capabilities(access, transaction, data)
+        data = self.schema_attributes.restrictions.apply(
+            restrictions.DataRestriction, data, self, access, transaction)
+        data = self.schema_attributes.capabilities.apply_capabilities(self, access, transaction, data)
         return data
 
     def expand_references(self) -> AbstractSchema:
@@ -290,21 +294,6 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
             return self
         else:
             return self
-
-    def apply_capabilities(self, access, transaction, data):
-        caps = self.select_capabilities(access, transaction, data)
-        for cap in caps:
-            cap_obj = capabilities.SchemaCapability.Capabilities[cap.name]
-            data = cap_obj.apply(self, access, transaction, data)
-        return data
-
-    def select_capabilities(self, access, transaction, data) -> typing.Iterable[capabilities.SchemaCapability]:
-        # join the capabilities from each mode:
-        required_capabilities = capabilities.SchemaCapability.capabilities_for_modes(access.modes)
-        missing = required_capabilities - self.schema_attributes.capabilities
-        if missing:
-            raise errors.CapabilityMissing(f"Schema {self} does not support required capabilities; missing {missing}")
-        return self.schema_attributes.capabilities.intersection(required_capabilities)
 
     def transform(self, path_fields: T_PathFields, selection: str, data, method, sensitivity, access, transaction, cache):
         """ transform data in place by applying method to path_fields. 

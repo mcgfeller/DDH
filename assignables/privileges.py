@@ -6,17 +6,15 @@ import typing
 import abc
 
 import pydantic
-from utils.pydantic_utils import DDHbaseModel
 
-from . import errors
+from core import errors, assignable
 
 _Privilege = typing.ForwardRef('_Privilege')  # type: ignore
 _DAppPrivilege = typing.ForwardRef('_DAppPrivilege')  # type: ignore
 
 
-class _Privilege(DDHbaseModel, typing.Hashable):
-    class Config:
-        frozen = True  # privileges are not mutable, and we need a hash function to build  a set
+class _Privilege(assignable.Assignable):
+    ...
 
 
 class _DAppPrivilege(_Privilege):
@@ -40,7 +38,16 @@ class System(_DAppPrivilege):
 
 
 class _Ports(_DAppPrivilege):
-    urls: tuple[pydantic.AnyUrl] = []
+    urls: frozenset[pydantic.AnyUrl] = frozenset()
+
+    def merge(self, other: _Ports) -> typing.Self:
+        """ return the stronger of self and other assignables, creating a new combined 
+            Assignables.
+        """
+        if self == other:
+            return self
+        else:
+            return self.__class__(urls=self.urls | other.urls)
 
 
 class IncomingURL(_Ports):
@@ -58,5 +65,8 @@ class SensitiveDataRead(_DAppPrivilege):
     ...
 
 
-# Enum with all available Privileges:
-DAppPrivileges = enum.Enum('DAppPrivileges', [(n, n) for n in _DAppPrivilege.Privileges], type=str, module=__name__)
+class DAppPrivileges(assignable.Assignables):
+    pass
+
+
+NoPrivileges = DAppPrivileges()
