@@ -77,7 +77,7 @@ class Assignables(DDHbaseModel):
         self.assignables = {a._correct_class() for a in self.assignables}
         self._by_classname = {r.__class__.__name__: r for r in self.assignables}
         if len(self.assignables) != len(self._by_classname):
-            raise ValueError('Assignables not of unique class')
+            raise ValueError('Assignables not of unique class')  # Could do merge instead of desirable
         return
 
     def dict(self, *a, **kw):
