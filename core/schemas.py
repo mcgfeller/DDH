@@ -281,7 +281,7 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
 
         """
         data = self.schema_attributes.restrictions.apply(
-            restrictions.DataRestriction, data, self, access, transaction)
+            restrictions.DataRestriction, self, access, transaction, data)
         data = self.schema_attributes.capabilities.apply_capabilities(self, access, transaction, data)
         return data
 

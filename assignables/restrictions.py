@@ -11,7 +11,7 @@ Tsubject = typing.TypeVar('Tsubject')  # subject of apply
 
 class Restriction(assignable.Assignable):
 
-    def apply(self, subject: Tsubject, restrictions: Restrictions, *a, **kw) -> Tsubject:
+    def apply(self,  restrictions: Restrictions, schema, access, transaction, subject: Tsubject) -> Tsubject:
         return subject
 
 
@@ -20,25 +20,25 @@ class Restrictions(assignable.Assignables):
         Restriction is not hashable, so we keep a list and build a dict with the class names. 
     """
 
-    def apply(self, restriction_class: type[Restriction], subject: Tsubject, *a, **kw) -> Tsubject:
+    def apply(self, restriction_class: type[Restriction], schema, access, transaction, subject: Tsubject) -> Tsubject:
         """ apply restrictions in turn """
         for restriction in self.assignables:
             if isinstance(restriction, restriction_class):
-                subject = restriction.apply(subject, self, *a, **kw)
+                subject = restriction.apply(self, schema, access, transaction, subject)
         return subject
 
 
 class SchemaRestriction(assignable.Assignable):
     """ Restriction used for Schemas """
 
-    def apply(self, schema: schemas.AbstractSchema, restrictions: Restrictions, access, transaction, ) -> schemas.AbstractSchema:
+    def apply(self,  restrictions: Restrictions, schema: schemas.AbstractSchema, access, transaction, data: schemas.AbstractSchema) -> schemas.AbstractSchema:
         return schema
 
 
 class DataRestriction(SchemaRestriction):
     """ Restrictions on data for a schema """
 
-    def apply(self, data: Tsubject, restrictions: Restrictions, schema: schemas.AbstractSchema, access, transaction) -> Tsubject:
+    def apply(self,  restrictions: Restrictions, schema, access, transaction, data: Tsubject) -> Tsubject:
         return data
 
 
@@ -69,7 +69,7 @@ class MustHaveSensitivites(SchemaRestriction):
 class MustValidate(DataRestriction):
     """ Data must be validated """
 
-    def apply(self, data: Tsubject, restrictions: restrictions.Restrictions, schema: schemas.AbstractSchema, access, transaction) -> Tsubject:
+    def apply(self,  restrictions: Restrictions, schema, access, transaction, data: Tsubject) -> Tsubject:
         remainder = access.ddhkey.remainder(access.schema_key_split)
         for owner, d in data.items():  # loop through owners, as schema doesn't contain owner
             try:
