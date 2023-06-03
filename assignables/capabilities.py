@@ -42,11 +42,12 @@ class Capabilities(assignable.Assignables):
 
     def select_for_apply(self, subclass: type[assignable.Assignable] | None, schema, access, transaction, data) -> list[assignable.Assignable]:
         """ select assignable for .apply()
-            Basisc selection is on subclass membership (if supplied), but may be refined.
+            We select the required capabilities according to access.mode, according
+            to the capabilities supplied by this schema. 
         """
         # join the capabilities from each mode:
         required_capabilities = SchemaCapability.capabilities_for_modes(access.modes)
-        byname = {c for c, v in self._by_classname.items() if isinstance(
+        byname = {c for c, v in self._by_classname.items() if subclass is None or isinstance(
             v, subclass)}  # select name of those in given subclass
         missing = required_capabilities - byname
         if missing:
