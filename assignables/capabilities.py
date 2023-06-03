@@ -40,7 +40,7 @@ class SchemaCapability(assignable.Assignable):
 
 class Capabilities(assignable.Assignables):
 
-    def apply_capabilities(self, schema, access, transaction, data):
+    def apply(self, subclass: type[assignable.Assignable], schema, access, transaction, data):
         caps = self.select_capabilities(schema, access, transaction, data)
         for cap in caps:
             data = cap.apply(schema, access, transaction, data)

@@ -245,7 +245,7 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         raise errors.SubClass
 
     def validate_data(self, data: dict, remainder: keys.DDHkey, no_extra: bool = True) -> dict:
-        """ validate - called by Restriction """
+        """ validate - called by restrictions.MustValidate """
         return data
 
     def after_schema_read(self, access: permissions.Access, transaction) -> AbstractSchema:
@@ -265,12 +265,12 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         """
         schema = self
         schema = self.schema_attributes.restrictions.apply(
-            restrictions.SchemaRestriction, schema, self, access, transaction)
+            restrictions.SchemaRestriction, schema, access, transaction, schema)
         return schema
 
     def after_data_read(self, access: permissions.Access, transaction, data):
         """ check data obtained through Schema; may be used to apply capabilities """
-        data = self.schema_attributes.capabilities.apply_capabilities(self, access, transaction, data)
+        data = self.schema_attributes.capabilities.apply(capabilities.SchemaCapability, self, access, transaction, data)
         return data
 
     def before_data_write(self, access: permissions.Access, transaction, data):
@@ -280,9 +280,8 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
                 data under schema reference only if schema reprs are compatible
 
         """
-        data = self.schema_attributes.restrictions.apply(
-            restrictions.DataRestriction, self, access, transaction, data)
-        data = self.schema_attributes.capabilities.apply_capabilities(self, access, transaction, data)
+        data = self.schema_attributes.restrictions.apply(restrictions.DataRestriction, self, access, transaction, data)
+        data = self.schema_attributes.capabilities.apply(capabilities.SchemaCapability, self, access, transaction, data)
         return data
 
     def expand_references(self) -> AbstractSchema:

@@ -11,6 +11,8 @@ from utils import utils
 
 from . import errors
 
+Tsubject = typing.TypeVar('Tsubject')  # subject of apply
+
 
 class Assignable(DDHbaseModel, typing.Hashable):
     class Config:
@@ -61,6 +63,9 @@ class Assignable(DDHbaseModel, typing.Hashable):
                 return other
         else:  # all other case are equal
             return self
+
+    def apply(self,  assignables: Assignables, schema, access, transaction, subject: Tsubject) -> Tsubject:
+        return subject
 
 
 class Assignables(DDHbaseModel):
@@ -130,3 +135,10 @@ class Assignables(DDHbaseModel):
         """ add assignable by merging """
         assignables = utils.ensure_tuple(assignable)
         return self.merge(self.__class__(assignables=assignables))
+
+    def apply(self, subclass: type[Assignable], schema, access, transaction, subject: Tsubject) -> Tsubject:
+        """ apply assignables of subclass in turn """
+        for assignable in self.assignables:
+            if isinstance(assignable, subclass):
+                subject = assignable.apply(self, schema, access, transaction, subject)
+        return subject
