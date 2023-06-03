@@ -55,12 +55,16 @@ class Assignable(DDHbaseModel, typing.Hashable):
     def merge(self, other: Assignable) -> typing.Self | None:
         """ return the stronger of self and other assignables if self.may_overwrite,
             or None if self.may_overwrite and cancels. 
+
+            Must overwrite if Assignable carries attributes.
         """
         if self.may_overwrite:
-            if other.cancel:
+            if other.cancel or self.cancel:
                 return None
             else:
                 return other
+        elif self.cancel and other.may_overwrite:
+            return None
         else:  # all other case are equal
             return self
 
@@ -70,19 +74,30 @@ class Assignable(DDHbaseModel, typing.Hashable):
 
 class Assignables(DDHbaseModel):
     """ A collection of Assignable.
-        Assignable is not hashable, so we keep a list and build a dict with the class names. 
+        Assignable is hashable. We merge assignables of same class. 
     """
     assignables: set[Assignable] = set()
-    _by_classname: dict[str, Assignable] = {}
+    _by_classname: dict[str, Assignable] = {}  # lookup by class name
 
     def __init__(self, *a, **kw):
         if a:  # shortcut to allow Assignable as args
             kw['assignables'] = set(list(a)+kw.get('assignables', []))
         super().__init__(**kw)
-        self.assignables = {a._correct_class() for a in self.assignables}
-        self._by_classname = {r.__class__.__name__: r for r in self.assignables}
-        if len(self.assignables) != len(self._by_classname):
-            raise ValueError('Assignables not of unique class')  # Could do merge instead of desirable
+        merged = False
+        for assignable in {a._correct_class() for a in self.assignables}:
+            name = assignable.__class__.__name__
+            if prev := self._by_classname.get(name):  # two with same  name - merge them:
+                assignable = prev.merge(assignable)
+                merged = True
+                if assignable:
+                    self._by_classname[name] = assignable
+                else:  # merge returned None, remove it
+                    self._by_classname.pop(name)
+            else:
+                self._by_classname[name] = assignable
+        if merged:
+            # non-unique assignables can be merged or cancelled, so rebuild set:
+            self.assignables = set(self._by_classname.values())
         return
 
     def dict(self, *a, **kw):
