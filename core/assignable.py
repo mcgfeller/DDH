@@ -138,7 +138,12 @@ class Assignables(DDHbaseModel):
 
     def apply(self, subclass: type[Assignable], schema, access, transaction, subject: Tsubject) -> Tsubject:
         """ apply assignables of subclass in turn """
-        for assignable in self.assignables:
-            if isinstance(assignable, subclass):
-                subject = assignable.apply(self, schema, access, transaction, subject)
+        for assignable in self.select_for_apply(subclass, schema, access, transaction, subject):
+            subject = assignable.apply(self, schema, access, transaction, subject)
         return subject
+
+    def select_for_apply(self, subclass: type[Assignable] | None, schema, access, transaction, data) -> list[Assignable]:
+        """ select assignable for .apply()
+            Basisc selection is on subclass membership (if supplied), but may be refined.
+        """
+        return [a for a in self.assignables if subclass is None or isinstance(a, subclass)]

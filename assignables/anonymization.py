@@ -18,7 +18,7 @@ from . import capabilities
 class Anonymize(capabilities.SchemaCapability):
     supports_modes = {permissions.AccessMode.anonymous}
 
-    def apply(self, schema, access, transaction, data_by_principal: dict):
+    def apply(self, assignables: assignable.Assignables, schema, access, transaction, data_by_principal: dict):
         cache = {}
         return self.transform(schema, access, transaction, data_by_principal, cache)
 
@@ -78,7 +78,7 @@ class Anonymize(capabilities.SchemaCapability):
 class Pseudonymize(Anonymize):
     supports_modes = {permissions.AccessMode.pseudonym}
 
-    def apply(self, schema, access, transaction, data_by_principal: dict):
+    def apply(self,  assignables: assignable.Assignables, schema, access, transaction, data_by_principal: dict):
         pm = PseudonymMap.create(access, transaction, data_by_principal)
         r = self.transform(schema, access, transaction, data_by_principal, pm.cache)
         # the cache was filled during the transform - save it

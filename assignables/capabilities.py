@@ -40,16 +40,14 @@ class SchemaCapability(assignable.Assignable):
 
 class Capabilities(assignable.Assignables):
 
-    def apply(self, subclass: type[assignable.Assignable], schema, access, transaction, data):
-        caps = self.select_capabilities(schema, access, transaction, data)
-        for cap in caps:
-            data = cap.apply(schema, access, transaction, data)
-        return data
-
-    def select_capabilities(self, schema, access, transaction, data) -> typing.Iterable[SchemaCapability]:
+    def select_for_apply(self, subclass: type[assignable.Assignable] | None, schema, access, transaction, data) -> list[assignable.Assignable]:
+        """ select assignable for .apply()
+            Basisc selection is on subclass membership (if supplied), but may be refined.
+        """
         # join the capabilities from each mode:
         required_capabilities = SchemaCapability.capabilities_for_modes(access.modes)
-        byname = set(self._by_classname)
+        byname = {c for c, v in self._by_classname.items() if isinstance(
+            v, subclass)}  # select name of those in given subclass
         missing = required_capabilities - byname
         if missing:
             raise errors.CapabilityMissing(f"Schema {self} does not support required capabilities; missing {missing}")
