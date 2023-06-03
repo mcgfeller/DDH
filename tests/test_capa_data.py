@@ -2,7 +2,7 @@
 
 from core import keys, permissions, facade, errors, transactions, principals
 from core import pillars
-from assignables import capabilities
+from assignables import capabilities,anonymization
 from frontend import user_auth, sessions
 from backend import keyvault
 import pytest
@@ -114,9 +114,9 @@ async def test_read_pseudo_migros(user, transaction, migros_key_schema, migros_d
     trx = await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes)
     assert trx.actions
     pm = trx.actions[0].obj
-    assert isinstance(pm, capabilities.PseudonymMap)
+    assert isinstance(pm, anonymization.PseudonymMap)
     await trx.commit()  # store map
-    pm2 = capabilities.PseudonymMap.load(pm.id, trx)  # retrieve it
+    pm2 = anonymization.PseudonymMap.load(pm.id, trx)  # retrieve it
     assert len(pm.cache) == len(pm2.cache)  # datatype may vary slightly...
     return
 

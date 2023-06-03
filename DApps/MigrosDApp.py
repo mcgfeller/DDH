@@ -11,7 +11,7 @@ import pydantic
 
 from core import (common_ids, dapp_attrs, keys, nodes, permissions, users,
                   relationships, schemas, errors, versions)
-from assignables import capabilities
+from assignables import capabilities, anonymization
 from schema_formats import py_schema
 from utils import key_utils
 from glom import Iter, S, T, glom  # transform
@@ -40,7 +40,7 @@ class MigrosDApp(dapp_attrs.DApp):
 
     def get_schemas(self) -> dict[keys.DDHkey, schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
-        caps = capabilities.Capabilities(capabilities.Anonymize(), capabilities.Pseudonymize())
+        caps = capabilities.Capabilities(anonymization.Anonymize(), anonymization.Pseudonymize())
         sa = schemas.SchemaAttributes(version=versions.Version(self.version), capabilities=caps)
         return {keys.DDHkeyVersioned0(key="//org/migros.ch"): py_schema.PySchema(schema_element=MigrosSchema,
                                                                                  schema_attributes=sa)}
