@@ -39,5 +39,7 @@ def test_get_and_putdata_oldversion(user1):
     r = user1.get('/ddh/mgf/org/migros.ch')
     r.raise_for_status()
     data = r.json()
-    r = user1.put('/ddh/mgf/org/migros.ch:::0.2', json=data, params={'omit_owner': False})
-    r.raise_for_status()
+    with pytest.raises(httpx.HTTPStatusError):
+        r = user1.put('/ddh/mgf/org/migros.ch:::0.1', json=data, params={'omit_owner': False})
+        t = r.json()['detail']
+        r.raise_for_status()

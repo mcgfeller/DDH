@@ -156,7 +156,7 @@ DApp.update_forward_refs()
 class RunningDApp(DDHbaseModel):
     id: str | None = None  # principals.DAppId causes Pydantic errors - I don't know why
     dapp_version: versions.Version
-    schema_version: versions.Version
+    schema_version: versions.Version  # TODO: Use?
     location: pydantic.AnyHttpUrl
 
 

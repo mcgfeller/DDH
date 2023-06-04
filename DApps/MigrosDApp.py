@@ -39,11 +39,17 @@ class MigrosDApp(dapp_attrs.DApp):
             relationships.Reference.provides(self.transforms_into)
 
     def get_schemas(self) -> dict[keys.DDHkey, schemas.AbstractSchema]:
-        """ Obtain initial schema for DApp """
+        """ Obtain initial schema for DApp 
+            We supply a schema at a current version and and old version 0.1 for testing purposes. 
+        """
         caps = capabilities.Capabilities(anonymization.Anonymize(), anonymization.Pseudonymize())
         sa = schemas.SchemaAttributes(version=versions.Version(self.version), capabilities=caps)
+        sa_prev = schemas.SchemaAttributes(version=versions.Version('0.1'), capabilities=caps)
         return {keys.DDHkeyVersioned0(key="//org/migros.ch"): py_schema.PySchema(schema_element=MigrosSchema,
-                                                                                 schema_attributes=sa)}
+                                                                                 schema_attributes=sa),
+                keys.DDHkeyVersioned(key="//org/migros.ch:::0.1"): py_schema.PySchema(schema_element=MigrosSchema,
+                                                                                      schema_attributes=sa_prev),
+                }  # type:ignore
 
     def execute(self, req: dapp_attrs.ExecuteRequest):
         """ obtain data by recursing to schema """

@@ -74,13 +74,9 @@ class LatestVersion(DataRestriction):
     def apply(self,  assignables: assignable.Assignables, schema, access, transaction, data: assignable.Tsubject) -> assignable.Tsubject:
         dversion = access.ddhkey.version  # TODO:#14: Check if facade.ddh_put does not overwrite key with schema key?
         sversion = schema.schema_attributes.version
-        if dversion > sversion:
-            raise errors.VersionMismatch(f'Data version {dversion} later than schema version {sversion}')
-        elif dversion < sversion:
-            # TODO:#14: Check for upgrades
-            raise errors.VersionMismatch(f'Data version {dversion} not latest schema version {sversion}')
-        else:
-            return data
+        print(f'LatestVersion {sversion=}, {dversion=}')
+        # TODO:#14: Check for latest and for upgrades
+        return data
 
 
 class UnderSchemaReference(DataRestriction):
