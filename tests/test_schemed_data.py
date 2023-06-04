@@ -13,7 +13,18 @@ def test_get_and_putdata(user1):
     r.raise_for_status()
 
 
-def test_get_and_putdata_errors(user1):
+def test_get_and_putdata_nonexist(user1):
+    """ get data and rewrite it to same place with same user """
+    r = user1.get('/ddh/mgf/org/migros.ch')
+    r.raise_for_status()
+    data = r.json()
+    with pytest.raises(httpx.HTTPStatusError):
+        r = user1.put('/ddh/mgf/bad', json=data, params={'omit_owner': False})
+        t = r.json()['detail']
+        r.raise_for_status()
+
+
+def test_get_and_putdata_validation_errors(user1):
     """ get data and rewrite it to same place with same user, but with validation errors """
     r = user1.get('/ddh/mgf/org/migros.ch')
     r.raise_for_status()
