@@ -9,7 +9,7 @@ import pydantic
 from utils.pydantic_utils import DDHbaseModel
 from utils import utils
 
-from . import errors
+from . import errors, schemas, permissions, transactions
 
 Tsubject = typing.TypeVar('Tsubject')  # subject of apply
 
@@ -68,7 +68,7 @@ class Assignable(DDHbaseModel, typing.Hashable):
         else:  # all other case are equal
             return self
 
-    def apply(self,  assignables: Assignables, schema, access, transaction, subject: Tsubject) -> Tsubject:
+    def apply(self,  assignables: Assignables, schema: schemas.AbstractSchema, access: permissions.Access, transaction: transactions.Transaction, subject: Tsubject) -> Tsubject:
         return subject
 
 
@@ -151,6 +151,14 @@ class Assignables(DDHbaseModel):
         assignables = utils.ensure_tuple(assignable)
         return self.merge(self.__class__(assignables=assignables))
 
+    def effective(self) -> typing.Self:
+        """ Eliminate lone cancel directives """
+        assignables = {a for a in self.assignables if not a.cancel}
+        if len(assignables) < len(self.assignables):
+            return self.__class__(*assignables)
+        else:
+            return self
+
     def apply(self, subclass: type[Assignable], schema, access, transaction, subject: Tsubject) -> Tsubject:
         """ apply assignables of subclass in turn """
         for assignable in self.select_for_apply(subclass, schema, access, transaction, subject):
@@ -161,4 +169,4 @@ class Assignables(DDHbaseModel):
         """ select assignable for .apply()
             Basisc selection is on subclass membership (if supplied), but may be refined.
         """
-        return [a for a in self.assignables if subclass is None or isinstance(a, subclass)]
+        return [a for a in self.assignables if (not a.cancel) and (subclass is None or isinstance(a, subclass))]

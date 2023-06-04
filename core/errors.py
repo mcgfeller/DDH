@@ -53,7 +53,7 @@ class NotSelectable(DDHerror):
 
 
 class NotAcceptable(DDHerror):
-    """ This schema does not correspond to the Accept header medial types. """
+    """ This schema does not correspond to the Accept header media types. """
     http_status = 406
 
 
@@ -64,6 +64,11 @@ class ValidationError(DDHerror):
 
 class ParseError(ValidationError):
     """ The data cannot be parsed """
+    ...
+
+
+class VersionMismatch(ValidationError):
+    """ Schema and data versions do not match """
     ...
 
 

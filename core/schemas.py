@@ -276,8 +276,8 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
     def before_data_write(self, access: permissions.Access, transaction, data):
         """ check data against Schema; may be used to apply capabilities:
                 Data version must correspond to a schema version
-                non-latest version data cannot be put unless upgrade exists
-                data under schema reference only if schema reprs are compatible
+                LatestVersion: non-latest version data cannot be put unless upgrade exists
+                UnderSchemaReference: data under schema reference only if schema reprs are compatible
 
         """
         data = self.schema_attributes.restrictions.apply(restrictions.DataRestriction, self, access, transaction, data)

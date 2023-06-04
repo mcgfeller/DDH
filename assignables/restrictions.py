@@ -70,14 +70,32 @@ class NoExtraElements(DataRestriction):
 class LatestVersion(DataRestriction):
     """ Data must match latest version of schema or must be upgradable.
     """
-    ...
+
+    def apply(self,  assignables: assignable.Assignables, schema, access, transaction, data: assignable.Tsubject) -> assignable.Tsubject:
+        dversion = access.ddhkey.version  # TODO:#14: Check if facade.ddh_put does not overwrite key with schema key?
+        sversion = schema.schema_attributes.version
+        if dversion > sversion:
+            raise errors.VersionMismatch(f'Data version {dversion} later than schema version {sversion}')
+        elif dversion < sversion:
+            # TODO:#14: Check for upgrades
+            raise errors.VersionMismatch(f'Data version {dversion} not latest schema version {sversion}')
+        else:
+            return data
+
+
+class UnderSchemaReference(DataRestriction):
+    """ data under schema reference only if schema reprs are compatible """
+
+    def apply(self,  assignables: assignable.Assignables, schema, access, transaction, data: assignable.Tsubject) -> assignable.Tsubject:
+        return data
 
 
 NoRestrictions = Restrictions()
 # Root restrictions may be overwritten:
-RootRestrictions = Restrictions(MustValidate(may_overwrite=True), NoExtraElements(may_overwrite=True))
-NoValidation = Restrictions(~MustValidate(may_overwrite=True), ~NoExtraElements(may_overwrite=True))
-HighPrivacyRestrictions = Restrictions(
-    MustValidate(), NoExtraElements(), MustHaveSensitivites(), MustReview())
+RootRestrictions = Restrictions(MustValidate(may_overwrite=True), NoExtraElements(
+    may_overwrite=True), LatestVersion(may_overwrite=True), UnderSchemaReference())
+NoValidation = Restrictions(~MustValidate(may_overwrite=True), ~
+                            NoExtraElements(may_overwrite=True), UnderSchemaReference(), ~LatestVersion(may_overwrite=True))
+HighPrivacyRestrictions = RootRestrictions + [MustValidate(), NoExtraElements(), MustHaveSensitivites(), MustReview()]
 # Ensure we have a senior reviewer:
 HighestPrivacyRestrictions = HighPrivacyRestrictions+MustReview(by_roles={'senior'})

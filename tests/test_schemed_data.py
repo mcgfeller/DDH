@@ -32,3 +32,12 @@ def test_get_and_putdata_errors(user1):
         t = r.json()['detail']
         assert "is not of type 'integer'" in t
         r.raise_for_status()
+
+
+def test_get_and_putdata_oldversion(user1):
+    """ get data and rewrite it to same place with same user """
+    r = user1.get('/ddh/mgf/org/migros.ch')
+    r.raise_for_status()
+    data = r.json()
+    r = user1.put('/ddh/mgf/org/migros.ch:::0.2', json=data, params={'omit_owner': False})
+    r.raise_for_status()

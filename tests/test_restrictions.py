@@ -58,7 +58,7 @@ def test_restrictions_overwrite():
 
 @pytest.mark.parametrize('ddhkey,expected', [
     ('//p/finance/holdings/portfolio', restrictions.HighPrivacyRestrictions),
-    ('//org/private/documents', restrictions.NoRestrictions),
+    ('//org/private/documents', restrictions.NoValidation),
     ('//p/living/shopping/receipts', restrictions.RootRestrictions),
     ('//p/health/bloodworks', restrictions.HighestPrivacyRestrictions),
 ], ids=lambda x: x if isinstance(x, str) else '')
@@ -66,7 +66,7 @@ def test_root_restrictions(ddhkey: str, expected: restrictions.Restrictions, tra
     """ test restrictions in standard tree against expected results """
     schema, *d = schemas.SchemaContainer.get_node_schema_key(keys.DDHkey(ddhkey), transaction)
     restrictions = schema.schema_attributes.restrictions
-    assert restrictions == expected
+    assert restrictions == expected.effective()
 
 
 @pytest.fixture(scope='module')
