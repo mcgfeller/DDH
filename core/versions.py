@@ -227,12 +227,13 @@ class Upgrader(typing.Protocol):
     def __call__(self, v_from: Version, v_to: Version, *args: list, **kwargs: dict) -> bool: ...
 
 
-class Upgraders:
+class Upgraders:  # (DDHbaseModel):
     """ Class to hold upgrade functions for a version upgrade for a specific class (neutral to that class) """
 
-    upgraders: dict[tuple[Version, Version], Upgrader]
+    upgraders: dict[tuple[Version, Version], Upgrader] = {}
 
-    def __init__(self):
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
         self.network = networkx.DiGraph()
 
     def add_upgrader(self, v_from: Version, v_to: Version, function: Upgrader | None):

@@ -4,6 +4,7 @@ from __future__ import annotations
 import abc
 import enum
 import typing
+import weakref
 
 import pydantic
 
@@ -181,6 +182,7 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
     schema_attributes: SchemaAttributes = pydantic.Field(
         default=SchemaAttributes(), descriptor="Attributes associated with this Schema")
     mimetypes: typing.ClassVar[MimeTypes | None] = None
+    _w_container: weakref.ReferenceType[SchemaContainer] | None = None
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
@@ -216,6 +218,13 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
     def __init_subclass__(cls):
         SchemaFormat2Class[cls.format_designator] = cls
         Class2SchemaFormat[cls] = cls.format_designator
+
+    @property
+    def container(self) -> SchemaContainer:
+        assert self._w_container
+        c = self._w_container()
+        assert c is not None
+        return c
 
     def update_schema_attributes(self):
         """ update .schema_attributes based on schema.
@@ -427,9 +436,11 @@ class SchemaContainer(DDHbaseModel):
         keeps latest version in versions.Unspecified per variant
         and recommended as variant ''.
     """
+    __slots__: typing.ClassVar[tuple] = ('__weakref__',)  # allow weak ref to here
 
     schemas_by_variant: dict[SchemaVariant | None,
                              dict[versions.Version, AbstractSchema]] = {}
+    # upgraders: dict[SchemaVariant, versions.Upgraders] = {}
 
     def __bool__(self):
         return self.default_schema is not None
@@ -449,6 +460,7 @@ class SchemaContainer(DDHbaseModel):
         if sa.variant_usage == SchemaVariantUsage.recommended:  # latest recommended schema becomes default
             self.schemas_by_variant[''] = sbv
         SchemaNetwork.add_schema(key, schema.schema_attributes)
+        schema._w_container = weakref.ref(self)  # keep a ref to the container
         return schema
 
     def get(self, variant: SchemaVariant = '', version: versions.Version = versions.Unspecified) -> AbstractSchema | None:
@@ -507,3 +519,7 @@ class SchemaContainer(DDHbaseModel):
         # cands is dict of either specified variant or None for default variant (which has key None):
         cands = self.schemas_by_variant.get(ddhkey.variant, {})
         return (schema for version, schema in cands.items() if version in version_constraint)
+
+    def add_upgrader(self, variant: SchemaVariant, v_from: versions.Version, v_to: versions.Version, function: versions.Upgrader | None):
+        upgraders = self.upgraders.setdefault(variant, versions.Upgraders())
+        upgraders.add_upgrader(v_from, v_to, function)
