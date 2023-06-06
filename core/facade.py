@@ -84,7 +84,7 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                     case keys.ForkType.data:
                         # TODO: Checks
                         # + Schema exists for data version
-                        # - non-latest version only if upgrade exists (consider again: New Schema may make everything fail)
+                        # + non-latest version only if upgrade exists (consider again: New Schema may make everything fail)
                         # - Data within schema that includes schema reference only if schema can be expanded
                         try:
                             data = schema.parse(data)

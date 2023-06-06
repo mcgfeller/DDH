@@ -48,7 +48,7 @@ class NotFound(DDHerror):
 
 
 class NotSelectable(DDHerror):
-    """ This key cannot be selected because ressource has no subpported substructure. """
+    """ This key cannot be selected because ressource has no supported substructure. """
     http_status = 406
 
 

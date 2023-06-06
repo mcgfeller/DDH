@@ -18,11 +18,10 @@ def test_get_and_putdata_nonexist(user1):
     r = user1.get('/ddh/mgf/org/migros.ch')
     r.raise_for_status()
     data = r.json()
-    with pytest.raises(httpx.HTTPStatusError):
-        r = user1.put('/ddh/mgf/bad', json=data, params={'omit_owner': False})
-        t = r.json().get('detail')
-        assert 'does not exist' in t
-        r.raise_for_status()
+    r = user1.put('/ddh/mgf/bad', json=data, params={'omit_owner': False})
+    assert r.status_code == 404
+    t = r.json().get('detail')
+    assert 'does not exist' in t
 
 
 def test_get_and_putdata_validation_errors(user1):
@@ -30,20 +29,20 @@ def test_get_and_putdata_validation_errors(user1):
     r = user1.get('/ddh/mgf/org/migros.ch')
     r.raise_for_status()
     data = r.json()
+
     data['mgf']['bad'] = {'bla': 'foo'}
-    with pytest.raises(httpx.HTTPStatusError):
-        r = user1.put('/ddh/mgf/org/migros.ch', json=data, params={'omit_owner': False})
-        t = r.json().get('detail')
-        assert "'bad' was unexpected" in t
-        r.raise_for_status()
+    r = user1.put('/ddh/mgf/org/migros.ch', json=data, params={'omit_owner': False})
+    assert r.status_code == 422
+    t = r.json().get('detail')
+    assert "'bad' was unexpected" in t
 
     data['mgf'].pop('bad')
-    data['mgf']['receipts'][0]['Kassennummer'] = 436.5  # float is not  alloed
-    with pytest.raises(httpx.HTTPStatusError):
-        r = user1.put('/ddh/mgf/org/migros.ch', json=data, params={'omit_owner': False})
-        t = r.json().get('detail')
-        assert "is not of type 'integer'" in t
-        r.raise_for_status()
+    data['mgf']['receipts'][0]['Kassennummer'] = 436.5  # float is not  allowed
+
+    r = user1.put('/ddh/mgf/org/migros.ch', json=data, params={'omit_owner': False})
+    assert r.status_code == 422
+    t = r.json().get('detail')
+    assert "is not of type 'integer'" in t
     return
 
 
@@ -52,9 +51,8 @@ def test_get_and_putdata_oldversion(user1):
     r = user1.get('/ddh/mgf/org/migros.ch')
     r.raise_for_status()
     data = r.json()
-    with pytest.raises(httpx.HTTPStatusError):
-        r = user1.put('/ddh/mgf/org/migros.ch:::0.1', json=data, params={'omit_owner': False})
-        t = r.json().get('detail')
-        assert "is not latest version" in t
-        r.raise_for_status()
+    r = user1.put('/ddh/mgf/org/migros.ch:::0.1', json=data, params={'omit_owner': False})
+    assert r.status_code == 422
+    t = r.json().get('detail')
+    assert "is not latest version" in t
     return
