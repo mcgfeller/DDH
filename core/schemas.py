@@ -436,11 +436,14 @@ class SchemaContainer(DDHbaseModel):
         keeps latest version in versions.Unspecified per variant
         and recommended as variant ''.
     """
+    class Config:
+        arbitrary_types_allowed = True  # for upgraders
+
     __slots__: typing.ClassVar[tuple] = ('__weakref__',)  # allow weak ref to here
 
     schemas_by_variant: dict[SchemaVariant | None,
                              dict[versions.Version, AbstractSchema]] = {}
-    # upgraders: dict[SchemaVariant, versions.Upgraders] = {}
+    upgraders: dict[SchemaVariant, versions.Upgraders] = {}
 
     def __bool__(self):
         return self.default_schema is not None
