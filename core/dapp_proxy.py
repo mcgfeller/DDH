@@ -65,6 +65,12 @@ class DAppProxy(DDHbaseModel):
         genkey = schemakey.without_variant_version()
         snode = keydirectory.NodeRegistry[genkey].get(
             nodes.NodeSupports.schema)  # need exact location, not up the tree
+        # hook into parent schema:
+        parent, split = schemas.AbstractSchema.get_parent_schema(transaction, genkey)
+        # inherit restrictions:
+        schema.schema_attributes.restrictions = parent.schema_attributes.restrictions.merge(
+            schema.schema_attributes.restrictions)
+
         if snode:
             snode = typing.cast(nodes.SchemaNode, snode.ensure_loaded(transaction))
             snode.add_schema(schema)
@@ -73,11 +79,7 @@ class DAppProxy(DDHbaseModel):
             snode = nodes.SchemaNode(owner=owner, consents=schemas.AbstractSchema.get_schema_consents())
             keydirectory.NodeRegistry[genkey] = snode
             snode.add_schema(schema)
-            # hook into parent schema:
-            parent, split = schemas.AbstractSchema.get_parent_schema(transaction, genkey)
-            # inherit restrictions:
-            schema.schema_attributes.restrictions = parent.schema_attributes.restrictions.merge(
-                schema.schema_attributes.restrictions)
+
             parent.insert_schema_ref(transaction, genkey, split)
         return snode
 
