@@ -170,4 +170,9 @@ class PySchema(schemas.AbstractSchema):
     def validate_data(self, data: dict, remainder: keys.DDHkey, no_extra: bool = True) -> dict:
         subs = self.schema_element.descend_path(remainder)
         print(f'{self.__class__.__name__}.validate_data({type(data)}, {remainder=}, {no_extra=}, {subs=})')
+        if subs:
+            data = subs.parse_obj(data)
+        else:
+            raise errors.NotFound(f'path {remainder} does not exist')
+
         return data

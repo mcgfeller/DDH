@@ -54,6 +54,8 @@ class MustValidate(DataRestriction):
         for owner, d in data.items():  # loop through owners, as schema doesn't contain owner
             try:
                 data[owner] = schema.validate_data(d, remainder, no_extra=NoExtraElements in assignables)
+            except errors.DDHerror as e:
+                raise
             except Exception as e:
                 raise errors.ValidationError(e)
 
