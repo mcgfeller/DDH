@@ -43,6 +43,7 @@ def test_get_and_putdata_validation_errors(user1):
         t = r.json()['detail']
         assert "is not of type 'integer'" in t
         r.raise_for_status()
+    return
 
 
 def test_get_and_putdata_oldversion(user1):
@@ -53,4 +54,6 @@ def test_get_and_putdata_oldversion(user1):
     with pytest.raises(httpx.HTTPStatusError):
         r = user1.put('/ddh/mgf/org/migros.ch:::0.1', json=data, params={'omit_owner': False})
         t = r.json()['detail']
+        assert "is not latest version" in t
         r.raise_for_status()
+    return

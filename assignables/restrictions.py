@@ -4,7 +4,7 @@ from __future__ import annotations
 import typing
 import copy
 
-from core import (errors,  schemas, assignable)
+from core import (errors,  schemas, assignable, versions)
 
 Restrictions = assignable.Assignables  # Synonym, for easier reference, Restrictions are just Assignables
 
@@ -72,19 +72,28 @@ class LatestVersion(DataRestriction):
     """
 
     def apply(self,  assignables: assignable.Assignables, schema, access, transaction, data: assignable.Tsubject) -> assignable.Tsubject:
-        sversion = schema.schema_attributes.version
+        v_schema = schema.schema_attributes.version  # the version of our schema.
         container = schema.container
-        # TODO:#14: Check for latest and for upgrades
-        latest = container.get(schema.schema_attributes.variant)
-        lversion = latest.schema_attributes.version
-        print(f'LatestVersion {sversion=}, {lversion=}')
-        if lversion > sversion:
-            raise errors.VersionMismatch(f'Later version {lversion} available; version supplied {sversion}.')
+        latest = container.get(schema.schema_attributes.variant)  # latest schema version of this variant
+        v_latest = latest.schema_attributes.version
+        print(f'LatestVersion {v_schema=}, {v_latest=}')
+        if v_schema < v_latest:
+            # look for upgraders for our variant:
+            upgraders: versions.Upgraders = container.upgraders.get(schema.schema_attributes.variant)
+            if upgraders:
+                try:  # check whether we have a path
+                    upgrade_path = upgraders.upgrade_path(v_schema, v_latest)
+                except ValueError as e:
+                    raise errors.VersionMismatch(
+                        f'Version supplied {v_schema} is not latest version {v_latest} and no upgrade path exists ({e}).')
+            else:  # no upgraders registered
+                raise errors.VersionMismatch(
+                    f'Version supplied {v_schema} is not latest version {v_latest} and no upgraders are available')
         return data
 
 
 class UnderSchemaReference(DataRestriction):
-    """ data under schema reference only if schema reprs are compatible """
+    """ TODO: data under schema reference only if schema reprs are compatible """
 
     def apply(self,  assignables: assignable.Assignables, schema, access, transaction, data: assignable.Tsubject) -> assignable.Tsubject:
         return data
