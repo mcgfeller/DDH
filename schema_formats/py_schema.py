@@ -173,6 +173,6 @@ class PySchema(schemas.AbstractSchema):
         if subs:
             data = subs.parse_obj(data)
         else:
-            raise errors.NotFound(f'path {remainder} does not exist')
+            raise errors.NotFound(f'Path {remainder} is not in schema')
 
         return data

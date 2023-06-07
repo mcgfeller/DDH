@@ -92,7 +92,7 @@ class JsonSchema(schemas.AbstractSchema):
         if not validator:
             subs = self._descend_path(self.json_schema, remainder)
             if not subs:
-                raise errors.ValidationError(f'Path {remainder} is not in schema')
+                raise errors.NotFound(f'Path {remainder} is not in schema')
             vcls = jsonschema.validators.validator_for(subs)  # find correct validator for schema.
             validator = vcls(subs, format_checker=vcls.FORMAT_CHECKER)  # instantiate for subschema
             self._v_validators[remainder] = validator  # cache it

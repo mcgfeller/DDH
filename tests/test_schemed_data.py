@@ -21,7 +21,7 @@ def test_get_and_putdata_nonexist(user1):
     r = user1.put('/ddh/mgf/bad', json=data, params={'omit_owner': False})
     assert r.status_code == 404
     t = r.json().get('detail')
-    assert 'does not exist' in t
+    assert 'is not in schema' in t
 
 
 def test_get_and_putdata_validation_errors(user1):
