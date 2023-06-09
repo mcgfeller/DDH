@@ -13,6 +13,15 @@ def test_get_and_putdata(user1):
     r.raise_for_status()
 
 
+def test_get_and_putdata_std(user1):
+    """ get data and rewrite it to same place with same user """
+    r = user1.get('/ddh/mgf/p/living/shopping/receipts')
+    r.raise_for_status()
+    data = r.json()
+    r = user1.put('/ddh/mgf/p/living/shopping/receipts', json=data, params={'omit_owner': False})
+    r.raise_for_status()
+
+
 def test_get_and_putdata_nonexist(user1):
     """ get data and rewrite it to same place with same user """
     r = user1.get('/ddh/mgf/org/migros.ch')
