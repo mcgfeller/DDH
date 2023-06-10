@@ -4,25 +4,27 @@ from __future__ import annotations
 import typing
 import copy
 
-from core import (errors,  schemas, assignable, versions)
+from core import (errors,  schemas, assignable, versions, permissions)
 
-Restrictions = assignable.Assignables  # Synonym, for easier reference, Restrictions are just Assignables
+Restrictions = assignable.Applicables  # Synonym, for easier reference, Restrictions are just Assignables
 
 
-class SchemaRestriction(assignable.Assignable):
+class SchemaRestriction(assignable.Applicable):
     """ Restriction used for Schemas """
+    supports_modes = frozenset()  # {permissions.AccessMode.write}
 
     def apply(self,  assignables: assignable.Assignables, schema: schemas.AbstractSchema, access, transaction, subject: schemas.AbstractSchema) -> schemas.AbstractSchema:
         """ in a SchemaRestriction, the subject is schema. """
         return subject
 
 
-class DataRestriction(SchemaRestriction):
+class DataRestriction(assignable.Applicable):
     """ Restrictions on data for a schema """
-    ...
+    supports_modes = frozenset()  # {permissions.AccessMode.write}
 
 
 class MustReview(SchemaRestriction):
+
     by_roles: frozenset[str] = frozenset()
 
     def merge(self, other: MustReview) -> typing.Self | None:

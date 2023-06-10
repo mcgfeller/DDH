@@ -16,29 +16,14 @@ from backend import persistable
 SchemaCapability = typing.ForwardRef('SchemaCapability')
 
 
-class SchemaCapability(assignable.Assignable):
+class SchemaCapability(assignable.Applicable):
     """ Capability used for Schemas """
-    supports_modes: typing.ClassVar[frozenset[permissions.AccessMode]]  # supports_modes is a mandatory class variable
-    all_by_modes: typing.ClassVar[dict[permissions.AccessMode, set[str]]] = {}
-
-    @classmethod
-    def __init_subclass__(cls):
-        """ register all Capabilities by Mode """
-        super().__init_subclass__()
-        [cls.all_by_modes.setdefault(m, set()).add(cls.__name__) for m in cls.supports_modes]
-        return
-
-    @classmethod
-    def capabilities_for_modes(cls, modes: typing.Iterable[permissions.AccessMode]) -> set[str]:
-        """ return the capabilities required for the access modes """
-        caps = set.union(set(), *[c for m in modes if (c := cls.all_by_modes.get(m))])
-        return caps
 
     def apply(self, schema, access, transaction, data_by_principal: dict):
         return data_by_principal  # TODO: Check method in superclass
 
 
-class Capabilities(assignable.Assignables):
+class Capabilities(assignable.Applicables):
 
     def select_for_apply(self, subclass: type[assignable.Assignable] | None, schema, access, transaction, data) -> list[assignable.Assignable]:
         """ select assignable for .apply()

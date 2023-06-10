@@ -68,6 +68,29 @@ class Assignable(DDHbaseModel, typing.Hashable):
         else:  # all other case are equal
             return self
 
+
+class Applicable(Assignable):
+    supports_modes: typing.ClassVar[frozenset[permissions.AccessMode]]  # supports_modes is a mandatory class variable
+    all_by_modes: typing.ClassVar[dict[permissions.AccessMode, set[str]]] = {}
+
+    @classmethod
+    def __init_subclass__(cls):
+        """ register all Capabilities by Mode """
+        super().__init_subclass__()
+        if cls.__bases__[0] is Applicable:  # direct subclass
+            return
+        else:
+            sm = getattr(cls, 'supports_modes', None)
+            assert sm is not None, f'{cls} must have support_modes set'
+            [cls.all_by_modes.setdefault(m, set()).add(cls.__name__) for m in sm]
+        return
+
+    @classmethod
+    def capabilities_for_modes(cls, modes: typing.Iterable[permissions.AccessMode]) -> set[str]:
+        """ return the capabilities required for the access modes """
+        caps = set.union(set(), *[c for m in modes if (c := cls.all_by_modes.get(m))])
+        return caps
+
     def apply(self,  assignables: Assignables, schema: schemas.AbstractSchema, access: permissions.Access, transaction: transactions.Transaction, subject: Tsubject) -> Tsubject:
         return subject
 
@@ -158,6 +181,9 @@ class Assignables(DDHbaseModel):
             return self.__class__(*assignables)
         else:
             return self
+
+
+class Applicables(Assignables):
 
     def apply(self, subclass: type[Assignable], schema, access, transaction, subject: Tsubject) -> Tsubject:
         """ apply assignables of subclass in turn """
