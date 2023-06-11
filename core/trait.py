@@ -69,10 +69,10 @@ class Trait(DDHbaseModel, typing.Hashable):
             return self
 
 
-class Applicable(Trait):
+class Transformer(Trait):
     supports_modes: typing.ClassVar[frozenset[permissions.AccessMode]]   # supports_modes is a mandatory class variable
     only_modes: typing.ClassVar[frozenset[permissions.AccessMode]
-                                ] = frozenset()  # This Applicable is restricted to only_modes
+                                ] = frozenset()  # This Transformer is restricted to only_modes
     _all_by_modes: typing.ClassVar[dict[permissions.AccessMode, set[str]]] = {}
 
     @classmethod
@@ -182,7 +182,7 @@ class Traits(DDHbaseModel):
             return self
 
 
-class Applicables(Traits):
+class Transformers(Traits):
 
     def apply(self, subclass: type[Trait], schema, access, transaction, subject: Tsubject) -> Tsubject:
         """ apply traits of subclass in turn """
@@ -208,7 +208,7 @@ class Applicables(Traits):
                   and ((not v.only_modes) or access.modes in v.only_modes)
                   }
         # join the capabilities from each mode:
-        required_capabilities = Applicable.capabilities_for_modes(access.modes)
+        required_capabilities = Transformer.capabilities_for_modes(access.modes)
         missing = required_capabilities - byname
         if missing:
             raise errors.CapabilityMissing(f"Schema {self} does not support required capabilities; missing {missing}")
@@ -219,4 +219,4 @@ class Applicables(Traits):
             return []
 
 
-NoApplicables = Applicables()
+NoTransformers = Transformers()

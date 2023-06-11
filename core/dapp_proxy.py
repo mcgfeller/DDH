@@ -68,8 +68,8 @@ class DAppProxy(DDHbaseModel):
         # hook into parent schema:
         parent, split = schemas.AbstractSchema.get_parent_schema(transaction, genkey)
         # inherit restrictions:
-        schema.schema_attributes.applicables = parent.schema_attributes.applicables.merge(
-            schema.schema_attributes.applicables)
+        schema.schema_attributes.transformers = parent.schema_attributes.transformers.merge(
+            schema.schema_attributes.transformers)
 
         if snode:
             snode = typing.cast(nodes.SchemaNode, snode.ensure_loaded(transaction))
@@ -97,7 +97,7 @@ class DAppProxy(DDHbaseModel):
         for ref in attrs.references:
             # # we want node attributes of, so get the node:
             # snode, split = keydirectory.NodeRegistry.get_node(
-            #     ref.target, nodes.NodeSupports.schema, transaction)  # get applicable schema node for attributes
+            #     ref.target, nodes.NodeSupports.schema, transaction)  # get transformer schema node for attributes
             # sa = snode.schemas.get().schema_attributes
             # schema_network.add_schema_node(ref.target, sa)
             target = ref.target.ens()

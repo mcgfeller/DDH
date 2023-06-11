@@ -69,7 +69,7 @@ class Consent(DDHbaseModel):
 
     def check(self, access: Access, _principal_checked=False) -> tuple[bool, str]:
         """ check access and return boolean and text explaining why it's not ok.
-            If _principal_checked is True, applicable consents with correct principals 
+            If _principal_checked is True, transformer consents with correct principals 
             are checked, hence we don't need to double-check.
         """
         if (not _principal_checked) and self.grantedTo != principals.AllPrincipal and access.principal not in self.grantedTo:
@@ -132,14 +132,14 @@ class Consents(DDHbaseModel):
         """ all principals that enjoy Consent of mode """
         return set(sum([c.grantedTo for c in self.consents if mode in c.withModes], []))
 
-    def applicable_consents(self, principal: principals.Principal) -> list[Consent]:
+    def transformer_consents(self, principal: principals.Principal) -> list[Consent]:
         """ return list of Consents for this principal """
         return self._byPrincipal.get(principal.id, []) + self._byPrincipal.get(principals.AllPrincipal.id, [])
 
     def check(self, owners: typing.Iterable[principals.Principal], access: Access) -> tuple[bool, list[Consent], str]:
         msg = 'no consent'
         consent = None
-        for consent in self.applicable_consents(access.principal):
+        for consent in self.transformer_consents(access.principal):
             ok, msg = consent.check(access, _principal_checked=True)
             if ok:
                 return ok, [consent], msg
@@ -225,7 +225,7 @@ class Access(DDHbaseModel):
         self.modes.add(mode)
 
     def permitted(self, node: nodes.Node | None, owner: principals.Principal | None = None, record_access: bool = True) -> tuple[bool, list[Consent], set[Principal], str]:
-        """ checks whether access is permitted, returning (bool,required flags,applicable consent,explanation text)
+        """ checks whether access is permitted, returning (bool,required flags,transformer consent,explanation text)
             if record_access is set, the result is recorded into self.
         """
         used_consents = []
@@ -240,7 +240,7 @@ class Access(DDHbaseModel):
             if len(keyowners) == 1 and self.principal == keyowners[0]:
                 ok, msg = True, 'principal is key owner'
                 consentees = {self.principal}
-            else:  # no applicable node, and keyowner is not principal accessor!
+            else:  # no transformer node, and keyowner is not principal accessor!
                 ok, msg = False, f'No data/consent node found for key {self.ddhkey}'
         else:  # we have a node
             if (self.principal,) == node.owners:  # single owner == principal

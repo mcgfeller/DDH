@@ -42,9 +42,9 @@ class MigrosDApp(dapp_attrs.DApp):
         """ Obtain initial schema for DApp 
             We supply a schema at a current version and and old version 0.1 for testing purposes. 
         """
-        caps = trait.Applicables(anonymization.Anonymize(), anonymization.Pseudonymize())
-        sa = schemas.SchemaAttributes(version=versions.Version(self.version), applicables=caps)
-        sa_prev = schemas.SchemaAttributes(version=versions.Version('0.1'), applicables=caps)
+        caps = trait.Transformers(anonymization.Anonymize(), anonymization.Pseudonymize())
+        sa = schemas.SchemaAttributes(version=versions.Version(self.version), transformers=caps)
+        sa_prev = schemas.SchemaAttributes(version=versions.Version('0.1'), transformers=caps)
         return {keys.DDHkeyVersioned0(key="//org/migros.ch"): py_schema.PySchema(schema_element=MigrosSchema,
                                                                                  schema_attributes=sa),
                 keys.DDHkeyVersioned(key="//org/migros.ch:::0.1"): py_schema.PySchema(schema_element=MigrosSchema,

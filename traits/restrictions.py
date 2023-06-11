@@ -6,10 +6,10 @@ import copy
 
 from core import (errors,  schemas, trait, versions, permissions)
 
-Restrictions = trait.Applicables  # Synonym, for easier reference, Restrictions are just Traits
+Restrictions = trait.Transformers  # Synonym, for easier reference, Restrictions are just Traits
 
 
-class SchemaRestriction(trait.Applicable):
+class SchemaRestriction(trait.Transformer):
     """ Restriction used for Schemas """
     supports_modes = frozenset()  # {permissions.AccessMode.write}
 
@@ -18,7 +18,7 @@ class SchemaRestriction(trait.Applicable):
         return subject
 
 
-class DataRestriction(trait.Applicable):
+class DataRestriction(trait.Transformer):
     """ Restrictions on data for a schema """
     supports_modes = frozenset()  # {permissions.AccessMode.write}
 

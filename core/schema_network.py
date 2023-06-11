@@ -75,7 +75,7 @@ class SchemaNetworkClass():
     def add_schema_range(self, rangekey: keys.DDHkeyRange):
         """ add a range and base schema, link them.
             Note: the link is from base to range, so there is no direct path in the graph 
-            .complete_graph() will link the range with applicable versions, creating a path.
+            .complete_graph() will link the range with transformer versions, creating a path.
         """
         refbase = rangekey.without_variant_version()
         self._network.add_node(refbase, id=str(refbase), type='schema')  # ensure base of reference is there

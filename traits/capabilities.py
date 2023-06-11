@@ -16,7 +16,7 @@ from backend import persistable
 SchemaCapability = typing.ForwardRef('SchemaCapability')
 
 
-class SchemaCapability(trait.Applicable):
+class SchemaCapability(trait.Transformer):
     """ Capability used for Schemas """
     supports_modes = frozenset()
 

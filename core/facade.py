@@ -175,7 +175,7 @@ def put_schema(access: permissions.Access, transaction: transactions.Transaction
         TODO: WIP
     """
     snode, split = keydirectory.NodeRegistry.get_node(
-        access.ddhkey, nodes.NodeSupports.schema, transaction)  # get applicable schema nodes
+        access.ddhkey, nodes.NodeSupports.schema, transaction)  # get transformer schema nodes
 
     if snode:
         access.raise_if_not_permitted(keydirectory.NodeRegistry._get_consent_node(
