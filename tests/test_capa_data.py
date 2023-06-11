@@ -2,7 +2,7 @@
 
 from core import keys, permissions, facade, errors, transactions, principals
 from core import pillars
-from assignables import capabilities,anonymization
+from traits import capabilities, anonymization
 from frontend import user_auth, sessions
 from backend import keyvault
 import pytest

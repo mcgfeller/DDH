@@ -8,7 +8,7 @@ import logging
 
 from core import keys, schemas, nodes, keydirectory, principals, versions
 from schema_formats import py_schema
-from assignables import restrictions
+from traits import restrictions
 from frontend import sessions
 logger = logging.getLogger(__name__)
 

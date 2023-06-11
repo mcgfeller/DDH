@@ -1,7 +1,7 @@
 import functools
 
-from core import assignable
-from assignables import privileges
+from core import trait
+from traits import privileges
 import pytest
 
 
@@ -16,7 +16,7 @@ def test_privileges():
     p4 = privileges.OutgoingURL(urls=['https://coop.ch/dapp'])
     assert len({p1, p2, p2a, p3, p1, p2, p3, p4}) == 4  # type: ignore
     # non-unique classes, must be merged:
-    ps = assignable.Assignables(p1, p2, p2a, p3, p1, p2, p3, p4)
+    ps = trait.Traits(p1, p2, p2a, p3, p1, p2, p3, p4)
     assert len(ps) == 3
     return
 
@@ -28,11 +28,11 @@ def test_merge():
     pboth = privileges.OutgoingURL(urls=['https://migros.ch/dapp', 'https://coop.ch/dapp'])
     assert p3.merge(p4) == pboth
 
-    P3 = assignable.Assignables(p3)
-    P4 = assignable.Assignables(p4)
+    P3 = trait.Traits(p3)
+    P4 = trait.Traits(p4)
     PM = P3.merge(P4)
-    assert len(PM.assignables) == 1
-    e = list(PM.assignables)[0]
+    assert len(PM.traits) == 1
+    e = list(PM.traits)[0]
     assert e == pboth
     return
 
@@ -41,13 +41,13 @@ def test_cancel():
     p2 = privileges.IncomingURL(urls=['https://migros.ch/dapp'], may_overwrite=True)
     p3 = privileges.OutgoingURL(urls=['https://migros.ch/dapp'], may_overwrite=True)  # type: ignore
     p3c = privileges.OutgoingURL(cancel=True)  # cancels p3
-    ps = assignable.Assignables(p2, p3, p3c)
+    ps = trait.Traits(p2, p3, p3c)
     assert len(ps) == 1  # only p2 survives
     assert privileges.IncomingURL in ps
 
     p4 = privileges.OutgoingURL(urls=['https://migros.ch/dapp'], may_overwrite=False)  # type: ignore
     p3c = privileges.OutgoingURL(cancel=True)  # cannot cancel p4, as this doesn't  allow overwrite
-    ps = assignable.Assignables(p2, p4, p3c)
+    ps = trait.Traits(p2, p4, p3c)
     assert len(ps) == 2  # only p2 and p4 survive
     assert p2 in ps
     assert p4 in ps

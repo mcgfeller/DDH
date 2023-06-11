@@ -10,13 +10,13 @@ import datetime
 import pydantic
 from utils.pydantic_utils import DDHbaseModel, tuple_key_to_str, str_to_tuple_key
 
-from core import (errors, versions, permissions, schemas, transactions, assignable)
+from core import (errors, versions, permissions, schemas, transactions, trait)
 from backend import persistable
 
 SchemaCapability = typing.ForwardRef('SchemaCapability')
 
 
-class SchemaCapability(assignable.Applicable):
+class SchemaCapability(trait.Applicable):
     """ Capability used for Schemas """
     supports_modes = frozenset()
 

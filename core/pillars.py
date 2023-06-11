@@ -14,7 +14,7 @@ from utils import import_modules
 import DApps
 import schema_formats
 import standard_schemas
-import assignables
+import traits
 
 from utils.pydantic_utils import DDHbaseModel
 
@@ -38,8 +38,8 @@ def load_standard_schemas():
     schemas.SchemaNetwork.valid.invalidate()  # finished
 
 
-def load_assignables():
-    import_modules.importAllSubPackages(assignables)
+def load_traits():
+    import_modules.importAllSubPackages(traits)
 
 
 Pillars = {  # collect the singletons so we can pass them to whomever needs them for their initialization
@@ -49,4 +49,4 @@ Pillars = {  # collect the singletons so we can pass them to whomever needs them
 dapp_proxy.DAppManager.bootstrap(Pillars)
 load_schema_formats()
 load_standard_schemas()
-load_assignables()
+load_traits()

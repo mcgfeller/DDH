@@ -7,13 +7,13 @@ import abc
 
 import pydantic
 
-from core import errors, assignable
+from core import errors, trait
 
 _Privilege = typing.ForwardRef('_Privilege')  # type: ignore
 _DAppPrivilege = typing.ForwardRef('_DAppPrivilege')  # type: ignore
 
 
-class _Privilege(assignable.Assignable):
+class _Privilege(trait.Trait):
     ...
 
 
@@ -41,8 +41,8 @@ class _Ports(_DAppPrivilege):
     urls: frozenset[pydantic.AnyUrl] = frozenset()
 
     def merge(self, other: _Ports) -> typing.Self | None:
-        """ return the stronger of self and other assignables, creating a new combined 
-            Assignables.
+        """ return the stronger of self and other traits, creating a new combined 
+            Traits.
         """
         r = super().merge(other)
         if r is None:
@@ -69,7 +69,7 @@ class SensitiveDataRead(_DAppPrivilege):
     ...
 
 
-class DAppPrivileges(assignable.Assignables):
+class DAppPrivileges(trait.Traits):
     pass
 
 

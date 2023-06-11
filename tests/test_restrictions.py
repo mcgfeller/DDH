@@ -2,7 +2,7 @@
 
 import pytest
 from core import schemas, keys
-from assignables import restrictions
+from traits import restrictions
 from frontend import sessions
 
 
@@ -31,26 +31,26 @@ def test_restrictions():
     r1 = restrictions.MustReview()
     r2 = restrictions.MustReview(by_roles={'boss'})
     r3 = restrictions.MustHaveSensitivites()
-    R1 = restrictions.Restrictions(assignables=[r1])
+    R1 = restrictions.Restrictions(traits=[r1])
     assert restrictions.MustReview in R1
     assert restrictions.MustHaveSensitivites not in R1
-    R1a = restrictions.Restrictions(assignables=[r1])
+    R1a = restrictions.Restrictions(traits=[r1])
     assert R1 == R1a
     assert R1.merge(R1) is R1
     assert R1.merge(R1a) is R1
 
-    R2 = restrictions.Restrictions(assignables=[r2])
-    assert R1.merge(R2) == restrictions.Restrictions(assignables=[r2])  # r1 is weaker than r2
-    R13 = restrictions.Restrictions(assignables=[r1, r3])
-    assert R1.merge(R13) == restrictions.Restrictions(assignables=[r1, r3])
-    assert R2.merge(R13) == restrictions.Restrictions(assignables=[r2, r3])
+    R2 = restrictions.Restrictions(traits=[r2])
+    assert R1.merge(R2) == restrictions.Restrictions(traits=[r2])  # r1 is weaker than r2
+    R13 = restrictions.Restrictions(traits=[r1, r3])
+    assert R1.merge(R13) == restrictions.Restrictions(traits=[r1, r3])
+    assert R2.merge(R13) == restrictions.Restrictions(traits=[r2, r3])
 
 
 def test_restrictions_overwrite():
     r1 = restrictions.MustReview(may_overwrite=True)
     r2 = restrictions.MustHaveSensitivites()
-    R1 = restrictions.Restrictions(assignables=[r1, r2])
-    R2 = restrictions.Restrictions(assignables=[~r1])
+    R1 = restrictions.Restrictions(traits=[r1, r2])
+    R2 = restrictions.Restrictions(traits=[~r1])
     RM = R1.merge(R2)
     assert restrictions.MustReview not in RM  # omitted by overwrite
     assert restrictions.MustHaveSensitivites in RM  # may not overwritten

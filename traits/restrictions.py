@@ -4,21 +4,21 @@ from __future__ import annotations
 import typing
 import copy
 
-from core import (errors,  schemas, assignable, versions, permissions)
+from core import (errors,  schemas, trait, versions, permissions)
 
-Restrictions = assignable.Applicables  # Synonym, for easier reference, Restrictions are just Assignables
+Restrictions = trait.Applicables  # Synonym, for easier reference, Restrictions are just Traits
 
 
-class SchemaRestriction(assignable.Applicable):
+class SchemaRestriction(trait.Applicable):
     """ Restriction used for Schemas """
     supports_modes = frozenset()  # {permissions.AccessMode.write}
 
-    def apply(self,  assignables: assignable.Assignables, schema: schemas.AbstractSchema, access, transaction, subject: schemas.AbstractSchema) -> schemas.AbstractSchema:
+    def apply(self,  traits: trait.Traits, schema: schemas.AbstractSchema, access, transaction, subject: schemas.AbstractSchema) -> schemas.AbstractSchema:
         """ in a SchemaRestriction, the subject is schema. """
         return subject
 
 
-class DataRestriction(assignable.Applicable):
+class DataRestriction(trait.Applicable):
     """ Restrictions on data for a schema """
     supports_modes = frozenset()  # {permissions.AccessMode.write}
 
@@ -51,11 +51,11 @@ class MustHaveSensitivites(SchemaRestriction):
 class MustValidate(DataRestriction):
     """ Data must be validated """
 
-    def apply(self,  assignables: assignable.Assignables, schema, access, transaction, data: assignable.Tsubject) -> assignable.Tsubject:
+    def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject) -> trait.Tsubject:
         remainder = access.ddhkey.remainder(access.schema_key_split)
         for owner, d in data.items():  # loop through owners, as schema doesn't contain owner
             try:
-                data[owner] = schema.validate_data(d, remainder, no_extra=NoExtraElements in assignables)
+                data[owner] = schema.validate_data(d, remainder, no_extra=NoExtraElements in traits)
             except errors.DDHerror as e:
                 raise
             except Exception as e:
@@ -75,7 +75,7 @@ class LatestVersion(DataRestriction):
     """ Data must match latest version of schema or must be upgradable.
     """
 
-    def apply(self,  assignables: assignable.Assignables, schema, access, transaction, data: assignable.Tsubject) -> assignable.Tsubject:
+    def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject) -> trait.Tsubject:
         v_schema = schema.schema_attributes.version  # the version of our schema.
         container = schema.container
         latest = container.get(schema.schema_attributes.variant)  # latest schema version of this variant
@@ -99,7 +99,7 @@ class LatestVersion(DataRestriction):
 class UnderSchemaReference(DataRestriction):
     """ TODO: data under schema reference only if schema reprs are compatible """
 
-    def apply(self,  assignables: assignable.Assignables, schema, access, transaction, data: assignable.Tsubject) -> assignable.Tsubject:
+    def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject) -> trait.Tsubject:
         return data
 
 

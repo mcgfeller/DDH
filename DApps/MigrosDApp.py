@@ -10,8 +10,8 @@ import pandas  # for example
 import pydantic
 
 from core import (common_ids, dapp_attrs, keys, nodes, permissions, users,
-                  relationships, schemas, errors, versions, assignable)
-from assignables import anonymization
+                  relationships, schemas, errors, versions, trait)
+from traits import anonymization
 from schema_formats import py_schema
 from utils import key_utils
 from glom import Iter, S, T, glom  # transform
@@ -42,7 +42,7 @@ class MigrosDApp(dapp_attrs.DApp):
         """ Obtain initial schema for DApp 
             We supply a schema at a current version and and old version 0.1 for testing purposes. 
         """
-        caps = assignable.Applicables(anonymization.Anonymize(), anonymization.Pseudonymize())
+        caps = trait.Applicables(anonymization.Anonymize(), anonymization.Pseudonymize())
         sa = schemas.SchemaAttributes(version=versions.Version(self.version), applicables=caps)
         sa_prev = schemas.SchemaAttributes(version=versions.Version('0.1'), applicables=caps)
         return {keys.DDHkeyVersioned0(key="//org/migros.ch"): py_schema.PySchema(schema_element=MigrosSchema,
