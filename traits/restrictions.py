@@ -11,7 +11,8 @@ Restrictions = trait.Transformers  # Synonym, for easier reference, Restrictions
 
 class SchemaRestriction(trait.Transformer):
     """ Restriction used for Schemas """
-    supports_modes = frozenset()  # {permissions.AccessMode.write}
+    supports_modes = frozenset()  # Restriction is not invoked by mode
+    only_modes = {permissions.AccessMode.write}  # no checks for read
 
     def apply(self,  traits: trait.Traits, schema: schemas.AbstractSchema, access, transaction, subject: schemas.AbstractSchema) -> schemas.AbstractSchema:
         """ in a SchemaRestriction, the subject is schema. """
@@ -20,7 +21,8 @@ class SchemaRestriction(trait.Transformer):
 
 class DataRestriction(trait.Transformer):
     """ Restrictions on data for a schema """
-    supports_modes = frozenset()  # {permissions.AccessMode.write}
+    supports_modes = frozenset()  # Restriction is not invoked by mode
+    only_modes = {permissions.AccessMode.write}  # no checks for read
 
 
 class MustReview(SchemaRestriction):

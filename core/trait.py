@@ -1,4 +1,19 @@
-""" Qualities that can be assigned to an object """
+""" Traits that can be assigned to an object.
+
+    Hierarchy:
+
+    Trait 
+        Transformer that transforms (or create or check) data
+            Capability of a schema, required by modes
+            Restriction on a schema
+    Privilege that can be checked
+
+    Collections:
+        Traits[Trait]
+        Transformers[Transformer]
+
+
+"""
 from __future__ import annotations
 
 
