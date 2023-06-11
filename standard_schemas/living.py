@@ -22,7 +22,7 @@ class Receipt(py_schema.PySchemaElement):
 
 
 class Receipts(py_schema.PySchemaElement):
-    receipts = list[Receipt]
+    receipts: list[Receipt]
 
 
 def install():
