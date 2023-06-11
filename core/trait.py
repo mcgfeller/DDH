@@ -205,12 +205,6 @@ class Transformers(Traits):
             subject = trait.apply(self, schema, access, transaction, subject)
         return subject
 
-    # def select_for_apply(self, subclass: type[Trait] | None, schema, access, transaction, data) -> list[Trait]:
-    #     """ select trait for .apply()
-    #         Basisc selection is on subclass membership (if supplied), but may be refined.
-    #     """
-    #     return [a for a in self.traits if (not a.cancel) and (subclass is None or isinstance(a, subclass))]
-
     def select_for_apply(self, subclass: type[Trait] | None, schema, access, transaction, data) -> list[Trait]:
         """ select trait for .apply()
             We select the required capabilities according to access.mode, according
@@ -220,7 +214,7 @@ class Transformers(Traits):
         byname = {c for c, v in self._by_classname.items() if
                   (not v.cancel)
                   and (subclass is None or isinstance(v, subclass))
-                  and ((not v.only_modes) or access.modes in v.only_modes)
+                  and ((not v.only_modes) or access.modes & v.only_modes)
                   }
         # join the capabilities from each mode:
         required_capabilities = Transformer.capabilities_for_modes(access.modes)
