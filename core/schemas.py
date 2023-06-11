@@ -12,7 +12,7 @@ from frontend import user_auth
 from utils.pydantic_utils import DDHbaseModel
 
 from . import (errors, keydirectory, keys, nodes, permissions, principals,
-               versions, schema_network)
+               versions, schema_network, assignable)
 from assignables import restrictions, capabilities
 
 
@@ -104,8 +104,7 @@ class SchemaAttributes(DDHbaseModel):
     references: dict[str, keys.DDHkeyRange] = {}  # TODO:#17 key should be DDHkey
     sensitivities: dict[Sensitivity, T_PathFields] = pydantic.Field(default={},
                                                                     description="Sensitivities by Sensitivity, schema key, set of fields. We cannot use DDHKey for schema key, as the dict is not jsonable.")
-    capabilities: capabilities.Capabilities = capabilities.NoCapabilities
-    restrictions: restrictions.Restrictions = restrictions.NoRestrictions
+    applicables: assignable.Applicables = assignable.NoApplicables
 
     def add_reference(self, path: keys.DDHkey, reference: AbstractSchemaReference):
         print(f'SchemaAttributes.add_reference {path=}, {reference=}')
@@ -143,8 +142,8 @@ class AbstractSchemaElement(DDHbaseModel, abc.ABC):
             s.schema_attributes = schema_attributes
             s.update_schema_attributes()
         if parent:  # inherit restrictions
-            s.schema_attributes.restrictions = parent.schema_attributes.restrictions.merge(
-                s.schema_attributes.restrictions)
+            s.schema_attributes.applicables = parent.schema_attributes.applicables.merge(
+                s.schema_attributes.applicables)
         snode = nodes.SchemaNode(owner=principals.RootPrincipal,
                                  consents=AbstractSchema.get_schema_consents())
         keydirectory.NodeRegistry[ddhkey] = snode  # sets snode.key
@@ -273,13 +272,13 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
 
         """
         schema = self
-        schema = self.schema_attributes.restrictions.apply(
+        schema = self.schema_attributes.applicables.apply(
             restrictions.SchemaRestriction, schema, access, transaction, schema)
         return schema
 
     def after_data_read(self, access: permissions.Access, transaction, data):
         """ check data obtained through Schema; may be used to apply capabilities """
-        data = self.schema_attributes.capabilities.apply(capabilities.SchemaCapability, self, access, transaction, data)
+        data = self.schema_attributes.applicables.apply(capabilities.SchemaCapability, self, access, transaction, data)
         return data
 
     def before_data_write(self, access: permissions.Access, transaction, data):
@@ -289,8 +288,8 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
                 UnderSchemaReference: data under schema reference only if schema reprs are compatible
 
         """
-        data = self.schema_attributes.restrictions.apply(restrictions.DataRestriction, self, access, transaction, data)
-        data = self.schema_attributes.capabilities.apply(capabilities.SchemaCapability, self, access, transaction, data)
+        for cls in (restrictions.DataRestriction, capabilities.SchemaCapability):
+            data = self.schema_attributes.applicables.apply(cls, self, access, transaction, data)
         return data
 
     def expand_references(self) -> AbstractSchema:

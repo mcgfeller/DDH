@@ -70,25 +70,24 @@ class Assignable(DDHbaseModel, typing.Hashable):
 
 
 class Applicable(Assignable):
-    supports_modes: typing.ClassVar[frozenset[permissions.AccessMode]]  # supports_modes is a mandatory class variable
-    all_by_modes: typing.ClassVar[dict[permissions.AccessMode, set[str]]] = {}
+    supports_modes: typing.ClassVar[frozenset[permissions.AccessMode]]   # supports_modes is a mandatory class variable
+    only_modes: typing.ClassVar[frozenset[permissions.AccessMode]
+                                ] = frozenset()  # This Applicable is restricted to only_modes
+    _all_by_modes: typing.ClassVar[dict[permissions.AccessMode, set[str]]] = {}
 
     @classmethod
     def __init_subclass__(cls):
         """ register all Capabilities by Mode """
         super().__init_subclass__()
-        if cls.__bases__[0] is Applicable:  # direct subclass
-            return
-        else:
-            sm = getattr(cls, 'supports_modes', None)
-            assert sm is not None, f'{cls} must have support_modes set'
-            [cls.all_by_modes.setdefault(m, set()).add(cls.__name__) for m in sm]
+        sm = getattr(cls, 'supports_modes', None)
+        assert sm is not None, f'{cls} must have support_modes set'
+        [cls._all_by_modes.setdefault(m, set()).add(cls.__name__) for m in sm]
         return
 
     @classmethod
     def capabilities_for_modes(cls, modes: typing.Iterable[permissions.AccessMode]) -> set[str]:
         """ return the capabilities required for the access modes """
-        caps = set.union(set(), *[c for m in modes if (c := cls.all_by_modes.get(m))])
+        caps = set.union(set(), *[c for m in modes if (c := cls._all_by_modes.get(m))])
         return caps
 
     def apply(self,  assignables: Assignables, schema: schemas.AbstractSchema, access: permissions.Access, transaction: transactions.Transaction, subject: Tsubject) -> Tsubject:
@@ -191,8 +190,33 @@ class Applicables(Assignables):
             subject = assignable.apply(self, schema, access, transaction, subject)
         return subject
 
+    # def select_for_apply(self, subclass: type[Assignable] | None, schema, access, transaction, data) -> list[Assignable]:
+    #     """ select assignable for .apply()
+    #         Basisc selection is on subclass membership (if supplied), but may be refined.
+    #     """
+    #     return [a for a in self.assignables if (not a.cancel) and (subclass is None or isinstance(a, subclass))]
+
     def select_for_apply(self, subclass: type[Assignable] | None, schema, access, transaction, data) -> list[Assignable]:
         """ select assignable for .apply()
-            Basisc selection is on subclass membership (if supplied), but may be refined.
+            We select the required capabilities according to access.mode, according
+            to the capabilities supplied by this schema. 
         """
-        return [a for a in self.assignables if (not a.cancel) and (subclass is None or isinstance(a, subclass))]
+        # select name of those in given subclass
+        byname = {c for c, v in self._by_classname.items() if
+                  (not v.cancel)
+                  and (subclass is None or isinstance(v, subclass))
+                  and ((not v.only_modes) or access.modes in v.only_modes)
+                  }
+        # join the capabilities from each mode:
+        required_capabilities = Applicable.capabilities_for_modes(access.modes)
+        missing = required_capabilities - byname
+        if missing:
+            raise errors.CapabilityMissing(f"Schema {self} does not support required capabilities; missing {missing}")
+        if byname:
+            return [self._by_classname[c] for c in byname.intersection(required_capabilities)] + \
+                [v for c in byname if not (v := self._by_classname[c]).supports_modes]
+        else:
+            return []
+
+
+NoApplicables = Applicables()

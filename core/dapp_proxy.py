@@ -68,8 +68,8 @@ class DAppProxy(DDHbaseModel):
         # hook into parent schema:
         parent, split = schemas.AbstractSchema.get_parent_schema(transaction, genkey)
         # inherit restrictions:
-        schema.schema_attributes.restrictions = parent.schema_attributes.restrictions.merge(
-            schema.schema_attributes.restrictions)
+        schema.schema_attributes.applicables = parent.schema_attributes.applicables.merge(
+            schema.schema_attributes.applicables)
 
         if snode:
             snode = typing.cast(nodes.SchemaNode, snode.ensure_loaded(transaction))

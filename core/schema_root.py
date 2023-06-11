@@ -28,7 +28,7 @@ def register_schema() -> nodes.SchemaNode:
         root_node = nodes.SchemaNode(owner=principals.RootPrincipal,
                                      consents=schemas.AbstractSchema.get_schema_consents())
         keydirectory.NodeRegistry[root] = root_node
-        schema.schema_attributes.restrictions = restrictions.RootRestrictions  # set restrictions on root
+        schema.schema_attributes.applicables = restrictions.RootRestrictions  # set restrictions on root
         root_node.add_schema(schema)
         inherit_attributes(schema, transaction)
         schemas.SchemaNetwork.valid.invalidate()  # finished
@@ -77,10 +77,10 @@ def build_root_schemas():
     attributes = {
         ('root', '', 'p', 'employment', 'salary', 'statements'): schemas.SchemaAttributes(requires=schemas.Requires.specific),
         ('root', '', 'p', 'finance', 'holdings', 'portfolio'): schemas.SchemaAttributes(requires=schemas.Requires.specific),
-        ('root', '', 'p', 'health'): schemas.SchemaAttributes(restrictions=restrictions.HighestPrivacyRestrictions),
-        ('root', '', 'p', 'finance'): schemas.SchemaAttributes(restrictions=restrictions.HighPrivacyRestrictions),
+        ('root', '', 'p', 'health'): schemas.SchemaAttributes(applicables=restrictions.HighestPrivacyRestrictions),
+        ('root', '', 'p', 'finance'): schemas.SchemaAttributes(applicables=restrictions.HighPrivacyRestrictions),
         # cancel validation
-        ('root', '', 'org', 'private', 'documents'): schemas.SchemaAttributes(restrictions=restrictions.NoValidation),
+        ('root', '', 'org', 'private', 'documents'): schemas.SchemaAttributes(applicables=restrictions.NoValidation),
     }
     schema_element = descend_schema(treetop, attributes)
     root = py_schema.PySchema(schema_element=schema_element)
@@ -110,8 +110,8 @@ def inherit_attributes(top: schemas.AbstractSchema, transaction):
         subkey = keys.DDHkey(ref).ens()
         subschema, *d = schemas.SchemaContainer.get_node_schema_key(subkey, transaction)
         assert subschema is not top, 'schema must not reference itself'
-        subschema.schema_attributes.restrictions = top.schema_attributes.restrictions.merge(
-            subschema.schema_attributes.restrictions)
+        subschema.schema_attributes.applicables = top.schema_attributes.applicables.merge(
+            subschema.schema_attributes.applicables)
         inherit_attributes(subschema, transaction)
     return
 

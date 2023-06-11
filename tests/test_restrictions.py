@@ -65,8 +65,8 @@ def test_restrictions_overwrite():
 def test_root_restrictions(ddhkey: str, expected: restrictions.Restrictions, transaction):
     """ test restrictions in standard tree against expected results """
     schema, *d = schemas.SchemaContainer.get_node_schema_key(keys.DDHkey(ddhkey), transaction)
-    restrictions = schema.schema_attributes.restrictions
-    assert restrictions == expected.effective()
+    applicables = schema.schema_attributes.applicables
+    assert applicables == expected.effective()
 
 
 @pytest.fixture(scope='module')
