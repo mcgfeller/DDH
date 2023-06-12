@@ -87,10 +87,10 @@ def test_std_read_data(user1):
     data = r.json()
     assert isinstance(data, dict)
     assert len(data) > 0
-    assert isinstance(data['items'], list)
-    assert len(data['items']) > 10
-    assert all(a in data['items'][5]
-               for a in ('article', 'quantity', 'buyer'))  # these keys must be present
+    d = data['mgf']['receipts']
+    assert isinstance(d, list)
+    assert len(d) > 10
+    assert all(a in d[5] for a in ('article', 'quantity', 'buyer'))  # these keys must be present
 
     return
 

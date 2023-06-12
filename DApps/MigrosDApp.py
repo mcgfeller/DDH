@@ -84,14 +84,18 @@ class MigrosDApp(dapp_attrs.DApp):
         here, selection = req.access.ddhkey.split_at(req.key_split)
         selection2 = keys.DDHkey(('receipts',))  # insert selection
         d = self.get_data(selection2, req.access, req.q)  # obtain org-format data
+        principal = list(d.keys())[0]
         # transform with glom: into list of dicts, whereas item key becomes buyer:
         spec = {
-            "items": (
-                T.items(),
-                Iter((S(value=T[0]), T[1], [{'buyer': S.value, 'article': 'Artikel', 'quantity': 'Menge',
-                     'amount': 'Umsatz', 'when': 'Datum_Zeit', 'where': 'Filiale'}])).flatten(),
-                list,
-            )
+            principal:
+                {'receipts':
+                 (
+                     T.items(),
+                     Iter((S(value=T[0]), T[1], [{'buyer': S.value, 'article': 'Artikel', 'quantity': 'Menge',
+                                                  'amount': 'Umsatz', 'when': 'Datum_Zeit', 'where': 'Filiale'}])).flatten(),
+                     list,
+                 )
+                 }
         }
         s = glom(d, spec)
         return s
