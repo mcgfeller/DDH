@@ -11,6 +11,20 @@ def test_orderings():
                             restrictions.LatestVersion(), anonymization.Pseudonymize(), restrictions.MustValidate())
     s1r = t1.sorted(t1.traits, {permissions.AccessMode.read})
     s1w = t1.sorted(t1.traits, {permissions.AccessMode.write})
+    assert len(t1) == len(s1w)
+    return
+
+
+def test_orderings_after():
+    """ test Transformes sort, with TestTransfomer with .after specification  """
+    class TestTransformer(capabilities.SchemaCapability):
+        after = 'LatestVersion'
+
+    t2 = trait.Transformers(TestTransformer(), restrictions.MustHaveSensitivites(), restrictions.LatestVersion(),
+                            anonymization.Pseudonymize(), restrictions.MustValidate())
+    s2w = t2.sorted(t2.traits, {permissions.AccessMode.write})
+    assert len(t2) == len(s2w)
+    assert s2w[-1].classname == 'TestTransformer'
     return
 
 

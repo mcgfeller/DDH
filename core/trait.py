@@ -280,7 +280,8 @@ class Transformers(Traits):
                 # Each phase depends on its predecessor, except the first one:
                 [g.add(marker+p, marker+seq[i-1]) for i, p in enumerate(seq) if i > 0]
                 # Add individual .after dependencies where given:
-                [g.add(trait.classname, trait.after) for trait in traits if trait.after]
+                [g.add(trait.classname, trait.after)
+                 for trait in traits if trait.after and trait.after in self._by_classname]
                 # get order, eliminating phases marked by marker
                 traits = [typing.cast(Transformer, self._by_classname[c]) for c in g.static_order() if c[0] != marker]
 
