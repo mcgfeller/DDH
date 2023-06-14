@@ -16,6 +16,7 @@
 """
 from __future__ import annotations
 
+import enum
 
 import typing
 
@@ -30,6 +31,15 @@ Tsubject = typing.TypeVar('Tsubject')  # subject of apply
 
 
 class Trait(DDHbaseModel, typing.Hashable):
+    """ A Trait is an object, optionally with elements, that can be assigned to another object.
+        Traits can be policies, privilges, capabilities, restrictions, etc. 
+        If Traits have an .apply() method transforming data, use the Transformer subclass.
+
+        Traits can be cancelled; multiple Trait objects are collected as Traits.
+        Traits can be merged, so the is only one Trait class in Traits. 
+
+        Traits are designed to be inhertible (not from superclass, but from schema) by merging them. 
+    """
     class Config:
         frozen = True  # Traits are not mutable, and we need a hash function to build  a set
 
@@ -84,11 +94,34 @@ class Trait(DDHbaseModel, typing.Hashable):
             return self
 
 
+@enum.unique
+class Phase(str, enum.Enum):
+    """ Transformation phase, for ordering """
+
+    load = 'load'
+    parse = 'parse'
+    post_load = 'post load'
+    validation = 'validation'
+    store = 'store'
+
+
+""" Ordered sequences of phases, per mode """
+Sequences: dict[permissions.AccessMode, list[Phase]] = {
+    permissions.AccessMode.read: [Phase.load, Phase.post_load],
+    permissions.AccessMode.write: [Phase.parse, Phase.post_load, Phase.validation, Phase.store],
+}
+
+
 class Transformer(Trait):
     supports_modes: typing.ClassVar[frozenset[permissions.AccessMode]]   # supports_modes is a mandatory class variable
     only_modes: typing.ClassVar[frozenset[permissions.AccessMode]
                                 ] = frozenset()  # This Transformer is restricted to only_modes
     _all_by_modes: typing.ClassVar[dict[permissions.AccessMode, set[str]]] = {}
+
+    phase: typing.ClassVar[Phase] = pydantic.Field(
+        default=..., description="phase in which transformer executes, for ordering.")
+    after: typing.ClassVar[str | None] = pydantic.Field(
+        default=None, description="after Transformer preceedes this one (within the same phase), for ordering.")
 
     @classmethod
     def __init_subclass__(cls):
@@ -199,9 +232,11 @@ class Traits(DDHbaseModel):
 
 class Transformers(Traits):
 
-    def apply(self, subclass: type[Trait], schema, access, transaction, subject: Tsubject) -> Tsubject:
+    def apply(self, subclass: type[Trait] | None, schema, access: permissions.Access, transaction, subject: Tsubject) -> Tsubject:
         """ apply traits of subclass in turn """
-        for trait in self.select_for_apply(subclass, schema, access, transaction, subject):
+        traits = self.select_for_apply(subclass, schema, access, transaction, subject)
+        traits = self.sorted(traits, access)
+        for trait in traits:
             subject = trait.apply(self, schema, access, transaction, subject)
         return subject
 
@@ -213,8 +248,8 @@ class Transformers(Traits):
         # select name of those in given subclass
         byname = {c for c, v in self._by_classname.items() if
                   (not v.cancel)
-                  and (subclass is None or isinstance(v, subclass))
                   and ((not v.only_modes) or access.modes & v.only_modes)
+                  and (subclass is None or isinstance(v, subclass))
                   }
         # join the capabilities from each mode:
         required_capabilities = Transformer.capabilities_for_modes(access.modes)
@@ -226,6 +261,15 @@ class Transformers(Traits):
                 [v for c in byname if not (v := self._by_classname[c]).supports_modes]
         else:
             return []
+
+    def sorted(self, traits: list[Transformer], access: permissions.Access) -> list[Transformer]:
+        """ return traits sorted according to sequence """
+        if len(traits) > 1:
+            seq = next((Sequences.get(mode) for mode in access.modes), None)  # get sequence corresponding to mode
+            if seq:
+                phase_ix = {p: i for i, p in enumerate(seq)}
+                traits = sorted(traits, key=lambda trait: phase_ix[trait.phase])
+        return traits
 
 
 NoTransformers = Transformers()

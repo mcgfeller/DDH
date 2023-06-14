@@ -273,12 +273,12 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         """
         schema = self
         schema = self.schema_attributes.transformers.apply(
-            restrictions.SchemaRestriction, schema, access, transaction, schema)
+            None, schema, access, transaction, schema)
         return schema
 
     def after_data_read(self, access: permissions.Access, transaction, data):
         """ check data obtained through Schema; may be used to apply capabilities """
-        data = self.schema_attributes.transformers.apply(capabilities.SchemaCapability, self, access, transaction, data)
+        data = self.schema_attributes.transformers.apply(None, self, access, transaction, data)
         return data
 
     def before_data_write(self, access: permissions.Access, transaction, data):
@@ -288,8 +288,7 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
                 UnderSchemaReference: data under schema reference only if schema reprs are compatible
 
         """
-        for cls in (restrictions.DataRestriction, capabilities.SchemaCapability):
-            data = self.schema_attributes.transformers.apply(cls, self, access, transaction, data)
+        data = self.schema_attributes.transformers.apply(None, self, access, transaction, data)
         return data
 
     def expand_references(self) -> AbstractSchema:

@@ -17,6 +17,7 @@ from . import capabilities
 
 class Anonymize(capabilities.SchemaCapability):
     supports_modes = {permissions.AccessMode.anonymous}
+    phase = trait.Phase.post_load
 
     def apply(self, traits: trait.Traits, schema, access, transaction, data_by_principal: dict):
         cache = {}
