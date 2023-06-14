@@ -66,7 +66,7 @@ def test_root_restrictions(ddhkey: str, expected: restrictions.Restrictions, tra
     """ test restrictions in standard tree against expected results """
     schema, *d = schemas.SchemaContainer.get_node_schema_key(keys.DDHkey(ddhkey), transaction)
     transformers = schema.schema_attributes.transformers
-    assert transformers == expected.effective()
+    assert transformers == expected.not_cancelled()
 
 
 @pytest.fixture(scope='module')

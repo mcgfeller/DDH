@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 import enum
-
+import graphlib
 import typing
 
 
@@ -120,8 +120,8 @@ class Transformer(Trait):
 
     phase: typing.ClassVar[Phase] = pydantic.Field(
         default=..., description="phase in which transformer executes, for ordering.")
-    after: typing.ClassVar[str | None] = pydantic.Field(
-        default=None, description="after Transformer preceedes this one (within the same phase), for ordering.")
+    # after Transformer preceedes this one (within the same phase), for ordering.
+    after: typing.ClassVar[str | None] = None
 
     @classmethod
     def __init_subclass__(cls):
@@ -221,7 +221,7 @@ class Traits(DDHbaseModel):
         traits = utils.ensure_tuple(trait)
         return self.merge(self.__class__(traits=traits))
 
-    def effective(self) -> typing.Self:
+    def not_cancelled(self) -> typing.Self:
         """ Eliminate lone cancel directives """
         traits = {a for a in self.traits if not a.cancel}
         if len(traits) < len(self.traits):
@@ -232,15 +232,15 @@ class Traits(DDHbaseModel):
 
 class Transformers(Traits):
 
-    def apply(self, subclass: type[Trait] | None, schema, access: permissions.Access, transaction, subject: Tsubject) -> Tsubject:
+    def apply(self, schema, access: permissions.Access, transaction, subject: Tsubject, subclass: type[Transformer] | None = None) -> Tsubject:
         """ apply traits of subclass in turn """
-        traits = self.select_for_apply(subclass, schema, access, transaction, subject)
-        traits = self.sorted(traits, access)
+        traits = self.select_for_apply(access.modes, subclass)
+        traits = self.sorted(traits, access.modes)
         for trait in traits:
             subject = trait.apply(self, schema, access, transaction, subject)
         return subject
 
-    def select_for_apply(self, subclass: type[Trait] | None, schema, access, transaction, data) -> list[Trait]:
+    def select_for_apply(self, modes: set[permissions.AccessMode], subclass: type[Transformer] | None = None) -> list[Transformer]:
         """ select trait for .apply()
             We select the required capabilities according to access.mode, according
             to the capabilities supplied by this schema. 
@@ -248,27 +248,42 @@ class Transformers(Traits):
         # select name of those in given subclass
         byname = {c for c, v in self._by_classname.items() if
                   (not v.cancel)
-                  and ((not v.only_modes) or access.modes & v.only_modes)
+                  and ((not v.only_modes) or modes & v.only_modes)
                   and (subclass is None or isinstance(v, subclass))
                   }
         # join the capabilities from each mode:
-        required_capabilities = Transformer.capabilities_for_modes(access.modes)
+        required_capabilities = Transformer.capabilities_for_modes(modes)
         missing = required_capabilities - byname
         if missing:
             raise errors.CapabilityMissing(f"Schema {self} does not support required capabilities; missing {missing}")
         if byname:
-            return [self._by_classname[c] for c in byname.intersection(required_capabilities)] + \
-                [v for c in byname if not (v := self._by_classname[c]).supports_modes]
+            # list with required capbilities according to .supports_modes + list of Transformers without .supports_modes
+            return [typing.cast(Transformer, self._by_classname[c]) for c in byname.intersection(required_capabilities)] + \
+                [v for c in byname if not (v := typing.cast(Transformer, self._by_classname[c])).supports_modes]
         else:
             return []
 
-    def sorted(self, traits: list[Transformer], access: permissions.Access) -> list[Transformer]:
-        """ return traits sorted according to sequence """
+    def sorted(self, traits: list[Transformer], modes: set[permissions.AccessMode]) -> list[Transformer]:
+        """ return traits sorted according to sequence, and .after settings in individual
+            Transformers. 
+
+            Uses topological sorting, as there is no complete order. 
+        """
         if len(traits) > 1:
-            seq = next((Sequences.get(mode) for mode in access.modes), None)  # get sequence corresponding to mode
+            seq = next((Sequences.get(mode) for mode in modes), None)  # get sequence corresponding to mode
             if seq:
-                phase_ix = {p: i for i, p in enumerate(seq)}
-                traits = sorted(traits, key=lambda trait: phase_ix[trait.phase])
+                # Build sorted sequence of traits and phases. Phases will be eliminated, so prefix them by marker:
+                marker = '|'
+                # Each trait depends on its phase:
+                g = graphlib.TopologicalSorter({trait.classname: {marker+trait.phase}
+                                               for trait in traits if trait.phase in seq})
+                # Each phase depends on its predecessor, except the first one:
+                [g.add(marker+p, marker+seq[i-1]) for i, p in enumerate(seq) if i > 0]
+                # Add individual .after dependencies where given:
+                [g.add(trait.classname, trait.after) for trait in traits if trait.after]
+                # get order, eliminating phases marked by marker
+                traits = [typing.cast(Transformer, self._by_classname[c]) for c in g.static_order() if c[0] != marker]
+
         return traits
 
 
