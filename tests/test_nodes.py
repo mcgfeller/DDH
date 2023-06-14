@@ -29,7 +29,8 @@ def test_nodes(node_registry):
     return
 
 
-def test_schema_node(node_registry):
+@pytest.mark.asyncio
+async def test_schema_node(node_registry):
     """ Retrieval of schema and application of get_sub_schema() 
     """
     schema = py_schema.PySchema(schema_element=DummyElement)
@@ -48,4 +49,4 @@ def test_schema_node(node_registry):
                                 permissions.AccessMode.read])
     assert schemas.SchemaContainer.get_sub_schema(
         access, transaction) is None, 'missing intermediate nodes must not be created'
-    assert facade.get_schema(access, transaction) is None  # this should be same in one go.
+    assert await facade.get_schema(access, transaction) is None  # this should be same in one go.

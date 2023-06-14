@@ -35,7 +35,7 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
 
         match access.ddhkey.fork:
             case keys.ForkType.schema:  # if we ask for schema, we don't need an owner:
-                data = get_schema(access, transaction, schemaformat=schemas.SchemaFormat.json)
+                data = await get_schema(access, transaction, schemaformat=schemas.SchemaFormat.json)
 
             case keys.ForkType.consents:
                 access.ddhkey.raise_if_no_owner()
@@ -48,7 +48,7 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
                 # pass data to enode and get result:
                 data = await get_enode(nodes.Ops.get, access, transaction, data, q)
                 # TODO: This is raw JSON, not schemaed JSON (e.g., datetime remains str)
-                data = schema.after_data_read(access, transaction, data)
+                data = await schema.after_data_read(access, transaction, data)
 
     return data, headers
 
@@ -69,7 +69,7 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
         match access.ddhkey.fork:
             case keys.ForkType.schema:
                 schema = typing.cast(schemas.AbstractSchema, data)
-                put_schema(access, transaction, schema)
+                await put_schema(access, transaction, schema)
 
             case keys.ForkType.consents | keys.ForkType.data:
                 schema, access.ddhkey, access.schema_key_split, * \
@@ -93,7 +93,7 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                         if omit_owner:  # add owner if omitted in data
                             data = {str(access.principal): data}
                         # check data against Schema
-                        data = schema.before_data_write(access, transaction, data)
+                        data = await schema.before_data_write(access, transaction, data)
 
                         # first e_node to transform data:
                         data = await get_enode(nodes.Ops.put, access, transaction, data, q)
@@ -157,20 +157,20 @@ async def get_enode(op: nodes.Ops, access: permissions.Access, transaction: tran
     return data
 
 
-def get_schema(access: permissions.Access, transaction: transactions.Transaction, schemaformat: schemas.SchemaFormat = schemas.SchemaFormat.json) -> pydantic.Json | None:
+async def get_schema(access: permissions.Access, transaction: transactions.Transaction, schemaformat: schemas.SchemaFormat = schemas.SchemaFormat.json) -> pydantic.Json | None:
     """ Service utility to retrieve a Schema and return it in the desired format.
         Returns None if no schema found.
     """
     schema = schemas.SchemaContainer.get_sub_schema(access, transaction)
     if schema:
-        schema = schema.after_schema_read(access, transactions)
+        schema = await schema.after_schema_read(access, transactions)
         formatted_schema = schema.to_format(schemaformat)
     else:
         formatted_schema = None  # in case of not found.
     return formatted_schema
 
 
-def put_schema(access: permissions.Access, transaction: transactions.Transaction, schema: schemas.AbstractSchema):
+async def put_schema(access: permissions.Access, transaction: transactions.Transaction, schema: schemas.AbstractSchema):
     """ Service utility to store a Schema.
         TODO: WIP
     """
@@ -180,7 +180,7 @@ def put_schema(access: permissions.Access, transaction: transactions.Transaction
     if snode:
         access.raise_if_not_permitted(keydirectory.NodeRegistry._get_consent_node(
             access.ddhkey.without_variant_version(), nodes.NodeSupports.schema, snode, transaction))
-        schema = schema.before_schema_write(access, transactions)
+        schema = await schema.before_schema_write(access, transactions)
         # schema = snode.get_sub_schema(access.ddhkey, split) # TODO!
     return
 

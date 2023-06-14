@@ -138,7 +138,7 @@ class Transformer(Trait):
         caps = set.union(set(), *[c for m in modes if (c := cls._all_by_modes.get(m))])
         return caps
 
-    def apply(self,  traits: Traits, schema: schemas.AbstractSchema, access: permissions.Access, transaction: transactions.Transaction, subject: Tsubject) -> Tsubject:
+    async def apply(self,  traits: Traits, schema: schemas.AbstractSchema, access: permissions.Access, transaction: transactions.Transaction, subject: Tsubject) -> Tsubject:
         return subject
 
 
@@ -232,12 +232,12 @@ class Traits(DDHbaseModel):
 
 class Transformers(Traits):
 
-    def apply(self, schema, access: permissions.Access, transaction, subject: Tsubject, subclass: type[Transformer] | None = None) -> Tsubject:
+    async def apply(self, schema, access: permissions.Access, transaction, subject: Tsubject, subclass: type[Transformer] | None = None) -> Tsubject:
         """ apply traits of subclass in turn """
         traits = self.select_for_apply(access.modes, subclass)
         traits = self.sorted(traits, access.modes)
         for trait in traits:
-            subject = trait.apply(self, schema, access, transaction, subject)
+            subject = await trait.apply(self, schema, access, transaction, subject)
         return subject
 
     def select_for_apply(self, modes: set[permissions.AccessMode], subclass: type[Transformer] | None = None) -> list[Transformer]:

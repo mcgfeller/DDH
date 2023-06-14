@@ -86,7 +86,7 @@ async def check_data_with_mode(user, transaction, migros_key_schema, migros_data
     # data = await facade.ddh_get(access, session)
     cumulus = migros_data[user.id]['cumulus']
     access.schema_key_split = 4  # split after the migros.org
-    data = schema.after_data_read(access, trx, m_data)  # capability processing happens here
+    data = await schema.after_data_read(access, trx, m_data)  # capability processing happens here
     assert user.id not in data, 'eid must be anonymized'
     assert len(data) == 1, 'one user only'
     d = list(data.values())[0]

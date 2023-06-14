@@ -15,7 +15,7 @@ class SchemaRestriction(trait.Transformer):
     only_modes = {permissions.AccessMode.write}  # no checks for read
     phase = trait.Phase.validation
 
-    def apply(self,  traits: trait.Traits, schema: schemas.AbstractSchema, access, transaction, subject: schemas.AbstractSchema) -> schemas.AbstractSchema:
+    async def apply(self,  traits: trait.Traits, schema: schemas.AbstractSchema, access, transaction, subject: schemas.AbstractSchema) -> schemas.AbstractSchema:
         """ in a SchemaRestriction, the subject is schema. """
         return subject
 
@@ -55,7 +55,7 @@ class MustHaveSensitivites(SchemaRestriction):
 class MustValidate(DataRestriction):
     """ Data must be validated """
 
-    def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject) -> trait.Tsubject:
+    async def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject) -> trait.Tsubject:
         remainder = access.ddhkey.remainder(access.schema_key_split)
         for owner, d in data.items():  # loop through owners, as schema doesn't contain owner
             try:
@@ -79,7 +79,7 @@ class LatestVersion(DataRestriction):
     """ Data must match latest version of schema or must be upgradable.
     """
 
-    def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject) -> trait.Tsubject:
+    async def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject) -> trait.Tsubject:
         v_schema = schema.schema_attributes.version  # the version of our schema.
         container = schema.container
         latest = container.get(schema.schema_attributes.variant)  # latest schema version of this variant
@@ -103,7 +103,7 @@ class LatestVersion(DataRestriction):
 class UnderSchemaReference(DataRestriction):
     """ TODO: data under schema reference only if schema reprs are compatible """
 
-    def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject) -> trait.Tsubject:
+    async def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject) -> trait.Tsubject:
         return data
 
 

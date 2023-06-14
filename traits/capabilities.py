@@ -20,5 +20,5 @@ class SchemaCapability(trait.Transformer):
     """ Capability used for Schemas """
     supports_modes = frozenset()
 
-    def apply(self, schema, access, transaction, data_by_principal: dict):
+    async def apply(self, schema, access, transaction, data_by_principal: dict):
         return data_by_principal  # TODO: Check method in superclass
