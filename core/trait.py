@@ -66,7 +66,7 @@ class Trait(DDHbaseModel, typing.Hashable):
             return self
 
     def __init__(self, *a, **kw):
-        """ Ensure classname records name of concrete class """
+        """ Ensure classname records name of concrete class, so we can JSON object and back. """
         if 'classname' not in kw:
             kw['classname'] = self.__class__.__name__
         super().__init__(*a, **kw)

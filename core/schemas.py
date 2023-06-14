@@ -104,7 +104,8 @@ class SchemaAttributes(DDHbaseModel):
     references: dict[str, keys.DDHkeyRange] = {}  # TODO:#17 key should be DDHkey
     sensitivities: dict[Sensitivity, T_PathFields] = pydantic.Field(default={},
                                                                     description="Sensitivities by Sensitivity, schema key, set of fields. We cannot use DDHKey for schema key, as the dict is not jsonable.")
-    transformers: trait.Transformers = trait.NoTransformers
+    transformers: trait.Transformers = pydantic.Field(
+        default=trait.NoTransformers, description="Transformers are applied according to access.modes")
 
     def add_reference(self, path: keys.DDHkey, reference: AbstractSchemaReference):
         print(f'SchemaAttributes.add_reference {path=}, {reference=}')
