@@ -257,12 +257,12 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         """ validate - called by restrictions.MustValidate """
         return data
 
-    async def after_schema_read(self, access: permissions.Access, transaction) -> AbstractSchema:
+    async def after_schema_read(self, access: permissions.Access, transaction, **kw) -> AbstractSchema:
         """ Prepare Schema for get, returning this or modified schema """
         schema = self.expand_references()
         return schema
 
-    async def before_schema_write(self, access: permissions.Access, transaction) -> AbstractSchema:
+    async def before_schema_write(self, access: permissions.Access, transaction, **kw) -> AbstractSchema:
         """ Prepare Schema for put, returning this or modified schema
             TODO: Schema checks:
                 No shadowing - cannot insert into an existing schema, including into refs
@@ -273,22 +273,22 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
 
         """
         schema = self
-        schema = await self.schema_attributes.transformers.apply(schema, access, transaction, schema)
+        schema = await self.schema_attributes.transformers.apply(schema, access, transaction, schema, **kw)
         return schema
 
-    async def after_data_read(self, access: permissions.Access, transaction, data):
+    async def after_data_read(self, access: permissions.Access, transaction, data, **kw):
         """ check data obtained through Schema; may be used to apply capabilities """
-        data = await self.schema_attributes.transformers.apply(self, access, transaction, data)
+        data = await self.schema_attributes.transformers.apply(self, access, transaction, data, **kw)
         return data
 
-    async def before_data_write(self, access: permissions.Access, transaction, data):
+    async def before_data_write(self, access: permissions.Access, transaction, data, **kw):
         """ check data against Schema; may be used to apply capabilities:
                 Data version must correspond to a schema version
                 LatestVersion: non-latest version data cannot be put unless upgrade exists
                 UnderSchemaReference: data under schema reference only if schema reprs are compatible
 
         """
-        data = await self.schema_attributes.transformers.apply(self, access, transaction, data)
+        data = await self.schema_attributes.transformers.apply(self, access, transaction, data, **kw)
         return data
 
     def expand_references(self) -> AbstractSchema:

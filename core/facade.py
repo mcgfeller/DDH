@@ -86,14 +86,8 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                         # + Schema exists for data version
                         # + non-latest version only if upgrade exists (consider again: New Schema may make everything fail)
                         # - Data within schema that includes schema reference only if schema can be expanded
-                        try:
-                            data = schema.parse(data)
-                        except Exception as e:
-                            raise errors.ParseError(e)
-                        if omit_owner:  # add owner if omitted in data
-                            data = {str(access.principal): data}
                         # check data against Schema
-                        data = await schema.before_data_write(access, transaction, data)
+                        data = await schema.before_data_write(access, transaction, data, omit_owner=omit_owner)
 
                         # first e_node to transform data:
                         data = await get_enode(nodes.Ops.put, access, transaction, data, q)

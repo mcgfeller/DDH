@@ -19,7 +19,7 @@ class Anonymize(capabilities.SchemaCapability):
     supports_modes = {permissions.AccessMode.anonymous}
     phase = trait.Phase.post_load
 
-    async def apply(self, traits: trait.Traits, schema, access, transaction, data_by_principal: dict):
+    async def apply(self, traits: trait.Traits, schema, access, transaction, data_by_principal, **kw: dict):
         cache = {}
         return self.transform(schema, access, transaction, data_by_principal, cache)
 
@@ -79,7 +79,7 @@ class Anonymize(capabilities.SchemaCapability):
 class Pseudonymize(Anonymize):
     supports_modes = {permissions.AccessMode.pseudonym}
 
-    async def apply(self,  traits: trait.Traits, schema, access, transaction, data_by_principal: dict):
+    async def apply(self,  traits: trait.Traits, schema, access, transaction, data_by_principal, **kw: dict):
         pm = PseudonymMap.create(access, transaction, data_by_principal)
         r = self.transform(schema, access, transaction, data_by_principal, pm.cache)
         # the cache was filled during the transform - save it

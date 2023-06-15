@@ -15,7 +15,7 @@ class SchemaRestriction(trait.Transformer):
     only_modes = {permissions.AccessMode.write}  # no checks for read
     phase = trait.Phase.validation
 
-    async def apply(self,  traits: trait.Traits, schema: schemas.AbstractSchema, access, transaction, subject: schemas.AbstractSchema) -> schemas.AbstractSchema:
+    async def apply(self,  traits: trait.Traits, schema: schemas.AbstractSchema, access, transaction, subject: schemas.AbstractSchema, **kw) -> schemas.AbstractSchema:
         """ in a SchemaRestriction, the subject is schema. """
         return subject
 
@@ -52,10 +52,25 @@ class MustHaveSensitivites(SchemaRestriction):
     ...
 
 
+class ParseData(DataRestriction):
+    """ Data being parsed """
+
+    phase = trait.Phase.parse
+
+    async def apply(self,  traits: trait.Traits, schema, access, transaction, data: bytes, omit_owner: bool = True, **kw) -> dict:
+        try:
+            parsed = schema.parse(data)
+        except Exception as e:
+            raise errors.ParseError(e)
+        if omit_owner:  # add owner if omitted in data
+            parsed = {str(access.principal): parsed}
+        return parsed
+
+
 class MustValidate(DataRestriction):
     """ Data must be validated """
 
-    async def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject) -> trait.Tsubject:
+    async def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject, **kw) -> trait.Tsubject:
         remainder = access.ddhkey.remainder(access.schema_key_split)
         for owner, d in data.items():  # loop through owners, as schema doesn't contain owner
             try:
@@ -79,7 +94,7 @@ class LatestVersion(DataRestriction):
     """ Data must match latest version of schema or must be upgradable.
     """
 
-    async def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject) -> trait.Tsubject:
+    async def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject, **kw) -> trait.Tsubject:
         v_schema = schema.schema_attributes.version  # the version of our schema.
         container = schema.container
         latest = container.get(schema.schema_attributes.variant)  # latest schema version of this variant
@@ -103,15 +118,15 @@ class LatestVersion(DataRestriction):
 class UnderSchemaReference(DataRestriction):
     """ TODO: data under schema reference only if schema reprs are compatible """
 
-    async def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject) -> trait.Tsubject:
+    async def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubjec, **kw) -> trait.Tsubject:
         return data
 
 
 NoRestrictions = Restrictions()
 # Root restrictions may be overwritten:
-RootRestrictions = Restrictions(MustValidate(may_overwrite=True), NoExtraElements(
+RootRestrictions = Restrictions(ParseData(may_overwrite=True), MustValidate(may_overwrite=True), NoExtraElements(
     may_overwrite=True), LatestVersion(may_overwrite=True), UnderSchemaReference())
-NoValidation = Restrictions(~MustValidate(may_overwrite=True), ~
+NoValidation = Restrictions(ParseData(may_overwrite=True), ~MustValidate(may_overwrite=True), ~
                             NoExtraElements(may_overwrite=True), UnderSchemaReference(), ~LatestVersion(may_overwrite=True))
 HighPrivacyRestrictions = RootRestrictions + [MustValidate(), NoExtraElements(), MustHaveSensitivites(), MustReview()]
 # Ensure we have a senior reviewer:
