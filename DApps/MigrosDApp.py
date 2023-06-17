@@ -134,7 +134,7 @@ class Receipt(py_schema.PySchemaElement):
         """ This is extremly fake to retrieve data for my principal """
         if principal.id == 'mgf':
             df = pandas.read_csv(r"C:\Projects\DDH\DApps\test_data_migros.csv",
-                                 parse_dates=[['Datum', 'Zeit']], dayfirst=True)
+                                 parse_dates=[['Datum', 'Zeit']], date_format="%d-%m-%y %H:%M:%S")
             d = df.to_dict(orient='records')
         else:
             d = {}
