@@ -44,11 +44,11 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
             case keys.ForkType.data:
                 access.ddhkey.raise_if_no_owner()
                 # get data node first
-                data = await get_data(access, transaction, q)
-                # pass data to enode and get result:
-                data = await get_enode(nodes.Ops.get, access, transaction, data, q)
+                # data = await get_data(access, transaction, q)
+                # # pass data to enode and get result:
+                # data = await get_enode(nodes.Ops.get, access, transaction, data, q)
                 # TODO: This is raw JSON, not schemaed JSON (e.g., datetime remains str)
-                data = await schema.after_data_read(access, transaction, data)
+                data = await schema.after_data_read(access, transaction, None)
 
     return data, headers
 
