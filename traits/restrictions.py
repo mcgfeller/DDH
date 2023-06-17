@@ -126,7 +126,7 @@ NoRestrictions = Restrictions()
 # Root restrictions may be overwritten:
 RootRestrictions = Restrictions(ParseData(may_overwrite=True), MustValidate(may_overwrite=True), NoExtraElements(
     may_overwrite=True), LatestVersion(may_overwrite=True), UnderSchemaReference())
-NoValidation = Restrictions(ParseData(may_overwrite=True), ~MustValidate(may_overwrite=True), ~
+NoValidation = Restrictions(~MustValidate(may_overwrite=True), ~
                             NoExtraElements(may_overwrite=True), UnderSchemaReference(), ~LatestVersion(may_overwrite=True))
 HighPrivacyRestrictions = RootRestrictions + [MustValidate(), NoExtraElements(), MustHaveSensitivites(), MustReview()]
 # Ensure we have a senior reviewer:
