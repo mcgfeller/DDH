@@ -6,9 +6,8 @@ import datetime
 import typing
 import logging
 
-from core import keys, schemas, nodes, keydirectory, principals, versions
+from core import keys, schemas, nodes, keydirectory, principals, versions, trait
 from schema_formats import py_schema
-from traits import restrictions
 from frontend import sessions
 logger = logging.getLogger(__name__)
 
@@ -17,6 +16,7 @@ def register_schema() -> nodes.SchemaNode:
     """ Register root schema at root node. 
         This is preliminary, as the schema is hard-coded.
     """
+    assert trait.DefaultTraits.ready, 'traits must be loaded first'
     root = keys.DDHkeyGeneric(keys.DDHkey.Root, fork=keys.ForkType.schema)
     session = sessions.get_system_session()
     transaction = session.get_or_create_transaction()
@@ -28,7 +28,7 @@ def register_schema() -> nodes.SchemaNode:
         root_node = nodes.SchemaNode(owner=principals.RootPrincipal,
                                      consents=schemas.AbstractSchema.get_schema_consents())
         keydirectory.NodeRegistry[root] = root_node
-        schema.schema_attributes.transformers = restrictions.RootRestrictions  # set restrictions on root
+        schema.schema_attributes.transformers = trait.DefaultTraits.RootRestrictions  # set restrictions on root
         root_node.add_schema(schema)
         inherit_attributes(schema, transaction)
         schemas.SchemaNetwork.valid.invalidate()  # finished
@@ -77,10 +77,10 @@ def build_root_schemas():
     attributes = {
         ('root', '', 'p', 'employment', 'salary', 'statements'): schemas.SchemaAttributes(requires=schemas.Requires.specific),
         ('root', '', 'p', 'finance', 'holdings', 'portfolio'): schemas.SchemaAttributes(requires=schemas.Requires.specific),
-        ('root', '', 'p', 'health'): schemas.SchemaAttributes(transformers=restrictions.HighestPrivacyRestrictions),
-        ('root', '', 'p', 'finance'): schemas.SchemaAttributes(transformers=restrictions.HighPrivacyRestrictions),
+        ('root', '', 'p', 'health'): schemas.SchemaAttributes(transformers=trait.DefaultTraits.HighestPrivacyRestrictions),
+        ('root', '', 'p', 'finance'): schemas.SchemaAttributes(transformers=trait.DefaultTraits.HighPrivacyRestrictions),
         # cancel validation
-        ('root', '', 'org', 'private', 'documents'): schemas.SchemaAttributes(transformers=restrictions.NoValidation),
+        ('root', '', 'org', 'private', 'documents'): schemas.SchemaAttributes(transformers=trait.DefaultTraits.NoValidation),
     }
     schema_element = descend_schema(treetop, attributes)
     root = py_schema.PySchema(schema_element=schema_element)

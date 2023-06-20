@@ -20,6 +20,7 @@ class Anonymize(capabilities.SchemaCapability):
     phase = trait.Phase.post_load
 
     async def apply(self, traits: trait.Traits, schema, access, transaction, data_by_principal, **kw: dict):
+        assert data_by_principal is not None and len(data_by_principal) > 0
         cache = {}
         return self.transform(schema, access, transaction, data_by_principal, cache)
 

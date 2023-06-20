@@ -1,7 +1,7 @@
 """ Test combination and application of restrictions """
 
 import pytest
-from core import schemas, keys
+from core import schemas, keys, trait
 from traits import restrictions
 from frontend import sessions
 
@@ -57,10 +57,10 @@ def test_restrictions_overwrite():
 
 
 @pytest.mark.parametrize('ddhkey,expected', [
-    ('//p/finance/holdings/portfolio', restrictions.HighPrivacyRestrictions),
-    ('//org/private/documents', restrictions.RootRestrictions.merge(restrictions.NoValidation)),
-    ('//p/living/shopping/receipts', restrictions.RootRestrictions),
-    ('//p/health/bloodworks', restrictions.HighestPrivacyRestrictions),
+    ('//p/finance/holdings/portfolio', trait.DefaultTraits.HighPrivacyRestrictions),
+    ('//org/private/documents', trait.DefaultTraits.RootRestrictions.merge(trait.DefaultTraits.NoValidation)),
+    ('//p/living/shopping/receipts', trait.DefaultTraits.RootRestrictions),
+    ('//p/health/bloodworks', trait.DefaultTraits.HighestPrivacyRestrictions),
 ], ids=lambda x: x if isinstance(x, str) else '')
 def test_root_restrictions(ddhkey: str, expected: restrictions.Restrictions, transaction):
     """ test restrictions in standard tree against expected results """

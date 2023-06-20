@@ -37,3 +37,14 @@ def test_select():
     s1w = t1.select_for_apply({permissions.AccessMode.write, permissions.AccessMode.pseudonym})
     assert len(s1w) == 4
     return
+
+
+def test_add():
+    t1 = trait.Transformers(restrictions.MustHaveSensitivites(),
+                            restrictions.LatestVersion(), restrictions.MustValidate())
+    t2 = trait.Transformers(restrictions.LatestVersion(), anonymization.Pseudonymize())
+    t1 += t2
+    assert len(t1) == 4
+    assert restrictions.LatestVersion in t1
+    assert anonymization.Pseudonymize in t1
+    assert restrictions.MustValidate in t1

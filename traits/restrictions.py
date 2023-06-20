@@ -183,12 +183,15 @@ class ValidateToDApp(DataRestriction):
         return data
 
 
-NoRestrictions = Restrictions()
 # Root restrictions may be overwritten:
-RootRestrictions = Restrictions(LoadFromStorage(), LoadFromDApp(), ParseData(may_overwrite=True), MustValidate(may_overwrite=True), NoExtraElements(
+trait.DefaultTraits.RootRestrictions += Restrictions(LoadFromStorage(), LoadFromDApp(), ParseData(may_overwrite=True), MustValidate(may_overwrite=True), NoExtraElements(
     may_overwrite=True), LatestVersion(may_overwrite=True), UnderSchemaReference())
-NoValidation = Restrictions(~MustValidate(may_overwrite=True), ~
-                            NoExtraElements(may_overwrite=True), UnderSchemaReference(), ~LatestVersion(may_overwrite=True))
-HighPrivacyRestrictions = RootRestrictions + [MustValidate(), NoExtraElements(), MustHaveSensitivites(), MustReview()]
+
+trait.DefaultTraits.NoValidation += Restrictions(~MustValidate(may_overwrite=True), ~
+                                                 NoExtraElements(may_overwrite=True), UnderSchemaReference(), ~LatestVersion(may_overwrite=True))
+
+trait.DefaultTraits.HighPrivacyRestrictions += trait.DefaultTraits.RootRestrictions + \
+    [MustValidate(), NoExtraElements(), MustHaveSensitivites(), MustReview()]
 # Ensure we have a senior reviewer:
-HighestPrivacyRestrictions = HighPrivacyRestrictions+MustReview(by_roles={'senior'})
+trait.DefaultTraits.HighestPrivacyRestrictions += trait.DefaultTraits.HighPrivacyRestrictions + \
+    MustReview(by_roles={'senior'})

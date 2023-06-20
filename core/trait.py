@@ -216,10 +216,21 @@ class Traits(DDHbaseModel):
             r = self.__class__(traits=common+r1+r2)
             return r
 
-    def __add__(self, trait: Trait | list[Trait]) -> typing.Self:
-        """ add trait by merging """
-        traits = utils.ensure_tuple(trait)
-        return self.merge(self.__class__(traits=traits))
+    def __add__(self, trait: Trait | list[Trait] | Traits) -> typing.Self:
+        """ add trait by merging, return merged Traits """
+        if isinstance(trait, Traits):
+            add_traits = trait
+        else:
+            traits = utils.ensure_tuple(trait)
+            add_traits = self.__class__(traits=traits)
+        return self.merge(add_traits)
+
+    def __iadd__(self, trait: Trait | list[Trait] | Traits) -> typing.Self:
+        """ in place add of traits """
+        new_traits = self.__add__(trait)
+        for k in ('traits', '_by_classname',):  # this is a Pydantic class, private attribute is now shown
+            setattr(self, k, getattr(new_traits, k))
+        return self
 
     def not_cancelled(self) -> typing.Self:
         """ Eliminate lone cancel directives """
@@ -270,7 +281,7 @@ class Transformers(Traits):
             Uses topological sorting, as there is no complete order. 
         """
         if len(traits) > 1:
-            seq = next((Sequences.get(mode) for mode in modes), None)  # get sequence corresponding to mode
+            seq = next((s for mode in modes if (s := Sequences.get(mode))), None)  # get sequence corresponding to mode
             if seq:
                 # Build sorted sequence of traits and phases. Phases will be eliminated, so prefix them by marker:
                 marker = '|'
@@ -289,3 +300,15 @@ class Transformers(Traits):
 
 
 NoTransformers = Transformers()
+
+
+class _DefaultTraits(DDHbaseModel):
+    ready: bool = False  # All traits loaded and ready to use
+    # Root restrictions may be overwritten:
+    RootRestrictions: Traits = NoTransformers
+    NoValidation: Traits = NoTransformers
+    HighPrivacyRestrictions: Traits = NoTransformers
+    HighestPrivacyRestrictions: Traits = NoTransformers
+
+
+DefaultTraits = _DefaultTraits()
