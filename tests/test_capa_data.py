@@ -2,7 +2,7 @@
 
 from core import keys, permissions, facade, errors, transactions, principals
 from core import pillars
-from traits import capabilities, anonymization
+from traits import capabilities, anonymization, load_store
 from frontend import user_auth, sessions
 from backend import keyvault
 import pytest
@@ -67,7 +67,18 @@ async def test_read_anon_failures(user, user2):
     return
 
 
-async def check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, remainder=None) -> transactions.Transaction:
+async def check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, monkeypatch, remainder=None) -> transactions.Transaction:
+
+    async def monkey_apply0(*a, **kw):
+        """ load_store.LoadFromStorage """
+        return None
+
+    async def monkey_apply1(*a, **kw):
+        """ load_store.LoadFromDApp """
+        return m_data
+
+    monkeypatch.setattr(load_store.LoadFromStorage, 'apply', monkey_apply0)
+    monkeypatch.setattr(load_store.LoadFromDApp, 'apply', monkey_apply1)
 
     session = get_session(user)
     await session.reinit()  # ensure we have a clean slate
@@ -82,11 +93,9 @@ async def check_data_with_mode(user, transaction, migros_key_schema, migros_data
         m_data = migros_data
     # read anonymous
     access = permissions.Access(ddhkey=k.ensure_fork(keys.ForkType.data), principal=user, modes=modes)
-    # TODO: Consider mocking enode access - fow now, call after_data_read with data directly instead
-    # data = await facade.ddh_get(access, session)
     cumulus = migros_data[user.id]['cumulus']
     access.schema_key_split = 4  # split after the migros.org
-    data = await schema.after_data_read(access, trx, m_data)  # capability processing happens here
+    data = await schema.after_data_read(access, trx, None)  # transformer processing happens here
     assert user.id not in data, 'eid must be anonymized'
     assert len(data) == 1, 'one user only'
     d = list(data.values())[0]
@@ -100,18 +109,18 @@ async def check_data_with_mode(user, transaction, migros_key_schema, migros_data
 
 
 @pytest.mark.asyncio
-async def test_read_anon_migros(user, transaction, migros_key_schema, migros_data):
+async def test_read_anon_migros(user, transaction, migros_key_schema, migros_data, monkeypatch):
     """ read anonymous whole schema """
     modes = {permissions.AccessMode.read, permissions.AccessMode.anonymous}
-    await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes)
+    await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, monkeypatch)
     return
 
 
 @pytest.mark.asyncio
-async def test_read_pseudo_migros(user, transaction, migros_key_schema, migros_data):
+async def test_read_pseudo_migros(user, transaction, migros_key_schema, migros_data, monkeypatch):
     """ read pseudonymous whole schema """
     modes = {permissions.AccessMode.read, permissions.AccessMode.pseudonym}
-    trx = await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes)
+    trx = await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, monkeypatch)
     assert trx.actions
     pm = trx.actions[0].obj
     assert isinstance(pm, anonymization.PseudonymMap)
@@ -122,10 +131,10 @@ async def test_read_pseudo_migros(user, transaction, migros_key_schema, migros_d
 
 
 @pytest.mark.asyncio
-async def test_read_anon_migros_rec(user, transaction, migros_key_schema, migros_data):
+async def test_read_anon_migros_rec(user, transaction, migros_key_schema, migros_data, monkeypatch):
     """ read anononymous within schema """
     modes = {permissions.AccessMode.read, permissions.AccessMode.anonymous}
-    await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, remainder='receipts')
+    await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, monkeypatch, remainder='receipts')
     return
 
 
