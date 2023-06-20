@@ -57,10 +57,10 @@ def test_restrictions_overwrite():
 
 
 @pytest.mark.parametrize('ddhkey,expected', [
-    ('//p/finance/holdings/portfolio', trait.DefaultTraits.HighPrivacyRestrictions),
+    ('//p/finance/holdings/portfolio', trait.DefaultTraits.RootRestrictions.merge(trait.DefaultTraits.HighPrivacyRestrictions)),
     ('//org/private/documents', trait.DefaultTraits.RootRestrictions.merge(trait.DefaultTraits.NoValidation)),
     ('//p/living/shopping/receipts', trait.DefaultTraits.RootRestrictions),
-    ('//p/health/bloodworks', trait.DefaultTraits.HighestPrivacyRestrictions),
+    ('//p/health/bloodworks', trait.DefaultTraits.RootRestrictions.merge(trait.DefaultTraits.HighestPrivacyRestrictions)),
 ], ids=lambda x: x if isinstance(x, str) else '')
 def test_root_restrictions(ddhkey: str, expected: restrictions.Restrictions, transaction):
     """ test restrictions in standard tree against expected results """
