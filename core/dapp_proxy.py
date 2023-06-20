@@ -67,7 +67,7 @@ class DAppProxy(DDHbaseModel):
             nodes.NodeSupports.schema)  # need exact location, not up the tree
         # hook into parent schema:
         parent, split = schemas.AbstractSchema.get_parent_schema(transaction, genkey)
-        # inherit restrictions:
+        # inherit transformers:
         schema.schema_attributes.transformers = parent.schema_attributes.transformers.merge(
             schema.schema_attributes.transformers)
 

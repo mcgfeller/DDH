@@ -1,4 +1,4 @@
-""" Executable Schema Restrictions """
+""" Executable Schema Transformers """
 from __future__ import annotations
 
 import typing
@@ -8,8 +8,8 @@ from core import (errors,  schemas, trait, versions, permissions, keys, nodes, k
 
 
 class AccessTransformer(trait.Transformer):
-    """ Restrictions on data for a schema """
-    supports_modes = frozenset()  # Restriction is not invoked by mode
+    """ Transformers on data for a schema """
+    supports_modes = frozenset()  # Transformer is not invoked by mode
     only_modes = {permissions.AccessMode.write}  # no checks for read
     phase = trait.Phase.validation
 
@@ -75,5 +75,6 @@ class ValidateToDApp(AccessTransformer):
         return data
 
 
-# Root restrictions may be overwritten:
-trait.DefaultTraits.RootRestrictions += trait.Transformers(LoadFromStorage(), LoadFromDApp())
+# Root Tranformers may be overwritten:
+trait.DefaultTraits.RootTransformers += trait.Transformers(
+    LoadFromStorage(may_overwrite=True), LoadFromDApp(may_overwrite=True))

@@ -1,14 +1,14 @@
-""" Test combination and application of restrictions """
+""" Test combination and application of validations """
 
 import pytest
 from core import trait, permissions
-from traits import restrictions, capabilities, anonymization
+from traits import validations, capabilities, anonymization
 
 
 def test_orderings():
     """ test Transformes sort  """
-    t1 = trait.Transformers(restrictions.MustHaveSensitivites(),
-                            restrictions.LatestVersion(), anonymization.Pseudonymize(), restrictions.MustValidate())
+    t1 = trait.Transformers(validations.MustHaveSensitivites(),
+                            validations.LatestVersion(), anonymization.Pseudonymize(), validations.MustValidate())
     s1r = t1.sorted(t1.traits, {permissions.AccessMode.read})
     s1w = t1.sorted(t1.traits, {permissions.AccessMode.write})
     assert len(t1) == len(s1w)
@@ -20,8 +20,8 @@ def test_orderings_after():
     class TestTransformer(capabilities.SchemaCapability):
         after = 'LatestVersion'
 
-    t2 = trait.Transformers(TestTransformer(), restrictions.MustHaveSensitivites(), restrictions.LatestVersion(),
-                            anonymization.Pseudonymize(), restrictions.MustValidate())
+    t2 = trait.Transformers(TestTransformer(), validations.MustHaveSensitivites(), validations.LatestVersion(),
+                            anonymization.Pseudonymize(), validations.MustValidate())
     s2w = t2.sorted(t2.traits, {permissions.AccessMode.write})
     assert len(t2) == len(s2w)
     assert s2w[-1].classname == 'TestTransformer'
@@ -30,8 +30,8 @@ def test_orderings_after():
 
 def test_select():
     """ test that Transformers are selected """
-    t1 = trait.Transformers(restrictions.MustHaveSensitivites(),
-                            restrictions.LatestVersion(), anonymization.Pseudonymize(), restrictions.MustValidate())
+    t1 = trait.Transformers(validations.MustHaveSensitivites(),
+                            validations.LatestVersion(), anonymization.Pseudonymize(), validations.MustValidate())
     s1r = t1.select_for_apply({permissions.AccessMode.read, permissions.AccessMode.pseudonym})
     assert len(s1r) == 1
     s1w = t1.select_for_apply({permissions.AccessMode.write, permissions.AccessMode.pseudonym})
@@ -40,11 +40,11 @@ def test_select():
 
 
 def test_add():
-    t1 = trait.Transformers(restrictions.MustHaveSensitivites(),
-                            restrictions.LatestVersion(), restrictions.MustValidate())
-    t2 = trait.Transformers(restrictions.LatestVersion(), anonymization.Pseudonymize())
+    t1 = trait.Transformers(validations.MustHaveSensitivites(),
+                            validations.LatestVersion(), validations.MustValidate())
+    t2 = trait.Transformers(validations.LatestVersion(), anonymization.Pseudonymize())
     t1 += t2
     assert len(t1) == 4
-    assert restrictions.LatestVersion in t1
+    assert validations.LatestVersion in t1
     assert anonymization.Pseudonymize in t1
-    assert restrictions.MustValidate in t1
+    assert validations.MustValidate in t1

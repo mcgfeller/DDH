@@ -13,7 +13,6 @@ from utils.pydantic_utils import DDHbaseModel
 
 from . import (errors, keydirectory, keys, nodes, permissions, principals,
                versions, schema_network, trait)
-from traits import restrictions, capabilities
 
 
 import logging
@@ -26,7 +25,7 @@ SchemaNetwork: schema_network.SchemaNetworkClass = schema_network.SchemaNetworkC
 
 @enum.unique
 class Sensitivity(str, enum.Enum):
-    """ Sensitivity, according to Fung et al., of use in export restrictions and anonymizatiodict[str, set[str]]n.
+    """ Sensitivity, according to Fung et al., of use in export restrictions and anonymizations.
     """
 
     eid = 'explicit id'
@@ -142,7 +141,7 @@ class AbstractSchemaElement(DDHbaseModel, abc.ABC):
         if schema_attributes:
             s.schema_attributes = schema_attributes
             s.update_schema_attributes()
-        if parent:  # inherit restrictions
+        if parent:  # inherit transformers
             s.schema_attributes.transformers = parent.schema_attributes.transformers.merge(
                 s.schema_attributes.transformers)
         snode = nodes.SchemaNode(owner=principals.RootPrincipal,
@@ -249,12 +248,12 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
 
     def parse(self, data: bytes) -> dict:
         """ Parse raw data, may raise errors.ParseError.
-            Does not validate, this is done by a restriction. 
+            Does not validate, this is done by a validate_data. 
         """
         raise errors.SubClass
 
     def validate_data(self, data: dict, remainder: keys.DDHkey, no_extra: bool = True) -> dict:
-        """ validate - called by restrictions.MustValidate """
+        """ validate - called by validations.MustValidate """
         return data
 
     async def after_schema_read(self, access: permissions.Access, transaction, **kw) -> AbstractSchema:

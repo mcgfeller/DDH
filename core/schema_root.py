@@ -28,7 +28,7 @@ def register_schema() -> nodes.SchemaNode:
         root_node = nodes.SchemaNode(owner=principals.RootPrincipal,
                                      consents=schemas.AbstractSchema.get_schema_consents())
         keydirectory.NodeRegistry[root] = root_node
-        schema.schema_attributes.transformers = trait.DefaultTraits.RootRestrictions  # set restrictions on root
+        schema.schema_attributes.transformers = trait.DefaultTraits.RootTransformers  # set transformers on root
         root_node.add_schema(schema)
         inherit_attributes(schema, transaction)
         schemas.SchemaNetwork.valid.invalidate()  # finished
@@ -77,8 +77,8 @@ def build_root_schemas():
     attributes = {
         ('root', '', 'p', 'employment', 'salary', 'statements'): schemas.SchemaAttributes(requires=schemas.Requires.specific),
         ('root', '', 'p', 'finance', 'holdings', 'portfolio'): schemas.SchemaAttributes(requires=schemas.Requires.specific),
-        ('root', '', 'p', 'health'): schemas.SchemaAttributes(transformers=trait.DefaultTraits.HighestPrivacyRestrictions),
-        ('root', '', 'p', 'finance'): schemas.SchemaAttributes(transformers=trait.DefaultTraits.HighPrivacyRestrictions),
+        ('root', '', 'p', 'health'): schemas.SchemaAttributes(transformers=trait.DefaultTraits.HighestPrivacyTransformers),
+        ('root', '', 'p', 'finance'): schemas.SchemaAttributes(transformers=trait.DefaultTraits.HighPrivacyTransformers),
         # cancel validation
         ('root', '', 'org', 'private', 'documents'): schemas.SchemaAttributes(transformers=trait.DefaultTraits.NoValidation),
     }
@@ -103,7 +103,7 @@ def descend_schema(tree: list, schema_attributes: dict, parents=()) -> type[sche
 
 
 def inherit_attributes(top: schemas.AbstractSchema, transaction):
-    """ recurse on schema to update restrictions from top-down (cannot do this in descend_schema, because we build
+    """ recurse on schema to update validations from top-down (cannot do this in descend_schema, because we build
         bottom-up).
     """
     for ref in top.schema_attributes.references.values():

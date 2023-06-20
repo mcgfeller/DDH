@@ -1,4 +1,4 @@
-""" Executable Schema Restrictions """
+""" Executable Schema Validations """
 from __future__ import annotations
 
 import typing
@@ -6,34 +6,34 @@ import copy
 
 from core import (errors,  schemas, trait, versions, permissions, keys, nodes, keydirectory, dapp_attrs)
 
-Restrictions = trait.Transformers  # Synonym, for easier reference, Restrictions are just Traits
+Validations = trait.Transformers  # Synonym, for easier reference, Validations are just Traits
 
 
-class SchemaRestriction(trait.Transformer):
-    """ Restriction used for Schemas """
-    supports_modes = frozenset()  # Restriction is not invoked by mode
+class SchemaValidation(trait.Transformer):
+    """ Validation used for Schemas """
+    supports_modes = frozenset()  # Validation is not invoked by mode
     only_modes = {permissions.AccessMode.write}  # no checks for read
     phase = trait.Phase.validation
 
     async def apply(self,  traits: trait.Traits, schema: schemas.AbstractSchema, access, transaction, subject: schemas.AbstractSchema, **kw) -> schemas.AbstractSchema:
-        """ in a SchemaRestriction, the subject is schema. """
+        """ in a SchemaValidation, the subject is schema. """
         return subject
 
 
-class DataRestriction(trait.Transformer):
-    """ Restrictions on data for a schema """
-    supports_modes = frozenset()  # Restriction is not invoked by mode
+class DataValidation(trait.Transformer):
+    """ Validations on data for a schema """
+    supports_modes = frozenset()  # Validation is not invoked by mode
     only_modes = {permissions.AccessMode.write}  # no checks for read
     phase = trait.Phase.validation
 
 
-class MustReview(SchemaRestriction):
+class MustReview(SchemaValidation):
 
     by_roles: frozenset[str] = frozenset()
 
     def merge(self, other: MustReview) -> typing.Self | None:
-        """ return the stronger between self and other restrictions, creating a new combined 
-            restriction. Any role is stronger than when no roles are specified. 
+        """ return the stronger between self and other validations, creating a new combined 
+            validation. Any role is stronger than when no roles are specified. 
         """
         r = super().merge(other)
         if r is not None:
@@ -47,12 +47,12 @@ class MustReview(SchemaRestriction):
         return r
 
 
-class MustHaveSensitivites(SchemaRestriction):
+class MustHaveSensitivites(SchemaValidation):
     """ This schema must have sensitivity annotations """
     ...
 
 
-class ParseData(DataRestriction):
+class ParseData(DataValidation):
     """ Data being parsed """
 
     phase = trait.Phase.parse
@@ -67,7 +67,7 @@ class ParseData(DataRestriction):
         return parsed
 
 
-class MustValidate(DataRestriction):
+class MustValidate(DataValidation):
     """ Data must be validated """
 
     async def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject, **kw) -> trait.Tsubject:
@@ -83,14 +83,14 @@ class MustValidate(DataRestriction):
         return data
 
 
-class NoExtraElements(DataRestriction):
+class NoExtraElements(DataValidation):
     """ Schema validation will reject extra elements not specified in the schema;
         marker applied by MustValidate
     """
     ...
 
 
-class LatestVersion(DataRestriction):
+class LatestVersion(DataValidation):
     """ Data must match latest version of schema or must be upgradable.
     """
 
@@ -115,21 +115,21 @@ class LatestVersion(DataRestriction):
         return data
 
 
-class UnderSchemaReference(DataRestriction):
+class UnderSchemaReference(DataValidation):
     """ TODO: data under schema reference only if schema reprs are compatible """
 
     async def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject, **kw) -> trait.Tsubject:
         return data
 
 
-# Root restrictions may be overwritten:
-trait.DefaultTraits.RootRestrictions += trait.Transformers(ParseData(may_overwrite=True), MustValidate(may_overwrite=True), NoExtraElements(
+# Root validations may be overwritten:
+trait.DefaultTraits.RootTransformers += trait.Transformers(ParseData(may_overwrite=True), MustValidate(may_overwrite=True), NoExtraElements(
     may_overwrite=True), LatestVersion(may_overwrite=True), UnderSchemaReference())
 
 trait.DefaultTraits.NoValidation += trait.Transformers(~MustValidate(may_overwrite=True), ~
                                                        NoExtraElements(may_overwrite=True), UnderSchemaReference(), ~LatestVersion(may_overwrite=True))
 
-trait.DefaultTraits.HighPrivacyRestrictions += [MustValidate(), NoExtraElements(), MustHaveSensitivites(), MustReview()]
+trait.DefaultTraits.HighPrivacyTransformers += [MustValidate(), NoExtraElements(), MustHaveSensitivites(), MustReview()]
 # Ensure we have a senior reviewer:
-trait.DefaultTraits.HighestPrivacyRestrictions += trait.DefaultTraits.HighPrivacyRestrictions + \
+trait.DefaultTraits.HighestPrivacyTransformers += trait.DefaultTraits.HighPrivacyTransformers + \
     MustReview(by_roles={'senior'})

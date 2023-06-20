@@ -5,7 +5,9 @@
     Trait 
         Transformer that transforms (or create or check) data
             Capability of a schema, required by modes
-            Restriction on a schema
+            Transformer on a schema
+                Validation
+                Load and Store        
     Privilege that can be checked
 
     Collections:
@@ -32,7 +34,7 @@ Tsubject = typing.TypeVar('Tsubject')  # subject of apply
 
 class Trait(DDHbaseModel, typing.Hashable):
     """ A Trait is an object, optionally with elements, that can be assigned to another object.
-        Traits can be policies, privilges, capabilities, restrictions, etc. 
+        Traits can be policies, privilges, capabilities, validations, etc. 
         If Traits have an .apply() method transforming data, use the Transformer subclass.
 
         Traits can be cancelled; multiple Trait objects are collected as Traits.
@@ -304,11 +306,11 @@ NoTransformers = Transformers()
 
 class _DefaultTraits(DDHbaseModel):
     ready: bool = False  # All traits loaded and ready to use
-    # Root restrictions may be overwritten:
-    RootRestrictions: Traits = NoTransformers
+    # Root validations may be overwritten:
+    RootTransformers: Traits = NoTransformers
     NoValidation: Traits = NoTransformers
-    HighPrivacyRestrictions: Traits = NoTransformers
-    HighestPrivacyRestrictions: Traits = NoTransformers
+    HighPrivacyTransformers: Traits = NoTransformers
+    HighestPrivacyTransformers: Traits = NoTransformers
 
 
 DefaultTraits = _DefaultTraits()
