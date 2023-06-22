@@ -13,6 +13,7 @@ class SchemaValidation(trait.Transformer):
     """ Validation used for Schemas """
     supports_modes = frozenset()  # Validation is not invoked by mode
     only_modes = {permissions.AccessMode.write}  # no checks for read
+    only_forks = {keys.ForkType.schema}
     phase = trait.Phase.validation
 
     async def apply(self,  traits: trait.Traits, schema: schemas.AbstractSchema, access, transaction, subject: schemas.AbstractSchema, **kw) -> schemas.AbstractSchema:
@@ -24,6 +25,7 @@ class DataValidation(trait.Transformer):
     """ Validations on data for a schema """
     supports_modes = frozenset()  # Validation is not invoked by mode
     only_modes = {permissions.AccessMode.write}  # no checks for read
+    only_forks = {keys.ForkType.data}
     phase = trait.Phase.validation
 
 

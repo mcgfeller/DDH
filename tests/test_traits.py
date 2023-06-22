@@ -1,7 +1,7 @@
 """ Test combination and application of validations """
 
 import pytest
-from core import trait, permissions
+from core import trait, permissions, keys
 from traits import validations, capabilities, anonymization
 
 
@@ -17,7 +17,7 @@ def test_orderings():
 
 def test_orderings_after():
     """ test Transformes sort, with TestTransfomer with .after specification  """
-    class TestTransformer(capabilities.SchemaCapability):
+    class TestTransformer(capabilities.DataCapability):
         after = 'LatestVersion'
 
     t2 = trait.Transformers(TestTransformer(), validations.MustHaveSensitivites(), validations.LatestVersion(),
@@ -32,10 +32,12 @@ def test_select():
     """ test that Transformers are selected """
     t1 = trait.Transformers(validations.MustHaveSensitivites(),
                             validations.LatestVersion(), anonymization.Pseudonymize(), validations.MustValidate())
-    s1r = t1.select_for_apply({permissions.AccessMode.read, permissions.AccessMode.pseudonym})
+    s1r = t1.select_for_apply({permissions.AccessMode.read, permissions.AccessMode.pseudonym}, keys.ForkType.data)
     assert len(s1r) == 1
-    s1w = t1.select_for_apply({permissions.AccessMode.write, permissions.AccessMode.pseudonym})
-    assert len(s1w) == 4
+    s1w = t1.select_for_apply({permissions.AccessMode.write, permissions.AccessMode.pseudonym}, keys.ForkType.data)
+    assert len(s1w) == 3
+    s1sw = t1.select_for_apply({permissions.AccessMode.write, permissions.AccessMode.pseudonym}, keys.ForkType.schema)
+    assert len(s1sw) == 1
     return
 
 

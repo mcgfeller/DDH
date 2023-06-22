@@ -27,7 +27,7 @@ import pydantic
 from utils.pydantic_utils import DDHbaseModel
 from utils import utils
 
-from . import errors, schemas, permissions, transactions
+from . import errors, schemas, permissions, transactions, keys
 
 Tsubject = typing.TypeVar('Tsubject')  # subject of apply
 
@@ -118,6 +118,7 @@ class Transformer(Trait):
     supports_modes: typing.ClassVar[frozenset[permissions.AccessMode]]   # supports_modes is a mandatory class variable
     only_modes: typing.ClassVar[frozenset[permissions.AccessMode]
                                 ] = frozenset()  # This Transformer is restricted to only_modes
+    only_forks: typing.ClassVar[frozenset[keys.ForkType]] = frozenset()  # This Transformer is restricted to only_forks
     _all_by_modes: typing.ClassVar[dict[permissions.AccessMode, set[str]]] = {}
 
     phase: typing.ClassVar[Phase] = pydantic.Field(
@@ -135,9 +136,11 @@ class Transformer(Trait):
         return
 
     @classmethod
-    def capabilities_for_modes(cls, modes: typing.Iterable[permissions.AccessMode]) -> set[str]:
-        """ return the capabilities required for the access modes """
+    def capabilities_for_modes(cls, modes: typing.Iterable[permissions.AccessMode], fork: keys.ForkType) -> set[str]:
+        """ return the capabilities required for the access modes and fork """
         caps = set.union(set(), *[c for m in modes if (c := cls._all_by_modes.get(m))])
+        # eliminate cpabilites for other forks:
+        caps = {c for c in caps if not (of := typing.cast(Transformer, cls._cls_by_name[c]).only_forks) or fork in of}
         return caps
 
     async def apply(self,  traits: Traits, schema: schemas.AbstractSchema, access: permissions.Access, transaction: transactions.Transaction, subject: Tsubject, **kw) -> Tsubject:
@@ -247,13 +250,13 @@ class Transformers(Traits):
 
     async def apply(self, schema, access: permissions.Access, transaction, subject: Tsubject, subclass: type[Transformer] | None = None, **kw) -> Tsubject:
         """ apply traits of subclass in turn """
-        traits = self.select_for_apply(access.modes, subclass)
+        traits = self.select_for_apply(access.modes, access.ddhkey.fork, subclass)
         traits = self.sorted(traits, access.modes)
         for trait in traits:
             subject = await trait.apply(self, schema, access, transaction, subject, **kw)
         return subject
 
-    def select_for_apply(self, modes: set[permissions.AccessMode], subclass: type[Transformer] | None = None) -> list[Transformer]:
+    def select_for_apply(self, modes: set[permissions.AccessMode], fork: keys.ForkType, subclass: type[Transformer] | None = None) -> list[Transformer]:
         """ select trait for .apply()
             We select the required capabilities according to access.mode, according
             to the capabilities supplied by this schema. 
@@ -261,11 +264,12 @@ class Transformers(Traits):
         # select name of those in given subclass
         byname = {c for c, v in self._by_classname.items() if
                   (not v.cancel)
+                  and ((not v.only_forks) or fork in v.only_forks)
                   and ((not v.only_modes) or modes & v.only_modes)
                   and (subclass is None or isinstance(v, subclass))
                   }
         # join the capabilities from each mode:
-        required_capabilities = Transformer.capabilities_for_modes(modes)
+        required_capabilities = Transformer.capabilities_for_modes(modes, fork)
         missing = required_capabilities - byname
         if missing:
             raise errors.CapabilityMissing(f"Schema {self} does not support required capabilities; missing {missing}")

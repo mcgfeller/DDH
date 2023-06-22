@@ -15,7 +15,7 @@ from backend import persistable
 from . import capabilities
 
 
-class Anonymize(capabilities.SchemaCapability):
+class Anonymize(capabilities.DataCapability):
     supports_modes = {permissions.AccessMode.anonymous}
     phase = trait.Phase.post_load
 
