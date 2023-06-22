@@ -18,6 +18,7 @@ class LoadFromStorage(AccessTransformer):
     """ Load data from storage """
     phase = trait.Phase.load
     only_modes = {permissions.AccessMode.read}
+    only_forks = {keys.ForkType.data, keys.ForkType.consents}
 
     async def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject, **kw) -> trait.Tsubject:
         data_node, d_key_split = keydirectory.NodeRegistry.get_node(
@@ -49,6 +50,7 @@ class LoadFromDApp(AccessTransformer):
     phase = trait.Phase.load
     after = 'LoadFromStorage'
     only_modes = {permissions.AccessMode.read}
+    only_forks = {keys.ForkType.data}  # consents and schemas are never loaded through apps
 
     async def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject, **kw) -> trait.Tsubject:
         q = None
@@ -63,15 +65,23 @@ class LoadFromDApp(AccessTransformer):
         return data
 
 
-class SaveToStorage(AccessTransformer):
-    """ Save data to storage """
+class ValidateToDApp(AccessTransformer):
+    """ Validated Data to be saved by passing it to DApp """
+
+    phase = trait.Phase.store  # this is actually the store phase, as it must have passed all of Phase.validation
+    only_modes = {permissions.AccessMode.write}
+    only_forks = {keys.ForkType.data}  # consents and schemas are never loaded through apps
 
     async def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject, **kw) -> trait.Tsubject:
         return data
 
 
-class ValidateToDApp(AccessTransformer):
-    """ Validated Data to be saved by passing it to DApp """
+class SaveToStorage(AccessTransformer):
+    """ Save data to storage """
+    phase = trait.Phase.store
+    after = 'ValidateToDApp'
+    only_modes = {permissions.AccessMode.write}
+    only_forks = {keys.ForkType.data, keys.ForkType.consents}
 
     async def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject, **kw) -> trait.Tsubject:
         return data
