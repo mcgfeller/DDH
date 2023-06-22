@@ -43,12 +43,7 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
 
             case keys.ForkType.data:
                 access.ddhkey.raise_if_no_owner()
-                # get data node first
-                # data = await get_data(access, transaction, q)
-                # # pass data to enode and get result:
-                # data = await get_enode(nodes.Ops.get, access, transaction, data, q)
-                # TODO: This is raw JSON, not schemaed JSON (e.g., datetime remains str)
-                data = await schema.after_data_read(access, transaction, None)
+                data = await schema.apply_transformers(access, transaction, None)
 
     return data, headers
 
@@ -87,7 +82,7 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                         # + non-latest version only if upgrade exists (consider again: New Schema may make everything fail)
                         # - Data within schema that includes schema reference only if schema can be expanded
                         # check data against Schema
-                        data = await schema.before_data_write(access, transaction, data, omit_owner=omit_owner)
+                        data = await schema.apply_transformers(access, transaction, data, omit_owner=omit_owner)
 
                         # first e_node to transform data:
                         data = await get_enode(nodes.Ops.put, access, transaction, data, q)

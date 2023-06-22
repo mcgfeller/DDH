@@ -275,18 +275,8 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         schema = await self.schema_attributes.transformers.apply(schema, access, transaction, schema, **kw)
         return schema
 
-    async def after_data_read(self, access: permissions.Access, transaction, data, **kw):
-        """ check data obtained through Schema; may be used to apply capabilities """
-        data = await self.schema_attributes.transformers.apply(self, access, transaction, data, **kw)
-        return data
-
-    async def before_data_write(self, access: permissions.Access, transaction, data, **kw):
-        """ check data against Schema; may be used to apply capabilities:
-                Data version must correspond to a schema version
-                LatestVersion: non-latest version data cannot be put unless upgrade exists
-                UnderSchemaReference: data under schema reference only if schema reprs are compatible
-
-        """
+    async def apply_transformers(self, access: permissions.Access, transaction, data, **kw):
+        """ Apply Transformers in sequence, doing loading, validation, capabilities... """
         data = await self.schema_attributes.transformers.apply(self, access, transaction, data, **kw)
         return data
 

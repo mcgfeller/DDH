@@ -43,7 +43,9 @@ class LoadFromStorage(AccessTransformer):
 
 
 class LoadFromDApp(AccessTransformer):
-    """ Load data, passing it through DApp """
+    """ Load data, passing it through DApp.
+        TODO: Obtained data is raw JSON, not schemaed JSON (e.g., datetime remains str) 
+    """
     phase = trait.Phase.load
     after = 'LoadFromStorage'
     only_modes = {permissions.AccessMode.read}
