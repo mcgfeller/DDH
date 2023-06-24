@@ -33,6 +33,16 @@ class FinalTransformer(BracketTransformer):
         return data
 
 
+class AbortTransformer(BracketTransformer):
+    """ Special transformer called only if other transformers cause exceptions """
+    phase = trait.Phase.none_
+
+    async def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject, failing: trait.Transformer, exception: Exception, **kw) -> trait.Tsubject:
+
+        return data
+
+
 # Root Tranformers may not be overwritten:
 trait.DefaultTraits.RootTransformers += trait.Transformers(
     BeginTransformer(may_overwrite=False), FinalTransformer(may_overwrite=False))
+trait.DefaultTraits._AbortTransformer = trait.Transformers(AbortTransformer())

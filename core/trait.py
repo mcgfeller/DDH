@@ -107,6 +107,7 @@ class Phase(str, enum.Enum):
     validation = 'validation'
     store = 'store'
     last = 'last'
+    none_ = 'none_'  # special phase, not in any sequence
 
 
 """ Ordered sequences of phases, per mode. Note: first,last must always be present """
@@ -255,8 +256,15 @@ class Transformers(Traits):
         """ apply traits of subclass in turn """
         traits = self.select_for_apply(access.modes, access.ddhkey.fork, subclass)
         traits = self.sorted(traits, access.modes)
-        for trait in traits:
-            subject = await trait.apply(self, schema, access, transaction, subject, **kw)
+        trait = None  # just for error handling
+        try:
+            for trait in traits:
+                subject = await trait.apply(self, schema, access, transaction, subject, **kw)
+        except Exception as e:
+            for abort_trait in DefaultTraits._AbortTransformer.traits:
+                assert isinstance(abort_trait, Transformer)
+                await abort_trait.apply(self, schema, access, transaction, subject, failing=trait, exception=e)
+            raise  # re-raise exception
         return subject
 
     def select_for_apply(self, modes: set[permissions.AccessMode], fork: keys.ForkType, subclass: type[Transformer] | None = None) -> list[Transformer]:
@@ -319,6 +327,7 @@ class _DefaultTraits(DDHbaseModel):
     NoValidation: Traits = NoTransformers
     HighPrivacyTransformers: Traits = NoTransformers
     HighestPrivacyTransformers: Traits = NoTransformers
+    _AbortTransformer: Traits = NoTransformers
 
 
 DefaultTraits = _DefaultTraits()
