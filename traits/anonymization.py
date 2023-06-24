@@ -84,7 +84,7 @@ class Pseudonymize(Anonymize):
         pm = PseudonymMap.create(access, transaction, data_by_principal)
         r = self.transform(schema, access, transaction, data_by_principal, pm.cache)
         # the cache was filled during the transform - save it
-        transaction.add(persistable.PersistAction(obj=pm))
+        transaction.add(persistable.SystemDataPersistAction(obj=pm))
         return r
 
 

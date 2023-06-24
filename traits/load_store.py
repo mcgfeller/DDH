@@ -5,7 +5,7 @@ import typing
 import copy
 
 from core import (errors,  schemas, trait, versions, permissions, keys, nodes, keydirectory, dapp_attrs)
-from backend import system_services
+from backend import system_services, persistable
 
 
 class AccessTransformer(trait.Transformer):
@@ -91,6 +91,10 @@ class SaveToStorage(AccessTransformer):
         else:
             # find DApp
             user = transaction.for_user  # TODO: Should be onwer of ressource?
+            owner = access.ddhkey.owners
+            node = None  # TODO NODE!
+            persistable.UserDataPersistAction(obj=node)
+
             dapp = user.profile.system_services.get_dapp(system_services.SystemServices.storage)
             print('Dapp', dapp)
 
