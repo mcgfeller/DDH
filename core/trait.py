@@ -100,17 +100,20 @@ class Trait(DDHbaseModel, typing.Hashable):
 class Phase(str, enum.Enum):
     """ Transformation phase, for ordering """
 
+    first = 'first'
     load = 'load'
     parse = 'parse'
     post_load = 'post load'
     validation = 'validation'
     store = 'store'
+    last = 'last'
 
 
-""" Ordered sequences of phases, per mode """
-Sequences: dict[permissions.AccessMode, list[Phase]] = {
-    permissions.AccessMode.read: [Phase.load, Phase.post_load],
-    permissions.AccessMode.write: [Phase.parse, Phase.post_load, Phase.validation, Phase.store],
+""" Ordered sequences of phases, per mode. Note: first,last must always be present """
+Sequences: dict[permissions.AccessMode | None, list[Phase]] = {
+    permissions.AccessMode.read: [Phase.first, Phase.load, Phase.post_load, Phase.last],
+    permissions.AccessMode.write: [Phase.first, Phase.parse, Phase.post_load, Phase.validation, Phase.store, Phase.last],
+    None: [Phase.first, Phase.last]
 }
 
 
@@ -275,10 +278,11 @@ class Transformers(Traits):
             raise errors.CapabilityMissing(f"Schema {self} does not support required capabilities; missing {missing}")
         if byname:
             # list with required capbilities according to .supports_modes + list of Transformers without .supports_modes
-            return [typing.cast(Transformer, self._by_classname[c]) for c in byname.intersection(required_capabilities)] + \
+            trans = [typing.cast(Transformer, self._by_classname[c]) for c in byname.intersection(required_capabilities)] + \
                 [v for c in byname if not (v := typing.cast(Transformer, self._by_classname[c])).supports_modes]
         else:
-            return []
+            trans = []
+        return trans
 
     def sorted(self, traits: list[Transformer], modes: set[permissions.AccessMode]) -> list[Transformer]:
         """ return traits sorted according to sequence, and .after settings in individual
@@ -287,20 +291,20 @@ class Transformers(Traits):
             Uses topological sorting, as there is no complete order. 
         """
         if len(traits) > 1:
-            seq = next((s for mode in modes if (s := Sequences.get(mode))), None)  # get sequence corresponding to mode
-            if seq:
-                # Build sorted sequence of traits and phases. Phases will be eliminated, so prefix them by marker:
-                marker = '|'
-                # Each trait depends on its phase:
-                g = graphlib.TopologicalSorter({trait.classname: {marker+trait.phase}
-                                               for trait in traits if trait.phase in seq})
-                # Each phase depends on its predecessor, except the first one:
-                [g.add(marker+p, marker+seq[i-1]) for i, p in enumerate(seq) if i > 0]
-                # Add individual .after dependencies where given:
-                [g.add(trait.classname, trait.after)
-                 for trait in traits if trait.after and trait.after in self._by_classname]
-                # get order, eliminating phases marked by marker
-                traits = [typing.cast(Transformer, self._by_classname[c]) for c in g.static_order() if c[0] != marker]
+            # get sequence corresponding to mode, or default Sequence if none applies:
+            seq = next((s for mode in modes if (s := Sequences.get(mode))), Sequences[None])
+            # Build sorted sequence of traits and phases. Phases will be eliminated, so prefix them by marker:
+            marker = '|'
+            # Each trait depends on its phase:
+            g = graphlib.TopologicalSorter({trait.classname: {marker+trait.phase}
+                                            for trait in traits if trait.phase in seq})
+            # Each phase depends on its predecessor, except the first one:
+            [g.add(marker+p, marker+seq[i-1]) for i, p in enumerate(seq) if i > 0]
+            # Add individual .after dependencies where given:
+            [g.add(trait.classname, trait.after)
+                for trait in traits if trait.after and trait.after in self._by_classname]
+            # get order, eliminating phases marked by marker
+            traits = [typing.cast(Transformer, self._by_classname[c]) for c in g.static_order() if c[0] != marker]
 
         return traits
 

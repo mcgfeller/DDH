@@ -18,4 +18,14 @@ class SystemServices(str, enum.Enum):
 
 class ProfiledServices(DDHbaseModel):
 
-    system_dapps: dict[SystemServices, principals.DAppId] = {}
+    system_dapps: dict[SystemServices, principals.DAppId] = {
+        SystemServices.storage: principals.DAppId('InMemStorageDApp'), }
+
+    def get_dapp(self, system_service: SystemServices):
+        from core import dapp_proxy
+        dappid = self.system_dapps[system_service]
+        dapp = dapp_proxy.DAppManager.DAppsById.get(dappid)
+        if not dapp:
+            raise errors.NotSelectable(
+                f'System {system_service} DApp {dappid} is not available')
+        return dapp

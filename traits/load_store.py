@@ -5,6 +5,7 @@ import typing
 import copy
 
 from core import (errors,  schemas, trait, versions, permissions, keys, nodes, keydirectory, dapp_attrs)
+from backend import system_services
 
 
 class AccessTransformer(trait.Transformer):
@@ -84,9 +85,21 @@ class SaveToStorage(AccessTransformer):
     only_forks = {keys.ForkType.data, keys.ForkType.consents}
 
     async def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject, **kw) -> trait.Tsubject:
+        if data is None:
+            #  nothing to store, perhaps ValidateToDApp stored everything
+            return None
+        else:
+            # find DApp
+            user = transaction.for_user  # TODO: Should be onwer of ressource?
+            dapp = user.profile.system_services.get_dapp(system_services.SystemServices.storage)
+            print('Dapp', dapp)
+
+            # dapp.execute()
+
+            ...
         return data
 
 
 # Root Tranformers may be overwritten:
 trait.DefaultTraits.RootTransformers += trait.Transformers(
-    LoadFromStorage(may_overwrite=True), LoadFromDApp(may_overwrite=True))
+    LoadFromStorage(may_overwrite=True), LoadFromDApp(may_overwrite=True), ValidateToDApp(may_overwrite=True), SaveToStorage(may_overwrite=True))
