@@ -78,12 +78,13 @@ class Transaction(DDHbaseModel):
         """ commit a transaction by committing all actions """
         for action in self.actions:
             await action.commit(self)
-
+        self.actions.clear()
         return
 
     async def abort(self):
         for action in self.actions:
             await action.rollback(self)
+        self.actions.clear()
         self.end()
 
     def __del__(self):

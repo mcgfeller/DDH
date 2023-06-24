@@ -215,6 +215,7 @@ class Access(DDHbaseModel):
     explanation: str | None = None
     schema_key_split: int | None = pydantic.Field(
         default=None, description="Split into DDHKey for schema and path into schema")
+    failed: str | None = None
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
@@ -270,7 +271,7 @@ class Access(DDHbaseModel):
         return ok, used_consents, consentees, msg
 
     def audit_record(self) -> dict:
-        return {}
+        return self.dict()
 
 
 from . import keys
