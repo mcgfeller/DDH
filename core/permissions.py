@@ -270,9 +270,6 @@ class Access(DDHbaseModel):
             raise errors.AccessError(msg)
         return ok, used_consents, consentees, msg
 
-    def audit_record(self) -> dict:
-        return self.dict()
-
 
 from . import keys
 from . import nodes

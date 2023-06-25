@@ -5,7 +5,7 @@ import typing
 import copy
 
 from core import (errors,  schemas, trait, versions, permissions, keys, nodes, keydirectory, dapp_attrs)
-from backend import system_services, persistable
+from backend import system_services, persistable, audit
 
 
 class BracketTransformer(trait.Transformer):
@@ -15,7 +15,8 @@ class BracketTransformer(trait.Transformer):
     only_forks = frozenset()
 
     def audit(self, access, transaction):
-        apa = persistable.AuditPersistAction(obj=access.audit_record())
+        """ Create AuditRecord and add it to transaction. """
+        apa = audit.AuditPersistAction(obj=audit.AuditRecord.from_access(access))
         transaction.add(apa)
 
 

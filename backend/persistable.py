@@ -127,13 +127,3 @@ class SystemDataPersistAction(PersistAction):
 class UserDataPersistAction(PersistAction):
     """ Persist User Data, storage DApp is user-specific  """
     ...
-
-
-class AuditPersistAction(SystemDataPersistAction):
-    """ Persist Access Audit data """
-    obj: dict
-
-    async def commit(self, transaction):
-        """ store has currently not async support """
-        # TODO: We cannot store dict - do nothing at the moment
-        return
