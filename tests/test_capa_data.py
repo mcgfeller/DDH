@@ -75,7 +75,8 @@ async def check_data_with_mode(user, transaction, migros_key_schema, migros_data
 
     async def monkey_apply1(*a, **kw):
         """ load_store.LoadFromDApp """
-        return m_data
+        a[2].parsed_data = m_data
+        return
 
     monkeypatch.setattr(load_store.LoadFromStorage, 'apply', monkey_apply0)
     monkeypatch.setattr(load_store.LoadFromDApp, 'apply', monkey_apply1)
@@ -95,7 +96,8 @@ async def check_data_with_mode(user, transaction, migros_key_schema, migros_data
     access = permissions.Access(ddhkey=k.ensure_fork(keys.ForkType.data), principal=user, modes=modes)
     cumulus = migros_data[user.id]['cumulus']
     access.schema_key_split = 4  # split after the migros.org
-    data = await schema.apply_transformers(access, trx, None)  # transformer processing happens here
+    trargs = await schema.apply_transformers(access, trx, None)  # transformer processing happens here
+    data = trargs.parsed_data
     assert user.id not in data, 'eid must be anonymized'
     assert len(data) == 1, 'one user only'
     d = list(data.values())[0]
@@ -105,7 +107,7 @@ async def check_data_with_mode(user, transaction, migros_key_schema, migros_data
     else:
         receipts = d
     assert not any(rec['Filiale'].startswith('MM ') for rec in receipts), 'sa Filiale must be anonymized'
-    return trx
+    return trargs
 
 
 @pytest.mark.asyncio
@@ -120,7 +122,7 @@ async def test_read_anon_migros(user, transaction, migros_key_schema, migros_dat
 async def test_read_pseudo_migros(user, transaction, migros_key_schema, migros_data, monkeypatch):
     """ read pseudonymous whole schema """
     modes = {permissions.AccessMode.read, permissions.AccessMode.pseudonym}
-    trx = await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, monkeypatch)
+    trargs = await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, monkeypatch)
     assert trx.actions
     pm = trx.actions[0].obj
     assert isinstance(pm, anonymization.PseudonymMap)

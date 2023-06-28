@@ -21,5 +21,5 @@ class DataCapability(trait.Transformer):
     supports_modes = frozenset()
     only_forks = {keys.ForkType.data}
 
-    async def apply(self, schema, access, transaction, data_by_principal: dict):
-        return data_by_principal  # TODO: Check method in superclass
+    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
+        return  # TODO: Check method in superclass

@@ -16,9 +16,9 @@ class SchemaValidation(trait.Transformer):
     only_forks = {keys.ForkType.schema}
     phase = trait.Phase.validation
 
-    async def apply(self,  traits: trait.Traits, schema: schemas.AbstractSchema, access, transaction, subject: schemas.AbstractSchema, **kw) -> schemas.AbstractSchema:
+    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
         """ in a SchemaValidation, the subject is schema. """
-        return subject
+        return
 
 
 class DataValidation(trait.Transformer):
@@ -59,30 +59,33 @@ class ParseData(DataValidation):
 
     phase = trait.Phase.parse
 
-    async def apply(self,  traits: trait.Traits, schema, access, transaction, data: bytes, omit_owner: bool = True, **kw) -> dict:
+    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, omit_owner: bool = True, **kw):
         try:
-            parsed = schema.parse(data)
+            parsed = trargs.nschema.parse(trargs.orig_data)
         except Exception as e:
             raise errors.ParseError(e)
         if omit_owner:  # add owner if omitted in data
-            parsed = {str(access.principal): parsed}
-        return parsed
+            parsed = {str(trargs.access.principal): parsed}
+        trargs.parsed_data = parsed
+        return
 
 
 class MustValidate(DataValidation):
     """ Data must be validated """
 
-    async def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject, **kw) -> trait.Tsubject:
-        remainder = access.ddhkey.remainder(access.schema_key_split)
-        for owner, d in data.items():  # loop through owners, as schema doesn't contain owner
+    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, omit_owner: bool = True, **kw):
+        remainder = trargs.access.ddhkey.remainder(trargs.access.schema_key_split)
+        assert isinstance(trargs.parsed_data, dict)
+        for owner, d in trargs.parsed_data.items():  # loop through owners, as schema doesn't contain owner
             try:
-                data[owner] = schema.validate_data(d, remainder, no_extra=NoExtraElements in traits)
+                trargs.parsed_data[owner] = trargs.nschema.validate_data(
+                    d, remainder, no_extra=NoExtraElements in traits)
             except errors.DDHerror as e:
                 raise
             except Exception as e:
                 raise errors.ValidationError(e)
 
-        return data
+        return
 
 
 class NoExtraElements(DataValidation):
@@ -96,7 +99,8 @@ class LatestVersion(DataValidation):
     """ Data must match latest version of schema or must be upgradable.
     """
 
-    async def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject, **kw) -> trait.Tsubject:
+    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
+        schema = trargs.nschema
         v_schema = schema.schema_attributes.version  # the version of our schema.
         container = schema.container
         latest = container.get(schema.schema_attributes.variant)  # latest schema version of this variant
@@ -114,14 +118,14 @@ class LatestVersion(DataValidation):
             else:  # no upgraders registered
                 raise errors.VersionMismatch(
                     f'Version supplied {v_schema} is not latest version {v_latest} and no upgraders are available')
-        return data
+        return
 
 
 class UnderSchemaReference(DataValidation):
     """ TODO: data under schema reference only if schema reprs are compatible """
 
-    async def apply(self,  traits: trait.Traits, schema, access, transaction, data: trait.Tsubject, **kw) -> trait.Tsubject:
-        return data
+    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
+        return
 
 
 # Root validations may be overwritten:

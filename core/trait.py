@@ -147,8 +147,8 @@ class Transformer(Trait):
         caps = {c for c in caps if not (of := typing.cast(Transformer, cls._cls_by_name[c]).only_forks) or fork in of}
         return caps
 
-    async def apply(self,  traits: Traits, schema: schemas.AbstractSchema, access: permissions.Access, transaction: transactions.Transaction, subject: Tsubject, **kw) -> Tsubject:
-        return subject
+    async def apply(self, traits: Traits, trargs: TransformerArgs, **kw):
+        return
 
 
 class Traits(DDHbaseModel):
@@ -250,22 +250,35 @@ class Traits(DDHbaseModel):
             return self
 
 
+schemas.AbstractSchema = typing.ForwardRef('schemas.AbstractSchema')
+
+
+class TransformerArgs(DDHbaseModel):
+    nschema: schemas.AbstractSchema = pydantic.Field(alias='schema')
+    access: permissions.Access
+    transaction: transactions.Transaction
+    orig_data: typing.Any
+    parsed_data: dict | None = None
+    data_node: typing.Any | None = None  # Nodes gives circ import
+
+
 class Transformers(Traits):
 
-    async def apply(self, schema, access: permissions.Access, transaction, subject: Tsubject, subclass: type[Transformer] | None = None, **kw) -> Tsubject:
+    async def apply(self,  trargs: TransformerArgs, subclass: type[Transformer] | None = None, **kw):
         """ apply traits of subclass in turn """
+        access = trargs.access
         traits = self.select_for_apply(access.modes, access.ddhkey.fork, subclass)
         traits = self.sorted(traits, access.modes)
         trait = None  # just for error handling
         try:
             for trait in traits:
-                subject = await trait.apply(self, schema, access, transaction, subject, **kw)
+                subject = await trait.apply(self, trargs, **kw)
         except Exception as e:
             for abort_trait in DefaultTraits._AbortTransformer.traits:
                 assert isinstance(abort_trait, Transformer)
-                await abort_trait.apply(self, schema, access, transaction, subject, failing=trait, exception=e)
+                await abort_trait.apply(self, trargs, failing=trait, exception=e)
             raise  # re-raise exception
-        return subject
+        return
 
     def select_for_apply(self, modes: set[permissions.AccessMode], fork: keys.ForkType, subclass: type[Transformer] | None = None) -> list[Transformer]:
         """ select trait for .apply()

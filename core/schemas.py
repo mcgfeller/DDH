@@ -272,13 +272,15 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
 
         """
         schema = self
-        schema = await self.schema_attributes.transformers.apply(schema, access, transaction, schema, **kw)
-        return schema
+        trargs = trait.TransformerArgs(schema=schema, orig_data=schema, access=access, transaction=transaction)
+        await self.schema_attributes.transformers.apply(trargs, **kw)
+        return trargs.parsed_data
 
-    async def apply_transformers(self, access: permissions.Access, transaction, data, **kw):
+    async def apply_transformers(self, access: permissions.Access, transaction, data, **kw) -> trait.TransformerArgs:
         """ Apply Transformers in sequence, doing loading, validation, capabilities... """
-        data = await self.schema_attributes.transformers.apply(self, access, transaction, data, **kw)
-        return data
+        trargs = trait.TransformerArgs(schema=self, orig_data=data, access=access, transaction=transaction)
+        await self.schema_attributes.transformers.apply(trargs, **kw)
+        return trargs
 
     def expand_references(self) -> AbstractSchema:
         """ Replace all references to other schemas by embedding the other schema into
@@ -513,3 +515,6 @@ class SchemaContainer(DDHbaseModel):
     def add_upgrader(self, variant: SchemaVariant, v_from: versions.Version, v_to: versions.Version, function: versions.Upgrader | None):
         upgraders = self.upgraders.setdefault(variant, versions.Upgraders())
         upgraders.add_upgrader(v_from, v_to, function)
+
+
+trait.TransformerArgs.update_forward_refs()

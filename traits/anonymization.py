@@ -19,10 +19,11 @@ class Anonymize(capabilities.DataCapability):
     supports_modes = {permissions.AccessMode.anonymous}
     phase = trait.Phase.post_load
 
-    async def apply(self, traits: trait.Traits, schema, access, transaction, data_by_principal, **kw: dict):
-        assert data_by_principal is not None and len(data_by_principal) > 0
+    async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):
+        assert trargs.parsed_data is not None and len(trargs.parsed_data) > 0
         cache = {}
-        return self.transform(schema, access, transaction, data_by_principal, cache)
+        trargs.parsed_data = self.transform(trargs.nschema, trargs.access,
+                                            trargs.transaction, trargs.parsed_data, cache)
 
     def transform(self, schema, access, transaction, data_by_principal: dict, cache: dict) -> dict:
         """ Apply self.transform_value to sensitivities in schema, keeping
@@ -80,11 +81,11 @@ class Anonymize(capabilities.DataCapability):
 class Pseudonymize(Anonymize):
     supports_modes = {permissions.AccessMode.pseudonym}
 
-    async def apply(self,  traits: trait.Traits, schema, access, transaction, data_by_principal, **kw: dict):
-        pm = PseudonymMap.create(access, transaction, data_by_principal)
-        r = self.transform(schema, access, transaction, data_by_principal, pm.cache)
+    async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):
+        pm = PseudonymMap.create(trargs.access, trargs.transaction, trargs.parsed_data)
+        r = self.transform(trargs.nschema, trargs.access, trargs.transaction,  trargs.parsed_data, pm.cache)
         # the cache was filled during the transform - save it
-        transaction.add(persistable.SystemDataPersistAction(obj=pm))
+        trargs.transaction.add(persistable.SystemDataPersistAction(obj=pm))
         return r
 
 

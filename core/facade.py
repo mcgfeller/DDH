@@ -43,7 +43,8 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
 
             case keys.ForkType.data:
                 access.ddhkey.raise_if_no_owner()
-                data = await schema.apply_transformers(access, transaction, None)
+                trargs = await schema.apply_transformers(access, transaction, None)
+                data = trargs.parsed_data
 
     return data, headers
 
@@ -82,8 +83,10 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                         # + non-latest version only if upgrade exists (consider again: New Schema may make everything fail)
                         # - Data within schema that includes schema reference only if schema can be expanded
                         # check data against Schema
-                        data = await schema.apply_transformers(access, transaction, data, omit_owner=omit_owner)
+                        trargs = await schema.apply_transformers(access, transaction, data, omit_owner=omit_owner)
+                        data = trargs.parsed_data
 
+                        # TODO:#22 Move to transformer:
                         # first e_node to transform data:
                         data = await get_enode(nodes.Ops.put, access, transaction, data, q)
                         if data:
