@@ -83,10 +83,11 @@ class Pseudonymize(Anonymize):
 
     async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):
         pm = PseudonymMap.create(trargs.access, trargs.transaction, trargs.parsed_data)
-        r = self.transform(trargs.nschema, trargs.access, trargs.transaction,  trargs.parsed_data, pm.cache)
+        trargs.parsed_data = self.transform(trargs.nschema, trargs.access,
+                                            trargs.transaction,  trargs.parsed_data, pm.cache)
         # the cache was filled during the transform - save it
         trargs.transaction.add(persistable.SystemDataPersistAction(obj=pm))
-        return r
+        return
 
 
 class PseudonymMap(persistable.Persistable):

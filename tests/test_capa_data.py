@@ -123,12 +123,12 @@ async def test_read_pseudo_migros(user, transaction, migros_key_schema, migros_d
     """ read pseudonymous whole schema """
     modes = {permissions.AccessMode.read, permissions.AccessMode.pseudonym}
     trargs = await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, monkeypatch)
-    assert trx.actions
-    pm = trx.actions[0].obj
-    assert isinstance(pm, anonymization.PseudonymMap)
-    await trx.commit()  # store map
-    pm2 = anonymization.PseudonymMap.load(pm.id, trx)  # retrieve it
-    assert len(pm.cache) == len(pm2.cache)  # datatype may vary slightly...
+    eid = list(trargs.parsed_data.keys())[0]
+    pm2 = anonymization.PseudonymMap.load(eid, transaction)  # retrieve it
+    assert isinstance(pm2, anonymization.PseudonymMap)
+    assert len(pm.cache) == len(pm2.cache)
+    # TODO: Map id must be eid
+
     return
 
 
