@@ -92,19 +92,30 @@ class SaveToStorage(AccessTransformer):
             #  nothing to store, perhaps ValidateToDApp stored everything
             return None
         else:
-            # find DApp
-            user = trargs.transaction.for_user  # TODO: Should be onwer of ressource?
-            owner = trargs.access.ddhkey.owners
-            node = trargs.data_node  # TODO NEW NODE!
-            if node:
-                trargs.transaction.add(persistable.UserDataPersistAction(obj=node))
+            access = trargs.access
+            transaction = trargs.transaction
 
-                dapp = user.profile.system_services.get_dapp(system_services.SystemServices.storage)
-                print('Dapp', dapp)
+            data_node, d_key_split = keydirectory.NodeRegistry.get_node(
+                access.ddhkey, nodes.NodeSupports.data, transaction)
+            if not data_node:
 
-            # dapp.execute()
+                topkey, remainder = access.ddhkey.split_at(2)
+                # there is no node, create it if owner asks for it:
+                if access.principal.id in topkey.owners:
+                    data_node = nodes.DataNode(owner=access.principal, key=topkey)
+                    # data_node.store(transaction)  # XXX? # put node into directory
+                else:  # not owner, we simply say no access to this path
+                    raise errors.AccessError(f'User {access.principal.id} not authorized to write to {topkey}')
+            else:
+                data_node = data_node.ensure_loaded(transaction)
+                topkey, remainder = access.ddhkey.split_at(d_key_split)
 
-            ...
+            data_node = typing.cast(nodes.DataNode, data_node)
+            # TODO: Insert data into data_node
+
+            trargs.data_node = data_node  # TODO NEW NODE!
+            # Add it to transaction:
+            transaction.add(persistable.UserDataPersistAction(obj=data_node))
         return
 
 
