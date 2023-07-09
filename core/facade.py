@@ -124,7 +124,7 @@ def get_or_create_dnode(access: permissions.Access, transaction: transactions.Tr
 
         topkey, remainder = access.ddhkey.split_at(2)
         # there is no node, create it if owner asks for it:
-        if access.principal.id in topkey.owners:
+        if access.principal.id in topkey.owner:
             data_node = nodes.DataNode(owner=access.principal, key=topkey)
             data_node.store(transaction)  # put node into directory
         else:  # not owner, we simply say no access to this path

@@ -68,6 +68,7 @@ class DDHkey(DDHbaseModel):
 
     Delimiter: typing.ClassVar[str] = '/'
     SpecDelimiter: typing.ClassVar[str] = ':'
+    OwnerDelimiter: typing.ClassVar[str] = ','
     Root: typing.ClassVar[_RootType] = _RootType(Delimiter)
     AnyKey: typing.ClassVar[_AnyType] = _AnyType(Delimiter)
 
@@ -215,7 +216,7 @@ class DDHkey(DDHbaseModel):
             return rooted_key
 
     def raise_if_no_owner(self):
-        if self.owners is self.AnyKey:
+        if self.owner is self.AnyKey:
             raise errors.NotFound('key has no owner')
 
     def without_variant_version(self) -> DDHkeyGeneric:
@@ -230,13 +231,25 @@ class DDHkey(DDHbaseModel):
         return k
 
     @property
-    def owners(self) -> common_ids.PrincipalId:
+    def owner(self) -> common_ids.PrincipalId:
         """ return owner as string """
         rooted_key = self.ensure_rooted()
         if len(rooted_key.key) > 1 and rooted_key.key[0] == self.Root:
             return rooted_key.key[1]
         else:
             return typing.cast(common_ids.PrincipalId, str(self.AnyKey))
+
+    @property
+    def owners(self) -> tuple[common_ids.PrincipalId, ...]:
+        """ return tuple of owners, empty tuple if no owner - not (AnyKey,)!  """
+        rooted_key = self.ensure_rooted()
+        if len(rooted_key.key) > 1 and rooted_key.key[0] == self.Root:
+            if rooted_key.key[1] == self.AnyKey:
+                return ()
+            else:
+                return tuple(rooted_key.key[1].split(self.OwnerDelimiter))
+        else:
+            return ()
 
     def longest_segments(self) -> typing.Generator[DDHkey, None, None]:
         """ Generator yielding sucessively shorter subkeys

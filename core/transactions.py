@@ -125,9 +125,9 @@ class Transaction(DDHbaseModel):
         """ add an access and validate whether it is ok """
         self.accesses.append(access)
         if permissions.AccessMode.write in access.modes:  # we must check writes for presence of read objects
-            if principals.AllPrincipal.id not in self.read_consentees and access.ddhkey.owners not in self.read_consentees:
-                msg = f'transactions contains data with no consent to use for {access.ddhkey.owners}'
-                if principals.AllPrincipal.id not in self.initial_read_consentees and access.ddhkey.owners not in self.initial_read_consentees:
+            if principals.AllPrincipal.id not in self.read_consentees and access.ddhkey.owner not in self.read_consentees:
+                msg = f'transactions contains data with no consent to use for {access.ddhkey.owner}'
+                if principals.AllPrincipal.id not in self.initial_read_consentees and access.ddhkey.owner not in self.initial_read_consentees:
                     # this transaction contains data from previous transaction, must reinit
                     raise TrxAccessError('call session.reinit(); '+msg)
                 else:

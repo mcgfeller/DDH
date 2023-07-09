@@ -14,7 +14,7 @@ class Principal(DDHbaseModel):
         extra = pydantic.Extra.ignore  # for parsing of subclass
 
     id: common_ids.PrincipalId
-    Delim: typing.ClassVar[str] = ','
+    # Delim: typing.ClassVar[str] = ','
 
     def __eq__(self, other) -> bool:
         """ Principals are equal if their id is equal """

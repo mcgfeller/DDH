@@ -31,6 +31,18 @@ def test_forks():
         keys.DDHkey(key='norooted/subkey:stupid')  # invalid key
 
 
+def test_multiowner():
+    """ Keys with more than one owner """
+    assert ',' == keys.DDHkey.OwnerDelimiter
+    ddhkey1 = keys.DDHkey(key='/u1,u2/subkey')
+    assert ddhkey1.owner == 'u1,u2'
+    assert ddhkey1.owners == ('u1', 'u2')
+
+    ddhkey2 = keys.DDHkey(key='//subkey')
+    assert ddhkey2.owners == ()
+    return
+
+
 def test_variant():
     ddhkey1 = keys.DDHkey(key='norooted:data:recommended')
     ddhkey2 = keys.DDHkey(key='norooted/subkey:data:recommended')

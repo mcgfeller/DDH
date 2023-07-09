@@ -13,7 +13,7 @@ import jose.jwt
 import passlib.context
 from utils.pydantic_utils import DDHbaseModel
 
-from core import errors, principals, users
+from core import errors, principals, users, keys
 from frontend import sessions
 
 
@@ -182,7 +182,7 @@ def get_principals(selection: str) -> list[principals.Principal]:
         First checks CommonPrincipals defined here, then user_auth.UserInDB.
     """
 
-    ids = selection.split(principals.Principal.Delim)
+    ids = selection.split(keys.DDHkey.OwnerDelimiter)
     princs = []
     for i in ids:
         p = principals.CommonPrincipals.get(i)

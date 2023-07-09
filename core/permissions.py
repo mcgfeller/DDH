@@ -234,7 +234,7 @@ class Access(DDHbaseModel):
         if owner is not None:
             keyowners = (owner,)
         else:
-            keyowners = user_auth.get_principals(self.ddhkey.owners)
+            keyowners = user_auth.get_principals(self.ddhkey.owner)
 
         if not node:  # cannot use this test when a MultiOwnerNode is given!
             # single owner from key, remainder is owned by definition

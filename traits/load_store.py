@@ -101,7 +101,7 @@ class SaveToStorage(AccessTransformer):
 
                 topkey, remainder = access.ddhkey.split_at(2)
                 # there is no node, create it if owner asks for it:
-                if access.principal.id in topkey.owners:
+                if access.principal.id in topkey.owner:
                     data_node = nodes.DataNode(owner=access.principal, key=topkey)
                     # data_node.store(transaction)  # XXX? # put node into directory
                 else:  # not owner, we simply say no access to this path
@@ -112,6 +112,7 @@ class SaveToStorage(AccessTransformer):
 
             data_node = typing.cast(nodes.DataNode, data_node)
             # TODO: Insert data into data_node
+            data_node.execute(nodes.Ops.put, access, transaction, d_key_split, trargs.parsed_data)
 
             trargs.data_node = data_node  # TODO NEW NODE!
             # Add it to transaction:
