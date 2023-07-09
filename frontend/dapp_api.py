@@ -78,15 +78,15 @@ async def put_data(
     docpath: str = fastapi.Path(..., title="The ddh key of the data to put"),
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     modes: set[permissions.AccessMode] = fastapi.Query({permissions.AccessMode.write}),
-    omit_owner: bool = fastapi.Query(
-        default=True, description="if set, the body must not contain an outer enclosure with the owner id."),
+    includes_owner: bool = fastapi.Query(
+        default=False, description="if set, the body must contain an outer enclosure with the owner id."),
     q: str = fastapi.Query(None, alias="item-query"),
 ):
     access = permissions.Access(op=permissions.Operation.put, ddhkey=keys.DDHkey(
         docpath), principal=session.user, modes=modes, byDApp=session.dappid)
     # data = await request.body()
     try:
-        d, headers = await facade.ddh_put(access, session, data, q, content_type=content_type, omit_owner=omit_owner)
+        d, headers = await facade.ddh_put(access, session, data, q, content_type=content_type, includes_owner=includes_owner)
     except errors.DDHerror as e:
         raise e.to_http()
 

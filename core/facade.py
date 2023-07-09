@@ -49,7 +49,7 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
     return data, headers
 
 
-async def ddh_put(access: permissions.Access, session: sessions.Session, data: pydantic.Json, q: str | None = None, content_type: str = '*/*', omit_owner: bool = True) -> tuple[typing.Any, dict]:
+async def ddh_put(access: permissions.Access, session: sessions.Session, data: pydantic.Json, q: str | None = None, content_type: str = '*/*', includes_owner: bool = False) -> tuple[typing.Any, dict]:
     """ Service utility to store data.
 
     """
@@ -83,7 +83,7 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                         # + non-latest version only if upgrade exists (consider again: New Schema may make everything fail)
                         # - Data within schema that includes schema reference only if schema can be expanded
                         # check data against Schema
-                        trargs = await schema.apply_transformers(access, transaction, data, omit_owner=omit_owner)
+                        trargs = await schema.apply_transformers(access, transaction, data, includes_owner=includes_owner)
                         data = trargs.parsed_data
 
                         # TODO:#22 Move to transformer:

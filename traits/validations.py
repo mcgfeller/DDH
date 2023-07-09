@@ -59,31 +59,40 @@ class ParseData(DataValidation):
 
     phase = trait.Phase.parse
 
-    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, omit_owner: bool = True, **kw):
+    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, includes_owner: bool = False, **kw):
         try:
-            parsed = trargs.nschema.parse(trargs.orig_data)
+            trargs.parsed_data = trargs.nschema.parse(trargs.orig_data)
         except Exception as e:
             raise errors.ParseError(e)
-        if omit_owner:  # add owner if omitted in data
-            parsed = {str(trargs.access.principal): parsed}
-        trargs.parsed_data = parsed
         return
 
 
 class MustValidate(DataValidation):
     """ Data must be validated """
 
-    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, omit_owner: bool = True, **kw):
-        remainder = trargs.access.ddhkey.remainder(trargs.access.schema_key_split)
+    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, includes_owner: bool = False, **kw):
+        owners = trargs.access.ddhkey.owners
+        if len(owners) != 1:
+            raise errors.NotSelectable(f"Cannot have multiple owners in key: {','.join(owners)}")
         assert isinstance(trargs.parsed_data, dict)
-        for owner, d in trargs.parsed_data.items():  # loop through owners, as schema doesn't contain owner
-            try:
-                trargs.parsed_data[owner] = trargs.nschema.validate_data(
-                    d, remainder, no_extra=NoExtraElements in traits)
-            except errors.DDHerror as e:
-                raise
-            except Exception as e:
-                raise errors.ValidationError(e)
+        if includes_owner:
+            if len(trargs.parsed_data) > 1:
+                raise errors.NotSelectable('Cannot have multiple owners in data')
+            else:
+                data = trargs.parsed_data.get(owners[0])
+                if data is None:
+                    raise errors.NotSelectable(f'No data supplied for owner: {owners[0]}')
+        else:
+            data = trargs.parsed_data
+
+        remainder = trargs.access.ddhkey.remainder(trargs.access.schema_key_split)
+
+        try:
+            trargs.parsed_data = trargs.nschema.validate_data(data, remainder, no_extra=NoExtraElements in traits)
+        except errors.DDHerror as e:
+            raise
+        except Exception as e:
+            raise errors.ValidationError(e)
 
         return
 
