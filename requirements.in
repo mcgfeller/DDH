@@ -3,7 +3,7 @@ fastapi
 uvicorn
 passlib[bcrypt]
 python-jose[pycryptodome]
-pydantic[email]
+pydantic[email] < 2
 pytest
 pytest-asyncio
 httpx
