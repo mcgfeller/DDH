@@ -48,7 +48,7 @@ class Session(DDHbaseModel):
     def create_transaction(self, for_user: principals.Principal | None = None, initial_read_consentees=transactions.DefaultReadConsentees) -> transactions.Transaction:
         """ create a new transaction. raises transactions.TrxOpenError if transaction exists (abort would make the whole thing async). """
         if self.current_trx:
-            raise transactions.TrxOpenError('transaction exists, use session.ensure_ensure_new_transaction()')
+            raise transactions.TrxOpenError('transaction exists, use session.ensure_new_transaction()')
         else:
             for_user = for_user or self.user
             new_trx = transactions.Transaction.create(

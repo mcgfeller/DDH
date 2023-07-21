@@ -34,7 +34,9 @@ class Transaction(DDHbaseModel):
     # same as read_consentees, but not modified during transaction
     initial_read_consentees:  set[common_ids.PrincipalId] = DefaultReadConsentees
 
-    actions: list[Action] = pydantic.Field(default=[], description="list of actions to be performed at commit")
+    actions: list[Action] = pydantic.Field(
+        default_factory=dict, description="list of actions to be performed at commit")
+    trx_local: dict = pydantic.Field(default_factory=dict, description="dict for storage local to transactionn")
 
     # https://github.com/pydantic/pydantic/issues/3679#issuecomment-1337575645
     Transactions: typing.ClassVar[dict[common_ids.TrxId, typing.Any]] = {}
@@ -148,6 +150,17 @@ class Transaction(DDHbaseModel):
             action.added(self)
         else:
             raise TrxAccessError(f'action {action} cannot be added to {self}')
+
+    @classmethod
+    def get_or_create_transaction_with_id(cls, trxid: common_ids.TrxId, for_user: principals.Principal) -> Transaction:
+        """ If you need a cross-process trx with a trxid, use this method. """
+        trx = cls.Transactions.get(trxid)
+        if trx:
+            trx.use()
+        else:
+            trx = cls(trxid=trxid, for_user=for_user)
+            trx.begin()
+        return trx
 
 
 class Action(DDHbaseModel):
