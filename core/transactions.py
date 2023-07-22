@@ -35,7 +35,7 @@ class Transaction(DDHbaseModel):
     initial_read_consentees:  set[common_ids.PrincipalId] = DefaultReadConsentees
 
     actions: list[Action] = pydantic.Field(
-        default_factory=dict, description="list of actions to be performed at commit")
+        default_factory=list, description="list of actions to be performed at commit")
     trx_local: dict = pydantic.Field(default_factory=dict, description="dict for storage local to transactionn")
 
     # https://github.com/pydantic/pydantic/issues/3679#issuecomment-1337575645
