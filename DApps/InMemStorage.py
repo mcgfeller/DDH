@@ -7,11 +7,12 @@ import typing
 import fastapi
 import fastapi.security
 import pydantic
-from core import (common_ids, dapp_attrs, keys, nodes, permissions, principals, users,
-                  relationships, schemas)
+from core import (common_ids, dapp_attrs, keys, nodes, principals, users,
+                  schemas, transactions, errors)
 
 from schema_formats import py_schema
-from frontend import fastapi_dapp
+from backend import storage
+from frontend import fastapi_dapp, sessions, user_auth
 app = fastapi.FastAPI()
 app.include_router(fastapi_dapp.router)
 
@@ -21,6 +22,113 @@ def get_apps() -> tuple[dapp_attrs.DApp]:
 
 
 fastapi_dapp.get_apps = get_apps
+
+_missing = object()
+
+
+@app.post("/transaction/{trxid}/begin")
+async def trx_begin(
+    trxid: common_ids.TrxId,
+    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
+
+) -> common_ids.TrxId:
+    print(f"/transaction/{trxid}/begin")
+    trx = transactions.Transaction.get_or_create_transaction_with_id(trxid=trxid, for_user=session.user)
+    return trx.trxid
+
+
+@app.post("/transaction/{trxid}/commit")
+async def trx_commit(
+    trxid: common_ids.TrxId,
+    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
+
+) -> common_ids.TrxId:
+    trx = transactions.Transaction.Transactions.get(trxid)
+    if trx:
+        for key, data in trx.trx_local.items():
+            if data is _missing:
+                storage.Storage.delete(typing.cast(common_ids.PersistId,  key), trx)
+            else:
+                storage.Storage.store(typing.cast(common_ids.PersistId,  key), data, trx)
+        trx.commit()
+    else:
+        raise errors.NotFound('Transaction not found').to_http()
+
+    return trx.trxid
+
+
+@app.post("/transaction/{trxid}/abort")
+async def trx_abort(
+    trxid: common_ids.TrxId,
+    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
+
+) -> common_ids.TrxId:
+    trx = transactions.Transaction.Transactions.get(trxid)
+    if trx:
+        trx.trx_local.clear()
+        trx.abort()
+    else:
+        raise errors.NotFound('Transaction not found').to_http()
+    return trx.trxid
+
+
+@app.get("/storage/{key}")
+async def load(
+    key: str,
+    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
+    trxid: common_ids.TrxId = fastapi.Query(),
+) -> bytes:
+    trx = transactions.Transaction.get_or_create_transaction_with_id(trxid=trxid, for_user=session.user)
+    print(f'storage.load {key=}, {trx.trxid=}')
+    data = trx.trx_local.get(key, _missing)
+    if data is _missing:
+        try:
+            data = storage.Storage.load(typing.cast(common_ids.PersistId,  key), trx)
+        except KeyError:
+            trx.trx_local[key] = _missing  # trx acts as cache
+            raise errors.NotFound(f'{key=} not found').to_http()
+        trx.trx_local[key] = data
+    else:
+        assert isinstance(data, bytes)
+    return data
+
+
+@app.put("/storage/{key}")
+async def store(
+    key: str,
+    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
+    trxid: common_ids.TrxId = fastapi.Query(),
+    data: bytes = fastapi.Body(media_type='data/binary')
+):
+    trx = transactions.Transaction.get_or_create_transaction_with_id(trxid=trxid, for_user=session.user)
+    print(f'storage.store {key=}, {trx.trxid=}, {data=}')
+    trx.trx_local[key] = data
+    # storage.Storage.store(typing.cast(common_ids.PersistId,  key), data, trx)
+    return
+
+
+# Note: Post is not available, as we don't generate keys
+
+@app.delete("/storage/{key}")
+async def delete(
+    key: str,
+    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
+    trxid: common_ids.TrxId = fastapi.Query(),
+):
+    trx = transactions.Transaction.get_or_create_transaction_with_id(trxid=trxid, for_user=session.user)
+    print(f'storage.delete {key=}, {trx.trxid=}, ')
+    trx.trx_local[key] = _missing
+    return
+
+
+@app.delete("/storage")
+async def purge_all(
+    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
+    confirm: bool = fastapi.Query(default=False, description="must be explicity True")
+):
+    if confirm:
+        storage.Storage.byId.clear()
+    return
 
 
 class InMemStorageDApp(dapp_attrs.DApp):
