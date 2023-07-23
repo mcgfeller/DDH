@@ -1,21 +1,21 @@
 """ Example DApp - fake Coop Supercard data """
 from __future__ import annotations
 
-import datetime
+
 import typing
 
 import fastapi
 import fastapi.security
-import pydantic
 from utils.pydantic_utils import DDHbaseModel
 from core import (common_ids, dapp_attrs, keys, nodes, principals, users,
                   schemas, transactions, errors)
 
 from schema_formats import py_schema
 from backend import storage
-from frontend import fastapi_dapp, sessions, user_auth
+from frontend import fastapi_dapp, fastapi_transactionable, sessions, user_auth
 app = fastapi.FastAPI()
 app.include_router(fastapi_dapp.router)
+app.include_router(fastapi_transactionable.router)
 
 
 def get_apps() -> tuple[dapp_attrs.DApp]:
@@ -53,40 +53,6 @@ class WriteAction(transactions.Action):
         """ rollback an action, called by transaction.rollback() """
         transaction.trx_local.pop(self.key)
         return
-
-
-@app.post("/transaction/{trxid}/begin")
-async def trx_begin(
-    trxid: common_ids.TrxId,
-    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
-
-) -> common_ids.TrxId:
-    print(f"/transaction/{trxid}/begin")
-    trx = transactions.Transaction.get_or_create_transaction_with_id(trxid=trxid, for_user=session.user)
-    return trx.trxid
-
-
-@app.post("/transaction/{trxid}/commit")
-async def trx_commit(
-    trxid: common_ids.TrxId,
-    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
-
-) -> common_ids.TrxId:
-    trx = transactions.Transaction.get_or_raise(trxid)
-    await trx.commit()
-    return trx.trxid
-
-
-@app.post("/transaction/{trxid}/abort")
-async def trx_abort(
-    trxid: common_ids.TrxId,
-    session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
-
-) -> common_ids.TrxId:
-    trx = transactions.Transaction.get_or_raise(trxid)
-    await trx.abort()
-    trx.trx_local.clear()  # already aborted, just to make sure
-    return trx.trxid
 
 
 @app.get("/storage/{key}")
