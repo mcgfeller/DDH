@@ -91,7 +91,7 @@ async def trx_abort(
 
 @app.get("/storage/{key}")
 async def load(
-    key: str,
+    key: common_ids.PersistId,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     trxid: common_ids.TrxId = fastapi.Query(),
 ) -> bytes:
@@ -99,7 +99,7 @@ async def load(
     data = trx.trx_local.get(key, _missing)
     if data is _missing:
         try:
-            data = storage.Storage.load(typing.cast(common_ids.PersistId,  key), trx)
+            data = storage.Storage.load(key, trx)
         except KeyError:
             trx.trx_local[key] = _missing  # trx acts as cache
             raise errors.NotFound(f'{key=} not found').to_http()
@@ -111,13 +111,13 @@ async def load(
 
 @app.put("/storage/{key}")
 async def store(
-    key: str,
+    key: common_ids.PersistId,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     trxid: common_ids.TrxId = fastapi.Query(),
     data: bytes = fastapi.Body(..., media_type='data/binary')
 ):
     trx = transactions.Transaction.get_or_create_transaction_with_id(trxid=trxid, for_user=session.user)
-    trx.add(WriteAction(key=typing.cast(common_ids.PersistId,  key), data=data))
+    trx.add(WriteAction(key=key, data=data))
     return
 
 
@@ -125,13 +125,13 @@ async def store(
 
 @app.delete("/storage/{key}")
 async def delete(
-    key: str,
+    key: common_ids.PersistId,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     trxid: common_ids.TrxId = fastapi.Query(),
 ):
     trx = transactions.Transaction.get_or_create_transaction_with_id(trxid=trxid, for_user=session.user)
     print(f'storage.delete {key=}, {trx.trxid=}, ')
-    trx.add(WriteAction(key=typing.cast(common_ids.PersistId,  key), data=_missing))
+    trx.add(WriteAction(key=key, data=_missing))
     return
 
 
