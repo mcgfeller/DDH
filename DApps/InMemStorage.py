@@ -114,7 +114,7 @@ async def store(
     key: str,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     trxid: common_ids.TrxId = fastapi.Query(),
-    data: bytes = fastapi.Body(media_type='data/binary')
+    data: bytes = fastapi.Body(..., media_type='data/binary')
 ):
     trx = transactions.Transaction.get_or_create_transaction_with_id(trxid=trxid, for_user=session.user)
     trx.add(WriteAction(key=typing.cast(common_ids.PersistId,  key), data=data))

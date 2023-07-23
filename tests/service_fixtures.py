@@ -47,7 +47,7 @@ def user1_market(httpx_processes):
     return
 
 
-def get_authorized_client(processes, procid, userpwd, tokenserver: str | None = None) -> httpx.Client:
+def get_authorized_client(processes, procid, userpwd, tokenserver: str | None = None, add_headers: dict = {}) -> httpx.Client:
     """ return a client with header configured for userpwd """
     port = processes.get(procid)[0].port  # get the API server
     tokenurl = url = 'http://localhost:'+str(port)
@@ -59,6 +59,7 @@ def get_authorized_client(processes, procid, userpwd, tokenserver: str | None = 
     r.raise_for_status()
     token = r.json()['access_token']
     headers = httpx.Headers({'Authorization': 'Bearer '+token, 'x-user': userpwd['username']})
+    headers.update(add_headers)
     client = httpx.Client(base_url=url, headers=headers)  # client with token in header
     return client
 
