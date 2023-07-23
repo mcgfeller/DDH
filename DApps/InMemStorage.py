@@ -7,6 +7,7 @@ import typing
 import fastapi
 import fastapi.security
 import pydantic
+from utils.pydantic_utils import DDHbaseModel
 from core import (common_ids, dapp_attrs, keys, nodes, principals, users,
                   schemas, transactions, errors)
 
@@ -23,7 +24,35 @@ def get_apps() -> tuple[dapp_attrs.DApp]:
 
 fastapi_dapp.get_apps = get_apps
 
-_missing = object()
+
+class _missing_class(DDHbaseModel): pass  # marker class
+
+
+_missing = _missing_class()
+
+
+class WriteAction(transactions.Action):
+    key: common_ids.PersistId
+    data: bytes | _missing_class
+
+    def added(self, transaction: transactions.Transaction):
+        """ Callback after transaction is added """
+        transaction.trx_local[self.key] = self.data
+        return
+
+    async def commit(self, transaction):
+        """ commit an action, called by transaction.commit() """
+
+        if self.data is _missing:
+            storage.Storage.delete(self.key, transaction)
+        else:
+            assert isinstance(self.data, bytes)
+            storage.Storage.store(self.key, self.data, transaction)
+
+    async def rollback(self, transaction):
+        """ rollback an action, called by transaction.rollback() """
+        transaction.trx_local.pop(self.key)
+        return
 
 
 @app.post("/transaction/{trxid}/begin")
@@ -43,17 +72,8 @@ async def trx_commit(
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
 
 ) -> common_ids.TrxId:
-    trx = transactions.Transaction.Transactions.get(trxid)
-    if trx:
-        for key, data in trx.trx_local.items():
-            if data is _missing:
-                storage.Storage.delete(typing.cast(common_ids.PersistId,  key), trx)
-            else:
-                storage.Storage.store(typing.cast(common_ids.PersistId,  key), data, trx)
-        trx.commit()
-    else:
-        raise errors.NotFound('Transaction not found').to_http()
-
+    trx = transactions.Transaction.get_or_raise(trxid)
+    await trx.commit()
     return trx.trxid
 
 
@@ -63,12 +83,9 @@ async def trx_abort(
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
 
 ) -> common_ids.TrxId:
-    trx = transactions.Transaction.Transactions.get(trxid)
-    if trx:
-        trx.trx_local.clear()
-        trx.abort()
-    else:
-        raise errors.NotFound('Transaction not found').to_http()
+    trx = transactions.Transaction.get_or_raise(trxid)
+    await trx.abort()
+    trx.trx_local.clear()  # already aborted, just to make sure
     return trx.trxid
 
 
@@ -79,7 +96,6 @@ async def load(
     trxid: common_ids.TrxId = fastapi.Query(),
 ) -> bytes:
     trx = transactions.Transaction.get_or_create_transaction_with_id(trxid=trxid, for_user=session.user)
-    print(f'storage.load {key=}, {trx.trxid=}')
     data = trx.trx_local.get(key, _missing)
     if data is _missing:
         try:
@@ -87,7 +103,7 @@ async def load(
         except KeyError:
             trx.trx_local[key] = _missing  # trx acts as cache
             raise errors.NotFound(f'{key=} not found').to_http()
-        trx.trx_local[key] = data
+        trx.trx_local[key] = data  # found, cache it in trx
     else:
         assert isinstance(data, bytes)
     return data
@@ -101,9 +117,7 @@ async def store(
     data: bytes = fastapi.Body(media_type='data/binary')
 ):
     trx = transactions.Transaction.get_or_create_transaction_with_id(trxid=trxid, for_user=session.user)
-    print(f'storage.store {key=}, {trx.trxid=}, {data=}')
-    trx.trx_local[key] = data
-    # storage.Storage.store(typing.cast(common_ids.PersistId,  key), data, trx)
+    trx.add(WriteAction(key=typing.cast(common_ids.PersistId,  key), data=data))
     return
 
 
@@ -117,7 +131,7 @@ async def delete(
 ):
     trx = transactions.Transaction.get_or_create_transaction_with_id(trxid=trxid, for_user=session.user)
     print(f'storage.delete {key=}, {trx.trxid=}, ')
-    trx.trx_local[key] = _missing
+    trx.add(WriteAction(key=typing.cast(common_ids.PersistId,  key), data=_missing))
     return
 
 
@@ -126,6 +140,9 @@ async def purge_all(
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     confirm: bool = fastapi.Query(default=False, description="must be explicity True")
 ):
+    """ Purge all storage, testing only 
+        TODO: This should be testing user only. Introduce a tester privilege? 
+    """
     if confirm:
         storage.Storage.byId.clear()
     return
@@ -142,15 +159,12 @@ class InMemStorageDApp(dapp_attrs.DApp):
         super().__init__(*a, **kw)
 
     def get_schemas(self) -> dict[keys.DDHkey, schemas.AbstractSchema]:
-        """ Obtain initial schema for DApp """
+        """ This DApp has not schema """
         return {}
 
     def execute(self, req: dapp_attrs.ExecuteRequest):
         """ obtain data by recursing to schema """
-        if req.op == nodes.Ops.get:
-            here, selection = req.access.ddhkey.split_at(req.key_split)
-        else:
-            raise ValueError(f'Unsupported {req.op=}')
+        raise ValueError(f'Unsupported {req.op=}')
         return d
 
 

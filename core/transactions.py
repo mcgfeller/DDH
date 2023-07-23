@@ -63,6 +63,15 @@ class Transaction(DDHbaseModel):
     def get(cls, trxid: common_ids.TrxId) -> Transaction:
         return cls.Transactions[trxid].use()
 
+    @classmethod
+    def get_or_raise(cls, trxid: common_ids.TrxId, error=errors.NotFound) -> Transaction:
+        """ get transaction or raise HTTP error """
+        trx = cls.Transactions.get(trxid)
+        if trx:
+            return trx.use()
+        else:
+            raise error(trxid).to_http()
+
     def begin(self):
         """ begin this transaction """
         self.Transactions[self.trxid] = self
