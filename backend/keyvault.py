@@ -137,7 +137,7 @@ def add_consent_hash(key: bytes, consents: permissions.Consents):
     return key
 
 
-def set_new_storage_key(node: nodes.DataNode, principal: principals.Principal, effective: set[principals.Principal], removed: set[principals.Principal]):
+def set_new_storage_key(node: nodes.Node, principal: principals.Principal, effective: set[principals.Principal], removed: set[principals.Principal]):
     """ set storage key based on private key of principal and public keys of consentees """
     # assert node.consents
     storage_key = get_nonce()  # add_consent_hash(get_nonce(),node.consents) # new storage key

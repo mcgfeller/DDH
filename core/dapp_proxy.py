@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 from utils import utils
 # from frontend import sessions
-from core import keys, permissions, schemas, nodes, keydirectory, policies, errors, transactions, principals, relationships, pillars, schema_network, common_ids, dapp_attrs, versions
+from core import keys, permissions, schemas, nodes, keydirectory, policies, errors, transactions, principals, relationships, schema_network, common_ids, dapp_attrs, versions
 from utils.pydantic_utils import DDHbaseModel
 from schema_formats import py_schema
 
@@ -129,6 +129,7 @@ class DAppManagerClass(DDHbaseModel):
     DAppsById: dict[principals.DAppId, DAppProxy] = {}  # registry of DApps
 
     async def register(self, request, session, running_dapp: dapp_attrs.RunningDApp):
+        from . import pillars  # pillars use DAppManager
         client = httpx.AsyncClient(base_url=running_dapp.location)
         j = await client.get('/app_info')  # get dict of dapp_attrs, one microservice may return multiple DApps
         j.raise_for_status()
@@ -161,3 +162,23 @@ class DAppNode(nodes.ExecutableNode):
     async def execute(self, req: dapp_attrs.ExecuteRequest):
         r = await self.dapp.execute(req)
         return r
+
+
+class DAppRessource(transactions.Ressource):
+
+    dapp: DAppProxy
+
+    @property
+    def id(self) -> str:
+        """ key of ressource, to be stored in transaction """
+        assert self.dapp.attrs.id
+        return self.dapp.attrs.id
+
+    @classmethod
+    def create(cls, id):
+        """ create DAppRessource from Id """
+        dapp = DAppManager.DAppsById.get(id)
+        if not dapp:
+            raise errors.NotSelectable(f'Ressource DApp {id} not available')
+        assert dapp
+        return cls(dapp=dapp)

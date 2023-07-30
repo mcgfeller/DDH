@@ -1,6 +1,6 @@
 import pytest
 
-from core import keys, nodes, permissions, schemas, facade, keydirectory, transactions, users
+from core import keys, nodes, data_nodes, permissions, schemas, facade, keydirectory, transactions, users
 from frontend import sessions
 from schema_formats import py_schema
 
@@ -17,7 +17,7 @@ def test_nodes(node_registry):
     keydirectory.NodeRegistry[keys.DDHkey(key='//p/health:schema')] = node_s
     node_s.add_schema(schema)
     # add consent:
-    node_d = nodes.DataNode(consents=permissions.Consents(
+    node_d = data_nodes.DataNode(consents=permissions.Consents(
         consents=[permissions.Consent(grantedTo=[user2])]), owner=user)
     keydirectory.NodeRegistry[keys.DDHkey(key='/mgf/p/health')] = node_d
     ddhkey = keys.DDHkey(key='/mgf/p/health/bmi/weight')

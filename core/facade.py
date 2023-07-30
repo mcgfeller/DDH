@@ -7,7 +7,7 @@ import json
 import accept_types
 
 
-from . import permissions, keys, schemas, nodes, keydirectory, transactions, errors, dapp_attrs
+from . import permissions, keys, schemas, nodes, data_nodes, keydirectory, transactions, errors, dapp_attrs
 from frontend import sessions
 
 import logging
@@ -106,7 +106,7 @@ async def get_data(access: permissions.Access, transaction: transactions.Transac
             return data_node.consents
         else:
             data_node = data_node.ensure_loaded(transaction)
-            data_node = typing.cast(nodes.DataNode, data_node)
+            data_node = typing.cast(data_nodes.DataNode, data_node)
             *d, consentees, msg = access.raise_if_not_permitted(data_node)
             data = data_node.execute(nodes.Ops.get, access, transaction, d_key_split, None, q)
     else:
@@ -117,7 +117,7 @@ async def get_data(access: permissions.Access, transaction: transactions.Transac
     return data
 
 
-def get_or_create_dnode(access: permissions.Access, transaction: transactions.Transaction) -> tuple[nodes.DataNode, int, keys.DDHkey]:
+def get_or_create_dnode(access: permissions.Access, transaction: transactions.Transaction) -> tuple[data_nodes.DataNode, int, keys.DDHkey]:
     data_node, d_key_split = keydirectory.NodeRegistry.get_node(
         access.ddhkey, nodes.NodeSupports.data, transaction)
     if not data_node:
@@ -125,7 +125,7 @@ def get_or_create_dnode(access: permissions.Access, transaction: transactions.Tr
         topkey, remainder = access.ddhkey.split_at(2)
         # there is no node, create it if owner asks for it:
         if access.principal.id in topkey.owner:
-            data_node = nodes.DataNode(owner=access.principal, key=topkey)
+            data_node = data_nodes.DataNode(owner=access.principal, key=topkey)
             data_node.store(transaction)  # put node into directory
         else:  # not owner, we simply say no access to this path
             raise errors.AccessError(f'not authorized to write to {topkey}')
@@ -133,7 +133,7 @@ def get_or_create_dnode(access: permissions.Access, transaction: transactions.Tr
         data_node = data_node.ensure_loaded(transaction)
         topkey, remainder = access.ddhkey.split_at(d_key_split)
 
-    data_node = typing.cast(nodes.DataNode, data_node)
+    data_node = typing.cast(data_nodes.DataNode, data_node)
     return data_node, d_key_split, remainder
 
 

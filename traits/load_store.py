@@ -4,7 +4,7 @@ from __future__ import annotations
 import typing
 import copy
 
-from core import (errors,  schemas, trait, versions, permissions, keys, nodes, keydirectory, dapp_attrs)
+from core import (errors,  schemas, trait, versions, permissions, keys, nodes, data_nodes, keydirectory, dapp_attrs)
 from backend import system_services, persistable
 
 
@@ -22,6 +22,7 @@ class LoadFromStorage(AccessTransformer):
     only_forks = {keys.ForkType.data, keys.ForkType.consents}
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
+        """ load from storage, per storage according to user profile """
         data_node, d_key_split = keydirectory.NodeRegistry.get_node(
             trargs.access.ddhkey, nodes.NodeSupports.data, trargs.transaction)
         q = None
@@ -32,7 +33,7 @@ class LoadFromStorage(AccessTransformer):
                 return data_node.consents
             else:
                 data_node = data_node.ensure_loaded(trargs.transaction)
-                data_node = typing.cast(nodes.DataNode, data_node)
+                data_node = typing.cast(data_nodes.DataNode, data_node)
                 *d, consentees, msg = trargs.access.raise_if_not_permitted(data_node)
                 data = data_node.execute(nodes.Ops.get, trargs.access, trargs.transaction, d_key_split, None, q)
             trargs.data_node = data_node
@@ -102,7 +103,7 @@ class SaveToStorage(AccessTransformer):
                 topkey, remainder = access.ddhkey.split_at(2)
                 # there is no node, create it if owner asks for it:
                 if access.principal.id in topkey.owner:
-                    data_node = nodes.DataNode(owner=access.principal, key=topkey)
+                    data_node = data_nodes.DataNode(owner=access.principal, key=topkey)
                     # data_node.store(transaction)  # XXX? # put node into directory
                 else:  # not owner, we simply say no access to this path
                     raise errors.AccessError(f'User {access.principal.id} not authorized to write to {topkey}')
@@ -110,7 +111,7 @@ class SaveToStorage(AccessTransformer):
                 data_node = data_node.ensure_loaded(transaction)
                 topkey, remainder = access.ddhkey.split_at(d_key_split)
 
-            data_node = typing.cast(nodes.DataNode, data_node)
+            data_node = typing.cast(data_nodes.DataNode, data_node)
             # TODO: Insert data into data_node
             data_node.execute(nodes.Ops.put, access, transaction, d_key_split, trargs.parsed_data)
 
