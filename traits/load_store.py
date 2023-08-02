@@ -23,7 +23,7 @@ class LoadFromStorage(AccessTransformer):
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
         """ load from storage, per storage according to user profile """
-        data_node, d_key_split = keydirectory.NodeRegistry.get_node(
+        data_node, d_key_split = await keydirectory.NodeRegistry.get_node_async(
             trargs.access.ddhkey, nodes.NodeSupports.data, trargs.transaction)
         q = None
         if data_node:
@@ -32,13 +32,13 @@ class LoadFromStorage(AccessTransformer):
                 *d, consentees, msg = trargs.access.raise_if_not_permitted(data_node)
                 return data_node.consents
             else:
-                data_node = data_node.ensure_loaded(trargs.transaction)
+                data_node = await data_node.ensure_loaded(trargs.transaction)
                 data_node = typing.cast(data_nodes.DataNode, data_node)
                 *d, consentees, msg = trargs.access.raise_if_not_permitted(data_node)
                 data = data_node.execute(nodes.Ops.get, trargs.access, trargs.transaction, d_key_split, None, q)
             trargs.data_node = data_node
         else:
-            *d, consentees, msg = trargs.access.raise_if_not_permitted(keydirectory.NodeRegistry._get_consent_node(
+            *d, consentees, msg = trargs.access.raise_if_not_permitted(await keydirectory.NodeRegistry._get_consent_node_async(
                 trargs.access.ddhkey, nodes.NodeSupports.data, None, trargs.transaction))
             data = {}
         trargs.transaction.add_read_consentees({c.id for c in consentees})
@@ -58,10 +58,10 @@ class LoadFromDApp(AccessTransformer):
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
         q = None
-        e_node, e_key_split = keydirectory.NodeRegistry.get_node(
+        e_node, e_key_split = await keydirectory.NodeRegistry.get_node_async(
             trargs.access.ddhkey.without_owner(), nodes.NodeSupports.execute, trargs.transaction)
         if e_node:
-            e_node = e_node.ensure_loaded(trargs.transaction)
+            e_node = await e_node.ensure_loaded(trargs.transaction)
             e_node = typing.cast(nodes.ExecutableNode, e_node)
             req = dapp_attrs.ExecuteRequest(
                 op=nodes.Ops.get, access=trargs.access, transaction=trargs.transaction, key_split=e_key_split, data=trargs.parsed_data, q=q)
@@ -96,7 +96,7 @@ class SaveToStorage(AccessTransformer):
             access = trargs.access
             transaction = trargs.transaction
 
-            data_node, d_key_split = keydirectory.NodeRegistry.get_node(
+            data_node, d_key_split = await keydirectory.NodeRegistry.get_node_async(
                 access.ddhkey, nodes.NodeSupports.data, transaction)
             if not data_node:
 
@@ -108,12 +108,12 @@ class SaveToStorage(AccessTransformer):
                 else:  # not owner, we simply say no access to this path
                     raise errors.AccessError(f'User {access.principal.id} not authorized to write to {topkey}')
             else:
-                data_node = data_node.ensure_loaded(transaction)
+                data_node = await data_node.ensure_loaded(transaction)
                 topkey, remainder = access.ddhkey.split_at(d_key_split)
 
             data_node = typing.cast(data_nodes.DataNode, data_node)
             # TODO: Insert data into data_node
-            data_node.execute(nodes.Ops.put, access, transaction, d_key_split, trargs.parsed_data)
+            await data_node.execute(nodes.Ops.put, access, transaction, d_key_split, trargs.parsed_data)
 
             trargs.data_node = data_node  # TODO NEW NODE!
             # Add it to transaction:

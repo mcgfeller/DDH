@@ -67,10 +67,13 @@ class _NodeRegistry:
         """ get a node that supports support, walking up the tree.
             ProxyNodes are loaded. 
             If the Node doesn't meet condition, the search goes up the tree looking for a Node. 
+
+
+            TODO:#33: Eventually, all calls must be async.
         """
         nop, split = self.get_proxy(key, support)
         if nop:
-            node = nop.ensure_loaded(transaction)
+            node = nop
             assert isinstance(node, nodes.Node)  # searchable Persistable must be Node
             if condition and not condition(node):  # apply condition to loaded Node
                 key = key.up()  # go one up and recurse
@@ -84,13 +87,49 @@ class _NodeRegistry:
 
         return node, split
 
+    async def get_node_async(self, key: keys.DDHkey, support: nodes.NodeSupports, transaction: transactions.Transaction,
+                             condition: typing.Callable | None = None) -> typing.Tuple[nodes.Node | None, int]:
+        """ get a node that supports support, walking up the tree.
+            ProxyNodes are loaded. 
+            If the Node doesn't meet condition, the search goes up the tree looking for a Node. 
+        """
+        nop, split = self.get_proxy(key, support)
+        if nop:
+            node = await nop.ensure_loaded(transaction)
+            assert isinstance(node, nodes.Node)  # searchable Persistable must be Node
+            if condition and not condition(node):  # apply condition to loaded Node
+                key = key.up()  # go one up and recurse
+                if key:
+                    node, split = await self.get_node_async(key, support, transaction, condition=condition)
+                    split -= 1
+                else:
+                    return (None, -1)
+        else:
+            node = None
+
+        return node, split
+
     @staticmethod
     def _get_consent_node(ddhkey: keys.DDHkey, support: nodes.NodeSupports, node: nodes.Node | None, transaction: transactions.Transaction) -> nodes.Node | None:
-        """ get consents, from current node or from its parent """
+        """ get consents, from current node or from its parent
+            TODO:#33: Eventually, all calls must be async.
+        """
         if node and node.has_consents():
             cnode = node
         else:
             cnode, d = NodeRegistry.get_node(
+                ddhkey, support, transaction, condition=nodes.Node.has_consents)
+            if not cnode:  # means that upper nodes don't have consent
+                cnode = node
+        return cnode
+
+    @staticmethod
+    async def _get_consent_node_async(ddhkey: keys.DDHkey, support: nodes.NodeSupports, node: nodes.Node | None, transaction: transactions.Transaction) -> nodes.Node | None:
+        """ get consents, from current node or from its parent """
+        if node and node.has_consents():
+            cnode = node
+        else:
+            cnode, d = await NodeRegistry.get_node_async(
                 ddhkey, support, transaction, condition=nodes.Node.has_consents)
             if not cnode:  # means that upper nodes don't have consent
                 cnode = node

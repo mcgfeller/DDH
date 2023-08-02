@@ -27,7 +27,7 @@ from backend import keyvault, storage
 class NonPersistable(DDHbaseModel):
     """ NonPersistable, has itself as proxy """
 
-    def ensure_loaded(self, transaction: transactions.Transaction) -> NonPersistable:
+    async def ensure_loaded(self, transaction: transactions.Transaction) -> NonPersistable:
         """ Non-persistables don't need to be loaded """
         return self
 
@@ -49,19 +49,19 @@ class Persistable(DDHbaseModel):
     def __init_subclass__(cls):
         Persistable.Registry[cls.__name__] = cls
 
-    def store(self, transaction: transactions.Transaction):
+    async def store(self, transaction: transactions.Transaction):
         d = self.to_compressed()
         storage.Storage.store(self.id, d, transaction)
         return
 
     @classmethod
-    def load(cls, id: common_ids.PersistId,  transaction: transactions.Transaction) -> typing.Self:
+    async def load(cls, id: common_ids.PersistId,  transaction: transactions.Transaction) -> typing.Self:
         d = storage.Storage.load(id, transaction)
         o = cls.from_compressed(d)
         return o
 
-    def delete(self, transaction: transactions.Transaction):
-        self.__class__.load(self.id, transaction)  # verify encryption by loading
+    async def delete(self, transaction: transactions.Transaction):
+        await self.__class__.load(self.id, transaction)  # verify encryption by loading
         storage.Storage.delete(self.id, transaction)
         return
 
@@ -83,7 +83,7 @@ class Persistable(DDHbaseModel):
     def get_key(self):
         raise NotImplementedError()
 
-    def ensure_loaded(self, transaction: transactions.Transaction) -> Persistable:
+    async def ensure_loaded(self, transaction: transactions.Transaction) -> Persistable:
         """ self is already loaded, make operation idempotent """
         return self
 
@@ -97,11 +97,11 @@ class PersistableProxy(DDHbaseModel):
     id: common_ids.PersistId
     classname: str
 
-    def ensure_loaded(self, transaction: transactions.Transaction) -> Persistable:
+    async def ensure_loaded(self, transaction: transactions.Transaction) -> Persistable:
         """ return an instantiaded Persistable subclass; idempotent """
         cls = Persistable.Registry[self.classname]
-#        cls = typing.cast(Persistable,cls)
-        obj = cls.load(self.id, transaction)
+        cls = typing.cast(Persistable, cls)
+        obj = await cls.load(self.id, transaction)
         assert isinstance(obj, cls)
         return obj
 
@@ -116,7 +116,7 @@ class PersistAction(transactions.Action):
 
     async def commit(self, transaction):
         """ store has currently not async support """
-        self.obj.store(transaction)
+        await self.obj.store(transaction)
         return
 
 
@@ -143,13 +143,12 @@ class UserDataPersistAction(PersistAction):
 
         # dapp = user.profile.system_services.get_dapp(system_services.SystemServices.storage)
         dapp = dapp_proxy.DAppManager.DAppsById.get(self.with_dapp)
-        if not dapp:
-            print(errors.NotSelectable(
-                f'System storage DApp {self.with_dapp} is not available'))
+        # if not dapp: # TODO:#22
+        #     raise (errors.NotSelectable(f'System storage DApp {self.with_dapp} is not available'))
 
         # print('Dapp', dapp)
 
         # dapp.execute()
 
-        self.obj.store(transaction)
+        await self.obj.store(transaction)
         return

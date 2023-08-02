@@ -32,10 +32,10 @@ class DataNode(nodes.Node, persistable.Persistable):
             s.add(nodes.NodeSupports.consents)
         return s
 
-    def store(self, transaction: transactions.Transaction):
+    async def store(self, transaction: transactions.Transaction):
         da = self.get_storage_dapp_id()
-        # res = dapp_proxy.DAppRessource.create(da)
-        # transaction.add(res)
+        # res = dapp_proxy.DAppRessource.create(da) # TODO:#22
+        # await transaction.add_ressource(res)
         d = self.to_compressed()
         if self.id not in storage.Storage:
             keyvault.set_new_storage_key(self, transaction.for_user, set(), set())
@@ -44,32 +44,32 @@ class DataNode(nodes.Node, persistable.Persistable):
         return
 
     @classmethod
-    def load(cls, id: common_ids.PersistId,  transaction: transactions.Transaction):
+    async def load(cls, id: common_ids.PersistId,  transaction: transactions.Transaction):
         enc = storage.Storage.load(id, transaction)
         plain = keyvault.decrypt_data(transaction.for_user, id, enc)
         o = cls.from_compressed(plain)
         return o
 
-    def execute(self, op: nodes.Ops, access: permissions.Access, transaction: transactions.Transaction, key_split: int, data: dict | None = None, q: str | None = None):
+    async def execute(self, op: nodes.Ops, access: permissions.Access, transaction: transactions.Transaction, key_split: int, data: dict | None = None, q: str | None = None):
         if key_split:
             top, remainder = access.ddhkey.split_at(key_split)
             if self.format != persistable.DataFormat.dict:
                 raise errors.NotSelectable(remainder)
         if op == nodes.Ops.get:
-            data = self.unsplit_data(self.data, transaction)
+            data = await self.unsplit_data(self.data, transaction)
             if key_split:
                 data = datautils.extract_data(self.data, remainder, raise_error=errors.NotFound)
         elif op == nodes.Ops.put:
             assert data is not None
             if key_split:
                 self.data = datautils.insert_data(self.data or {}, remainder, data, missing=dict)
-            self.store(transaction)
+            await self.store(transaction)
         elif op == nodes.Ops.delete:
-            self.delete(transaction)
+            await self.delete(transaction)
 
         return data
 
-    def update_consents(self, access: permissions.Access, transaction: transactions.Transaction, remainder: keys.DDHkey, consents: permissions.Consents):
+    async def update_consents(self, access: permissions.Access, transaction: transactions.Transaction, remainder: keys.DDHkey, consents: permissions.Consents):
         """ update consents at remainder key.
             Data must be read using previous encryption and rewritten using the new encryption. See 
             section 7.3 "Protection of data at rest and on the move" of the DDH paper.
@@ -94,10 +94,10 @@ class DataNode(nodes.Node, persistable.Persistable):
                                          removed)  # now we can set the new key
 
             # re-encrypt on new node (may be self if there is not remainder)
-            node.store(transaction)
+            await node.store(transaction)
             if remainder.key:  # need to write data with below part cut out again, but with changed key
 
-                self.store(transaction)  # old node
+                await self.store(transaction)  # old node
 
         return
 
@@ -118,11 +118,11 @@ class DataNode(nodes.Node, persistable.Persistable):
         keydirectory.NodeRegistry[key] = node
         return node
 
-    def unsplit_data(self, data, transaction):
+    async def unsplit_data(self, data, transaction):
         for remainder, fullkey in self.sub_nodes.items():
             subnodeproxy = keydirectory.NodeRegistry[fullkey][nodes.NodeSupports.data]
             if subnodeproxy:
-                subnode = subnodeproxy.ensure_loaded(transaction)
+                subnode = await subnodeproxy.ensure_loaded(transaction)
                 assert isinstance(subnode, DataNode)  # because of lookup by type
                 data = datautils.insert_data(data, remainder, subnode.data)
 

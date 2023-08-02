@@ -58,7 +58,7 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
         transaction.add_and_validate(access)
 
         # We need a data node, even for a schema, as it carries the consents:
-        data_node, d_key_split, remainder = get_or_create_dnode(access, transaction)
+        data_node, d_key_split, remainder = await get_or_create_dnode(access, transaction)
         access.raise_if_not_permitted(data_node)
         headers = {}
 
@@ -75,7 +75,7 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                 match access.ddhkey.fork:
                     case keys.ForkType.consents:
                         consents = permissions.Consents.parse_raw(data)
-                        data_node.update_consents(access, transaction, remainder, consents)
+                        await data_node.update_consents(access, transaction, remainder, consents)
 
                     case keys.ForkType.data:
                         # TODO: Checks
@@ -90,14 +90,14 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                         # first e_node to transform data:
                         data = await get_enode(nodes.Ops.put, access, transaction, data, q)
                         if data:
-                            data_node.execute(nodes.Ops.put, access, transaction, d_key_split, data, q)
+                            await data_node.execute(nodes.Ops.put, access, transaction, d_key_split, data, q)
 
     return data, headers
 
 
 async def get_data(access: permissions.Access, transaction: transactions.Transaction, q: str | None = None) -> typing.Any:
 
-    data_node, d_key_split = keydirectory.NodeRegistry.get_node(
+    data_node, d_key_split = await keydirectory.NodeRegistry.get_node_async(
         access.ddhkey, nodes.NodeSupports.data, transaction)
     if data_node:
         if access.ddhkey.fork == keys.ForkType.consents:
@@ -105,32 +105,32 @@ async def get_data(access: permissions.Access, transaction: transactions.Transac
             *d, consentees, msg = access.raise_if_not_permitted(data_node)
             return data_node.consents
         else:
-            data_node = data_node.ensure_loaded(transaction)
+            data_node = await data_node.ensure_loaded(transaction)
             data_node = typing.cast(data_nodes.DataNode, data_node)
             *d, consentees, msg = access.raise_if_not_permitted(data_node)
             data = data_node.execute(nodes.Ops.get, access, transaction, d_key_split, None, q)
     else:
-        *d, consentees, msg = access.raise_if_not_permitted(keydirectory.NodeRegistry._get_consent_node(
+        *d, consentees, msg = access.raise_if_not_permitted(await keydirectory.NodeRegistry._get_consent_node_async(
             access.ddhkey, nodes.NodeSupports.data, None, transaction))
         data = {}
     transaction.add_read_consentees({c.id for c in consentees})
     return data
 
 
-def get_or_create_dnode(access: permissions.Access, transaction: transactions.Transaction) -> tuple[data_nodes.DataNode, int, keys.DDHkey]:
-    data_node, d_key_split = keydirectory.NodeRegistry.get_node(
+async def get_or_create_dnode(access: permissions.Access, transaction: transactions.Transaction) -> tuple[data_nodes.DataNode, int, keys.DDHkey]:
+    data_node, d_key_split = await keydirectory.NodeRegistry.get_node_async(
         access.ddhkey, nodes.NodeSupports.data, transaction)
     if not data_node:
 
         topkey, remainder = access.ddhkey.split_at(2)
         # there is no node, create it if owner asks for it:
-        if access.principal.id in topkey.owner:
+        if access.principal.id in topkey.owners:
             data_node = data_nodes.DataNode(owner=access.principal, key=topkey)
-            data_node.store(transaction)  # put node into directory
+            await data_node.store(transaction)  # put node into directory
         else:  # not owner, we simply say no access to this path
             raise errors.AccessError(f'not authorized to write to {topkey}')
     else:
-        data_node = data_node.ensure_loaded(transaction)
+        data_node = await data_node.ensure_loaded(transaction)
         topkey, remainder = access.ddhkey.split_at(d_key_split)
 
     data_node = typing.cast(data_nodes.DataNode, data_node)
@@ -141,7 +141,7 @@ async def get_enode(op: nodes.Ops, access: permissions.Access, transaction: tran
     e_node, e_key_split = keydirectory.NodeRegistry.get_node(
         access.ddhkey.without_owner(), nodes.NodeSupports.execute, transaction)
     if e_node:
-        e_node = e_node.ensure_loaded(transaction)
+        e_node = await e_node.ensure_loaded(transaction)
         e_node = typing.cast(nodes.ExecutableNode, e_node)
         req = dapp_attrs.ExecuteRequest(
             op=op, access=access, transaction=transaction, key_split=e_key_split, data=data, q=q)
@@ -198,12 +198,12 @@ def check_mimetype_schema(ddhkey: keys.DDHkey, schema: schemas.AbstractSchema, a
     return smt[0]
 
 
-def _get_consent_node(ddhkey: keys.DDHkey, support: nodes.NodeSupports, node: nodes.Node | None, transaction: transactions.Transaction) -> nodes.Node | None:
+async def _get_consent_node(ddhkey: keys.DDHkey, support: nodes.NodeSupports, node: nodes.Node | None, transaction: transactions.Transaction) -> nodes.Node | None:
     """ get consents, from current node or from its parent """
     if node and node.has_consents():
         cnode = node
     else:
-        cnode, d = keydirectory.NodeRegistry.get_node(
+        cnode, d = await keydirectory.NodeRegistry.get_node_async(
             ddhkey, support, transaction, condition=nodes.Node.has_consents)
         if not cnode:  # means that upper nodes don't have consent
             cnode = node

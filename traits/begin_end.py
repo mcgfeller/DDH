@@ -35,7 +35,7 @@ class FinalTransformer(BracketTransformer):
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
         self.audit(trargs.access, trargs.transaction)
-        print(f'FinalTransformer: {trargs.transaction}')
+        print(f'FinalTransformer: {trargs.transaction!s}')
         await trargs.transaction.commit()
         return
 

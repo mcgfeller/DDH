@@ -36,6 +36,9 @@ class Transaction(DDHbaseModel):
 
     actions: list[Action] = pydantic.Field(
         default_factory=list, description="list of actions to be performed at commit")
+    ressources: dict[str, Ressource] = pydantic.Field(
+        default_factory=dict, description="dict of ressources coordinated")
+
     trx_local: dict = pydantic.Field(default_factory=dict, description="dict for storage local to transactionn")
 
     # https://github.com/pydantic/pydantic/issues/3679#issuecomment-1337575645
@@ -90,17 +93,23 @@ class Transaction(DDHbaseModel):
         for action in self.actions:
             await action.commit(self)
         self.actions.clear()
+        for ressource in self.ressources.values():
+            await ressource.commit(self)
+        self.ressources.clear()
         return
 
     async def abort(self):
         for action in self.actions:
             await action.rollback(self)
         self.actions.clear()
+        for ressource in self.ressources.values():
+            await ressource.rollback(self)
+        self.ressources.clear()
         self.end()
 
     def __del__(self):
         """ Async close if transaction is destroyed """
-        print(f'__del__ {self=}')
+        print(f'__del__ {self!s}')
         try:
             loop = asyncio.get_event_loop()
             if loop.is_running():
@@ -109,6 +118,10 @@ class Transaction(DDHbaseModel):
                 loop.run_until_complete(self.abort())
         except Exception:
             pass
+
+    def __str__(self):
+        """ short summary of transaction """
+        return f"Transaction trxid={self.trxid}, #actions={len(self.actions)}, #ressources={len(self.ressources)}"
 
     async def __aenter__(self):
         """ use as async context - note that there is currently no awaitable ressource, but 
@@ -160,6 +173,14 @@ class Transaction(DDHbaseModel):
         else:
             raise TrxAccessError(f'action {action} cannot be added to {self}')
 
+    async def add_ressource(self, ressource: Ressource):
+        """ Add action to this transaction """
+        if ressource.add_ok(self):
+            self.ressources[ressource.id] = ressource
+            await ressource.added(self)
+        else:
+            raise TrxAccessError(f'action {ressource} cannot be added to {self}')
+
     @classmethod
     def get_or_create_transaction_with_id(cls, trxid: common_ids.TrxId, for_user: principals.Principal) -> Transaction:
         """ If you need a cross-process trx with a trxid, use this method. """
@@ -191,6 +212,18 @@ class Action(DDHbaseModel):
     async def rollback(self, transaction):
         """ rollback an action, called by transaction.rollback() """
 
+        return
+
+
+class Ressource(Action):
+    """ Remote ressource """
+
+    # id: str
+    actions: list[Action] = pydantic.Field(
+        default_factory=list, description="list of actions to be performed at commit")
+
+    async def added(self, trx: Transaction):
+        """ Callback after ressource is added """
         return
 
 

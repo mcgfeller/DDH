@@ -70,7 +70,8 @@ class DAppProxy(DDHbaseModel):
             schema.schema_attributes.transformers)
 
         if snode:
-            snode = typing.cast(nodes.SchemaNode, snode.ensure_loaded(transaction))
+            # TODO:#33: Schema Nodes don't need .ensure_loaded now, but should be reinserted once they're async
+            snode = typing.cast(nodes.SchemaNode, snode)
             snode.add_schema(schema)
         else:
             # create snode with our schema:
