@@ -26,6 +26,7 @@ DefaultReadConsentees = {principals.AllPrincipal.id}  # by default, nothing is r
 class Transaction(DDHbaseModel):
     trxid: common_ids.TrxId
     for_user: principals.Principal
+    user_token: str | None = None
     accesses: list[permissions.Access] = pydantic.Field(default_factory=list)
     exp: datetime.datetime = datetime.datetime.now()
 
@@ -53,12 +54,12 @@ class Transaction(DDHbaseModel):
         return
 
     @classmethod
-    def create(cls, for_user: principals.Principal, **kw) -> Transaction:
+    def create(cls, for_user: principals.Principal, user_token: str | None = None, **kw) -> Transaction:
         """ Create Trx, and begin it """
         trxid = secrets.token_urlsafe()
         if trxid in cls.Transactions:
             raise KeyError(f'duplicate key: {trxid}')
-        trx = cls(trxid=trxid, for_user=for_user, **kw)
+        trx = cls(trxid=trxid, for_user=for_user, user_token=user_token, **kw)
         trx.begin()
         return trx
 

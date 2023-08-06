@@ -52,7 +52,7 @@ class Session(DDHbaseModel):
         else:
             for_user = for_user or self.user
             new_trx = transactions.Transaction.create(
-                for_user=for_user, initial_read_consentees=initial_read_consentees)
+                for_user=for_user, user_token=self.token_str, initial_read_consentees=initial_read_consentees)
             self.trxs_for_user[for_user] = new_trx
             self.current_trx = new_trx
             return new_trx.use()

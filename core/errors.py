@@ -39,6 +39,11 @@ class AccessError(DDHerror):
     http_status = 403
 
 
+class DAppAuthorizationError(DDHerror):
+    """ Delegated request does not access this user """
+    http_status = 401
+
+
 class CapabilityMissing(AccessError):
     """ The required capability is missing to fullfill this request """
 
