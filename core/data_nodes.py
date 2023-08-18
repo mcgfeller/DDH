@@ -4,7 +4,7 @@ from __future__ import annotations
 import typing
 
 
-from . import permissions, transactions, errors, keydirectory, users, common_ids, nodes, keys, dapp_proxy
+from . import permissions, transactions, errors, keydirectory, users, common_ids, nodes, keys, dapp_proxy, storage_ressource
 from utils import datautils
 from backend import persistable, system_services, storage, keyvault
 
@@ -36,7 +36,7 @@ class DataNode(nodes.Node, persistable.Persistable):
         da = self.get_storage_dapp_id()
         res = transaction.ressources.get(da)
         if not res:
-            res = dapp_proxy.DAppRessource.create(da)  # TODO:#22
+            res = storage_ressource.StorageRessource.create(da)  # TODO:#22
             await transaction.add_ressource(res)
         assert isinstance(res, dapp_proxy.DAppRessource)
         d = self.to_compressed()
@@ -52,7 +52,7 @@ class DataNode(nodes.Node, persistable.Persistable):
         da = 'InMemStorageDApp'  # XXX self.get_storage_dapp_id()
         res = transaction.ressources.get(da)
         if not res:
-            res = dapp_proxy.DAppRessource.create(da)  # TODO:#22
+            res = storage_ressource.StorageRessource.create(da)  # TODO:#22
             await transaction.add_ressource(res)
         assert isinstance(res, dapp_proxy.DAppRessource)
 

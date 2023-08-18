@@ -209,19 +209,6 @@ class DAppRessource(transactions.Ressource):
         await self.dapp.send_url(f'transaction/{trx.trxid}/abort', verb='post', jwt=trx.user_token)
         return
 
-    async def load(self, key: str, trx: transactions.Transaction) -> bytes:
-        d = await self.dapp.send_url(f'/storage/{key}?trxid={trx.trxid}', verb='get', jwt=trx.user_token)
-        return d
-
-    async def store(self, key: str, data: bytes, trx: transactions.Transaction):
-        print('data', data)
-        d = await self.dapp.send_url(f'/storage/{key}?trxid={trx.trxid}', content=data, headers={'Content-Type': 'data/binary'}, verb='put', jwt=trx.user_token)
-        return d
-
-    async def delete(self, key: str, trx: transactions.Transaction):
-        d = await self.dapp.send_url(f'/storage/{key}?trxid={trx.trxid}', verb='delete', jwt=trx.user_token)
-        return d
-
 
 class FakeDAppRessource(DAppRessource):
     """ Fake Ressource - for in process testing only """
