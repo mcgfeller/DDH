@@ -34,18 +34,30 @@ class DataNode(nodes.Node, persistable.Persistable):
 
     async def store(self, transaction: transactions.Transaction):
         da = self.get_storage_dapp_id()
-        # res = dapp_proxy.DAppRessource.create(da) # TODO:#22
-        # await transaction.add_ressource(res)
+        res = transaction.ressources.get(da)
+        if not res:
+            res = dapp_proxy.DAppRessource.create(da)  # TODO:#22
+            await transaction.add_ressource(res)
+        assert isinstance(res, dapp_proxy.DAppRessource)
         d = self.to_compressed()
         if self.id not in storage.Storage:
             keyvault.set_new_storage_key(self, transaction.for_user, set(), set())
         enc = keyvault.encrypt_data(transaction.for_user, self.id, d)
-        storage.Storage.store(self.id, enc, transaction)
+        await res.store(self.id, enc, transaction)
+        # storage.Storage.store(self.id, enc, transaction)
         return
 
     @classmethod
     async def load(cls, id: common_ids.PersistId,  transaction: transactions.Transaction):
-        enc = storage.Storage.load(id, transaction)
+        da = 'InMemStorageDApp'  # XXX self.get_storage_dapp_id()
+        res = transaction.ressources.get(da)
+        if not res:
+            res = dapp_proxy.DAppRessource.create(da)  # TODO:#22
+            await transaction.add_ressource(res)
+        assert isinstance(res, dapp_proxy.DAppRessource)
+
+        enc = await res.load(id, transaction)
+        # enc = storage.Storage.load(id, transaction)
         plain = keyvault.decrypt_data(transaction.for_user, id, enc)
         o = cls.from_compressed(plain)
         return o

@@ -119,6 +119,15 @@ class DAppProxy(DDHbaseModel):
         errors.DAppError.raise_from_response(data)  # Pass error response to caller
         return data.json()
 
+    async def send_url(self, urlpath, verb='get', jwt=None, headers={}, **kw):
+        """ forward execution request to DApp microservice """
+        if jwt:
+            headers['Authorization'] = 'Bearer '+jwt
+        print(f'*send_url {headers=}, {urlpath=}, {kw=}')
+        resp = await self.client.request(verb, urlpath, headers=headers, **kw)
+        errors.DAppError.raise_from_response(resp)  # Pass error response to caller
+        return resp.json()
+
 
 class DAppManagerClass(DDHbaseModel):
     """ Provisional DAppManager, loads modules and instantiates DApps.
@@ -181,3 +190,40 @@ class DAppRessource(transactions.Ressource):
             raise errors.NotSelectable(f'Ressource DApp {id} not available')
         assert dapp
         return cls(dapp=dapp)
+
+    async def added(self, trx: transactions.Transaction):
+        """ Issue begin transaction req to DApp """
+        print(f'*DAppRessource added {trx=}, {trx.user_token=}')
+        await self.begin(trx)
+        return
+
+    async def begin(self, trx: transactions.Transaction):
+        await self.dapp.send_url(f'transaction/{trx.trxid}/begin', verb='post', jwt=trx.user_token)
+        return
+
+    async def commit(self, trx: transactions.Transaction):
+        await self.dapp.send_url(f'transaction/{trx.trxid}/commit', verb='post', jwt=trx.user_token)
+        return
+
+    async def abort(self, trx: transactions.Transaction):
+        await self.dapp.send_url(f'transaction/{trx.trxid}/abort', verb='post', jwt=trx.user_token)
+        return
+
+    async def load(self, key: str, trx: transactions.Transaction) -> bytes:
+        d = await self.dapp.send_url(f'/storage/{key}?trxid={trx.trxid}', verb='get', jwt=trx.user_token)
+        return d
+
+    async def store(self, key: str, data: bytes, trx: transactions.Transaction):
+        print('data', data)
+        d = await self.dapp.send_url(f'/storage/{key}?trxid={trx.trxid}', content=data, headers={'Content-Type': 'data/binary'}, verb='put', jwt=trx.user_token)
+        return d
+
+    async def delete(self, key: str, trx: transactions.Transaction):
+        d = await self.dapp.send_url(f'/storage/{key}?trxid={trx.trxid}', verb='delete', jwt=trx.user_token)
+        return d
+
+
+class FakeDAppRessource(DAppRessource):
+    """ Fake Ressource - for in process testing only """
+
+    dapp: DAppProxy | None = None
