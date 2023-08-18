@@ -4,7 +4,7 @@ from __future__ import annotations
 import typing
 
 
-from . import permissions, transactions, errors, keydirectory, users, common_ids, nodes, keys, dapp_proxy, storage_ressource
+from . import permissions, transactions, errors, keydirectory, users, common_ids, nodes, keys, dapp_proxy, storage_resource
 from utils import datautils
 from backend import persistable, system_services, storage, keyvault
 
@@ -34,11 +34,11 @@ class DataNode(nodes.Node, persistable.Persistable):
 
     async def store(self, transaction: transactions.Transaction):
         da = self.get_storage_dapp_id()
-        res = transaction.ressources.get(da)
+        res = transaction.resources.get(da)
         if not res:
-            res = storage_ressource.StorageRessource.create(da)  # TODO:#22
-            await transaction.add_ressource(res)
-        assert isinstance(res, dapp_proxy.DAppRessource)
+            res = storage_resource.StorageResource.create(da)  # TODO:#22
+            await transaction.add_resource(res)
+        assert isinstance(res, dapp_proxy.DAppResource)
         d = self.to_compressed()
         if self.id not in storage.Storage:
             keyvault.set_new_storage_key(self, transaction.for_user, set(), set())
@@ -50,11 +50,11 @@ class DataNode(nodes.Node, persistable.Persistable):
     @classmethod
     async def load(cls, id: common_ids.PersistId,  transaction: transactions.Transaction):
         da = 'InMemStorageDApp'  # XXX self.get_storage_dapp_id()
-        res = transaction.ressources.get(da)
+        res = transaction.resources.get(da)
         if not res:
-            res = storage_ressource.StorageRessource.create(da)  # TODO:#22
-            await transaction.add_ressource(res)
-        assert isinstance(res, dapp_proxy.DAppRessource)
+            res = storage_resource.StorageResource.create(da)  # TODO:#22
+            await transaction.add_resource(res)
+        assert isinstance(res, dapp_proxy.DAppResource)
 
         enc = await res.load(id, transaction)
         # enc = storage.Storage.load(id, transaction)

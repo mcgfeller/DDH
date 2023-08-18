@@ -59,7 +59,7 @@ def variant_with_default(v: str | None) -> VariantType:
 
 
 class DDHkey(DDHbaseModel):
-    """ A key identifying a DDH ressource. DDHkey is decoupled from any permissions, storage, etc.,
+    """ A key identifying a DDH resource. DDHkey is decoupled from any permissions, storage, etc.,
     """
     key: tuple
     fork: ForkType = ForkType.data

@@ -9,7 +9,7 @@ import typing
 import fastapi
 import fastapi.security
 
-from core import (dapp_attrs, errors, keys, permissions, principals,users,
+from core import (dapp_attrs, errors, keys, permissions, principals, users,
                   common_ids)
 from user import subscriptions
 from frontend import sessions
@@ -19,11 +19,13 @@ app = fastapi.FastAPI()
 
 from frontend import user_auth  # provisional user management
 
-SUBSCRIPTIONS : dict[common_ids.PrincipalId,dict[principals.DAppId,typing.Any]] = {}
+SUBSCRIPTIONS: dict[common_ids.PrincipalId, dict[principals.DAppId, typing.Any]] = {}
+
 
 @app.get("/health")
 async def health():
-    return {'status':'ok'}
+    return {'status': 'ok'}
+
 
 @app.get("/users/me/", response_model=users.User)
 async def read_users_me(current_user: user_auth.UserInDB = fastapi.Depends(user_auth.get_current_active_user)):
@@ -31,60 +33,65 @@ async def read_users_me(current_user: user_auth.UserInDB = fastapi.Depends(user_
     return current_user.as_user()
 
 # get user_auth.login_for_access_token defined in app:
+
+
 @app.post("/token", response_model=user_auth.Token)
 async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordRequestForm = fastapi.Depends()):
-    user,dappid,token =  await user_auth.login_for_access_token(form_data)
+    user, dappid, token = await user_auth.login_for_access_token(form_data)
     # Create access record:
-    access = permissions.Access(ddhkey=keys.DDHkey('/login'),principal=user, modes = {permissions.AccessMode.login},byDApp=dappid)
+    access = permissions.Access(ddhkey=keys.DDHkey('/login'), principal=user,
+                                modes={permissions.AccessMode.login}, byDApp=dappid)
     return token
 
 
-
-@app.post("/users/{user}/subscriptions/dapp/{dappid}",response_model=list[principals.DAppId])
+@app.post("/users/{user}/subscriptions/dapp/{dappid}", response_model=list[principals.DAppId])
 async def create_subscription(
     user: common_ids.PrincipalId,
-    dappid : str,
+    dappid: str,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
-    ):
+):
     """ Create a single subscription for a user """
     if not user == session.user.id:
-        raise errors.AccessError('authorized user is not ressource owner')
+        raise errors.AccessError('authorized user is not resource owner')
     valid_dappids = await get_dappids(session)
-    das =subscriptions.add_subscription(user,typing.cast(principals.DAppId,dappid),valid_dappids)
+    das = subscriptions.add_subscription(user, typing.cast(principals.DAppId, dappid), valid_dappids)
 
     return das
-    
-@app.delete("/users/{user}/subscriptions/dapp/{dappid}",response_model=list[principals.DAppId])
+
+
+@app.delete("/users/{user}/subscriptions/dapp/{dappid}", response_model=list[principals.DAppId])
 async def delete_subscription(
     user: common_ids.PrincipalId,
-    dappid : str,
+    dappid: str,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
-    ):
+):
     """ Delete an existing single subscription for a user """
     if not user == session.user.id:
-        raise errors.AccessError('authorized user is not ressource owner')
+        raise errors.AccessError('authorized user is not resource owner')
     valid_dappids = await get_dappids(session)
-    das =subscriptions.delete_subscription(user,typing.cast(principals.DAppId,dappid),valid_dappids)
+    das = subscriptions.delete_subscription(user, typing.cast(principals.DAppId, dappid), valid_dappids)
 
     return das
 
-@app.get("/users/{user}/subscriptions/dapp/",response_model=list[principals.DAppId])
+
+@app.get("/users/{user}/subscriptions/dapp/", response_model=list[principals.DAppId])
 async def list_subscription(
     user: common_ids.PrincipalId,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
-    ):
+):
     """ List subscriptions for a user """
     if not user == session.user.id:
-        raise errors.AccessError('authorized user is not ressource owner')
-    valid_dappids = await get_dappids(session)    
-    das = subscriptions.list_subscriptions(user,valid_dappids)    
+        raise errors.AccessError('authorized user is not resource owner')
+    valid_dappids = await get_dappids(session)
+    das = subscriptions.list_subscriptions(user, valid_dappids)
     return das
 
+
 async def get_dappids(session: sessions.Session):
-    d = await fastapi_utils.submit1_asynch(session,'http://localhost:8001',f'/dapp')
+    d = await fastapi_utils.submit1_asynch(session, 'http://localhost:8001', f'/dapp')
     return set(d)
 
-if __name__ == "__main__": # Debugging
+if __name__ == "__main__":  # Debugging
     import uvicorn
     import os
     port = 8003

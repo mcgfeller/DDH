@@ -172,28 +172,28 @@ class DAppNode(nodes.ExecutableNode):
         return r
 
 
-class DAppRessource(transactions.Ressource):
+class DAppResource(transactions.Resource):
 
     dapp: DAppProxy
 
     @property
     def id(self) -> str:
-        """ key of ressource, to be stored in transaction """
+        """ key of resource, to be stored in transaction """
         assert self.dapp.attrs.id
         return self.dapp.attrs.id
 
     @classmethod
     def create(cls, id):
-        """ create DAppRessource from Id """
+        """ create DAppResource from Id """
         dapp = DAppManager.DAppsById.get(id)
         if not dapp:
-            raise errors.NotSelectable(f'Ressource DApp {id} not available')
+            raise errors.NotSelectable(f'Resource DApp {id} not available')
         assert dapp
         return cls(dapp=dapp)
 
     async def added(self, trx: transactions.Transaction):
         """ Issue begin transaction req to DApp """
-        print(f'*DAppRessource added {trx=}, {trx.user_token=}')
+        print(f'*DAppResource added {trx=}, {trx.user_token=}')
         await self.begin(trx)
         return
 
@@ -210,7 +210,7 @@ class DAppRessource(transactions.Ressource):
         return
 
 
-class FakeDAppRessource(DAppRessource):
-    """ Fake Ressource - for in process testing only """
+class FakeDAppResource(DAppResource):
+    """ Fake Resource - for in process testing only """
 
     dapp: DAppProxy | None = None

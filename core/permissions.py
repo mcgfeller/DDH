@@ -61,7 +61,7 @@ AccessMode.RequiredModes = {AccessMode.anonymous: None, AccessMode.pseudonym: No
 
 
 class Consent(DDHbaseModel):
-    """ Consent to access a ressource denoted by DDHkey.
+    """ Consent to access a resource denoted by DDHkey.
     """
     grantedTo: list[principals.Principal]
     withApps: set[principals.DAppId] = set()

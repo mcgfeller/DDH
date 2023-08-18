@@ -10,11 +10,11 @@ logger = logging.getLogger(__name__)
 from core import dapp_proxy, transactions
 
 
-class StorageRessource(dapp_proxy.DAppRessource):
+class StorageResource(dapp_proxy.DAppResource):
 
     async def added(self, trx: transactions.Transaction):
         """ Issue begin transaction req to DApp """
-        print(f'*DAppRessource added {trx=}, {trx.user_token=}')
+        print(f'*DAppResource added {trx=}, {trx.user_token=}')
         await self.begin(trx)
         return
 
