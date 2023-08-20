@@ -1,4 +1,6 @@
-""" Proxy representing DApps in runner  """
+""" StorageResoure with DApp as an executor.
+    Also provides in-memory storage resource for testing. 
+"""
 from __future__ import annotations
 
 import pydantic.json
@@ -20,31 +22,29 @@ class StorageResource(dapp_proxy.DAppResource):
             assert self.dapp.attrs.id
             return self.dapp.attrs.id
         else:
-            return 'InProcessStorageResource'
-
-    @classmethod
-    def create(cls, id):
-        """ create DAppResource from Id """
-        try:
-            return super().create(id)
-        except errors.NotSelectable:
-            return InProcessStorageResource(dapp=None)
+            return '?'  # 'InProcessStorageResource'
 
     async def load(self, key: str, trx: transactions.Transaction) -> bytes:
+        assert self.dapp
         d = await self.dapp.send_url(f'/storage/{key}?trxid={trx.trxid}', verb='get', jwt=trx.user_token)
         return d
 
     async def store(self, key: str, data: bytes, trx: transactions.Transaction):
-        print('data', data)
+        assert self.dapp
         d = await self.dapp.send_url(f'/storage/{key}?trxid={trx.trxid}', content=data, headers={'Content-Type': 'data/binary'}, verb='put', jwt=trx.user_token)
         return d
 
     async def delete(self, key: str, trx: transactions.Transaction):
+        assert self.dapp
         d = await self.dapp.send_url(f'/storage/{key}?trxid={trx.trxid}', verb='delete', jwt=trx.user_token)
         return d
 
 
 class InProcessStorageResource(StorageResource):
+    """ Storage ressource that runs without a DApp, for testing only.
+        Uses storage.Storage to store. 
+        Transaction support is empty. 
+    """
 
     async def begin(self, trx: transactions.Transaction):
         return

@@ -6,6 +6,8 @@ import pytest
 import pcp
 import time
 
+from core import storage_resource, errors
+
 
 @pytest.fixture(scope="session")
 def httpx_processes(wait: float = 3):
@@ -68,3 +70,19 @@ def start_servers():
     """ Start all DDH servers, including DApps """
     pcp.ddh.start(pcp.getargs())
     return pcp.ddh
+
+
+@classmethod
+def create_no_storage_dapp(cls, id):
+    """ create DAppResource from Id, replace by InProcessStorageResource if there is
+        an error because DApp is not running.
+    """
+    try:
+        return cls.__bases__[0].create(id)
+    except errors.NotSelectable:
+        return storage_resource.InProcessStorageResource(dapp=None)
+
+
+@pytest.fixture
+def no_storage_dapp(monkeypatch):
+    monkeypatch.setattr(storage_resource.StorageResource, 'create', create_no_storage_dapp)

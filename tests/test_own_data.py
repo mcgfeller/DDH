@@ -29,7 +29,7 @@ def get_session(user):
 
 
 @pytest.mark.asyncio
-async def test_write_data(user):
+async def test_write_data(user, no_storage_dapp):
     """ test write through facade.ddh_put() """
     session = get_session(user)
     ddhkey = keys.DDHkey(key="/mgf/org/private/documents/doc1")
@@ -41,7 +41,7 @@ async def test_write_data(user):
 
 
 @pytest.mark.asyncio
-async def test_write_data_other_owner(user):
+async def test_write_data_other_owner(user, no_storage_dapp):
     """ test write through facade.ddh_put() using another owner"""
     session = get_session(user)
     ddhkey = keys.DDHkey(key="/another/org/private/documents/doc1")
@@ -53,7 +53,7 @@ async def test_write_data_other_owner(user):
 
 
 @pytest.mark.asyncio
-async def test_set_consent_top(user, user2):
+async def test_set_consent_top(user, user2, no_storage_dapp):
     """ test set consent at top """
     session = get_session(user)
     ddhkey = keys.DDHkey(key="/mgf:consents")
@@ -63,7 +63,7 @@ async def test_set_consent_top(user, user2):
 
 
 @pytest.mark.asyncio
-async def test_set_consent_deep(user, user2, user3):
+async def test_set_consent_deep(user, user2, user3, no_storage_dapp):
     """ test set consent deeper in tree """
     session = get_session(user)
     # first set at top:
@@ -80,7 +80,7 @@ async def test_set_consent_deep(user, user2, user3):
 
 
 @pytest.mark.asyncio
-async def test_write_data_with_consent(user, user2):
+async def test_write_data_with_consent(user, user2, no_storage_dapp):
     """ test write through facade.ddh_put() with three objects:
         - mgf/.../doc1
         - another/.../doc2 with read grant to user
@@ -111,10 +111,10 @@ async def test_write_data_with_consent(user, user2):
 
 
 @pytest.mark.asyncio
-async def test_read_and_write_data(user, user2):
+async def test_read_and_write_data(user, user2, no_storage_dapp):
     session = get_session(user)
     # first, set up some data:
-    await test_write_data_with_consent(user, user2)
+    await test_write_data_with_consent(user, user2, no_storage_dapp)
     await session.reinit()  # ensure we have a clean slate
     trx = await session.ensure_new_transaction()
     assert trx.read_consentees == transactions.DefaultReadConsentees
@@ -144,10 +144,10 @@ async def test_read_and_write_data(user, user2):
 
 
 @pytest.mark.asyncio
-async def test_read_and_write_data2(user, user2):
+async def test_read_and_write_data2(user, user2, no_storage_dapp):
     session = get_session(user)
     # first, set up some data:
-    await test_write_data_with_consent(user, user2)
+    await test_write_data_with_consent(user, user2, no_storage_dapp)
     await session.reinit()  # ensure we have a clean slate
     trx = await session.ensure_new_transaction(for_user=user)
 

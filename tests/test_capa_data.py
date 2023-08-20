@@ -31,14 +31,14 @@ def get_session(user):
 
 
 @pytest.mark.asyncio
-async def test_read_anon_failures(user, user2):
+async def test_read_anon_failures(user, user2, no_storage_dapp):
     """ Test must failures for anonymous access:
         - must invoke anonymous if shared so
         - private schema has no anonymous capability
     """
     session = get_session(user)
     # first, set up some data:
-    await test_write_data_with_consent(user, user2)
+    await test_write_data_with_consent(user, user2, no_storage_dapp)
     await session.reinit()  # ensure we have a clean slate
     trx = await session.ensure_new_transaction()
     assert trx.read_consentees == transactions.DefaultReadConsentees
@@ -119,12 +119,12 @@ async def test_read_anon_migros(user, transaction, migros_key_schema, migros_dat
 
 
 @pytest.mark.asyncio
-async def test_read_pseudo_migros(user, transaction, migros_key_schema, migros_data, monkeypatch):
+async def test_read_pseudo_migros(user, transaction, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
     """ read pseudonymous whole schema """
     modes = {permissions.AccessMode.read, permissions.AccessMode.pseudonym}
     trargs = await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, monkeypatch)
     eid = list(trargs.parsed_data.keys())[0]
-    pm2 = anonymization.PseudonymMap.load(eid, transaction)  # retrieve it
+    pm2 = await anonymization.PseudonymMap.load(eid, user, transaction)  # retrieve it
     assert isinstance(pm2, anonymization.PseudonymMap)
     assert len(pm.cache) == len(pm2.cache)
     # TODO: Map id must be eid
@@ -141,7 +141,7 @@ async def test_read_anon_migros_rec(user, transaction, migros_key_schema, migros
 
 
 @pytest.mark.asyncio
-async def test_write_data_with_consent(user, user2):
+async def test_write_data_with_consent(user, user2, no_storage_dapp):
     """ test write through facade.ddh_put() with three objects:
         - mgf/.../doc1
         - another/.../doc2 with read grant to user
