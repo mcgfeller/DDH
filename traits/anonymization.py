@@ -10,7 +10,7 @@ import datetime
 import pydantic
 from utils.pydantic_utils import DDHbaseModel, tuple_key_to_str, str_to_tuple_key
 
-from core import (errors, versions, permissions, schemas, transactions, trait)
+from core import (errors, versions, permissions, schemas, transactions, trait, common_ids)
 from backend import persistable
 from . import capabilities
 
@@ -99,9 +99,12 @@ class PseudonymMap(persistable.Persistable):
         """ create cache and prime it with an entry for the eid, encoding both the transaction and 
             the principal. 
         """
-        cache = {('', '', pid): transaction.trxid+'/'+secrets.token_urlsafe(max(10, len(pid)))
-                 for pid in data_by_principal.keys()}
-        return PseudonymMap(cache=cache)
+        cache = {}
+        for pid in data_by_principal.keys():
+            tid = transaction.trxid+'/'+secrets.token_urlsafe(max(10, len(pid)))
+            cache[('', '', pid)] = tid
+        assert cache
+        return PseudonymMap(cache=cache, id=typing.cast(common_ids.PersistId, tid))
 
     def to_json(self) -> str:
         """ JSON export doesn't support dicts with tuple keyes. So convert them to str and convert back in .from_json() """
