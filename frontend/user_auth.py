@@ -87,6 +87,11 @@ class UserInDB(users.User):
         """ return user only """
         return users.User(**self.dict(include=users.User.__fields__.keys()))
 
+    @classmethod
+    def load_user(cls, id) -> principals.Principal | UserInDB:
+        """ return Principal or UserInDB """
+        return principals.CommonPrincipals.get(id) or cls.load(id)
+
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)

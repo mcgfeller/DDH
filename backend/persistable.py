@@ -10,6 +10,7 @@ import pydantic
 from utils.pydantic_utils import DDHbaseModel
 from core import transactions, common_ids, principals, errors, users
 from backend import system_services
+from frontend import user_auth
 
 
 @enum.unique
@@ -44,6 +45,7 @@ class Persistable(DDHbaseModel):
     Registry: typing.ClassVar[dict[str, type]] = {}
     id: common_ids.PersistId = pydantic.Field(default_factory=secrets.token_urlsafe)
     format: DataFormat = DataFormat.dict
+    owner: principals.Principal | None = None
 
     @classmethod
     def __init_subclass__(cls):
@@ -55,13 +57,13 @@ class Persistable(DDHbaseModel):
         return
 
     @classmethod
-    async def load(cls, id: common_ids.PersistId, owner: users.User, transaction: transactions.Transaction) -> typing.Self:
+    async def load(cls, id: common_ids.PersistId, owner: principals.Principal | None, transaction: transactions.Transaction) -> typing.Self:
         d = storage.Storage.load(id, transaction)
         o = cls.from_compressed(d)
         return o
 
     async def delete(self, transaction: transactions.Transaction):
-        await self.__class__.load(self.id, transaction)  # verify encryption by loading
+        await self.__class__.load(self.id, self.owner, transaction)  # verify encryption by loading
         storage.Storage.delete(self.id, transaction)
         return
 
@@ -89,19 +91,24 @@ class Persistable(DDHbaseModel):
 
     def get_proxy(self) -> PersistableProxy:
         """ get a loadable proxy for us; idempotent. Reverse .ensureLoaded() """
-        return PersistableProxy(id=self.id, classname=self.__class__.__name__)
+        return PersistableProxy(id=self.id, classname=self.__class__.__name__, owner_id=self.owner.id if self.owner else None)
 
 
 class PersistableProxy(DDHbaseModel):
     """ Proxy with minimal data to load Persistable """
     id: common_ids.PersistId
     classname: str
+    owner_id: common_ids.PrincipalId | None = None
 
     async def ensure_loaded(self, transaction: transactions.Transaction) -> Persistable:
         """ return an instantiaded Persistable subclass; idempotent """
         cls = Persistable.Registry[self.classname]
-        cls = typing.cast(Persistable, cls)
-        obj = await cls.load(self.id, self.owner, transaction)
+        cls = typing.cast(type[Persistable], cls)
+        if self.owner_id:  # get owning user
+            owner = user_auth.UserInDB.load_user(self.owner_id)
+        else:
+            owner = None
+        obj = await cls.load(self.id, owner, transaction)
         assert isinstance(obj, cls)
         return obj
 

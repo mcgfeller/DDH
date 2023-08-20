@@ -4,7 +4,7 @@ from __future__ import annotations
 import typing
 
 
-from . import permissions, transactions, errors, keydirectory, users, common_ids, nodes, keys, dapp_proxy, storage_resource
+from . import permissions, transactions, errors, keydirectory, users, common_ids, nodes, keys, dapp_proxy, storage_resource, principals
 from utils import datautils
 from backend import persistable, system_services, storage, keyvault
 
@@ -19,7 +19,7 @@ class DataNode(nodes.Node, persistable.Persistable):
     sub_nodes: dict[keys.DDHkey, keys.DDHkey] = {}
 
     @classmethod
-    def get_storage_dapp_id(cls, owner: users.User) -> str:
+    def get_storage_dapp_id(cls, owner: principals.Principal) -> str:
         assert owner
         profile = getattr(owner, 'profile', users.DefaultProfile)  # Test principals don't have profile
         dappid = profile.system_services.system_dapps.get(system_services.SystemServices.storage)
@@ -33,30 +33,34 @@ class DataNode(nodes.Node, persistable.Persistable):
             s.add(nodes.NodeSupports.consents)
         return s
 
-    async def store(self, transaction: transactions.Transaction):
-        da = self.get_storage_dapp_id(self.owner)
+    @classmethod
+    async def get_storage_resource(cls, owner: principals.Principal,  transaction: transactions.Transaction) -> storage_resource.StorageResource:
+        da = cls.get_storage_dapp_id(owner)
         res = transaction.resources.get(da)
         if not res:
-            res = storage_resource.StorageResource.create(da)  # TODO:#22
+            res = storage_resource.StorageResource.create(da)
             await transaction.add_resource(res)
-        assert isinstance(res, dapp_proxy.DAppResource)
+        assert isinstance(res, storage_resource.StorageResource)
+        return res
+
+    async def store(self, transaction: transactions.Transaction):
+        res = await self.get_storage_resource(self.owner, transaction)
         d = self.to_compressed()
         if self.id not in storage.Storage:
             keyvault.set_new_storage_key(self, transaction.for_user, set(), set())
         enc = keyvault.encrypt_data(transaction.for_user, self.id, d)
         await res.store(self.id, enc, transaction)
-        # storage.Storage.store(self.id, enc, transaction)
+        return
+
+    async def delete(self, transaction: transactions.Transaction):
+        await self.__class__.load(self.id, self.owner, transaction)  # verify encryption by loading
+        res = await self.get_storage_resource(self.owner, transaction)
+        await res.delete(self.id, transaction)
         return
 
     @classmethod
-    async def load(cls, id: common_ids.PersistId, owner: users.User,  transaction: transactions.Transaction):
-        da = cls.get_storage_dapp_id(owner)
-        res = transaction.resources.get(da)
-        if not res:
-            res = storage_resource.StorageResource.create(da)  # TODO:#22
-            await transaction.add_resource(res)
-        assert isinstance(res, storage_resource.StorageResource)
-
+    async def load(cls, id: common_ids.PersistId, owner: principals.Principal,  transaction: transactions.Transaction):
+        res = await cls.get_storage_resource(owner, transaction)
         enc = await res.load(id, transaction)
         # enc = storage.Storage.load(id, transaction)
         plain = keyvault.decrypt_data(transaction.for_user, id, enc)

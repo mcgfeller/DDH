@@ -9,7 +9,7 @@ import enum
 from core import dapp_attrs
 
 
-from . import permissions, schemas,  principals
+from . import permissions, schemas,  principals, common_ids
 from backend import persistable
 
 
@@ -39,7 +39,7 @@ class Ops(str, enum.Enum):
 
 class NodeProxy(persistable.PersistableProxy):
     supports: set[NodeSupports]
-    owner: principals.Principal
+    owner_id: common_ids.PrincipalId
 
 
 class Node(pydantic.BaseModel):
@@ -68,7 +68,7 @@ class Node(pydantic.BaseModel):
     def get_proxy(self) -> Node | NodeProxy:
         """ get a loadable proxy for us; idempotent. Reverse .ensureLoaded() """
         if isinstance(self, persistable.Persistable):
-            return NodeProxy(supports=self.supports, id=self.id, classname=self.__class__.__name__, owner=self.owner)
+            return NodeProxy(supports=self.supports, id=self.id, classname=self.__class__.__name__, owner_id=self.owner.id)
         else:
             return self
 
