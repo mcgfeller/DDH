@@ -78,7 +78,7 @@ def create_no_storage_dapp(cls, id):
         an error because DApp is not running.
     """
     try:
-        return cls.__bases__[0].create(id)
+        return cls.__bases__[0].create(id)  # cannot use super() in monkey patched classmethod
     except errors.NotSelectable:
         return storage_resource.InProcessStorageResource(dapp=None)
 

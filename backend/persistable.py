@@ -134,28 +134,4 @@ class SystemDataPersistAction(PersistAction):
 
 class UserDataPersistAction(PersistAction):
     """ Persist User Data, storage DApp is user-specific  """
-    with_dapp: principals.DAppId | None = None
-
-    def __init__(self, *a, **kw):
-        super().__init__(*a, **kw)
-        user = self.obj.owner
-        profile = getattr(user, 'profile', users.DefaultProfile)  # Test principals don't have profile
-        self.with_dapp = profile.system_services.system_dapps.get(system_services.SystemServices.storage)
-
-        return
-
-    async def commit(self, transaction):
-        """ store has currently not async support """
-        from core import dapp_proxy
-
-        # dapp = user.profile.system_services.get_dapp(system_services.SystemServices.storage)
-        dapp = dapp_proxy.DAppManager.DAppsById.get(self.with_dapp)
-        # if not dapp: # TODO:#22
-        #     raise (errors.NotSelectable(f'System storage DApp {self.with_dapp} is not available'))
-
-        # print('Dapp', dapp)
-
-        # dapp.execute()
-
-        await self.obj.store(transaction)
-        return
+    ...
