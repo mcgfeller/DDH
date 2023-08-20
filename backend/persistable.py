@@ -55,7 +55,7 @@ class Persistable(DDHbaseModel):
         return
 
     @classmethod
-    async def load(cls, id: common_ids.PersistId,  transaction: transactions.Transaction) -> typing.Self:
+    async def load(cls, id: common_ids.PersistId, owner: users.User, transaction: transactions.Transaction) -> typing.Self:
         d = storage.Storage.load(id, transaction)
         o = cls.from_compressed(d)
         return o
@@ -101,7 +101,7 @@ class PersistableProxy(DDHbaseModel):
         """ return an instantiaded Persistable subclass; idempotent """
         cls = Persistable.Registry[self.classname]
         cls = typing.cast(Persistable, cls)
-        obj = await cls.load(self.id, transaction)
+        obj = await cls.load(self.id, self.owner, transaction)
         assert isinstance(obj, cls)
         return obj
 

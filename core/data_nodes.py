@@ -18,9 +18,10 @@ class DataNode(nodes.Node, persistable.Persistable):
     access_key: keyvault.AccessKey | None = None
     sub_nodes: dict[keys.DDHkey, keys.DDHkey] = {}
 
-    def get_storage_dapp_id(self) -> str:
-        assert self.owner
-        profile = getattr(self.owner, 'profile', users.DefaultProfile)  # Test principals don't have profile
+    @classmethod
+    def get_storage_dapp_id(cls, owner: users.User) -> str:
+        assert owner
+        profile = getattr(owner, 'profile', users.DefaultProfile)  # Test principals don't have profile
         dappid = profile.system_services.system_dapps.get(system_services.SystemServices.storage)
         assert dappid
         return dappid
@@ -33,7 +34,7 @@ class DataNode(nodes.Node, persistable.Persistable):
         return s
 
     async def store(self, transaction: transactions.Transaction):
-        da = self.get_storage_dapp_id()
+        da = self.get_storage_dapp_id(self.owner)
         res = transaction.resources.get(da)
         if not res:
             res = storage_resource.StorageResource.create(da)  # TODO:#22
@@ -48,13 +49,13 @@ class DataNode(nodes.Node, persistable.Persistable):
         return
 
     @classmethod
-    async def load(cls, id: common_ids.PersistId,  transaction: transactions.Transaction):
-        da = 'InMemStorageDApp'  # XXX self.get_storage_dapp_id()
+    async def load(cls, id: common_ids.PersistId, owner: users.User,  transaction: transactions.Transaction):
+        da = cls.get_storage_dapp_id(owner)
         res = transaction.resources.get(da)
         if not res:
             res = storage_resource.StorageResource.create(da)  # TODO:#22
             await transaction.add_resource(res)
-        assert isinstance(res, dapp_proxy.DAppResource)
+        assert isinstance(res, storage_resource.StorageResource)
 
         enc = await res.load(id, transaction)
         # enc = storage.Storage.load(id, transaction)

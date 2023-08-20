@@ -39,6 +39,7 @@ class Ops(str, enum.Enum):
 
 class NodeProxy(persistable.PersistableProxy):
     supports: set[NodeSupports]
+    owner: principals.Principal
 
 
 class Node(pydantic.BaseModel):
@@ -67,7 +68,7 @@ class Node(pydantic.BaseModel):
     def get_proxy(self) -> Node | NodeProxy:
         """ get a loadable proxy for us; idempotent. Reverse .ensureLoaded() """
         if isinstance(self, persistable.Persistable):
-            return NodeProxy(supports=self.supports, id=self.id, classname=self.__class__.__name__)
+            return NodeProxy(supports=self.supports, id=self.id, classname=self.__class__.__name__, owner=self.owner)
         else:
             return self
 

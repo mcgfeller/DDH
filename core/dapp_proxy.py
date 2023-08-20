@@ -174,7 +174,7 @@ class DAppNode(nodes.ExecutableNode):
 
 class DAppResource(transactions.Resource):
 
-    dapp: DAppProxy
+    dapp: DAppProxy | None
 
     @property
     def id(self) -> str:
@@ -208,9 +208,3 @@ class DAppResource(transactions.Resource):
     async def abort(self, trx: transactions.Transaction):
         await self.dapp.send_url(f'transaction/{trx.trxid}/abort', verb='post', jwt=trx.user_token)
         return
-
-
-class FakeDAppResource(DAppResource):
-    """ Fake Resource - for in process testing only """
-
-    dapp: DAppProxy | None = None
