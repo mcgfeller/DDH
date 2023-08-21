@@ -105,6 +105,7 @@ class Phase(str, enum.Enum):
     parse = 'parse'
     post_load = 'post load'
     validation = 'validation'
+    pre_store = 'pre store'
     store = 'store'
     last = 'last'
     none_ = 'none_'  # special phase, not in any sequence
@@ -113,7 +114,7 @@ class Phase(str, enum.Enum):
 """ Ordered sequences of phases, per mode. Note: first,last must always be present """
 Sequences: dict[permissions.AccessMode | None, list[Phase]] = {
     permissions.AccessMode.read: [Phase.first, Phase.load, Phase.post_load, Phase.last],
-    permissions.AccessMode.write: [Phase.first, Phase.parse, Phase.post_load, Phase.validation, Phase.store, Phase.last],
+    permissions.AccessMode.write: [Phase.first, Phase.parse, Phase.post_load, Phase.validation, Phase.pre_store, Phase.store, Phase.last],
     None: [Phase.first, Phase.last]
 }
 
@@ -143,8 +144,11 @@ class Transformer(Trait):
     def capabilities_for_modes(cls, modes: typing.Iterable[permissions.AccessMode], fork: keys.ForkType) -> set[str]:
         """ return the capabilities required for the access modes and fork """
         caps = set.union(set(), *[c for m in modes if (c := cls._all_by_modes.get(m))])
-        # eliminate cpabilites for other forks:
+        # eliminate capabilites for other forks:
         caps = {c for c in caps if not (of := typing.cast(Transformer, cls._cls_by_name[c]).only_forks) or fork in of}
+        # eliminate capabilites with mode restrictions:
+        caps = {c for c in caps if not (om := typing.cast(
+            Transformer, cls._cls_by_name[c]).only_modes) or any(mode in om for mode in modes)}
         return caps
 
     async def apply(self, traits: Traits, trargs: TransformerArgs, **kw):
