@@ -17,6 +17,7 @@ from . import capabilities
 
 class Anonymize(capabilities.DataCapability):
     supports_modes = {permissions.AccessMode.anonymous}
+    only_modes = {permissions.AccessMode.read}
     phase = trait.Phase.post_load
 
     async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):
@@ -82,39 +83,55 @@ class Pseudonymize(Anonymize):
     supports_modes = {permissions.AccessMode.pseudonym}
 
     async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):
-        pm = PseudonymMap.create(trargs.access, trargs.transaction, trargs.parsed_data)
+        assert trargs.parsed_data is not None and len(trargs.parsed_data) > 0
+        cache = {}
+        for pid in trargs.parsed_data.keys():
+            tid = trargs.transaction.trxid+'/'+secrets.token_urlsafe(max(10, len(pid)))
+            cache[('', '', pid)] = tid
+
         trargs.parsed_data = self.transform(trargs.nschema, trargs.access,
-                                            trargs.transaction,  trargs.parsed_data, pm.cache)
-        # the cache was filled during the transform - save it
-        trargs.transaction.add(persistable.SystemDataPersistAction(obj=pm))
+                                            trargs.transaction,  trargs.parsed_data, cache)
+        # the cache was filled during the transform - save it per principal:
+        for tid, data in trargs.parsed_data.items():
+            pm = PseudonymMap(id=typing.cast(common_ids.PersistId, tid), cache=cache)
+            pm.invert()
+            trargs.transaction.add(persistable.SystemDataPersistAction(obj=pm))
         return
 
 
 class PseudonymMap(persistable.Persistable):
 
     cache: dict
+    inverted_cache: dict | None = None  # for writing
 
-    @classmethod
-    def create(cls, access, transaction: transactions.Transaction, data_by_principal: dict) -> typing.Self:
-        """ create cache and prime it with an entry for the eid, encoding both the transaction and 
-            the principal. 
-        """
-        cache = {}
-        for pid in data_by_principal.keys():
-            tid = transaction.trxid+'/'+secrets.token_urlsafe(max(10, len(pid)))
-            cache[('', '', pid)] = tid
-        assert cache
-        return PseudonymMap(cache=cache, id=typing.cast(common_ids.PersistId, tid))
+    def invert(self):
+        """ invert the cache, so it can be read """
+        self.inverted_cache = {(path, field, anon): value for (path, field, value), anon in self.cache.items()}
+        return
 
     def to_json(self) -> str:
         """ JSON export doesn't support dicts with tuple keyes. So convert them to str and convert back in .from_json() """
+        if self.inverted_cache is None:
+            self.invert()
         e = self.copy()
-        e.cache = {tuple_key_to_str(k): v for k, v in e.cache.items()}
+        e.cache.clear()  # original cache is not exported
+        e.inverted_cache = {tuple_key_to_str(k): v for k, v in e.inverted_cache.items()}
         return e.json()
 
     @classmethod
     def from_json(cls, j: str) -> typing.Self:
         """ Convert back dict keys encoded in .to_json() """
         o = cls.parse_raw(j)
-        o.cache = {str_to_tuple_key(k): v for k, v in o.cache.items()}
+        assert o.inverted_cache is not None
+        o.inverted_cache = {str_to_tuple_key(k): v for k, v in o.inverted_cache.items()}
         return o
+
+
+class DePseudonymize(capabilities.DataCapability):
+    supports_modes = {permissions.AccessMode.pseudonym}
+    only_modes = {permissions.AccessMode.write}
+    phase = trait.Phase.pre_store  # before validation!
+
+    async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):
+        assert trargs.parsed_data is not None and len(trargs.parsed_data) > 0
+        return

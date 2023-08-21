@@ -124,10 +124,10 @@ async def test_read_pseudo_migros(user, transaction, migros_key_schema, migros_d
     modes = {permissions.AccessMode.read, permissions.AccessMode.pseudonym}
     trargs = await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, monkeypatch)
     eid = list(trargs.parsed_data.keys())[0]
-    pm2 = await anonymization.PseudonymMap.load(eid, user, transaction)  # retrieve it
-    assert isinstance(pm2, anonymization.PseudonymMap)
-    # assert len(pm.cache) == len(pm2.cache)
-    # TODO: Map id must be eid
+    pm = await anonymization.PseudonymMap.load(eid, user, transaction)  # retrieve it
+    assert isinstance(pm, anonymization.PseudonymMap)
+    assert isinstance(pm.inverted_cache, dict)
+    assert pm.inverted_cache[('', '', eid)] == user.id  # map back to user
 
     return
 
