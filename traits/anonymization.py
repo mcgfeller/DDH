@@ -133,5 +133,7 @@ class DePseudonymize(capabilities.DataCapability):
     phase = trait.Phase.pre_store  # before validation!
 
     async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):
+        eid = trargs.access.ddhkey.owner
+        pm = await PseudonymMap.load(eid, trargs.access.principal, trargs.transaction)  # retrieve it
         assert trargs.parsed_data is not None and len(trargs.parsed_data) > 0
         return

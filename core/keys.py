@@ -219,6 +219,14 @@ class DDHkey(DDHbaseModel):
         if self.owner is self.AnyKey:
             raise errors.NotFound('key has no owner')
 
+    def set_owner(self, owner: common_ids.PrincipalId) -> typing.Self:
+        """ return key with owner set to owner """
+        rooted_key = self.ensure_rooted()
+        if len(rooted_key.key) > 1 and rooted_key.key[1] == owner:
+            return self
+        else:
+            return self.__class__((self.Root, owner)+rooted_key.key[2:], specifiers=rooted_key.specifiers)
+
     def without_variant_version(self) -> DDHkeyGeneric:
         """ return key with fork, but without schema variant and version, typically used for access control """
         if isinstance(self, DDHkeyGeneric):

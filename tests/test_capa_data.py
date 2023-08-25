@@ -7,6 +7,7 @@ from frontend import user_auth, sessions
 from backend import keyvault
 import pytest
 import json
+from fastapi.encoders import jsonable_encoder
 
 keyvault.clear_vaults()  # need to be independet of other tests
 
@@ -129,6 +130,26 @@ async def test_read_pseudo_migros(user, transaction, migros_key_schema, migros_d
     assert isinstance(pm.inverted_cache, dict)
     assert pm.inverted_cache[('', '', eid)] == user.id  # map back to user
 
+    return
+
+
+@pytest.mark.asyncio
+async def test_read_write_pseudo_migros(user, transaction, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
+    """ read pseudonymous whole schema """
+    modes = {permissions.AccessMode.read, permissions.AccessMode.pseudonym}
+    trargs = await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, monkeypatch)
+    eid = list(trargs.parsed_data.keys())[0]
+
+    data = trargs.parsed_data[eid]  # without owner for writing
+    data = json.dumps(jsonable_encoder(data))  # back to json
+    modes = {permissions.AccessMode.write, permissions.AccessMode.pseudonym}
+    k, schema = migros_key_schema
+    ddhkey = k.ensure_fork(keys.ForkType.data).set_owner(eid)
+    access = permissions.Access(ddhkey=ddhkey, principal=user, modes=modes)
+    access.schema_key_split = 4  # split after the migros.org
+    trargs = await schema.apply_transformers(access, transaction, data)  # transformer processing happens here
+    data = trargs.parsed_data
+    # await facade.ddh_put(access, session, data)
     return
 
 
