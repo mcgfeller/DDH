@@ -96,7 +96,7 @@ async def delete(
     trxid: common_ids.TrxId = fastapi.Query(),
 ):
     trx = transactions.Transaction.get_or_create_transaction_with_id(trxid=trxid, for_user=session.user)
-    print(f'storage.delete {key=}, {trx.trxid=}, ')
+    # print(f'storage.delete {key=}, {trx.trxid=}, ')
     trx.add(WriteAction(key=key, data=_missing))
     return
 

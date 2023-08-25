@@ -64,9 +64,9 @@ async def get_schemas() -> dict:
 
 @router.post("/execute")
 async def execute(req: dapp_attrs.ExecuteRequest):
-    return get_apps()[0].execute(req)
+    return get_apps()[0].execute(req)  # Note: This call is local and synchronous
 
 
 @router.post("/get_and_transform")
 async def execute(req: dapp_attrs.ExecuteRequest):
-    return get_apps()[0].get_and_transform(req)
+    return get_apps()[0].get_and_transform(req)  # Note: This call is local and synchronous

@@ -18,7 +18,7 @@ async def trx_begin(
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
 
 ) -> common_ids.TrxId:
-    print(f"/transaction/{trxid}/begin")
+    # print(f"/transaction/{trxid}/begin")
     trx = transactions.Transaction.get_or_create_transaction_with_id(trxid=trxid, for_user=session.user)
     return trx.trxid
 

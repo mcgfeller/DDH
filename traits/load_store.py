@@ -35,7 +35,7 @@ class LoadFromStorage(AccessTransformer):
                 data_node = await data_node.ensure_loaded(trargs.transaction)
                 data_node = typing.cast(data_nodes.DataNode, data_node)
                 *d, consentees, msg = trargs.access.raise_if_not_permitted(data_node)
-                data = data_node.execute(nodes.Ops.get, trargs.access, trargs.transaction, d_key_split, None, q)
+                data = await data_node.execute(nodes.Ops.get, trargs.access, trargs.transaction, d_key_split, None, q)
             trargs.data_node = data_node
         else:
             *d, consentees, msg = trargs.access.raise_if_not_permitted(await keydirectory.NodeRegistry._get_consent_node_async(

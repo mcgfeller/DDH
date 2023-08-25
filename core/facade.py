@@ -108,7 +108,7 @@ async def get_data(access: permissions.Access, transaction: transactions.Transac
             data_node = await data_node.ensure_loaded(transaction)
             data_node = typing.cast(data_nodes.DataNode, data_node)
             *d, consentees, msg = access.raise_if_not_permitted(data_node)
-            data = data_node.execute(nodes.Ops.get, access, transaction, d_key_split, None, q)
+            data = await data_node.execute(nodes.Ops.get, access, transaction, d_key_split, None, q)
     else:
         *d, consentees, msg = access.raise_if_not_permitted(await keydirectory.NodeRegistry._get_consent_node_async(
             access.ddhkey, nodes.NodeSupports.data, None, transaction))

@@ -107,7 +107,7 @@ class SchemaAttributes(DDHbaseModel):
         default=trait.NoTransformers, description="Transformers are applied according to access.modes")
 
     def add_reference(self, path: keys.DDHkey, reference: AbstractSchemaReference):
-        print(f'SchemaAttributes.add_reference {path=}, {reference=}')
+        # print(f'SchemaAttributes.add_reference {path=}, {reference=}')
         self.references[str(path)] = reference.get_target()
         return
 

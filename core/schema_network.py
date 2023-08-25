@@ -59,7 +59,7 @@ class SchemaNetworkClass():
         prev = self._network.nodes.get(vvkey)
         # avoid overwriting an existing requires if a duplicate entry is made without requires:
         if prev is None or requires is not None:
-            print(f'add_schema {vvkey=} {requires=}')
+            # print(f'add_schema {vvkey=} {requires=}')
             self._network.add_node(vvkey, id=str(vvkey), type='schema_version', requires=requires)
         # Add edge between base and vv!
         self._network.add_edge(key, vvkey, type='version')

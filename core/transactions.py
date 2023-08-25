@@ -110,7 +110,7 @@ class Transaction(DDHbaseModel):
 
     def __del__(self):
         """ Async close if transaction is destroyed """
-        print(f'__del__ {self!s}')
+        # print(f'__del__ {self!s}')
         try:
             loop = asyncio.get_event_loop()
             if loop.is_running():
