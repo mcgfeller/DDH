@@ -134,6 +134,9 @@ class DePseudonymize(capabilities.DataCapability):
 
     async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):
         eid = trargs.access.ddhkey.owner
-        pm = await PseudonymMap.load(eid, trargs.access.principal, trargs.transaction)  # retrieve it
+        try:
+            pm = await PseudonymMap.load(eid, trargs.access.principal, trargs.transaction)  # retrieve it
+        except KeyError:
+            raise errors.NotFound(f'Not a valid pseudonymous id: {eid}').to_http()
         assert trargs.parsed_data is not None and len(trargs.parsed_data) > 0
         return
