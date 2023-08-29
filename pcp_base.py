@@ -98,7 +98,9 @@ class Controllable(pydantic.BaseModel):
                 logger.info(f'Process {self} is running at pid={proc.pid} and healthy.')
         else:
             logger.error(f'Process {self} is not running.')
-            if _initial:
+            if args.raise_error:
+                raise EnvironmentError(f'Process {self} is not running.')
+            elif _initial:
                 self.start(args)  # not running, start
                 time.sleep(2)  # let it startup
                 check_again = True
@@ -152,8 +154,10 @@ class Runnable(Controllable):
             si = subprocess.STARTUPINFO()
             si.dwFlags = subprocess.STARTF_USESHOWWINDOW
             si.wShowWindow = 2  # SW_SHOWMINIMIZED
+            stderr = None
+            stderr = open(f'./log/{self.name}.log', 'w')  # log for stderr, overwrite files
             p = subprocess.Popen(cmd, bufsize=-1, cwd=PARENTDIR, env=env,
-                                 creationflags=subprocess.DETACHED_PROCESS, startupinfo=si,  **param)
+                                 creationflags=subprocess.DETACHED_PROCESS, startupinfo=si, stderr=stderr, **param)
         else:
             p = subprocess.Popen(cmd, bufsize=-1, cwd=PARENTDIR, env=env, start_new_session=True,
                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **param)
@@ -313,7 +317,10 @@ def build_parser(controllable_cls: typing.Type[Controllable]) -> argparse.Argume
                         help='Apply to all registered controllables, excluding groups')
     parser.add_argument('-e', '--env', type=str, default=None,
                         help='config file environment part, e.g. test or dev (start only)')
+    parser.add_argument('--raise', dest='raise_error', action='store_true',
+                        help='Raise error if process is dead in check')
     parser.set_defaults(doall=False)
+    parser.set_defaults(raise_error=False)
     return parser
 
 
