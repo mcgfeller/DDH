@@ -8,3 +8,4 @@
 /.cache
 */.__pycache__
 .hypothesis
+log/*.log
