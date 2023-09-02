@@ -128,15 +128,47 @@ class PseudonymMap(persistable.Persistable):
 
 
 class DePseudonymize(capabilities.DataCapability):
+    """ Revert the pseudonymization based on the stored map """
+
     supports_modes = {permissions.AccessMode.pseudonym}
     only_modes = {permissions.AccessMode.write}
     phase = trait.Phase.pre_store  # before validation!
 
     async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):
-        eid = trargs.access.ddhkey.owner
+        eid = trargs.access.ddhkey.owner  # this is the pseudo-owner uder which the map is stored
         try:
             pm = await PseudonymMap.load(eid, trargs.access.principal, trargs.transaction)  # retrieve it
         except KeyError:
             raise errors.NotFound(f'Not a valid pseudonymous id: {eid}').to_http()
         assert trargs.parsed_data is not None and len(trargs.parsed_data) > 0
+        assert pm.inverted_cache
+        trargs.parsed_data = self.transform(trargs.nschema, trargs.access,
+                                            trargs.transaction, trargs.parsed_data, eid, pm.inverted_cache)
         return
+
+    def transform(self, schema, access, transaction, data: dict, eid, lookup: dict) -> dict:
+        """ Apply self.transform_value to sensitivities in schema, read from the inverse 
+            cache so orinal values are restored. 
+        """
+        # selection is the path remaining after dispatching of the e_node:
+        selection = str(access.ddhkey.without_variant_version().remainder(access.schema_key_split))
+
+        # transform principal_id first:
+        principal_id = self.transform_value(
+            eid, '', '', schemas.Sensitivity.eid, access, transaction, lookup)
+        for sensitivity, path_fields in schema.schema_attributes.sensitivities.items():
+            # transform all path and fields for a sensitivity
+            data = schema.transform(path_fields, selection, data, self.transform_value,
+                                    sensitivity, access, transaction, lookup)
+        access.ddhkey = access.ddhkey.set_owner(principal_id)
+        return data
+
+    def transform_value(self, value, path, field, sensitivity, access, transaction, lookup):
+        """ inverse transform a single value.
+        """
+        if value in (None, ''):  # we don't need to transform non-existent or empty values
+            v = None
+        else:
+            k = (path, field, value)
+            v = lookup.get(k, value)
+        return v
