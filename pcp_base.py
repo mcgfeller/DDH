@@ -155,7 +155,7 @@ class Runnable(Controllable):
             si.dwFlags = subprocess.STARTF_USESHOWWINDOW
             si.wShowWindow = 2  # SW_SHOWMINIMIZED
             stderr = None
-            stderr = open(f'./log/{self.name}.log', 'w')  # log for stderr, overwrite files
+            # stderr = open(f'./log/{self.name}.log', 'w')  # log for stderr, overwrite files
             p = subprocess.Popen(cmd, bufsize=-1, cwd=PARENTDIR, env=env,
                                  creationflags=subprocess.DETACHED_PROCESS, startupinfo=si, stderr=stderr, **param)
         else:
