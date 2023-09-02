@@ -5,7 +5,7 @@ import typing
 import copy
 
 from core import (errors,  schemas, trait, versions, permissions, keys, nodes, keydirectory, dapp_attrs)
-
+from utils import pydantic_utils
 Validations = trait.Transformers  # Synonym, for easier reference, Validations are just Traits
 
 
@@ -93,6 +93,9 @@ class MustValidate(DataValidation):
             raise
         except Exception as e:
             raise errors.ValidationError(e)
+
+        if isinstance(trargs.parsed_data, pydantic_utils.DDHbaseModel):  # for PySchemas, we have a model, not a dict
+            trargs.parsed_data = trargs.parsed_data.dict()  # make dict
 
         return
 

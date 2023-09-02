@@ -78,6 +78,24 @@ class ValidateToDApp(AccessTransformer):
     only_forks = {keys.ForkType.data}  # consents and schemas are never loaded through apps
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
+        if permissions.AccessMode.pseudonym in trargs.access.modes:
+            # we must not allow app to see DePseudonomized data!
+            return
+        else:
+            # Call DApp
+            q = None
+            e_node, e_key_split = await keydirectory.NodeRegistry.get_node_async(
+                trargs.access.ddhkey.without_owner(), nodes.NodeSupports.execute, trargs.transaction)
+            if e_node:
+                e_node = await e_node.ensure_loaded(trargs.transaction)
+                e_node = typing.cast(nodes.ExecutableNode, e_node)
+                req = dapp_attrs.ExecuteRequest(
+                    op=nodes.Ops.put, access=trargs.access, transaction=trargs.transaction, key_split=e_key_split, data=trargs.parsed_data, q=q)
+                data = await e_node.execute(req)
+
+                if data is not None:
+                    trargs.parsed_data = data
+                    print(f'*** ValidateToDApp after {data=}')
         return
 
 
