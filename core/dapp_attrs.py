@@ -4,6 +4,7 @@ from abc import abstractmethod
 import enum
 import typing
 import pydantic
+import httpx
 
 
 from core import keys, schemas, policies, principals, relationships, common_ids, versions, permissions, transactions
@@ -154,10 +155,22 @@ DApp.update_forward_refs()
 
 
 class RunningDApp(DDHbaseModel):
+    """ Record currently running DApp, including client. """
+
+    class Config:
+        arbitrary_types_allowed = True  # for client
+
     id: str | None = None  # principals.DAppId causes Pydantic errors - I don't know why
     dapp_version: versions.Version
     schema_version: versions.Version  # TODO: Use?
     location: pydantic.AnyHttpUrl
+    client: httpx.AsyncClient | None = pydantic.Field(default=None, exclude=True)  # private and not json-able
+
+    def init_client(self):
+        """ Ensure client is not Nonr"""
+        if self.client is None:
+            self.client = httpx.AsyncClient(base_url=self.location)
+        return
 
 
 class ExecuteRequest(DDHbaseModel):

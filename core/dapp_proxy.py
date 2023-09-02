@@ -4,7 +4,6 @@ import enum
 import typing
 import pydantic
 import pydantic.json
-import httpx
 import json
 import asyncio
 
@@ -20,19 +19,15 @@ from utils.pydantic_utils import DDHbaseModel
 class DAppProxy(DDHbaseModel):
     """ This is a Proxy running in the Walled Garden of DApps (running in their own microservices) """
 
-    class Config:
-        arbitrary_types_allowed = True
-
     id: str
     running:  dapp_attrs.RunningDApp
     attrs: dapp_attrs.DApp
-    # TODO: Move .client to running.client
-    client: httpx.AsyncClient = pydantic.Field(exclude=True)  # private and not json-able
+
     schemas: dict[keys.DDHkeyVersioned, schemas.AbstractSchema] = {}
 
     async def initialize(self, session, pillars: dict):
         if True:  # self.running.schema_version > versions._UnspecifiedVersion:
-            j = await(self.client.get('/schemas'))
+            j = await(self.running.client.get('/schemas'))
             j.raise_for_status()
             js = j.json()
             self.schemas = {keys.DDHkeyVersioned(k): schemas.AbstractSchema.create_schema(s, sf, sa)
@@ -117,7 +112,7 @@ class DAppProxy(DDHbaseModel):
 
     async def execute(self, req: dapp_attrs.ExecuteRequest):
         """ forward execution request to DApp microservice """
-        resp = await self.client.post('execute', data=req.json())
+        resp = await self.running.client.post('execute', data=req.json())
         print(f'*** DAppProxy.execute {resp=}  {resp.text=}')
         errors.DAppError.raise_from_response(resp)  # Pass error response to caller
         return resp.json()
@@ -127,7 +122,7 @@ class DAppProxy(DDHbaseModel):
         if jwt:
             headers['Authorization'] = 'Bearer '+jwt
         print(f'*send_url {headers=}, {urlpath=}, {kw=}')
-        resp = await self.client.request(verb, urlpath, headers=headers, **kw)
+        resp = await self.running.client.request(verb, urlpath, headers=headers, **kw)
         errors.DAppError.raise_from_response(resp)  # Pass error response to caller
         return resp.json()
 
@@ -142,13 +137,14 @@ class DAppManagerClass(DDHbaseModel):
     async def register(self, request, session, running_dapp: dapp_attrs.RunningDApp):
         await asyncio.sleep(1)
         from . import pillars  # pillars use DAppManager
-        client = httpx.AsyncClient(base_url=running_dapp.location)
-        j = await client.get('/app_info')  # get dict of dapp_attrs, one microservice may return multiple DApps
+        running_dapp.init_client()
+        # get dict of dapp_attrs, one microservice may return multiple DApps
+        j = await running_dapp.client.get('/app_info')
         j.raise_for_status()
         dattrs = j.json()
         for id, attrs in dattrs.items():
             attrs = dapp_attrs.DApp(**attrs)
-            proxy = DAppProxy(id=id, running=running_dapp, attrs=attrs, client=client)
+            proxy = DAppProxy(id=id, running=running_dapp, attrs=attrs)
             await proxy.initialize(session, pillars.Pillars)  # initialize gets schema and registers everything
             self.DAppsById[typing.cast(principals.DAppId, id)] = proxy
         return
