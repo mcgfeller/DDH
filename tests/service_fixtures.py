@@ -69,6 +69,10 @@ def get_authorized_client(processes, procid, userpwd, tokenserver: str | None = 
 def start_servers():
     """ Start all DDH servers, including DApps """
     pcp.ddh.start(pcp.getargs())
+    # Check that no process has crashed:
+    a = pcp.getargs()
+    a.raise_error = True  # check processes and raise if one isn't running
+    pcp.ddh.check(a)
     return pcp.ddh
 
 
