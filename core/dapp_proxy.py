@@ -6,6 +6,7 @@ import pydantic
 import pydantic.json
 import httpx
 import json
+import asyncio
 
 import logging
 
@@ -25,7 +26,8 @@ class DAppProxy(DDHbaseModel):
     id: str
     running:  dapp_attrs.RunningDApp
     attrs: dapp_attrs.DApp
-    client: httpx.AsyncClient
+    # TODO: Move .client to running.client
+    client: httpx.AsyncClient = pydantic.Field(exclude=True)  # private and not json-able
     schemas: dict[keys.DDHkeyVersioned, schemas.AbstractSchema] = {}
 
     async def initialize(self, session, pillars: dict):
@@ -115,9 +117,10 @@ class DAppProxy(DDHbaseModel):
 
     async def execute(self, req: dapp_attrs.ExecuteRequest):
         """ forward execution request to DApp microservice """
-        data = await self.client.post('execute', data=req.json())
-        errors.DAppError.raise_from_response(data)  # Pass error response to caller
-        return data.json()
+        resp = await self.client.post('execute', data=req.json())
+        print(f'*** DAppProxy.execute {resp=}  {resp.text=}')
+        errors.DAppError.raise_from_response(resp)  # Pass error response to caller
+        return resp.json()
 
     async def send_url(self, urlpath, verb='get', jwt=None, headers={}, **kw):
         """ forward execution request to DApp microservice """
@@ -137,6 +140,7 @@ class DAppManagerClass(DDHbaseModel):
     DAppsById: dict[principals.DAppId, DAppProxy] = {}  # registry of DApps
 
     async def register(self, request, session, running_dapp: dapp_attrs.RunningDApp):
+        await asyncio.sleep(1)
         from . import pillars  # pillars use DAppManager
         client = httpx.AsyncClient(base_url=running_dapp.location)
         j = await client.get('/app_info')  # get dict of dapp_attrs, one microservice may return multiple DApps

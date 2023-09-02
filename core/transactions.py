@@ -218,6 +218,8 @@ class Action(DDHbaseModel):
 
 class Resource(Action):
     """ Remote resource """
+    class Config:
+        extra = 'allow'  # subresources may allocate more fields, but are serialized as Transaction.Resource
 
     # id: str
     actions: list[Action] = pydantic.Field(
