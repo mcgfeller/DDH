@@ -164,9 +164,15 @@ class RestrictedUserDApp(SampleDApps):
         return True
 
 
-def get_apps() -> tuple[dapp_attrs.DApp]:
-    apps = SampleDApps.bootstrap(None, {})
-    return apps
+AllDApps: dict[str, SampleDApps] = {}  # cannot make classvar due to Pydantic problem
+
+
+def get_apps() -> tuple[dapp_attrs.DApp, ...]:
+    """ Get all SampleDApps and Bootstrap once """
+    global AllDApps
+    if not AllDApps:  # bootstrap
+        AllDApps = {a.id: a for a in SampleDApps.bootstrap(None, {})}
+    return tuple(AllDApps.values())
 
 
 fastapi_dapp.get_apps = get_apps

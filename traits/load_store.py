@@ -95,7 +95,6 @@ class ValidateToDApp(AccessTransformer):
 
                 if data is not None:
                     trargs.parsed_data = data
-                    print(f'*** ValidateToDApp after {data=}')
         return
 
 
