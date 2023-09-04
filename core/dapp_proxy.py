@@ -27,9 +27,11 @@ class DAppProxy(DDHbaseModel):
 
     async def initialize(self, session, pillars: dict):
         if True:  # self.running.schema_version > versions._UnspecifiedVersion:
+            print(f'*** initialize {self.running.id=}')
             j = await(self.running.client.get('/schemas'))
             j.raise_for_status()
             js = j.json()
+            print(f'***schemas {list(js.keys())}')
             self.schemas = {keys.DDHkeyVersioned(k): schemas.AbstractSchema.create_schema(s, sf, sa)
                             for k, (sa, sf, s) in js.items()}
             self.register_schemas(session)
@@ -120,7 +122,7 @@ class DAppProxy(DDHbaseModel):
         """ forward execution request to DApp microservice """
         if jwt:
             headers['Authorization'] = 'Bearer '+jwt
-        print(f'*send_url {headers=}, {urlpath=}, {kw=}')
+        # print(f'*send_url {headers=}, {urlpath=}, {kw=}')
         resp = await self.running.client.request(verb, urlpath, headers=headers, **kw)
         errors.DAppError.raise_from_response(resp)  # Pass error response to caller
         return resp.json()
@@ -134,13 +136,14 @@ class DAppManagerClass(DDHbaseModel):
     DAppsById: dict[principals.DAppId, DAppProxy] = {}  # registry of DApps
 
     async def register(self, request, session, running_dapp: dapp_attrs.RunningDApp):
-        await asyncio.sleep(1)
+        # await asyncio.sleep(1)
         from . import pillars  # pillars use DAppManager
         running_dapp.init_client()
         # get dict of dapp_attrs, one microservice may return multiple DApps
         j = await running_dapp.client.get('/app_info')
         j.raise_for_status()
         dattrs = j.json()
+        print(f'*** register {list(dattrs.keys())}')
         for id, attrs in dattrs.items():
             attrs = dapp_attrs.DApp(**attrs)
             proxy = DAppProxy(id=id, running=running_dapp, attrs=attrs)
