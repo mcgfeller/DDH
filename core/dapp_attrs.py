@@ -159,18 +159,26 @@ class RunningDApp(DDHbaseModel):
 
     class Config:
         arbitrary_types_allowed = True  # for client
+        extra = 'allow'
 
     id: str | None = None  # principals.DAppId causes Pydantic errors - I don't know why
     dapp_version: versions.Version
     schema_version: versions.Version  # TODO: Use?
     location: pydantic.AnyHttpUrl
-    client: httpx.AsyncClient | None = pydantic.Field(default=None, exclude=True)  # private and not json-able
+    # = pydantic.Field(default=None, exclude=True)  # private and not json-able
+    _client: httpx.AsyncClient | None = None
 
     def init_client(self):
         """ Ensure client is not Nonr"""
-        if self.client is None:
-            self.client = httpx.AsyncClient(base_url=self.location)
+        # if self.client is None:
+        #     self.client = httpx.AsyncClient(base_url=self.location)
         return
+
+    @property
+    def client(self) -> httpx.AsyncClient:
+        if self._client is None:
+            self._client = httpx.AsyncClient(base_url=self.location)
+        return self._client
 
 
 class ExecuteRequest(DDHbaseModel):
