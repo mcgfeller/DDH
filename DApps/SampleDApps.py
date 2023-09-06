@@ -6,6 +6,7 @@ import typing
 
 import fastapi
 import fastapi.security
+import typing
 import pydantic
 from core import (common_ids, dapp_attrs, keys, nodes, permissions, principals, users,
                   relationships, schemas, transactions)
@@ -16,8 +17,9 @@ app.include_router(fastapi_dapp.router)
 
 
 class SampleDApps(dapp_attrs.DApp):
+    "A range of dummy DApps to show relationsships"
 
-    version = '0.2'
+    version: typing.ClassVar[str] = '0.2'
 
     owner: typing.ClassVar[principals.Principal]
     schemakey: typing.ClassVar[keys.DDHkeyVersioned]
@@ -175,7 +177,21 @@ def get_apps() -> tuple[dapp_attrs.DApp, ...]:
     return tuple(AllDApps.values())
 
 
+def get_dapp_container() -> dapp_attrs.DApp:
+    """ get this process, and ensure all DApps are bootstrapped. """
+    _ = get_apps()  # ensure bootstap
+    ca = dapp_attrs.DApp(id='SampleDApps',
+                         description=SampleDApps.__doc__,
+                         owner=users.SystemUser,
+                         version=SampleDApps.version,
+                         catalog=common_ids.CatalogCategory.system,
+                         schemakey=keys.DDHkeyVersioned0(key="//org/sample")
+                         )
+    return ca
+
+
 fastapi_dapp.get_apps = get_apps
+fastapi_dapp.get_dapp_container = get_dapp_container
 
 if __name__ == "__main__":  # Debugging
     import uvicorn

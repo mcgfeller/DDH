@@ -24,8 +24,7 @@ CLIENT = httpx.AsyncClient(timeout=5, base_url='http://localhost:8001')  # TODO:
 @router.on_event("startup")
 async def startup_event():
     """ Connect ourselves """
-    apps = get_apps()
-    a = apps[-1]
+    a = get_dapp_container()
 
     location = f"http://localhost:{os.environ.get('port')}"  # our own port is in the environment
     print('startup_event', a.id, location)
@@ -40,8 +39,16 @@ async def shutdown_event():
     return
 
 
-def get_apps() -> tuple[dapp_attrs.DApp]:
+def get_apps() -> tuple[dapp_attrs.DApp, ...]:
+    """ Get a list of DApps implemented by this process """
     raise NotImplementedError('must be refined by main module')
+
+
+def get_dapp_container() -> dapp_attrs.DApp:
+    """ Get a single DApp or a module containing many DApps if refined by main module """
+    a = get_apps()
+    assert a, 'must defined at least one DApp'
+    return a[-1]
 
 
 @router.get("/health")
@@ -59,8 +66,10 @@ async def get_app_info():
 
 @router.get("/schemas")
 async def get_schemas() -> dict:
-    a = get_apps()[0]
-    s = {str(k): (s.schema_attributes, 'json', s.to_output()) for k, s in a.get_schemas().items()}
+    """ Provide one or more schemas, with attributes, format (json) and schema in this format """
+    s = {}
+    for a in get_apps():
+        s.update({str(k): (s.schema_attributes, 'json', s.to_output()) for k, s in a.get_schemas().items()})
     return s
 
 

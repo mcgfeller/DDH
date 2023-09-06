@@ -8,6 +8,7 @@ import json
 import asyncio
 
 import logging
+import pprint
 
 logger = logging.getLogger(__name__)
 
@@ -25,18 +26,17 @@ class DAppProxy(DDHbaseModel):
 
     schemas: dict[keys.DDHkeyVersioned, schemas.AbstractSchema] = {}
 
-    async def initialize(self, session, pillars: dict):
+    async def initialize_schemas(self, session, pillars: dict):
         if True:  # self.running.schema_version > versions._UnspecifiedVersion:
-            print(f'*** initialize {self.running.id=}')
             j = await(self.running.client.get('/schemas'))
             j.raise_for_status()
             js = j.json()
-            print(f'***schemas {list(js.keys())}')
+            # print(f'***schemas')
+            # pprint.pprint(js)
             self.schemas = {keys.DDHkeyVersioned(k): schemas.AbstractSchema.create_schema(s, sf, sa)
                             for k, (sa, sf, s) in js.items()}
             self.register_schemas(session)
-            self.register_references(session, schemas.SchemaNetwork)
-            schemas.SchemaNetwork.valid.invalidate()  # finished
+
         return
 
     def register_schemas(self, session) -> list[nodes.Node]:
@@ -48,6 +48,7 @@ class DAppProxy(DDHbaseModel):
 
         snodes = []
         for schemakey, schema in self.schemas.items():
+            # print(f'*register_schemas {schemakey=}, {type(schema)=}')
             snode = self.register_schema(schemakey, schema, self.attrs.owner, transaction)
 
             #
@@ -93,11 +94,6 @@ class DAppProxy(DDHbaseModel):
         schema_network.add_dapp(attrs)
 
         for ref in attrs.references:
-            # # we want node attributes of, so get the node:
-            # snode, split = keydirectory.NodeRegistry.get_node(
-            #     ref.target, nodes.NodeSupports.schema, transaction)  # get transformer schema node for attributes
-            # sa = snode.schemas.get().schema_attributes
-            # schema_network.add_schema_node(ref.target, sa)
             target = ref.target.ens()
             if ref.relation == relationships.Relation.provides:
                 target = keys.DDHkeyVersioned0.cast(target)
@@ -138,17 +134,18 @@ class DAppManagerClass(DDHbaseModel):
     async def register(self, request, session, running_dapp: dapp_attrs.RunningDApp):
         # await asyncio.sleep(1)
         from . import pillars  # pillars use DAppManager
-        running_dapp.init_client()
         # get dict of dapp_attrs, one microservice may return multiple DApps
         j = await running_dapp.client.get('/app_info')
         j.raise_for_status()
         dattrs = j.json()
-        print(f'*** register {list(dattrs.keys())}')
-        for id, attrs in dattrs.items():
+        assert len(dattrs) > 0
+        for id, attrs in dattrs.items():  # register individual apps and references.
             attrs = dapp_attrs.DApp(**attrs)
             proxy = DAppProxy(id=id, running=running_dapp, attrs=attrs)
-            await proxy.initialize(session, pillars.Pillars)  # initialize gets schema and registers everything
+            proxy.register_references(session, schemas.SchemaNetwork)
             self.DAppsById[typing.cast(principals.DAppId, id)] = proxy
+        await proxy.initialize_schemas(session, pillars.Pillars)  # get schemas and register them
+        schemas.SchemaNetwork.valid.invalidate()  # finished
         return
 
     def bootstrap(self, pillars: dict):
