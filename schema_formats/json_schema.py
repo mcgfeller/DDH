@@ -23,6 +23,26 @@ class JsonSchemaElement(schemas.AbstractSchemaElement):
         return JsonSchema(json_schema=json.dumps(self.definition))
 
 
+class JsonSchemaReference(schemas.AbstractSchemaReference, JsonSchemaElement):
+
+    class Config:
+        @staticmethod
+        def schema_extra(schema: dict[str, typing.Any], model: typing.Type[JsonSchemaReference]) -> None:
+            schema['properties']['dep'] = {'$ref': model.getURI()}
+            return
+
+    @classmethod
+    def get_target(cls) -> keys.DDHkey:
+        """ get target key - oh Pydantic! """
+        return cls.__fields__['ddhkey'].default
+
+    @classmethod
+    def create_from_key(cls, ddhkey: keys.DDHkeyRange, name: str | None = None) -> typing.Type[JsonSchemaReference]:
+        name = name if name else str(ddhkey)
+        m = cls(definition={'$ref': str(ddhkey)}).__class__
+        return m
+
+
 class JsonSchema(schemas.AbstractSchema):
 
     format_designator: typing.ClassVar[schemas.SchemaFormat] = schemas.SchemaFormat.json
@@ -32,7 +52,12 @@ class JsonSchema(schemas.AbstractSchema):
     _v_validators: dict[keys.DDHkey, json_schema.validators.Validator] = {}  # Cache
 
     def __getitem__(self, key: keys.DDHkey, default=None, create_intermediate: bool = False) -> type[JsonSchemaElement] | None:
-        return JsonSchemaElement(definition=self._descend_path(self.json_schema, key))
+        d = self._descend_path(self.json_schema, key, create_intermediate=create_intermediate)
+        if d is None:
+            assert not create_intermediate
+            return default
+        else:
+            return JsonSchemaElement(definition=d)
 
     def __iter__(self) -> typing.Iterator[tuple[keys.DDHkey, JsonSchemaElement]]:
         # TODO: Schema Iterator
@@ -41,6 +66,11 @@ class JsonSchema(schemas.AbstractSchema):
     @classmethod
     def from_str(cls, schema_str: str, schema_attributes: schemas.SchemaAttributes) -> JsonSchema:
         return cls(json_schema=schema_str, schema_attributes=schema_attributes)
+
+    @classmethod
+    def get_reference_class(cls) -> type[JsonSchemaReference]:
+        """ get class of concrete AbstractSchemaReference associated with this concrete Schema """
+        return JsonSchemaReference
 
     def to_json_schema(self) -> JsonSchema:
         """ Make a JSON Schema from this Schema """
@@ -51,16 +81,23 @@ class JsonSchema(schemas.AbstractSchema):
         return self.json_schema
 
     @classmethod
-    def _descend_path(cls, json_schema: pydantic.Json, path: keys.DDHkey):
+    def _descend_path(cls, json_schema: pydantic.Json, path: keys.DDHkey, create_intermediate: bool = False):
         definitions = json_schema.get('definitions', {})
         current = json_schema  # before we descend path, this cls is at the current level
         pathit = iter(path)  # so we can peek whether we're at end
         for segment in pathit:
             segment = str(segment)
             # look up one segment of path, returning ModelField
+            if 'properties' not in current:
+                print(current)
             mf = current['properties'].get(str(segment), None)
             if mf is None:
-                return None
+                if create_intermediate:
+                    new_current = cls.create_from_elements(segment)
+                    current['properties'][segment] = new_current
+                    current = new_current
+                else:
+                    return None
             else:
                 if (ref := mf.get('$ref', '')).startswith('#/definitions/'):
                     current = definitions.get(ref[len('#/definitions/'):])
@@ -108,6 +145,24 @@ class JsonSchema(schemas.AbstractSchema):
         vcls.check_schema(self.json_schema)
         validator = vcls(self.json_schema, format_checker=vcls.FORMAT_CHECKER)
         self._v_validators[keys.DDHkey(())] = validator  # cache it
+
+    @classmethod
+    def create_from_elements(cls, key: keys.DDHkey | tuple | str, **elements: typing.Mapping[str, tuple[type, typing.Any]]) -> dict:
+        """ Create a named SchemaElement from a Mapping of elements, which {name : (type,default)} """
+        # if isinstance(key, keys.DDHkey):
+        #     key = key.key
+        # if isinstance(key, tuple):
+        #     key = '_'.join(key)
+
+        p = {n: {'type': t} for n, (t, d) in elements.items()}
+        r = [n for n, (t, d) in elements.items() if d is None]
+
+        o = {
+            "type": "object",
+            "required": r,
+            "properties": p,
+        }
+        return o
 
 
 @jsonschema._format._checks_drafts(name="date-time")

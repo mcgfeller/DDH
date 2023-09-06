@@ -198,6 +198,7 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         pkey = key.up()
         parent = self.__getitem__(pkey, create_intermediate=create_intermediate)
         assert parent
+        # print(f'AbstractSchema {key=} -> {type(value)=}: {value=}')
         assert issubclass(value, AbstractSchemaElement)
         parent._add_fields(**{str(key[-1]): (value, None)})
         return parent
@@ -407,13 +408,13 @@ class AbstractSchemaReference(AbstractSchemaElement):
     @classmethod
     @abc.abstractmethod
     def create_from_key(cls, ddhkey: keys.DDHkeyRange, name: str | None = None) -> typing.Type[AbstractSchemaReference]:
-        ...
+        raise errors.SubClass
 
     @classmethod
     @abc.abstractmethod
     def get_target(cls) -> keys.DDHkeyRange:
         """ get target key """
-        ...
+        raise errors.SubClass
 
     @classmethod
     def getURI(cls) -> pydantic.AnyUrl:
