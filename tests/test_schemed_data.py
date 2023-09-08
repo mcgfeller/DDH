@@ -65,3 +65,13 @@ def test_get_and_putdata_oldversion(user1):
     t = r.json().get('detail')
     assert "is not latest version" in t
     return
+
+
+def test_get_and_putdata_pseudonym(user1):
+    """ get data and rewrite it to same place with same user, in pseudonymous mode """
+    r = user1.get('/ddh/mgf/org/migros.ch?modes=pseudonym')
+    r.raise_for_status()
+    data = r.json()
+    eid = list(data.keys())[0]
+    r = user1.put(f'/ddh/{eid}/org/migros.ch?modes=pseudonym', json=data, params={'includes_owner': True})
+    r.raise_for_status()
