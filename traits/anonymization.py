@@ -132,7 +132,8 @@ class DePseudonymize(capabilities.DataCapability):
 
     supports_modes = {permissions.AccessMode.pseudonym}
     only_modes = {permissions.AccessMode.write}
-    phase = trait.Phase.pre_store  # before validation!
+    phase = trait.Phase.pre_store  # after validation
+    after = 'ValidateToDApp'  # we don't reveil identity to DApp
 
     async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):
         eid = trargs.access.ddhkey.owner  # this is the pseudo-owner uder which the map is stored
