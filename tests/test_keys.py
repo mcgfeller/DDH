@@ -109,3 +109,10 @@ def test_range():
     ddhkey1 = keys.DDHkeyRange(key="//org/ubs.com/switzerland/customer/account:::>0")
     assert versions.Version(0) not in ddhkey1.version
     assert versions.Version(1) in ddhkey1.version
+
+
+def test_new_owner():
+    ddhkey1 = keys.DDHkey("/mgf/p/living/shopping/receipts")
+    assert ddhkey1.with_new_owner('lise') == keys.DDHkey("/lise/p/living/shopping/receipts")
+    ddhkey2 = keys.DDHkey("//p/living/shopping/receipts")
+    assert ddhkey1.with_new_owner('mgf') == keys.DDHkey("/mgf/p/living/shopping/receipts")
