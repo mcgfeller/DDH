@@ -161,7 +161,7 @@ class DePseudonymize(capabilities.DataCapability):
             # transform all path and fields for a sensitivity
             data = schema.transform(path_fields, selection, data, self.transform_value,
                                     sensitivity, access, transaction, lookup)
-        access.ddhkey = access.ddhkey.set_owner(principal_id)
+        access.ddhkey = access.ddhkey.with_new_owner(principal_id)
         return data
 
     def transform_value(self, value, path, field, sensitivity, access, transaction, lookup):
