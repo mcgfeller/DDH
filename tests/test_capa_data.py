@@ -144,7 +144,7 @@ async def test_read_write_pseudo_migros(user, transaction, migros_key_schema, mi
     data = json.dumps(jsonable_encoder(data))  # back to json
     modes = {permissions.AccessMode.write, permissions.AccessMode.pseudonym}
     k, schema = migros_key_schema
-    ddhkey = k.ensure_fork(keys.ForkType.data).set_owner(eid)
+    ddhkey = k.ensure_fork(keys.ForkType.data).with_new_owner(eid)
     access = permissions.Access(ddhkey=ddhkey, principal=user, modes=modes)
     access.schema_key_split = 4  # split after the migros.org
     trargs = await schema.apply_transformers(access, transaction, data)  # transformer processing happens here
