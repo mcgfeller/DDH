@@ -135,7 +135,7 @@ class DePseudonymize(capabilities.DataCapability):
     after = 'ValidateToDApp'  # we don't reveil identity to DApp
 
     async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):
-        eid = trargs.access.ddhkey.owner  # this is the pseudo-owner uder which the map is stored
+        eid = trargs.access.original_ddhkey.owner  # this is the pseudo-owner uder which the map is stored
         try:
             pm = await PseudonymMap.load(eid, trargs.access.principal, trargs.transaction)  # retrieve it
         except KeyError:
