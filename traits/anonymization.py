@@ -86,7 +86,7 @@ class Pseudonymize(Anonymize):
         assert trargs.parsed_data is not None and len(trargs.parsed_data) > 0
         cache = {}
         for pid in trargs.parsed_data.keys():
-            tid = trargs.transaction.trxid+'/'+secrets.token_urlsafe(max(10, len(pid)))
+            tid = trargs.transaction.trxid+'_'+secrets.token_urlsafe(max(10, len(pid)))
             cache[('', '', pid)] = tid
 
         trargs.parsed_data = self.transform(trargs.nschema, trargs.access,
