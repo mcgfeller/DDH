@@ -52,6 +52,8 @@ _Json2Python: dict[tuple[str, str | None], type] = {
     ('string', 'duration'): datetime.timedelta,
 }
 
+_empty_marker = object()
+
 
 class JsonSchema(schemas.AbstractSchema):
 
@@ -60,9 +62,10 @@ class JsonSchema(schemas.AbstractSchema):
         of_schema=['application/openapi', 'application/json'], of_data=['application/json'])
     json_schema: pydantic.Json
     _v_validators: dict[keys.DDHkey, json_schema.validators.Validator] = {}  # Cache
+    _v_descend_cache: dict[tuple[keys.DDHkey | tuple, bool], dict | None] = {}
 
     def __getitem__(self, key: keys.DDHkey, default=None, create_intermediate: bool = False) -> type[JsonSchemaElement] | None:
-        d = self._descend_path(key, create_intermediate=create_intermediate)
+        d = self.descend_path(key, create_intermediate=create_intermediate)
         if d is None:
             assert not create_intermediate
             return default
@@ -89,6 +92,14 @@ class JsonSchema(schemas.AbstractSchema):
     def to_output(self):
         """ return naked json schema """
         return self.json_schema
+
+    def descend_path(self, path: keys.DDHkey, create_intermediate: bool = False):
+        """ descend path with local cache """
+        v = self._v_descend_cache.get((path, create_intermediate), _empty_marker)
+        if v is _empty_marker:
+            v = self._descend_path(path, create_intermediate=create_intermediate)
+            self._v_descend_cache[(path, create_intermediate)] = v
+        return v
 
     def _descend_path(self, path: keys.DDHkey, create_intermediate: bool = False):
         definitions = self.json_schema.get('definitions', {})
@@ -136,7 +147,7 @@ class JsonSchema(schemas.AbstractSchema):
         print(f'{self.__class__.__name__}.validate_data({type(data)}, {remainder=}, {no_extra=})')
         validator = self._v_validators.get(remainder)  # cached?
         if not validator:
-            subs = self._descend_path(remainder)
+            subs = self.descend_path(remainder)
             if not subs:
                 raise errors.NotFound(f'Path {remainder} is not in schema')
             vcls = jsonschema.validators.validator_for(subs)  # find correct validator for schema.
@@ -176,7 +187,7 @@ class JsonSchema(schemas.AbstractSchema):
     def get_type(self, path, field, value) -> type:
         """ return the Python type of a path, field """
         pt = None
-        p = self._descend_path((path, field))
+        p = self.descend_path((path, field))
         if p:
             jt = p['type']; jf = p.get('format')
             pt = _Json2Python.get((jt, jf))
