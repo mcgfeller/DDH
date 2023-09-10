@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing
 import pydantic
 import json
+import functools
 import jsonschema
 import jsonschema.validators
 import jsonschema.exceptions
@@ -10,6 +11,7 @@ import jsonschema.exceptions
 # to overwrite jsonschema datetime format checker:
 import jsonschema._format
 from pydantic import datetime_parse
+import datetime
 
 
 from core import schemas, keys, errors
@@ -43,6 +45,14 @@ class JsonSchemaReference(schemas.AbstractSchemaReference, JsonSchemaElement):
         return m
 
 
+_Json2Python: dict[tuple[str, str | None], type] = {
+    ('string', 'date-time'): datetime.datetime,
+    ('string', 'date'): datetime.date,
+    ('string', 'time'): datetime.time,
+    ('string', 'duration'): datetime.timedelta,
+}
+
+
 class JsonSchema(schemas.AbstractSchema):
 
     format_designator: typing.ClassVar[schemas.SchemaFormat] = schemas.SchemaFormat.json
@@ -52,7 +62,7 @@ class JsonSchema(schemas.AbstractSchema):
     _v_validators: dict[keys.DDHkey, json_schema.validators.Validator] = {}  # Cache
 
     def __getitem__(self, key: keys.DDHkey, default=None, create_intermediate: bool = False) -> type[JsonSchemaElement] | None:
-        d = self._descend_path(self.json_schema, key, create_intermediate=create_intermediate)
+        d = self._descend_path(key, create_intermediate=create_intermediate)
         if d is None:
             assert not create_intermediate
             return default
@@ -80,20 +90,18 @@ class JsonSchema(schemas.AbstractSchema):
         """ return naked json schema """
         return self.json_schema
 
-    @classmethod
-    def _descend_path(cls, json_schema: pydantic.Json, path: keys.DDHkey, create_intermediate: bool = False):
-        definitions = json_schema.get('definitions', {})
-        current = json_schema  # before we descend path, this cls is at the current level
+    def _descend_path(self, path: keys.DDHkey, create_intermediate: bool = False):
+        definitions = self.json_schema.get('definitions', {})
+        current = self.json_schema  # before we descend path, this cls is at the current level
         pathit = iter(path)  # so we can peek whether we're at end
         for segment in pathit:
             segment = str(segment)
             # look up one segment of path, returning ModelField
-            if 'properties' not in current:
-                print(current)
+            assert 'properties' in current
             mf = current['properties'].get(str(segment), None)
             if mf is None:
                 if create_intermediate:
-                    new_current = cls.create_from_elements(segment)
+                    new_current = self.create_from_elements(segment)
                     current['properties'][segment] = new_current
                     current = new_current
                 else:
@@ -107,6 +115,7 @@ class JsonSchema(schemas.AbstractSchema):
 
                 else:  # we're at a leaf, return
                     if next(pathit, None) is None:  # path ends here
+                        current = mf
                         break
                     else:  # path continues beyond this point, so this is not found and not creatable
                         return None
@@ -127,7 +136,7 @@ class JsonSchema(schemas.AbstractSchema):
         print(f'{self.__class__.__name__}.validate_data({type(data)}, {remainder=}, {no_extra=})')
         validator = self._v_validators.get(remainder)  # cached?
         if not validator:
-            subs = self._descend_path(self.json_schema, remainder)
+            subs = self._descend_path(remainder)
             if not subs:
                 raise errors.NotFound(f'Path {remainder} is not in schema')
             vcls = jsonschema.validators.validator_for(subs)  # find correct validator for schema.
@@ -166,7 +175,12 @@ class JsonSchema(schemas.AbstractSchema):
 
     def get_type(self, path, field, value) -> type:
         """ return the Python type of a path, field """
-        return type(value)
+        pt = type(value)
+        p = self._descend_path((path, field))
+        if p:
+            jt = p['type']; jf = p.get('format')
+            pt = _Json2Python.get((jt, jf), pt)
+        return pt
 
 
 @jsonschema._format._checks_drafts(name="date-time")
