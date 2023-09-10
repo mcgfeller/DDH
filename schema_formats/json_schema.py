@@ -164,6 +164,10 @@ class JsonSchema(schemas.AbstractSchema):
         }
         return o
 
+    def get_type(self, path, field, value) -> type:
+        """ return the Python type of a path, field """
+        return type(value)
+
 
 @jsonschema._format._checks_drafts(name="date-time")
 def is_datetime(instance: object) -> bool:

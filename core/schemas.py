@@ -314,10 +314,14 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
                     for field in path_fields[path]:
                         if isinstance(subdata, list):  # iterate over list or tuple
                             for i, x in enumerate(subdata):
-                                subdata[i][field] = method(x.get(field), path, field,
+                                value = x.get(field)
+                                t = self.get_type(path, field, value)
+                                subdata[i][field] = method(value, path, field, t,
                                                            sensitivity, access, transaction, cache)
                         else:
-                            subdata[field] = method(subdata.get(field), path, field,
+                            value = subdata.get(field)
+                            t = self.get_type(path, field, value)
+                            subdata[field] = method(subdata.get(field), path, field, t,
                                                     sensitivity, access, transaction, cache)
                     # Merge back:
                     if s:
@@ -326,6 +330,10 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
                         data = subdata
 
         return data
+
+    def get_type(self, path, field, value) -> type:
+        """ return the Python type of a path, field """
+        raise errors.SubClass
 
     @property
     def format(self) -> SchemaFormat:

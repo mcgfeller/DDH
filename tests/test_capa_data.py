@@ -76,7 +76,10 @@ async def check_data_with_mode(user, transaction, migros_key_schema, migros_data
 
     async def monkey_apply1(*a, **kw):
         """ load_store.LoadFromDApp """
-        a[2].parsed_data = m_data
+        if a[2].nschema.__class__.__name__ == 'JsonSchema':  # this is json, we need to jsonify loaded data:
+            a[2].parsed_data = json.loads(json.dumps(jsonable_encoder(m_data)))
+        else:
+            a[2].parsed_data = m_data
         return
 
     monkeypatch.setattr(load_store.LoadFromStorage, 'apply', monkey_apply0)
@@ -149,7 +152,28 @@ async def test_read_write_pseudo_migros(user, transaction, migros_key_schema, mi
     access.schema_key_split = 4  # split after the migros.org
     trargs = await schema.apply_transformers(access, transaction, data)  # transformer processing happens here
     data = trargs.parsed_data
-    # await facade.ddh_put(access, session, data)
+    return
+
+
+@pytest.mark.asyncio
+async def test_read_write_pseudo_migros_json(user, transaction, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
+    """ read pseudonymous whole schema, but convert schema to JSON """
+    k, schema = migros_key_schema
+    schema = schema.to_json_schema()
+    schema._w_container = migros_key_schema[1]._w_container
+    migros_key_schema = (k, schema)
+    modes = {permissions.AccessMode.read, permissions.AccessMode.pseudonym}
+    trargs = await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, monkeypatch)
+    eid = list(trargs.parsed_data.keys())[0]
+
+    data = trargs.parsed_data[eid]  # without owner for writing
+    data = json.dumps(jsonable_encoder(data))  # back to json
+    modes = {permissions.AccessMode.write, permissions.AccessMode.pseudonym}
+    ddhkey = k.ensure_fork(keys.ForkType.data).with_new_owner(eid)
+    access = permissions.Access(ddhkey=ddhkey, principal=user, modes=modes)
+    access.schema_key_split = 4  # split after the migros.org
+    trargs = await schema.apply_transformers(access, transaction, data)  # transformer processing happens here
+    data = trargs.parsed_data
     return
 
 

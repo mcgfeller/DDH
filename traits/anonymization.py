@@ -6,6 +6,7 @@ import enum
 import typing
 import secrets
 import datetime
+import builtins
 
 import pydantic
 from utils.pydantic_utils import DDHbaseModel, tuple_key_to_str, str_to_tuple_key
@@ -38,7 +39,7 @@ class Anonymize(capabilities.DataCapability):
         for principal_id, data in data_by_principal.items():  # data may have multiple principals
             # transform principal_id first:
             principal_id = self.transform_value(
-                principal_id, '', '', schemas.Sensitivity.eid, access, transaction, cache)
+                principal_id, '', '', str, schemas.Sensitivity.eid, access, transaction, cache)
             for sensitivity, path_fields in schema.schema_attributes.sensitivities.items():
                 # transform all path and fields for a sensitivity
                 data = schema.transform(path_fields, selection, data, self.transform_value,
@@ -48,7 +49,7 @@ class Anonymize(capabilities.DataCapability):
 
         return new_data_by_principal
 
-    def transform_value(self, value, path, field, sensitivity, access, transaction, cache):
+    def transform_value(self, value, path, field, typ: type, sensitivity, access, transaction, cache):
         """ transform a single value. Keep a cache per location and value.
         """
         if value in (None, ''):  # we don't need to transform non-existent or empty values
@@ -57,24 +58,23 @@ class Anonymize(capabilities.DataCapability):
             k = (path, field, value)
             v = cache.get(k)
             if v is None:
-
-                match value:
-                    case str():
-                        v = secrets.token_urlsafe(max(10, len(value)))  # replace by random string of similar length
-                    case int():
-                        # add a random number in similar range (but at least 10000 to ensure randomness):
-                        v = value + secrets.randbelow(max(10000, value))
-                    case float():  # apply a multiplicative factor
-                        factor = secrets.randbelow(10000)/5000  # 0..2
-                        v = value*factor
-                    case datetime.datetime():
-                        v = datetime.datetime.now()
-                    case datetime.date():
-                        v = datetime.date.today()
-                    case datetime.time():
-                        v = datetime.datetime.now().time()
-                    case _:  # anything else, just a random str:
-                        v = secrets.token_urlsafe(10)
+                # unfortunately, we cannot use match with provided typ, as is doesn't check for subclass
+                if issubclass(typ, str):
+                    v = secrets.token_urlsafe(max(10, len(value)))  # replace by random string of similar length
+                elif issubclass(typ, int):
+                    # add a random number in similar range (but at least 10000 to ensure randomness):
+                    v = value + secrets.randbelow(max(10000, value))
+                elif issubclass(typ, float):  # apply a multiplicative factor
+                    factor = secrets.randbelow(10000)/5000  # 0..2
+                    v = value*factor
+                elif issubclass(typ, datetime.datetime):
+                    v = datetime.datetime.now()
+                elif issubclass(typ, datetime.date):
+                    v = datetime.date.today()
+                elif issubclass(typ, datetime.time):
+                    v = datetime.datetime.now().time()
+                else:  # anything else, just a random str:
+                    v = secrets.token_urlsafe(10)
                 cache[k] = v
         return v
 
@@ -156,7 +156,7 @@ class DePseudonymize(capabilities.DataCapability):
 
         # transform principal_id first:
         principal_id = self.transform_value(
-            eid, '', '', schemas.Sensitivity.eid, access, transaction, lookup)
+            eid, '', '', str, schemas.Sensitivity.eid, access, transaction, lookup)
         for sensitivity, path_fields in schema.schema_attributes.sensitivities.items():
             # transform all path and fields for a sensitivity
             data = schema.transform(path_fields, selection, data, self.transform_value,
@@ -164,7 +164,7 @@ class DePseudonymize(capabilities.DataCapability):
         access.ddhkey = access.ddhkey.with_new_owner(principal_id)
         return data
 
-    def transform_value(self, value, path, field, sensitivity, access, transaction, lookup):
+    def transform_value(self, value, path, field, typ: type, sensitivity, access, transaction, lookup):
         """ inverse transform a single value.
         """
         if value in (None, ''):  # we don't need to transform non-existent or empty values

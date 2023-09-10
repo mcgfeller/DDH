@@ -176,3 +176,7 @@ class PySchema(schemas.AbstractSchema):
             raise errors.NotFound(f'Path {remainder} is not in schema')
 
         return data
+
+    def get_type(self, path, field, value) -> type:
+        """ return the Python type of a path, field """
+        return type(value)
