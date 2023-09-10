@@ -6,7 +6,6 @@ import enum
 import typing
 import secrets
 import datetime
-import builtins
 
 import pydantic
 from utils.pydantic_utils import DDHbaseModel, tuple_key_to_str, str_to_tuple_key

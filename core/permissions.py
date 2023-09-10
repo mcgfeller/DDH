@@ -206,6 +206,7 @@ class Access(DDHbaseModel):
     """
     op:        Operation = Operation.get
     ddhkey:    DDHkey  # type: ignore
+    original_ddhkey: DDHkey | None = None  # type: ignore # original key if ddhkey is modified in pseudonymous access
     principal: principals.Principal
     byDApp:    principals.DAppId | None = None
     modes:     set[AccessMode] = {AccessMode.read}
@@ -219,7 +220,7 @@ class Access(DDHbaseModel):
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
-        self.ddhkey = self.ddhkey.ensure_rooted()
+        self.original_ddhkey = self.ddhkey = self.ddhkey.ensure_rooted()
 
     def include_mode(self, mode: AccessMode):
         """ ensure that mode is included in access modes """

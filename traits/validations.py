@@ -71,7 +71,7 @@ class MustValidate(DataValidation):
     """ Data must be validated """
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, includes_owner: bool = False, **kw):
-        owners = trargs.access.ddhkey.owners
+        owners = trargs.access.original_ddhkey.owners  # original, in case of Pseudonymized
         if len(owners) != 1:
             raise errors.NotSelectable(f"Cannot have multiple owners in key: {','.join(owners)}")
         assert isinstance(trargs.parsed_data, dict)
