@@ -6,7 +6,7 @@ import fastapi
 import fastapi.security
 import httpx
 import os
-
+import asyncio
 
 from core import dapp_attrs
 from core import keys, permissions, facade, errors, versions, dapp_attrs
@@ -17,8 +17,8 @@ router = fastapi.APIRouter()
 
 from frontend import user_auth  # provisional user management
 
-
-CLIENT = httpx.AsyncClient(timeout=5, base_url='http://localhost:8001')  # TODO: Configure or determine URL
+# transport = httpx.HTTPTransport(retries=2)
+CLIENT = httpx.AsyncClient(timeout=15, base_url='http://localhost:8001')  # TODO: Configure or determine URL
 
 
 @router.on_event("startup")
@@ -30,6 +30,7 @@ async def startup_event():
     print('startup_event', a.id, location)
     d = dapp_attrs.RunningDApp(id=a.id, dapp_version=versions.Version(
         a.version), schema_version=versions.Version('0.0'), location=location)
+    await asyncio.sleep(1)  # wait till manager is ready
     await CLIENT.post('connect', data=d.json())
     return
 

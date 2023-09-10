@@ -132,7 +132,6 @@ class DAppManagerClass(DDHbaseModel):
     DAppsById: dict[principals.DAppId, DAppProxy] = {}  # registry of DApps
 
     async def register(self, request, session, running_dapp: dapp_attrs.RunningDApp):
-        await asyncio.sleep(1)
         from . import pillars  # pillars use DAppManager
         # get dict of dapp_attrs, one microservice may return multiple DApps
         j = await running_dapp.client.get('/app_info')
