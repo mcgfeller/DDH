@@ -175,12 +175,12 @@ class JsonSchema(schemas.AbstractSchema):
 
     def get_type(self, path, field, value) -> type:
         """ return the Python type of a path, field """
-        pt = type(value)
+        pt = None
         p = self._descend_path((path, field))
         if p:
             jt = p['type']; jf = p.get('format')
-            pt = _Json2Python.get((jt, jf), pt)
-        return pt
+            pt = _Json2Python.get((jt, jf))
+        return pt if pt else type(value)
 
 
 @jsonschema._format._checks_drafts(name="date-time")
