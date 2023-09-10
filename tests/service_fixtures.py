@@ -62,10 +62,10 @@ def _analyze_response(resp: httpx.Response):
             j = resp.json()
             d = j.get('detail', None)
             if d:
-                logger.error(f'http returned: {d}')
+                logger.error(f'http {resp.status_code} returned: {d}')
         else:
             t = resp.text
-            logger.error(f'http returned text: {t}')
+            logger.error(f'http {resp.status_code} returned text: {t}')
     return
 
 
