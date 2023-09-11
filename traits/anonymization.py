@@ -172,3 +172,19 @@ class DePseudonymize(capabilities.DataCapability):
             k = (path, field, value)
             v = lookup.get(k, value)
         return v
+
+
+async def resolve_owner(access, transaction):
+    """ modify access.ddhkey according to real owner.
+        access.original_ddhkey stays:
+    """
+    eid = access.ddhkey.owner
+    try:
+        # retrieve it
+        pm = await PseudonymMap.load(eid, access.principal, transaction)
+        owner = pm.inverted_cache[('', '', eid)]
+    except KeyError:
+        raise errors.NotFound(f'Not a valid pseudonymous id: {eid}').to_http()
+
+    access.ddhkey = access.ddhkey.with_new_owner(owner)
+    return

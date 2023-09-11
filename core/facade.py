@@ -9,6 +9,7 @@ import accept_types
 
 from . import permissions, keys, schemas, nodes, data_nodes, keydirectory, transactions, errors, dapp_attrs
 from frontend import sessions
+from traits import anonymization
 
 import logging
 
@@ -56,6 +57,10 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
     async with session.get_or_create_transaction(for_user=access.principal) as transaction:
         access.include_mode(permissions.AccessMode.write)
         transaction.add_and_validate(access)
+
+        if permissions.AccessMode.pseudonym in access.modes:
+            # modify access.ddhkey according to real owner:
+            await anonymization.resolve_owner(access, transaction)
 
         # We need a data node, even for a schema, as it carries the consents:
         data_node, d_key_split, remainder = await get_or_create_dnode(access, transaction)
