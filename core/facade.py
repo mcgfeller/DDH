@@ -91,12 +91,6 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                         trargs = await schema.apply_transformers(access, transaction, data, includes_owner=includes_owner)
                         data = trargs.parsed_data
 
-                        # TODO:#22 Move to transformer:
-                        # first e_node to transform data:
-                        data = await get_enode(nodes.Ops.put, access, transaction, data, q)
-                        if data:
-                            await data_node.execute(nodes.Ops.put, access, transaction, d_key_split, data, q)
-
     return data, headers
 
 
