@@ -22,8 +22,10 @@ OnWindows = sys.platform == 'win32'
 PARENTDIR = pathlib.Path(__file__).resolve().parents[0]
 sys.path.append(str(PARENTDIR))  # put our parent dir on path
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s:%(levelname)s: %(message)s')
 logger = logging.getLogger('pcp')
+logging.getLogger('httpx').setLevel(logging.INFO)
+logging.getLogger('httpcore').setLevel(logging.INFO)
 
 SubclassError = NotImplementedError('must be implemented in subclass')
 NotAvailableError = NotImplementedError('action not available')
