@@ -10,7 +10,17 @@ Validations = trait.Transformers  # Synonym, for easier reference, Validations a
 
 
 class SchemaValidation(trait.Transformer):
-    """ Validation used for Schemas """
+    """ Validation used for Schemas
+        GET:
+
+        PUT:
+            No shadowing - cannot insert into an existing schema, including into refs
+            Reference update
+            ref -> update referenced
+            schema update -> ref
+            uniform schema tree - all references must be in same schema repr 
+
+    """
     supports_modes = frozenset()  # Validation is not invoked by mode
     only_modes = {permissions.AccessMode.write}  # no checks for read
     only_forks = {keys.ForkType.schema}
@@ -52,6 +62,23 @@ class MustReview(SchemaValidation):
 class MustHaveSensitivites(SchemaValidation):
     """ This schema must have sensitivity annotations """
     ...
+
+
+class SchemaExpandReferences(SchemaValidation):
+    """ Expand references in schema read """
+
+    only_modes = {permissions.AccessMode.read, permissions.AccessMode.write}  # check on reads
+
+    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, includes_owner: bool = False, **kw):
+        trargs.schema = trargs.schema.expand_references()
+        return
+
+
+class SchemaMustValidate(SchemaValidation):
+    """ This schema must be validated """
+    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, includes_owner: bool = False, **kw):
+        # TODO
+        return
 
 
 class ParseData(DataValidation):
@@ -134,7 +161,7 @@ class LatestVersion(DataValidation):
 
 
 class UnderSchemaReference(DataValidation):
-    """ TODO: data under schema reference only if schema reprs are compatible """
+    """ TODO: Data within schema that includes schema reference only if schema can be expanded """
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
         return
@@ -142,7 +169,7 @@ class UnderSchemaReference(DataValidation):
 
 # Root validations may be overwritten:
 trait.DefaultTraits.RootTransformers += trait.Transformers(ParseData(may_overwrite=True), MustValidate(may_overwrite=True), NoExtraElements(
-    may_overwrite=True), LatestVersion(may_overwrite=True), UnderSchemaReference())
+    may_overwrite=True), LatestVersion(may_overwrite=True), UnderSchemaReference(), SchemaMustValidate(), SchemaExpandReferences())
 
 trait.DefaultTraits.NoValidation += trait.Transformers(~MustValidate(may_overwrite=True), ~
                                                        NoExtraElements(may_overwrite=True), UnderSchemaReference(), ~LatestVersion(may_overwrite=True))

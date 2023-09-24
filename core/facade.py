@@ -83,11 +83,6 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                         await data_node.update_consents(access, transaction, remainder, consents)
 
                     case keys.ForkType.data:
-                        # TODO: Checks
-                        # + Schema exists for data version
-                        # + non-latest version only if upgrade exists (consider again: New Schema may make everything fail)
-                        # - Data within schema that includes schema reference only if schema can be expanded
-                        # check data against Schema
                         trargs = await schema.apply_transformers(access, transaction, data, includes_owner=includes_owner)
                         data = trargs.parsed_data
 
@@ -154,7 +149,7 @@ async def get_schema(access: permissions.Access, transaction: transactions.Trans
     """
     schema = schemas.SchemaContainer.get_sub_schema(access, transaction)
     if schema:
-        schema = await schema.after_schema_read(access, transactions)
+        trargs = await schema.apply_transformers_to_schema(access, transaction, None)
         formatted_schema = schema.to_format(schemaformat)
     else:
         formatted_schema = None  # in case of not found.
@@ -171,7 +166,8 @@ async def put_schema(access: permissions.Access, transaction: transactions.Trans
     if snode:
         access.raise_if_not_permitted(keydirectory.NodeRegistry._get_consent_node(
             access.ddhkey.without_variant_version(), nodes.NodeSupports.schema, snode, transaction))
-        schema = await schema.before_schema_write(access, transactions)
+
+        trargs = await schema.apply_transformers_to_schema(access, transaction, None)
         # schema = snode.get_sub_schema(access.ddhkey, split) # TODO!
     return
 

@@ -257,29 +257,16 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         """ validate - called by validations.MustValidate """
         return data
 
-    async def after_schema_read(self, access: permissions.Access, transaction, **kw) -> AbstractSchema:
-        """ Prepare Schema for get, returning this or modified schema """
-        schema = self.expand_references()
-        return schema
-
-    async def before_schema_write(self, access: permissions.Access, transaction, **kw) -> AbstractSchema:
-        """ Prepare Schema for put, returning this or modified schema
-            TODO: Schema checks:
-                No shadowing - cannot insert into an existing schema, including into refs
-                Reference update
-                ref -> update referenced
-                schema update -> ref
-                uniform schema tree - all references must be in same schema repr
-
-        """
-        schema = self
-        trargs = trait.TransformerArgs(schema=schema, orig_data=schema, access=access, transaction=transaction)
-        await self.schema_attributes.transformers.apply(trargs, **kw)
-        return trargs.parsed_data
-
     async def apply_transformers(self, access: permissions.Access, transaction, data, **kw) -> trait.TransformerArgs:
         """ Apply Transformers in sequence, doing loading, validation, capabilities... """
         trargs = trait.TransformerArgs(schema=self, orig_data=data, access=access, transaction=transaction)
+        await self.schema_attributes.transformers.apply(trargs, **kw)
+        return trargs
+
+    async def apply_transformers_to_schema(self, access: permissions.Access, transaction, data, **kw) -> trait.TransformerArgs:
+        """ Lik .apply_transformers(), but to schema itself  """
+        schema = self
+        trargs = trait.TransformerArgs(schema=schema, orig_data=schema, access=access, transaction=transaction)
         await self.schema_attributes.transformers.apply(trargs, **kw)
         return trargs
 
