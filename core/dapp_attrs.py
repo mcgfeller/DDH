@@ -163,7 +163,7 @@ class RunningDApp(DDHbaseModel):
 
     id: str | None = None  # principals.DAppId causes Pydantic errors - I don't know why
     dapp_version: versions.Version
-    schema_version: versions.Version  # TODO: Use?
+    schema_version: versions.Version  # TODO: Use: Comparison to decide whether to update schema?
     location: pydantic.AnyHttpUrl
     # = pydantic.Field(default=None, exclude=True)  # private and not json-able
     _client: httpx.AsyncClient | None = None
