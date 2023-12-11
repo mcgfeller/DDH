@@ -1,3 +1,4 @@
+pip-tools
 python-multipart
 fastapi
 uvicorn
