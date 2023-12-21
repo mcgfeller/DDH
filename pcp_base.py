@@ -211,7 +211,7 @@ class AsgiProcess(Runnable):
     """ Process running an ASGI server
         Currently, uvicorn is our ASGI server.
     """
-    uvicorn_exe = r".venv\scripts\uvicorn" if OnWindows else r'.venv/scripts/uvicorn'
+    uvicorn_exe: str = r".venv\scripts\uvicorn" if OnWindows else r'.venv/scripts/uvicorn'
     app: str
     port: int
 
@@ -250,7 +250,7 @@ class AsgiProcess(Runnable):
 class PythonProcess(Runnable):
     """ A Python process that runs for a long time (otherwise, check and stop wouldn't make sense. """
 
-    python_exe = r"C:\Program Files\Python39\python.exe" if OnWindows else "python3"
+    python_exe: str = r"C:\Program Files\Python39\python.exe" if OnWindows else "python3"
     module: pathlib.Path
     healthprocess: AsgiProcess | None = None
     args: list[str] = []
