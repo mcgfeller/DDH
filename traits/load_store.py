@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import typing
 import copy
+import pydantic
 
 from core import (errors, trait, permissions, keys, nodes, data_nodes, keydirectory, dapp_attrs)
 from backend import persistable
@@ -17,7 +18,8 @@ class AccessTransformer(trait.Transformer):
 
 class LoadFromStorage(AccessTransformer):
     """ Load data from storage """
-    phase = trait.Phase.load
+    phase: typing.ClassVar[trait.Phase] = pydantic.Field(
+        default=trait.Phase.load, description="phase in which transformer executes, for ordering.")
     only_modes = {permissions.AccessMode.read}
     only_forks = {keys.ForkType.data, keys.ForkType.consents}
 

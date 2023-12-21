@@ -13,7 +13,7 @@ import pprint
 logger = logging.getLogger(__name__)
 
 # from frontend import sessions
-from core import keys, schemas, nodes, keydirectory, errors, transactions, principals, relationships, schema_network, dapp_attrs
+from core import keys, schemas as m_schemas, nodes, keydirectory, errors, transactions, principals, relationships, schema_network, dapp_attrs
 from utils.pydantic_utils import DDHbaseModel
 
 
@@ -24,16 +24,16 @@ class DAppProxy(DDHbaseModel):
     running:  dapp_attrs.RunningDApp
     attrs: dapp_attrs.DApp
 
-    schemas: dict[keys.DDHkeyVersioned, schemas.AbstractSchema] = {}
+    schemas: dict[keys.DDHkeyVersioned, m_schemas.AbstractSchema] = {}
 
     async def initialize_schemas(self, session, pillars: dict):
         if True:  # self.running.schema_version > versions._UnspecifiedVersion:
-            j = await(self.running.client.get('/schemas'))
+            j = await (self.running.client.get('/schemas'))
             j.raise_for_status()
             js = j.json()
             # print(f'***schemas')
             # pprint.pprint(js)
-            self.schemas = {keys.DDHkeyVersioned(k): schemas.AbstractSchema.create_schema(s, sf, sa)
+            self.schemas = {keys.DDHkeyVersioned(k): m_schemas.AbstractSchema.create_schema(s, sf, sa)
                             for k, (sa, sf, s) in js.items()}
             self.register_schemas(session)
 
@@ -56,7 +56,7 @@ class DAppProxy(DDHbaseModel):
         return snodes
 
     @staticmethod
-    def register_schema(schemakey: keys.DDHkeyVersioned, schema: schemas.AbstractSchema, owner: principals.Principal, transaction):
+    def register_schema(schemakey: keys.DDHkeyVersioned, schema: m_schemas.AbstractSchema, owner: principals.Principal, transaction):
         """ register a single schema in its Schema Node, creating one if necessary. 
             staticmethod so it can be called by test fixtures. 
         """
@@ -75,7 +75,7 @@ class DAppProxy(DDHbaseModel):
             snode.add_schema(schema)
         else:
             # create snode with our schema:
-            snode = nodes.SchemaNode(owner=owner, consents=schemas.AbstractSchema.get_schema_consents())
+            snode = nodes.SchemaNode(owner=owner, consents=m_schemas.AbstractSchema.get_schema_consents())
             keydirectory.NodeRegistry[genkey] = snode
             snode.add_schema(schema)
 
@@ -90,7 +90,7 @@ class DAppProxy(DDHbaseModel):
         transaction = session.get_or_create_transaction()
 
         attrs = self.attrs
-        dnode = DAppNode(owner=attrs.owner, dapp=self, consents=schemas.AbstractSchema.get_schema_consents())
+        dnode = DAppNode(owner=attrs.owner, dapp=self, consents=m_schemas.AbstractSchema.get_schema_consents())
         schema_network.add_dapp(attrs)
 
         for ref in attrs.references:

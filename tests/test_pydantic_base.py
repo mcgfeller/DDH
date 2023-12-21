@@ -21,7 +21,7 @@ class WithClassVar2(pydantic.BaseModel):
     i: int = 0
 
 
-WithClassVar.update_forward_refs()
+WithClassVar.model_rebuild()
 
 
 def test_pydantic_issue_3679():

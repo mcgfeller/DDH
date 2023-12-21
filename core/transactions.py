@@ -218,8 +218,7 @@ class Action(DDHbaseModel):
 
 class Resource(Action):
     """ Remote resource """
-    class Config:
-        extra = 'allow'  # subresources may allocate more fields, but are serialized as Transaction.Resource
+    model_config = pydantic.ConfigDict(extra='allow')
 
     # id: str
     actions: list[Action] = pydantic.Field(
@@ -230,4 +229,4 @@ class Resource(Action):
         return
 
 
-Transaction.update_forward_refs()
+Transaction.model_rebuild()

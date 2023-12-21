@@ -63,7 +63,8 @@ class SchemaVariantUsage(str, enum.Enum):
 
 
 # Schema name in case of multiple schemas in the same space, e.g., ISO-20022 and Swift MT.
-SchemaVariant = pydantic.constr(strip_whitespace=True, max_length=30, regex='[a-zA-Z0-9_-]+')
+SchemaVariant = typing.Annotated[str, pydantic.StringConstraints(
+    strip_whitespace=True, max_length=30, pattern='[a-zA-Z0-9_-]+')]
 
 
 class MimeTypes(DDHbaseModel):
@@ -421,10 +422,9 @@ class SchemaContainer(DDHbaseModel):
         keeps latest version in versions.Unspecified per variant
         and recommended as variant ''.
     """
-    class Config:
-        arbitrary_types_allowed = True  # for upgraders
+    model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
 
-    __slots__: typing.ClassVar[tuple] = ('__weakref__',)  # allow weak ref to here
+    # __slots__: typing.ClassVar[tuple] = ('__weakref__',)  # allow weak ref to here # FIXME #32?
 
     schemas_by_variant: dict[SchemaVariant | None,
                              dict[versions.Version, AbstractSchema]] = {}
@@ -513,4 +513,4 @@ class SchemaContainer(DDHbaseModel):
         upgraders.add_upgrader(v_from, v_to, function)
 
 
-trait.TransformerArgs.update_forward_refs()
+trait.TransformerArgs.model_rebuild()

@@ -29,6 +29,30 @@ from utils import utils
 
 from . import errors, schemas, permissions, transactions, keys
 
+
+@enum.unique
+class Phase(str, enum.Enum):
+    """ Transformation phase, for ordering """
+
+    first = 'first'
+    load = 'load'
+    parse = 'parse'
+    post_load = 'post load'
+    validation = 'validation'
+    pre_store = 'pre store'
+    store = 'store'
+    last = 'last'
+    none_ = 'none_'  # special phase, not in any sequence
+
+
+""" Ordered sequences of phases, per mode. Note: first,last must always be present """
+Sequences: dict[permissions.AccessMode | None, list[Phase]] = {
+    permissions.AccessMode.read: [Phase.first, Phase.load, Phase.post_load, Phase.last],
+    permissions.AccessMode.write: [Phase.first, Phase.parse, Phase.post_load, Phase.validation, Phase.pre_store, Phase.store, Phase.last],
+    None: [Phase.first, Phase.last]
+}
+
+
 Tsubject = typing.TypeVar('Tsubject')  # subject of apply
 
 
@@ -42,8 +66,7 @@ class Trait(DDHbaseModel, typing.Hashable):
 
         Traits are designed to be inhertible (not from superclass, but from schema) by merging them. 
     """
-    class Config:
-        frozen = True  # Traits are not mutable, and we need a hash function to build  a set
+    model_config = pydantic.ConfigDict(frozen=True)
 
     # keep a class by classname, so we can recreate JSON'ed object in correct class
     _cls_by_name: typing.ClassVar[dict[str, type]] = {}
@@ -94,29 +117,6 @@ class Trait(DDHbaseModel, typing.Hashable):
             return None
         else:  # all other case are equal
             return self
-
-
-@enum.unique
-class Phase(str, enum.Enum):
-    """ Transformation phase, for ordering """
-
-    first = 'first'
-    load = 'load'
-    parse = 'parse'
-    post_load = 'post load'
-    validation = 'validation'
-    pre_store = 'pre store'
-    store = 'store'
-    last = 'last'
-    none_ = 'none_'  # special phase, not in any sequence
-
-
-""" Ordered sequences of phases, per mode. Note: first,last must always be present """
-Sequences: dict[permissions.AccessMode | None, list[Phase]] = {
-    permissions.AccessMode.read: [Phase.first, Phase.load, Phase.post_load, Phase.last],
-    permissions.AccessMode.write: [Phase.first, Phase.parse, Phase.post_load, Phase.validation, Phase.pre_store, Phase.store, Phase.last],
-    None: [Phase.first, Phase.last]
-}
 
 
 class Transformer(Trait):
@@ -183,13 +183,13 @@ class Traits(DDHbaseModel):
             self.traits = set(self._by_classname.values())
         return
 
-    def dict(self, *a, **kw):
+    def model_dump(self, *a, **kw):
         """ Due to https://github.com/pydantic/pydantic/issues/1090, we cannot have a set 
             as a field. We redefine .dict() and take advantage to exclude_defaults in
             the traits.
         """
         d = dict(self)
-        d['traits'] = [a.dict(exclude_defaults=True) for a in self.traits]
+        d['traits'] = [a.model_dump(exclude_defaults=True) for a in self.traits]
         assert isinstance(self.traits, set)
         return d
 

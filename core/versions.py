@@ -27,7 +27,7 @@ class Version(DDHbaseModel, typing.Hashable):
 
     Maxparts: typing.ClassVar[int] = 4
 
-    vtup: tuple[pydantic.conint(ge=0, le=100000), ...] = ()
+    vtup: tuple[typing.Annotated[int, pydantic.Field(ge=0, le=100000)], ...] = ()
     alias: str | None = None
 
     def __init__(self, *v, **kw):

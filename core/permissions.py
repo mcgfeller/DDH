@@ -275,4 +275,4 @@ class Access(DDHbaseModel):
 from . import keys
 from . import nodes
 from frontend import user_auth
-Access.update_forward_refs()
+Access.model_rebuild()

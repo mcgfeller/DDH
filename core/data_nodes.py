@@ -12,8 +12,8 @@ from backend import persistable, system_services, storage, keyvault
 class DataNode(nodes.Node, persistable.Persistable):
     """ New data node, points to storage and consents """
 
-    format: persistable.DataFormat = persistable.DataFormat.dict
     data: typing.Any
+    format: persistable.DataFormat = persistable.DataFormat.dict
     storage_dapp_id: str | None = None
     access_key: keyvault.AccessKey | None = None
     sub_nodes: dict[keys.DDHkey, keys.DDHkey] = {}
@@ -146,4 +146,4 @@ class DataNode(nodes.Node, persistable.Persistable):
         return data
 
 
-DataNode.update_forward_refs()  # Now Node is known, update before it's derived
+DataNode.model_rebuild()  # Now Node is known, update before it's derived

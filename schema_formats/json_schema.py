@@ -10,7 +10,7 @@ import jsonschema.exceptions
 
 # to overwrite jsonschema datetime format checker:
 import jsonschema._format
-from pydantic import datetime_parse
+import pydantic
 import datetime
 
 
@@ -27,11 +27,15 @@ class JsonSchemaElement(schemas.AbstractSchemaElement):
 
 class JsonSchemaReference(schemas.AbstractSchemaReference, JsonSchemaElement):
 
-    class Config:
-        @staticmethod
-        def schema_extra(schema: dict[str, typing.Any], model: typing.Type[JsonSchemaReference]) -> None:
-            schema['properties']['dep'] = {'$ref': model.getURI()}
-            return
+    # TODO[pydantic] #32: We couldn't refactor this class, please create the `model_config` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+
+    @staticmethod
+    def _json_schema_extra(schema: dict[str, typing.Any], model: typing.Type[JsonSchemaReference]) -> None:
+        schema['properties']['dep'] = {'$ref': model.getURI()}
+        return
+
+    model_config = pydantic.ConfigDict(json_schema_extra=_json_schema_extra)
 
     @classmethod
     def get_target(cls) -> keys.DDHkey:
@@ -201,7 +205,7 @@ def is_datetime(instance: object) -> bool:
         Overwrite the date-time format check using Pydantic's datetime_parse.
     """
     try:
-        d = datetime_parse.parse_datetime(instance)  # type:ignore
+        d = pydantic.datetime_parse.parse_datetime(instance)  # type:ignore
         return True
     except ValueError:
         return False

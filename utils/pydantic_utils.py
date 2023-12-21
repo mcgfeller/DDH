@@ -9,13 +9,9 @@ import datetime
 class DDHbaseModel(pydantic.BaseModel):
     """ Default Model behavior
     """
-    class Config:
-        """ This forbids wrong keywords, preventing silly mistakes when defaulted
-            attributes are not set.
-        """
-        extra = 'forbid'
-        underscore_attrs_are_private = True
-        copy_on_model_validation = 'none'  # see https://github.com/pydantic/pydantic/pull/2193
+    # TODO[pydantic]: The following keys were removed: `underscore_attrs_are_private`, `copy_on_model_validation`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = pydantic.ConfigDict(extra='forbid')
 
     # @classmethod
     # def validate(cls: typing.Type[pydantic.BaseModel], value: typing.Any) -> pydantic.BaseModel:

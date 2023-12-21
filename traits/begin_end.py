@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import typing
 import copy
+import pydantic
 
 from core import (errors,  schemas, trait, versions, permissions, keys, nodes, keydirectory, dapp_attrs)
 from backend import system_services, persistable, audit
@@ -31,7 +32,8 @@ class BeginTransformer(BracketTransformer):
 
 class FinalTransformer(BracketTransformer):
     """ Final transformer in chain """
-    phase = trait.Phase.last
+    phase: typing.ClassVar[trait.Phase] = pydantic.Field(
+        default=trait.Phase.last, description="phase in which transformer executes, for ordering.")
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
         self.audit(trargs.access, trargs.transaction)
@@ -42,7 +44,8 @@ class FinalTransformer(BracketTransformer):
 
 class AbortTransformer(BracketTransformer):
     """ Special transformer called only if other transformers cause exceptions """
-    phase = trait.Phase.none_
+    phase: typing.ClassVar[trait.Phase] = pydantic.Field(
+        default=trait.Phase._none, description="phase in which transformer executes, for ordering.")
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, failing: trait.Transformer, exception: Exception, **kw):
         await trargs.transaction.abort()
