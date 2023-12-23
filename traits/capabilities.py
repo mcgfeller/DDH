@@ -18,8 +18,8 @@ DataCapability = typing.ForwardRef('DataCapability')
 
 class DataCapability(trait.Transformer):
     """ Capability used for Schemas """
-    supports_modes = frozenset()
-    only_forks = {keys.ForkType.data}
+    supports_modes: frozenset[permissions.AccessMode] = frozenset()
+    only_forks: frozenset[keys.ForkType] = {keys.ForkType.data}
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
         return  # TODO: Check method in superclass

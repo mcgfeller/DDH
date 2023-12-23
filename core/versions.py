@@ -85,6 +85,10 @@ class _UnspecifiedVersion(Version):
         """ only equal to unspecified """
         return isinstance(other, _UnspecifiedVersion)
 
+    def __hash__(self):
+        """ hash (not inherited) is hash of empty tuple """
+        return hash(())
+
 
 Unspecified = _UnspecifiedVersion(alias='unspecified')
 

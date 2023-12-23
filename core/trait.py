@@ -66,7 +66,7 @@ class Trait(DDHbaseModel, typing.Hashable):
 
         Traits are designed to be inhertible (not from superclass, but from schema) by merging them. 
     """
-    model_config = pydantic.ConfigDict(frozen=True)
+    model_config = pydantic.ConfigDict(frozen=True, validate_default=True)
 
     # keep a class by classname, so we can recreate JSON'ed object in correct class
     _cls_by_name: typing.ClassVar[dict[str, type]] = {}
@@ -86,7 +86,7 @@ class Trait(DDHbaseModel, typing.Hashable):
         """ Recreate JSON'ed object in correct class, based on .classname attribute """
         if self.classname and self.classname != self.__class__.__name__:
             cls = self._cls_by_name[self.classname]
-            return cls(**self.dict())
+            return cls(**self.model_dump())
         else:
             return self
 
@@ -120,24 +120,31 @@ class Trait(DDHbaseModel, typing.Hashable):
 
 
 class Transformer(Trait):
-    supports_modes: typing.ClassVar[frozenset[permissions.AccessMode]]   # supports_modes is a mandatory class variable
-    only_modes: typing.ClassVar[frozenset[permissions.AccessMode]
-                                ] = frozenset()  # This Transformer is restricted to only_modes
-    only_forks: typing.ClassVar[frozenset[keys.ForkType]] = frozenset()  # This Transformer is restricted to only_forks
+    supports_modes: frozenset[permissions.AccessMode]   # supports_modes is a mandatory class variable
+    only_modes: frozenset[permissions.AccessMode
+                          ] = frozenset()  # This Transformer is restricted to only_modes
+    only_forks: frozenset[keys.ForkType] = frozenset()  # This Transformer is restricted to only_forks
     _all_by_modes: typing.ClassVar[dict[permissions.AccessMode, set[str]]] = {}
 
-    phase: typing.ClassVar[Phase] = pydantic.Field(
+    phase: Phase = pydantic.Field(
         default=..., description="phase in which transformer executes, for ordering.")
     # after Transformer preceedes this one (within the same phase), for ordering.
-    after: typing.ClassVar[str | None] = None
+    after: str | None = None
 
-    @classmethod
-    def __init_subclass__(cls):
-        """ register all Capabilities by Mode """
-        super().__init_subclass__()
-        sm = getattr(cls, 'supports_modes', None)
-        assert sm is not None, f'{cls} must have support_modes set'
-        [cls._all_by_modes.setdefault(m, set()).add(cls.__name__) for m in sm]
+    # @classmethod
+    # def __init_subclass__(cls):
+    #     """ register all Capabilities by Mode """
+    #     super().__init_subclass__()
+    #     sm = getattr(cls, 'supports_modes', None)
+    #     assert sm is not None, f'{cls} must have support_modes set'
+    #     [cls._all_by_modes.setdefault(m, set()).add(cls.__name__) for m in sm]
+    #     return
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        sm = getattr(self, 'supports_modes', None)
+        assert sm is not None, f'{self} must have support_modes set'
+        [self.__class__._all_by_modes.setdefault(m, set()).add(self.__class__.__name__) for m in sm]
         return
 
     @classmethod
@@ -159,12 +166,12 @@ class Traits(DDHbaseModel):
     """ A collection of Trait.
         Trait is hashable. We merge traits of same class. 
     """
-    traits: set[Trait] = set()
+    traits: frozenset[Trait] = frozenset()
     _by_classname: dict[str, Trait] = {}  # lookup by class name
 
     def __init__(self, *a, **kw):
         if a:  # shortcut to allow Trait as args
-            kw['traits'] = set(list(a)+kw.get('traits', []))
+            kw['traits'] = frozenset(list(a)+kw.get('traits', []))
         super().__init__(**kw)
         merged = False
         for trait in {a._correct_class() for a in self.traits}:

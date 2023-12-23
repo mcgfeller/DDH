@@ -11,9 +11,9 @@ from backend import system_services, persistable, audit
 
 class BracketTransformer(trait.Transformer):
     """ Transformers at begin or end """
-    supports_modes = frozenset()  # Transformer is not invoked by mode
-    only_modes = frozenset()  # no restrictons
-    only_forks = frozenset()
+    supports_modes: frozenset[permissions.AccessMode] = frozenset()  # Transformer is not invoked by mode
+    only_modes: frozenset[permissions.AccessMode] = frozenset()  # no restrictons
+    only_forks: frozenset[keys.ForkType] = frozenset()
 
     def audit(self, access, transaction):
         """ Create AuditRecord and add it to transaction. """
@@ -23,7 +23,7 @@ class BracketTransformer(trait.Transformer):
 
 class BeginTransformer(BracketTransformer):
     """ First transformer in chain """
-    phase = trait.Phase.first
+    phase: trait.Phase = trait.Phase.first
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
 
@@ -32,7 +32,7 @@ class BeginTransformer(BracketTransformer):
 
 class FinalTransformer(BracketTransformer):
     """ Final transformer in chain """
-    phase: typing.ClassVar[trait.Phase] = pydantic.Field(
+    phase: trait.Phase = pydantic.Field(
         default=trait.Phase.last, description="phase in which transformer executes, for ordering.")
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
@@ -44,8 +44,8 @@ class FinalTransformer(BracketTransformer):
 
 class AbortTransformer(BracketTransformer):
     """ Special transformer called only if other transformers cause exceptions """
-    phase: typing.ClassVar[trait.Phase] = pydantic.Field(
-        default=trait.Phase._none, description="phase in which transformer executes, for ordering.")
+    phase: trait.Phase = pydantic.Field(
+        default=trait.Phase.none_, description="phase in which transformer executes, for ordering.")
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, failing: trait.Transformer, exception: Exception, **kw):
         await trargs.transaction.abort()

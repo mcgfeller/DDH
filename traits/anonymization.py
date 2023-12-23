@@ -16,9 +16,9 @@ from . import capabilities
 
 
 class Anonymize(capabilities.DataCapability):
-    supports_modes = {permissions.AccessMode.anonymous}
-    only_modes = {permissions.AccessMode.read}
-    phase = trait.Phase.post_load
+    supports_modes: frozenset[permissions.AccessMode] = frozenset({permissions.AccessMode.anonymous})
+    only_modes: frozenset[permissions.AccessMode] = frozenset({permissions.AccessMode.read})
+    phase: trait.Phase = trait.Phase.post_load
 
     async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):
         assert trargs.parsed_data is not None and len(trargs.parsed_data) > 0
@@ -79,7 +79,7 @@ class Anonymize(capabilities.DataCapability):
 
 
 class Pseudonymize(Anonymize):
-    supports_modes = {permissions.AccessMode.pseudonym}
+    supports_modes: frozenset[permissions.AccessMode] = {permissions.AccessMode.pseudonym}
 
     async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):
         assert trargs.parsed_data is not None and len(trargs.parsed_data) > 0
@@ -129,10 +129,10 @@ class PseudonymMap(persistable.Persistable):
 class DePseudonymize(capabilities.DataCapability):
     """ Revert the pseudonymization based on the stored map """
 
-    supports_modes = {permissions.AccessMode.pseudonym}
-    only_modes = {permissions.AccessMode.write}
-    phase = trait.Phase.pre_store  # after validation
-    after = 'ValidateToDApp'  # we don't reveil identity to DApp
+    supports_modes: frozenset[permissions.AccessMode] = frozenset({permissions.AccessMode.pseudonym})
+    only_modes: frozenset[permissions.AccessMode] = frozenset({permissions.AccessMode.write})
+    phase: trait.Phase = trait.Phase.pre_store  # after validation
+    after: str = 'ValidateToDApp'  # we don't reveil identity to DApp
 
     async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):
         eid = trargs.access.original_ddhkey.owner  # this is the pseudo-owner uder which the map is stored

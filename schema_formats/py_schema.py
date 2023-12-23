@@ -128,6 +128,7 @@ class PySchemaReference(schemas.AbstractSchemaReference, PySchemaElement):
 
 class PySchema(schemas.AbstractSchema):
     """ A AbstractSchema in Pydantic Python, containing a PySchemaElement """
+    format_designator: typing.ClassVar[schemas.SchemaFormat] = schemas.SchemaFormat.internal
     schema_element: typing.Type[PySchemaElement]
     mimetypes: typing.ClassVar[schemas.MimeTypes] = schemas.MimeTypes(
         of_schema=['application/openapi', 'application/json'], of_data=['application/json'])
