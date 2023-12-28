@@ -115,8 +115,8 @@ class Receipt(py_schema.PySchemaElement):
 
     """ The Receipt of an individual purchase """
 
-    Datum_Zeit: datetime.datetime = pydantic.Field(sensitivity=schemas.Sensitivity.sa)
-    Filiale:    str = pydantic.Field(sensitivity=schemas.Sensitivity.sa)
+    Datum_Zeit: datetime.datetime = py_schema.SchemaField(sensitivity=schemas.Sensitivity.sa)
+    Filiale:    str = py_schema.SchemaField(sensitivity=schemas.Sensitivity.sa)
     Kassennummer:  int
     Transaktionsnummer: int
     Artikel:    str
@@ -144,7 +144,7 @@ class Receipt(py_schema.PySchemaElement):
 
 class MigrosSchema(py_schema.PySchemaElement):
     """ A fake Migros schema, showing Cumulus receipts """
-    cumulus: int | None = pydantic.Field(None, sensitivity=schemas.Sensitivity.qid)
+    cumulus: int | None = py_schema.SchemaField(None, sensitivity=schemas.Sensitivity.qid)
     receipts: list[Receipt] = []
 
     @classmethod

@@ -13,12 +13,12 @@ from schema_formats import py_schema
 
 class Receipt(py_schema.PySchemaElement):
 
-    buyer: str = pydantic.Field(sensitivity=schemas.Sensitivity.eid)
+    buyer: str = py_schema.SchemaField(sensitivity=schemas.Sensitivity.eid)
     article: str
     quantity: float = 1.0
     amount: float = 0.0
-    when: datetime.datetime = pydantic.Field(sensitivity=schemas.Sensitivity.sa)
-    where: str = pydantic.Field(sensitivity=schemas.Sensitivity.sa)
+    when: datetime.datetime = py_schema.SchemaField(sensitivity=schemas.Sensitivity.sa)
+    where: str = py_schema.SchemaField(sensitivity=schemas.Sensitivity.sa)
 
 
 class Receipts(py_schema.PySchemaElement):

@@ -66,7 +66,7 @@ class CoopDApp(dapp_attrs.DApp):
 class CoopSchema(py_schema.PySchemaElement):
     """ There is no Schema for Coop yet """
 
-    supercard: int | None = pydantic.Field(None, sensitivity=schemas.Sensitivity.qid)
+    supercard: int | None = py_schema.SchemaField(None, sensitivity=schemas.Sensitivity.qid)
     receipts: list[py_schema.PySchemaReference.create_from_key(
         keys.DDHkeyRange('//p/living/shopping/receipts:::>=0'))] = []
 

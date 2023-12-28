@@ -84,7 +84,7 @@ def build_root_schemas():
     }
     schema_element = descend_schema(treetop, attributes)
     root = py_schema.PySchema(schema_element=schema_element)
-    assert root.schema_element.schema_json()
+    assert root.schema_element.model_json_schema()
 
     return root
 

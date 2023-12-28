@@ -18,9 +18,9 @@ class PySchemaElement(schemas.AbstractSchemaElement):
     def iter_paths(cls, pk=()) -> typing.Generator[tuple[keys.DDHkey, type[PySchemaElement]], None, None]:
         """ recursive descent through schema yielding (key,schema_element) """
         yield (keys.DDHkey(pk), cls)  # yield ourselves first
-        for k, mf in cls.__fields__.items():
-            assert isinstance(mf, pydantic.fields.ModelField)
-            sub_elem = mf.type_
+        for k, mf in cls.model_fields.items():
+            assert isinstance(mf, pydantic.fields.FieldInfo)
+            sub_elem = mf.annotation
             if issubclass(sub_elem, PySchemaElement):
 
                 yield from sub_elem.iter_paths(pk+((k,) if k else ()))  # then descend
@@ -84,10 +84,12 @@ class PySchemaElement(schemas.AbstractSchemaElement):
         # References:
         if issubclass(cls, PySchemaReference):
             atts.add_reference(path, cls)
+        if cls.model_fields:
+            print(cls)
 
         # Sensitivities - sensitivity entry in extra field:
         sensitivities = {fn: ex['sensitivity']
-                         for fn, f in cls.__fields__.items() if 'sensitivity' in (ex := f.field_info.extra)}
+                         for fn, f in cls.model_fields.items() if (ex := f.json_schema_extra) and 'sensitivity' in ex}
         if sensitivities:
             atts.add_sensitivities(path, sensitivities)
         return
@@ -187,3 +189,10 @@ class PySchema(schemas.AbstractSchema):
     def get_type(self, path, field, value) -> type:
         """ return the Python type of a path, field """
         return type(value)
+
+
+def SchemaField(*a, sensitivity: schemas.Sensitivity | None = None, **kw):
+    """ Helper to build a field with sensitivity """
+    e = kw.setdefault('json_schema_extra', {})
+    e['sensitivity'] = sensitivity
+    return pydantic.Field(*a, **kw)
