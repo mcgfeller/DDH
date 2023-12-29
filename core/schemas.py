@@ -472,7 +472,7 @@ class SchemaContainer(DDHbaseModel):
             schema_ddhkey, nodes.NodeSupports.schema, transaction)
         if snode:
             assert isinstance(snode, nodes.SchemaNode)
-            schema = snode.schemas.get_schema_key(schema_ddhkey)
+            schema = snode.container.get_schema_key(schema_ddhkey)
             # build key with actual variant and version:
             fqkey = keys.DDHkey(ddhkey.key, specifiers=(
                 ddhkey.fork, schema.schema_attributes.variant, schema.schema_attributes.version))
