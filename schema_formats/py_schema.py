@@ -1,6 +1,7 @@
 """ Python internal Schema Format using Pydantic """
 from __future__ import annotations
 import typing
+import types
 import pydantic
 import json
 
@@ -21,7 +22,7 @@ class PySchemaElement(schemas.AbstractSchemaElement):
         for k, mf in cls.model_fields.items():
             assert isinstance(mf, pydantic.fields.FieldInfo)
             sub_elem = mf.annotation
-            if issubclass(sub_elem, PySchemaElement):
+            if (not isinstance(sub_elem, types.GenericAlias)) and issubclass(sub_elem, PySchemaElement):
 
                 yield from sub_elem.iter_paths(pk+((k,) if k else ()))  # then descend
         return
@@ -39,7 +40,7 @@ class PySchemaElement(schemas.AbstractSchemaElement):
         for segment in pathit:
             segment = str(segment)
             # look up one segment of path, returning ModelField
-            mf = current.__fields__.get(str(segment), None)
+            mf = current.model_fields.get(str(segment), None)
             if mf is None:
                 if create_intermediate:
                     new_current = cls.create_from_elements(segment)
@@ -48,10 +49,10 @@ class PySchemaElement(schemas.AbstractSchemaElement):
                 else:
                     return None
             else:
-                assert isinstance(mf, pydantic.fields.ModelField)
-                assert mf.type_ is not None
-                if issubclass(mf.type_, PySchemaElement):
-                    current = mf.type_  # this is the next Pydantic class
+                assert isinstance(mf, pydantic.fields.FieldInfo)
+                assert mf.annotation is not None
+                if issubclass(mf.annotation, PySchemaElement):
+                    current = mf.annotation  # this is the next Pydantic class
                 else:  # we're at a leaf, return
                     if next(pathit, None) is None:  # path ends here
                         break
@@ -70,9 +71,9 @@ class PySchemaElement(schemas.AbstractSchemaElement):
             call super().resolve()
         """
         d = {}
-        for k, mf in cls.__fields__.items():
-            assert isinstance(mf, pydantic.fields.ModelField)
-            sub_elem = mf.type_
+        for k, mf in cls.model_fields.items():
+            assert isinstance(mf, pydantic.fields.FieldInfo)
+            sub_elem = mf.annotation
             if issubclass(sub_elem, PySchemaElement):
                 d[k] = sub_elem.resolve(remainder[:-1], principal, q)  # then descend
         return d
@@ -113,13 +114,13 @@ class PySchemaReference(schemas.AbstractSchemaReference, PySchemaElement):
     def _json_schema_extra(schema: dict[str, typing.Any], model: typing.Type[PySchemaReference]) -> None:
         schema['properties']['dep'] = {'$ref': model.getURI()}
         return
-
-    model_config = pydantic.ConfigDict(json_schema_extra=_json_schema_extra)
+    # FIXME #32 - Schema with $ref fails.
+    # model_config = pydantic.ConfigDict(json_schema_extra=_json_schema_extra)
 
     @classmethod
     def get_target(cls) -> keys.DDHkey:
         """ get target key - oh Pydantic! """
-        return cls.__fields__['ddhkey'].default
+        return cls.model_fields['ddhkey'].default
 
     @classmethod
     def create_from_key(cls, ddhkey: keys.DDHkeyRange, name: str | None = None) -> typing.Type[PySchemaReference]:
