@@ -165,8 +165,8 @@ async def get_dapp(
 async def draw_graph(
         # session:  sessions.Session = fastapi.Depends(user_auth.get_current_session), # XXX: NO AUTH FOR THE MOMENT
         layout: str = fastapi.Query('shell_layout', description="networkx plot layout"),
-        size_h: typing.Annotated[int, pydantic.Field(gt=500, lt=10000)] = fastapi.Query(
-            2000, description="horizontal figure size in px"),
+        size_h: int = fastapi.Query(gt=500, lt=10000, default=2000, description="horizontal figure size in px"),
+
         center_schema: str | None = fastapi.Query(
             None, description="center graph around this node, with a radius; e.g., //p/employment/salary/statements"),
         radius: int = fastapi.Query(2, description="radius (=number of hops) of the graph if center_node is given"),
