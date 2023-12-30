@@ -226,7 +226,9 @@ class Access(DDHbaseModel):
         """ ensure that mode is included in access modes """
         self.modes.add(mode)
 
-    def permitted(self, node: nodes.Node | None, owner: principals.Principal | None = None, record_access: bool = True) -> tuple[bool, list[Consent], set[Principal], str]:
+    # FIXME #32: Make importable node typesched
+    # def permitted(self, node: nodes.Node | None, owner: principals.Principal | None = None, record_access: bool = True) -> tuple[bool, list[Consent], set[Principal], str]:
+    def permitted(self, node, owner: principals.Principal | None = None, record_access: bool = True) -> tuple[bool, list[Consent], set[Principal], str]:
         """ checks whether access is permitted, returning (bool,required flags,transformer consent,explanation text)
             if record_access is set, the result is recorded into self.
         """
@@ -264,7 +266,9 @@ class Access(DDHbaseModel):
             self.byConsents = used_consents
         return ok, used_consents, consentees, msg
 
-    def raise_if_not_permitted(self, node: nodes.Node | None, owner: principals.Principal | None = None, record_access: bool = True):
+    # FIXME #32: Make importable node typesched
+    # def raise_if_not_permitted(self, node: nodes.Node | None, owner: principals.Principal | None = None, record_access: bool = True):
+    def raise_if_not_permitted(self, node, owner: principals.Principal | None = None, record_access: bool = True):
         """ raise access error if this access to node is not permitted """
         ok, used_consents, consentees, msg = self.permitted(node)
         if not ok:
@@ -273,6 +277,6 @@ class Access(DDHbaseModel):
 
 
 from . import keys
-from . import nodes
+# from . import nodes
 from frontend import user_auth
 Access.model_rebuild()
