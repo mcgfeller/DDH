@@ -40,7 +40,7 @@ class JsonSchemaReference(schemas.AbstractSchemaReference, JsonSchemaElement):
     @classmethod
     def get_target(cls) -> keys.DDHkey:
         """ get target key - oh Pydantic! """
-        return cls.__fields__['ddhkey'].default
+        return cls.model_fields['ddhkey'].default
 
     @classmethod
     def create_from_key(cls, ddhkey: keys.DDHkeyRange, name: str | None = None) -> typing.Type[JsonSchemaReference]:

@@ -30,7 +30,7 @@ fastapi_dapp.get_apps = get_apps
 
 class MigrosDApp(dapp_attrs.DApp):
 
-    version = '0.2'
+    version: versions.Version = '0.2'
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)

@@ -12,7 +12,7 @@ from backend import persistable, system_services, storage, keyvault
 class DataNode(nodes.Node, persistable.Persistable):
     """ New data node, points to storage and consents """
 
-    data: typing.Any
+    data: typing.Any = None
     format: persistable.DataFormat = persistable.DataFormat.dict
     storage_dapp_id: str | None = None
     access_key: keyvault.AccessKey | None = None

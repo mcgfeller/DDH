@@ -130,7 +130,7 @@ def get_nonce() -> bytes:
 
 
 def add_consent_hash(key: bytes, consents: permissions.Consents):
-    ch = hashlib.blake2b(consents.json().encode(), digest_size=len(key)).digest()
+    ch = hashlib.blake2b(consents.model_dump_json().encode(), digest_size=len(key)).digest()
     key = base64.urlsafe_b64decode(key)
     key = bytes([a ^ b for a, b in zip(key, ch)])  # xor
     key = base64.urlsafe_b64encode(key)

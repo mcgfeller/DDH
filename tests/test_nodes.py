@@ -25,7 +25,7 @@ def test_nodes(node_registry):
     assert next(keydirectory.NodeRegistry.get_next_proxy(
         ddhkey, nodes.NodeSupports.data))[0] == node_d.get_proxy()
     assert keydirectory.NodeRegistry.get_node(ddhkey_s, nodes.NodeSupports.schema, transaction)[
-        0].schemas.get() is schema
+        0].container.get() is schema
     return
 
 
@@ -43,7 +43,7 @@ async def test_schema_node(node_registry):
     ddhkey = keys.DDHkey(key='//p/health/bmi/weight')  # does not exist
     node_s, split = keydirectory.NodeRegistry.get_node(
         ddhkey, nodes.NodeSupports.schema, transaction)
-    assert node_s.schemas.get() is schema
+    assert node_s.container.get() is schema
 
     access = permissions.Access(ddhkey=ddhkey, principal=user, modes=[
                                 permissions.AccessMode.read])

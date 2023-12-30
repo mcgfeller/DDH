@@ -54,7 +54,7 @@ class DAppOrFamily(DDHbaseModel):
 
     def to_DAppOrFamily(self):
         """ convert DApp or DAppFamily to DAppOrFamily, which is the FastAPI ResponseModel  """
-        return DAppOrFamily(**self.dict())  # excess attributes are ignore
+        return DAppOrFamily(**self.model_dump())  # excess attributes are ignore
 
 
 DAppOrFamily.model_rebuild()

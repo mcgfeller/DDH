@@ -50,7 +50,7 @@ class MustReview(SchemaValidation):
         r = super().merge(other)
         if r is not None:
             if r.by_roles != other.by_roles:
-                d = self.dict()
+                d = self.model_dump()
                 if self.may_overwrite:
                     d['by_roles'] = other.by_roles
                 else:
@@ -123,7 +123,7 @@ class MustValidate(DataValidation):
             raise errors.ValidationError(e)
 
         if isinstance(trargs.parsed_data, pydantic_utils.DDHbaseModel):  # for PySchemas, we have a model, not a dict
-            trargs.parsed_data = trargs.parsed_data.dict()  # make dict
+            trargs.parsed_data = trargs.parsed_data.model_dump()  # make dict
 
         return
 

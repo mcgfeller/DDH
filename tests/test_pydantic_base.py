@@ -28,11 +28,11 @@ def test_pydantic_issue_3679():
     """ Demonstrates Pydantic Bug https://github.com/pydantic/pydantic/issues/3679#issuecomment-1337575645
     """
     wcv = WithClassVar(i=42)
-    d = wcv.dict()
+    d = wcv.model_dump()
 
 
 def test_pydantic_issue_3679_2():
     """ Demonstrates Pydantic Bug https://github.com/pydantic/pydantic/issues/3679#issuecomment-1337575645
     """
     wcv = WithClassVar2(i=42)
-    d = wcv.dict()
+    d = wcv.model_dump()

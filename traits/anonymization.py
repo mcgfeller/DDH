@@ -115,12 +115,12 @@ class PseudonymMap(persistable.Persistable):
         e = self.copy()
         e.cache.clear()  # original cache is not exported
         e.inverted_cache = {tuple_key_to_str(k): v for k, v in e.inverted_cache.items()}
-        return e.json()
+        return e.model_dump_json()
 
     @classmethod
     def from_json(cls, j: str) -> typing.Self:
         """ Convert back dict keys encoded in .to_json() """
-        o = cls.parse_raw(j)
+        o = cls.model_validate_json(j)
         assert o.inverted_cache is not None
         o.inverted_cache = {str_to_tuple_key(k): v for k, v in o.inverted_cache.items()}
         return o

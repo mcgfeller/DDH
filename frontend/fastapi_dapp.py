@@ -61,7 +61,7 @@ async def health():
 async def get_app_info():
     d = {}
     for a in get_apps():
-        d[a.id] = a.dict()
+        d[a.id] = a.model_dump()
     return d
 
 

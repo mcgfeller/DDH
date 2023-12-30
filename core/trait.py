@@ -98,7 +98,7 @@ class Trait(DDHbaseModel, typing.Hashable):
 
     def __invert__(self) -> typing.Self:
         """ invert the cancel flag """
-        d = self.dict()
+        d = self.model_dump()
         d['cancel'] = True
         return self.__class__(**d)
 
@@ -192,7 +192,7 @@ class Traits(DDHbaseModel):
 
     def model_dump(self, *a, **kw):
         """ Due to https://github.com/pydantic/pydantic/issues/1090, we cannot have a set 
-            as a field. We redefine .dict() and take advantage to exclude_defaults in
+            as a field. We redefine .model_dump() and take advantage to exclude_defaults in
             the traits.
         """
         d = dict(self)

@@ -188,7 +188,7 @@ async def test_write_data_with_consent(user, user2, no_storage_dapp):
                                           permissions.AccessMode.read, permissions.AccessMode.anonymous})
     ddhkey2f = ddhkey2.ensure_fork(keys.ForkType.consents)
     access = permissions.Access(ddhkey=ddhkey2f, principal=user2, modes={permissions.AccessMode.write})
-    await facade.ddh_put(access, session, consents.json())
+    await facade.ddh_put(access, session, consents.model_dump_json())
 
     # TODO: We need to put a schema here that supports the Anonymous capability:
     ddhkey2s = ddhkey2.ensure_fork(keys.ForkType.schema)

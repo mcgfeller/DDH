@@ -85,7 +85,7 @@ class UserInDB(users.User):
 
     def as_user(self) -> users.User:
         """ return user only """
-        return users.User(**self.dict(include=users.User.__fields__.keys()))
+        return users.User(**self.model_dump(include=users.User.model_fields.keys()))
 
     @classmethod
     def load_user(cls, id) -> principals.Principal | UserInDB:
