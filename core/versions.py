@@ -114,7 +114,7 @@ class VersionConstraint(DDHbaseModel, typing.Hashable):
     def make_with_default(cls, v: str | None) -> VersionConstraint:
         return cls(v) if v and not v == 'unspecified' else NoConstraint
 
-    @pydantic.validator('op1', 'op2')
+    @pydantic.field_validator('op1', 'op2')
     def v_op1(cls, v):
         if v and v not in cls._vops:
             raise ValueError(
