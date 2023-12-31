@@ -6,10 +6,8 @@ import pydantic
 import typing
 import enum
 
-from core import dapp_attrs
 
-
-from . import permissions, schemas,  principals, common_ids
+from core import permissions, schemas,  principals, common_ids
 from backend import persistable
 
 
@@ -121,6 +119,9 @@ class SchemaNode(Node, persistable.NonPersistable):
         if self.consents:
             s.add(NodeSupports.consents)
         return s
+
+
+from core import dapp_attrs
 
 
 class ExecutableNode(Node, persistable.NonPersistable):

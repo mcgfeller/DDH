@@ -110,7 +110,7 @@ class DAppProxy(DDHbaseModel):
 
     async def execute(self, req: dapp_attrs.ExecuteRequest):
         """ forward execution request to DApp microservice """
-        resp = await self.running.client.post('execute', data=req.json())
+        resp = await self.running.client.post('execute', data=req.model_dump())
         errors.DAppError.raise_from_response(resp)  # Pass error response to caller
         return resp.json()
 
@@ -141,10 +141,10 @@ class DAppManagerClass(DDHbaseModel):
         for id, attrs in dattrs.items():  # register individual apps and references.
             attrs = dapp_attrs.DApp(**attrs)
             proxy = DAppProxy(id=id, running=running_dapp, attrs=attrs)
-            proxy.register_references(session, schemas.SchemaNetwork)
+            proxy.register_references(session, m_schemas.SchemaNetwork)
             self.DAppsById[typing.cast(principals.DAppId, id)] = proxy
         await proxy.initialize_schemas(session, pillars.Pillars)  # get schemas and register them
-        schemas.SchemaNetwork.valid.invalidate()  # finished
+        m_schemas.SchemaNetwork.valid.invalidate()  # finished
         return
 
     def bootstrap(self, pillars: dict):

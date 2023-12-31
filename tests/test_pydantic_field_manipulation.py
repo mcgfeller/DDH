@@ -51,8 +51,8 @@ def test_add_subclass():
 
 
 def test_add_deep_subclass():
-    TopClass.model_fields['receipts'].type_._add_fields(last_receipts=(UpperClass, None))
-    TopClass.model_fields['receipts'].type_._add_fields(
+    TopClass.model_fields['receipts'].annotation.__args__[0]._add_fields(last_receipts=(UpperClass, None))
+    TopClass.model_fields['receipts'].annotation.__args__[0]._add_fields(
         last_receipts=(UpperClass, None), last_product=(LowerClass, None))
     check(TopClass)
 
@@ -60,7 +60,7 @@ def test_add_deep_subclass():
 def test_add_empty_subclass():
     empty = pydantic.create_model('empty', __base__=DDHbaseModel)
     empty2 = pydantic.create_model('empty2', __base__=DDHbaseModel)
-    TopClass.model_fields['receipts'].type_._add_fields(empty=(empty, None))
+    TopClass.model_fields['receipts'].annotation.__args__[0]._add_fields(empty=(empty, None))
     empty._add_fields(empty2=(empty2, None))
     empty2._add_fields(last_receipts=(UpperClass, None))
     check(empty)
@@ -68,5 +68,5 @@ def test_add_empty_subclass():
 
 
 def check(cls):
-    cls.schema()
+    cls.model_json_schema()
     a = list(cls.model_fields.items())

@@ -8,7 +8,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from utils import utils
-from core import dapp_proxy, schemas, schema_network, principals, keys, trait
+from core import dapp_proxy, schemas, schema_network, principals, keys, trait, transactions
 from frontend import sessions
 from utils import import_modules
 import DApps

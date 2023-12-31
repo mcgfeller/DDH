@@ -57,9 +57,6 @@ class DAppOrFamily(DDHbaseModel):
         return DAppOrFamily(**self.model_dump())  # excess attributes are ignore
 
 
-DAppOrFamily.model_rebuild()
-
-
 class DAppFamily(DAppOrFamily):
     """ A DAppFamily is a collection of DApps that can be subscribed together """
     members: list[principals.DAppId] = []
@@ -173,7 +170,7 @@ class RunningDApp(DDHbaseModel):
     @property
     def client(self) -> httpx.AsyncClient:
         if self._client is None:
-            self._client = httpx.AsyncClient(base_url=self.location)
+            self._client = httpx.AsyncClient(base_url=str(self.location))
         return self._client
 
 

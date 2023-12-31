@@ -227,3 +227,6 @@ class Resource(Action):
     async def added(self, trx: Transaction):
         """ Callback after resource is added """
         return
+
+
+Transaction.model_rebuild()
