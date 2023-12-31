@@ -5,6 +5,9 @@ import pydantic
 import typing
 import datetime
 
+global CV
+CV = typing.ClassVar
+
 
 class DDHbaseModel(pydantic.BaseModel):
     """ Default Model behavior

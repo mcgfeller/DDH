@@ -3,6 +3,7 @@
 import pytest
 from core import trait, permissions, keys
 from traits import validations, capabilities, anonymization
+from utils.pydantic_utils import CV
 
 
 def test_orderings():
@@ -19,7 +20,7 @@ def test_orderings_after():
     """ test Transformes sort, with TestTransfomer with .after specification  """
     class TestTransformer(capabilities.DataCapability):
         after: str = 'LatestVersion'
-        phase: trait.Phase = trait.Phase.validation
+        phase: CV[trait.Phase] = trait.Phase.validation
 
     t2 = trait.Transformers(TestTransformer(), validations.MustHaveSensitivites(), validations.LatestVersion(),
                             anonymization.Pseudonymize(), validations.MustValidate())

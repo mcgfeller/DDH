@@ -8,17 +8,17 @@ import secrets
 import datetime
 
 import pydantic
-from utils.pydantic_utils import DDHbaseModel, tuple_key_to_str, str_to_tuple_key
+from utils.pydantic_utils import DDHbaseModel, CV, tuple_key_to_str, str_to_tuple_key
 
-from core import (errors, versions, permissions, schemas, transactions, trait, common_ids)
+from core import (errors, keys, versions, permissions, schemas, transactions, trait, common_ids)
 from backend import persistable
 from . import capabilities
 
 
 class Anonymize(capabilities.DataCapability):
-    supports_modes: frozenset[permissions.AccessMode] = frozenset({permissions.AccessMode.anonymous})
-    only_modes: frozenset[permissions.AccessMode] = frozenset({permissions.AccessMode.read})
-    phase: trait.Phase = trait.Phase.post_load
+    supports_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.anonymous})
+    only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.read})
+    phase: CV[trait.Phase] = trait.Phase.post_load
 
     async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):
         assert trargs.parsed_data is not None and len(trargs.parsed_data) > 0
@@ -79,7 +79,7 @@ class Anonymize(capabilities.DataCapability):
 
 
 class Pseudonymize(Anonymize):
-    supports_modes: frozenset[permissions.AccessMode] = {permissions.AccessMode.pseudonym}
+    supports_modes: CV[frozenset[permissions.AccessMode]] = {permissions.AccessMode.pseudonym}
 
     async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):
         assert trargs.parsed_data is not None and len(trargs.parsed_data) > 0
@@ -129,9 +129,9 @@ class PseudonymMap(persistable.Persistable):
 class DePseudonymize(capabilities.DataCapability):
     """ Revert the pseudonymization based on the stored map """
 
-    supports_modes: frozenset[permissions.AccessMode] = frozenset({permissions.AccessMode.pseudonym})
-    only_modes: frozenset[permissions.AccessMode] = frozenset({permissions.AccessMode.write})
-    phase: trait.Phase = trait.Phase.pre_store  # after validation
+    supports_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.pseudonym})
+    only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.write})
+    phase: CV[trait.Phase] = trait.Phase.pre_store  # after validation
     after: str = 'ValidateToDApp'  # we don't reveil identity to DApp
 
     async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):

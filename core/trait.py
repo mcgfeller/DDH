@@ -24,7 +24,7 @@ import typing
 
 
 import pydantic
-from utils.pydantic_utils import DDHbaseModel
+from utils.pydantic_utils import DDHbaseModel, CV
 from utils import utils
 
 from . import errors, schemas, permissions, transactions, keys
@@ -69,7 +69,7 @@ class Trait(DDHbaseModel, typing.Hashable):
     model_config = pydantic.ConfigDict(frozen=True, validate_default=True)
 
     # keep a class by classname, so we can recreate JSON'ed object in correct class
-    _cls_by_name: typing.ClassVar[dict[str, type]] = {}
+    _cls_by_name: CV[dict[str, type]] = {}
 
     classname: str | None = None
     may_overwrite: bool = pydantic.Field(
@@ -120,13 +120,13 @@ class Trait(DDHbaseModel, typing.Hashable):
 
 
 class Transformer(Trait):
-    supports_modes: frozenset[permissions.AccessMode]   # supports_modes is a mandatory class variable
+    supports_modes: CV[frozenset[permissions.AccessMode]]   # supports_modes is a mandatory class variable
     only_modes: frozenset[permissions.AccessMode
                           ] = frozenset()  # This Transformer is restricted to only_modes
-    only_forks: frozenset[keys.ForkType] = frozenset()  # This Transformer is restricted to only_forks
+    only_forks: CV[frozenset[keys.ForkType]] = frozenset()  # This Transformer is restricted to only_forks
     _all_by_modes: typing.ClassVar[dict[permissions.AccessMode, set[str]]] = {}
 
-    phase: Phase = pydantic.Field(
+    phase: CV[Phase] = pydantic.Field(
         default=..., description="phase in which transformer executes, for ordering.")
     # after Transformer preceedes this one (within the same phase), for ordering.
     after: str | None = None
