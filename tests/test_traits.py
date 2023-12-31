@@ -19,6 +19,7 @@ def test_orderings_after():
     """ test Transformes sort, with TestTransfomer with .after specification  """
     class TestTransformer(capabilities.DataCapability):
         after: str = 'LatestVersion'
+        phase: trait.Phase = trait.Phase.validation
 
     t2 = trait.Transformers(TestTransformer(), validations.MustHaveSensitivites(), validations.LatestVersion(),
                             anonymization.Pseudonymize(), validations.MustValidate())
