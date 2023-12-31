@@ -21,8 +21,8 @@ class PySchemaElement(schemas.AbstractSchemaElement):
         yield (keys.DDHkey(pk), cls)  # yield ourselves first
         for k, mf in cls.model_fields.items():
             assert isinstance(mf, pydantic.fields.FieldInfo)
-            sub_elem = mf.annotation
-            if (not isinstance(sub_elem, types.GenericAlias)) and issubclass(sub_elem, PySchemaElement):
+            sub_elem = mf.annotation  # FIXME: Check whether container elements not needed?
+            if (isinstance(sub_elem, type)) and issubclass(sub_elem, PySchemaElement):
 
                 yield from sub_elem.iter_paths(pk+((k,) if k else ()))  # then descend
         return
