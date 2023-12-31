@@ -13,13 +13,13 @@ from utils.pydantic_utils import DDHbaseModel, tuple_key_to_str, str_to_tuple_ke
 from core import (errors, versions, permissions, schemas, transactions, trait, keys)
 from backend import persistable
 
-DataCapability = typing.ForwardRef('DataCapability')
+# DataCapability = typing.ForwardRef('DataCapability')
 
 
 class DataCapability(trait.Transformer):
     """ Capability used for Schemas """
     supports_modes: frozenset[permissions.AccessMode] = frozenset()
-    only_forks: frozenset[keys.ForkType] = {keys.ForkType.data}
+    only_forks: frozenset[keys.ForkType] = frozenset({keys.ForkType.data})
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
         return  # TODO: Check method in superclass
