@@ -157,14 +157,15 @@ class PySchema(schemas.AbstractSchema):
     def to_json_schema(self):
         """ Make a JSON Schema from this Schema """
         jcls = schemas.SchemaFormat2Class[schemas.SchemaFormat.json]
-        js = jcls(json_schema=self.schema_element.schema_json(), schema_attributes=self.schema_attributes.copy())
+        js = jcls(json_schema=self.schema_element.model_json_schema(),
+                  schema_attributes=self.schema_attributes.model_copy())
         js._w_container = self._w_container  # copy container ref
         return js
 
     def to_output(self) -> pydantic.Json:
         """ Python schema is output as JSON """
         # return self.to_json_schema()
-        return self.schema_element.schema_json()
+        return self.schema_element.model_json_schema()
 
     def _add_fields(self, fields: dict[str, tuple]):
         """ Add the field in dict to the schema element """
@@ -181,7 +182,7 @@ class PySchema(schemas.AbstractSchema):
         subs = self.schema_element.descend_path(remainder)
         print(f'{self.__class__.__name__}.validate_data({type(data)}, {remainder=}, {no_extra=}, {subs=})')
         if subs:
-            data = subs.parse_obj(data)
+            data = subs.parse_obj(data)  # FIXME #32
         else:
             raise errors.NotFound(f'Path {remainder} is not in schema')
 
