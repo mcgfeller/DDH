@@ -8,7 +8,7 @@ import fastapi
 import fastapi.security
 import pydantic
 from core import (common_ids, dapp_attrs, keys, nodes, permissions, principals, users,
-                  relationships, schemas)
+                  relationships, schemas, versions)
 
 from schema_formats import py_schema
 from frontend import fastapi_dapp
@@ -26,11 +26,11 @@ fastapi_dapp.get_apps = get_apps
 class CoopDApp(dapp_attrs.DApp):
 
     _ddhschema: py_schema.PySchemaElement = None
-    version = '0.2'
+    version: versions.Version = '0.2'
     owner: typing.ClassVar[principals.Principal] = users.User(
         id='coop', name='Coop (fake account)')
     schemakey: typing.ClassVar[keys.DDHkeyVersioned] = keys.DDHkeyVersioned0(key="//org/coop.ch")
-    catalog = common_ids.CatalogCategory.living
+    catalog: common_ids.CatalogCategory = common_ids.CatalogCategory.living
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)

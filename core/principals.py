@@ -5,7 +5,7 @@ import pydantic
 import typing
 
 from utils.pydantic_utils import DDHbaseModel
-from . import errors, keys, common_ids
+from core import errors, keys, common_ids
 
 
 class Principal(DDHbaseModel):

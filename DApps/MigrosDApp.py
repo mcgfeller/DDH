@@ -10,7 +10,7 @@ import pandas  # for example
 import pydantic
 
 from core import (common_ids, dapp_attrs, keys, nodes, permissions, users,
-                  relationships, schemas, errors, versions, trait)
+                  relationships, schemas, errors, versions, trait, principals)
 from traits import anonymization
 from schema_formats import py_schema
 from utils import key_utils
