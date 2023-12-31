@@ -64,7 +64,7 @@ class DAppProxy(DDHbaseModel):
         snode = keydirectory.NodeRegistry[genkey].get(
             nodes.NodeSupports.schema)  # need exact location, not up the tree
         # hook into parent schema:
-        parent, split = schemas.AbstractSchema.get_parent_schema(transaction, genkey)
+        parent, split = m_schemas.AbstractSchema.get_parent_schema(transaction, genkey)
         # inherit transformers:
         schema.schema_attributes.transformers = parent.schema_attributes.transformers.merge(
             schema.schema_attributes.transformers)
@@ -148,7 +148,7 @@ class DAppManagerClass(DDHbaseModel):
         return
 
     def bootstrap(self, pillars: dict):
-        # schemas.SchemaNetwork.plot(layout='shell_layout')
+        # m_schemas.SchemaNetwork.plot(layout='shell_layout')
         return
 
 
