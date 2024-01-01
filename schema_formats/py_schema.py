@@ -157,7 +157,7 @@ class PySchema(schemas.AbstractSchema):
     def to_json_schema(self):
         """ Make a JSON Schema from this Schema """
         jcls = schemas.SchemaFormat2Class[schemas.SchemaFormat.json]
-        js = jcls(json_schema=self.schema_element.model_json_schema(),
+        js = jcls(json_schema=json.dumps(self.schema_element.model_json_schema()),
                   schema_attributes=self.schema_attributes.model_copy())
         js._w_container = self._w_container  # copy container ref
         return js
@@ -165,7 +165,7 @@ class PySchema(schemas.AbstractSchema):
     def to_output(self) -> pydantic.Json:
         """ Python schema is output as JSON """
         # return self.to_json_schema()
-        return self.schema_element.model_json_schema()
+        return json.dumps(self.schema_element.model_json_schema())
 
     def _add_fields(self, fields: dict[str, tuple]):
         """ Add the field in dict to the schema element """
