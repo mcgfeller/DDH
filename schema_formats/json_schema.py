@@ -113,8 +113,8 @@ class JsonSchema(schemas.AbstractSchema):
             segment = str(segment)
             # look up one segment of path, returning ModelField
             assert 'properties' in current
-            mf = current['properties'].get(str(segment), None)
-            if mf is None:
+            fi = current['properties'].get(str(segment), None)
+            if fi is None:
                 if create_intermediate:
                     new_current = self.create_from_elements(segment)
                     current['properties'][segment] = new_current
@@ -122,15 +122,15 @@ class JsonSchema(schemas.AbstractSchema):
                 else:
                     return None
             else:
-                if (ref := mf.get('$ref', '')).startswith('#/definitions/'):
+                if (ref := fi.get('$ref', '')).startswith('#/definitions/'):
                     current = definitions.get(ref[len('#/definitions/'):])
-                elif mf['type'] == 'array' and '$ref' in mf['items']:
-                    if (ref := mf['items']['$ref']).startswith('#/definitions/'):
+                elif fi['type'] == 'array' and '$ref' in fi['items']:
+                    if (ref := fi['items']['$ref']).startswith('#/definitions/'):
                         current = definitions.get(ref[len('#/definitions/'):])
 
                 else:  # we're at a leaf, return
                     if next(pathit, None) is None:  # path ends here
-                        current = mf
+                        current = fi
                         break
                     else:  # path continues beyond this point, so this is not found and not creatable
                         return None

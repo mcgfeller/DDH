@@ -20,9 +20,9 @@ class PySchemaElement(schemas.AbstractSchemaElement):
     def iter_paths(cls, pk=()) -> typing.Generator[tuple[keys.DDHkey, type[PySchemaElement]], None, None]:
         """ recursive descent through schema yielding (key,schema_element) """
         yield (keys.DDHkey(pk), cls)  # yield ourselves first
-        for k, mf in cls.model_fields.items():
-            assert isinstance(mf, pydantic.fields.FieldInfo)
-            sub_elem = pydantic_utils.type_from_fi(mf)
+        for k, fi in cls.model_fields.items():
+            assert isinstance(fi, pydantic.fields.FieldInfo)
+            sub_elem = pydantic_utils.type_from_fi(fi)
             if issubclass(sub_elem, PySchemaElement):
 
                 yield from sub_elem.iter_paths(pk+((k,) if k else ()))  # then descend
@@ -41,8 +41,8 @@ class PySchemaElement(schemas.AbstractSchemaElement):
         for segment in pathit:
             segment = str(segment)
             # look up one segment of path, returning ModelField
-            mf = current.model_fields.get(str(segment), None)
-            if mf is None:
+            fi = current.model_fields.get(str(segment), None)
+            if fi is None:
                 if create_intermediate:
                     new_current = cls.create_from_elements(segment)
                     current._add_fields(**{segment: (new_current, None)})
@@ -50,9 +50,9 @@ class PySchemaElement(schemas.AbstractSchemaElement):
                 else:
                     return None
             else:
-                assert isinstance(mf, pydantic.fields.FieldInfo)
-                assert mf.annotation is not None
-                sub_elem = pydantic_utils.type_from_fi(mf)
+                assert isinstance(fi, pydantic.fields.FieldInfo)
+                assert fi.annotation is not None
+                sub_elem = pydantic_utils.type_from_fi(fi)
                 if issubclass(sub_elem, PySchemaElement):
                     current = sub_elem  # this is the next Pydantic class
                 else:  # we're at a leaf, return
@@ -73,9 +73,9 @@ class PySchemaElement(schemas.AbstractSchemaElement):
             call super().resolve()
         """
         d = {}
-        for k, mf in cls.model_fields.items():
-            assert isinstance(mf, pydantic.fields.FieldInfo)
-            sub_elem = pydantic_utils.type_from_fi(mf)
+        for k, fi in cls.model_fields.items():
+            assert isinstance(fi, pydantic.fields.FieldInfo)
+            sub_elem = pydantic_utils.type_from_fi(fi)
             if issubclass(sub_elem, PySchemaElement):
                 d[k] = sub_elem.resolve(remainder[:-1], principal, q)  # then descend
         return d
