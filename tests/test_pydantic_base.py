@@ -4,7 +4,7 @@ import typing
 
 
 # This cannot be inline in the funtion, as it needs to be module global
-WithClassVar = typing.ForwardRef('WithClassVar')  # resolved problem
+# WithClassVar = typing.ForwardRef('WithClassVar')  # resolved problem in Pyd1, no longer required in Pyd2
 
 
 class WithClassVar(pydantic.BaseModel):

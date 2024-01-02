@@ -51,7 +51,7 @@ class PySchemaElement(schemas.AbstractSchemaElement):
             else:
                 assert isinstance(mf, pydantic.fields.FieldInfo)
                 assert mf.annotation is not None
-                if issubclass(mf.annotation, PySchemaElement):
+                if isinstance(mf.annotation, type) and issubclass(mf.annotation, PySchemaElement):
                     current = mf.annotation  # this is the next Pydantic class
                 else:  # we're at a leaf, return
                     if next(pathit, None) is None:  # path ends here
@@ -74,7 +74,7 @@ class PySchemaElement(schemas.AbstractSchemaElement):
         for k, mf in cls.model_fields.items():
             assert isinstance(mf, pydantic.fields.FieldInfo)
             sub_elem = mf.annotation
-            if issubclass(sub_elem, PySchemaElement):
+            if isinstance(sub_elem, type) and issubclass(sub_elem, PySchemaElement):
                 d[k] = sub_elem.resolve(remainder[:-1], principal, q)  # then descend
         return d
 
@@ -85,8 +85,6 @@ class PySchemaElement(schemas.AbstractSchemaElement):
         # References:
         if issubclass(cls, PySchemaReference):
             atts.add_reference(path, cls)
-        if cls.model_fields:
-            print(cls)
 
         # Sensitivities - sensitivity entry in extra field:
         sensitivities = {fn: ex['sensitivity']
