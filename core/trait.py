@@ -131,21 +131,21 @@ class Transformer(Trait):
     # after Transformer preceedes this one (within the same phase), for ordering.
     after: str | None = None
 
-    # @classmethod
-    # def __init_subclass__(cls):
-    #     """ register all Capabilities by Mode """
-    #     super().__init_subclass__()
-    #     sm = getattr(cls, 'supports_modes', None)
-    #     assert sm is not None, f'{cls} must have support_modes set'
-    #     [cls._all_by_modes.setdefault(m, set()).add(cls.__name__) for m in sm]
-    #     return
-
-    def __init__(self, *a, **kw):
-        super().__init__(*a, **kw)
-        sm = getattr(self, 'supports_modes', None)
-        assert sm is not None, f'{self} must have support_modes set'
-        [self.__class__._all_by_modes.setdefault(m, set()).add(self.__class__.__name__) for m in sm]
+    @classmethod
+    def __init_subclass__(cls):
+        """ register all Capabilities by Mode """
+        super().__init_subclass__()
+        sm = getattr(cls, 'supports_modes', None)
+        assert sm is not None, f'{cls} must have support_modes set'
+        [cls._all_by_modes.setdefault(m, set()).add(cls.__name__) for m in sm]
         return
+
+    # def __init__(self, *a, **kw):
+    #     super().__init__(*a, **kw)
+    #     sm = getattr(self, 'supports_modes', None)
+    #     assert sm is not None, f'{self} must have support_modes set'
+    #     [self.__class__._all_by_modes.setdefault(m, set()).add(self.__class__.__name__) for m in sm]
+    #     return
 
     @classmethod
     def capabilities_for_modes(cls, modes: typing.Iterable[permissions.AccessMode], fork: keys.ForkType) -> set[str]:
