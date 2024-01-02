@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing
 import types
 import pydantic
+from utils import pydantic_utils
 import json
 
 from core import schemas, keys, errors
@@ -21,8 +22,8 @@ class PySchemaElement(schemas.AbstractSchemaElement):
         yield (keys.DDHkey(pk), cls)  # yield ourselves first
         for k, mf in cls.model_fields.items():
             assert isinstance(mf, pydantic.fields.FieldInfo)
-            sub_elem = mf.annotation  # FIXME: Check whether container elements not needed?
-            if (isinstance(sub_elem, type)) and issubclass(sub_elem, PySchemaElement):
+            sub_elem = pydantic_utils.type_from_fi(mf)
+            if issubclass(sub_elem, PySchemaElement):
 
                 yield from sub_elem.iter_paths(pk+((k,) if k else ()))  # then descend
         return
@@ -51,8 +52,9 @@ class PySchemaElement(schemas.AbstractSchemaElement):
             else:
                 assert isinstance(mf, pydantic.fields.FieldInfo)
                 assert mf.annotation is not None
-                if isinstance(mf.annotation, type) and issubclass(mf.annotation, PySchemaElement):
-                    current = mf.annotation  # this is the next Pydantic class
+                sub_elem = pydantic_utils.type_from_fi(mf)
+                if issubclass(sub_elem, PySchemaElement):
+                    current = sub_elem  # this is the next Pydantic class
                 else:  # we're at a leaf, return
                     if next(pathit, None) is None:  # path ends here
                         break
@@ -73,8 +75,8 @@ class PySchemaElement(schemas.AbstractSchemaElement):
         d = {}
         for k, mf in cls.model_fields.items():
             assert isinstance(mf, pydantic.fields.FieldInfo)
-            sub_elem = mf.annotation
-            if isinstance(sub_elem, type) and issubclass(sub_elem, PySchemaElement):
+            sub_elem = pydantic_utils.type_from_fi(mf)
+            if issubclass(sub_elem, PySchemaElement):
                 d[k] = sub_elem.resolve(remainder[:-1], principal, q)  # then descend
         return d
 

@@ -84,3 +84,15 @@ def str_to_tuple_key(s: str) -> tuple:
         t = _type_map.get(tn, str)
         r.append(t(v))
     return tuple(r)
+
+
+def type_from_fi(fi: pydantic.fields.FieldInfo) -> type:
+    """ Extract type from FieldInfo fi. 
+        fi.annotation may be a generic container, get its argument. """
+    t = typing.get_args(fi.annotation)
+    if t:  # container, use first argument
+        t = t[0]
+    else:  # no container, must be class
+        t = fi.annotation
+    assert isinstance(t, type)
+    return t
