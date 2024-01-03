@@ -112,7 +112,7 @@ class PseudonymMap(persistable.Persistable):
         """ JSON export doesn't support dicts with tuple keyes. So convert them to str and convert back in .from_json() """
         if self.inverted_cache is None:
             self.invert()
-        e = self.copy()
+        e = self.model_copy()
         e.cache.clear()  # original cache is not exported
         e.inverted_cache = {tuple_key_to_str(k): v for k, v in e.inverted_cache.items()}
         return e.model_dump_json()
