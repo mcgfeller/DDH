@@ -32,8 +32,7 @@ class BeginTransformer(BracketTransformer):
 
 class FinalTransformer(BracketTransformer):
     """ Final transformer in chain """
-    phase: CV[trait.Phase] = pydantic.Field(
-        default=trait.Phase.last, description="phase in which transformer executes, for ordering.")
+    phase: CV[trait.Phase] = trait.Phase.last
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
         self.audit(trargs.access, trargs.transaction)
@@ -44,8 +43,7 @@ class FinalTransformer(BracketTransformer):
 
 class AbortTransformer(BracketTransformer):
     """ Special transformer called only if other transformers cause exceptions """
-    phase: CV[trait.Phase] = pydantic.Field(
-        default=trait.Phase.none_, description="phase in which transformer executes, for ordering.")
+    phase: CV[trait.Phase] = trait.Phase.none_
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, failing: trait.Transformer, exception: Exception, **kw):
         await trargs.transaction.abort()

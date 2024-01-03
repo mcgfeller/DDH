@@ -19,8 +19,7 @@ class AccessTransformer(trait.Transformer):
 
 class LoadFromStorage(AccessTransformer):
     """ Load data from storage """
-    phase: CV[trait.Phase] = pydantic.Field(
-        default=trait.Phase.load, description="phase in which transformer executes, for ordering.")
+    phase: CV[trait.Phase] = trait.Phase.load
     only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.read})
     only_forks: CV[frozenset[keys.ForkType]] = frozenset({keys.ForkType.data, keys.ForkType.consents})
 
