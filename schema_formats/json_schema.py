@@ -198,6 +198,10 @@ class JsonSchema(schemas.AbstractSchema):
         return pt if pt else type(value)
 
 
+# #32: Unfortunately, pydantic.datetime_parse.parse_datetime disappeared in Pyd2:
+_parse_datetime = pydantic.TypeAdapter(datetime.datetime).validate_strings
+
+
 @jsonschema._format._checks_drafts(name="date-time")
 def is_datetime(instance: object) -> bool:
     """ json_schema DateTime format check is more restrictive than and not compatible
@@ -205,7 +209,7 @@ def is_datetime(instance: object) -> bool:
         Overwrite the date-time format check using Pydantic's datetime_parse.
     """
     try:
-        d = pydantic.datetime_parse.parse_datetime(instance)  # type:ignore
+        d = _parse_datetime(instance)  # type:ignore
         return True
     except ValueError:
         return False
