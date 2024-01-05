@@ -44,7 +44,7 @@ class MigrosDApp(dapp_attrs.DApp):
         """
         caps = trait.Transformers(anonymization.Anonymize(), anonymization.Pseudonymize(),
                                   anonymization.DePseudonymize())
-        sa = schemas.SchemaAttributes(version=versions.Version(self.version), transformers=caps)
+        sa = schemas.SchemaAttributes(version=self.version, transformers=caps)
         sa_prev = schemas.SchemaAttributes(version=versions.Version('0.1'), transformers=caps)
         return {keys.DDHkeyVersioned0(key="//org/migros.ch"): py_schema.PySchema(schema_element=MigrosSchema,
                                                                                  schema_attributes=sa),

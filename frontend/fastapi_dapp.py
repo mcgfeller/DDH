@@ -28,8 +28,8 @@ async def startup_event():
 
     location = f"http://localhost:{os.environ.get('port')}"  # our own port is in the environment
     print('startup_event', a.id, location)
-    d = dapp_attrs.RunningDApp(id=a.id, dapp_version=versions.Version(
-        a.version), schema_version=versions.Version('0.0'), location=location)
+    d = dapp_attrs.RunningDApp(id=a.id, dapp_version=a.version,
+                               schema_version=versions.Version('0.0'), location=location)
     await asyncio.sleep(1)  # wait till manager is ready
     await CLIENT.post('connect', data=d.json())
     return
