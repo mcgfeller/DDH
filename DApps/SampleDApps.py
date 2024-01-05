@@ -9,7 +9,7 @@ import fastapi.security
 import typing
 import pydantic
 from core import (common_ids, dapp_attrs, keys, nodes, permissions, principals, users,
-                  relationships, schemas, transactions)
+                  relationships, schemas, transactions, versions)
 from schema_formats import py_schema
 from frontend import fastapi_dapp
 app = fastapi.FastAPI()
@@ -19,11 +19,11 @@ app.include_router(fastapi_dapp.router)
 class SampleDApps(dapp_attrs.DApp):
     "A range of dummy DApps to show relationsships"
 
-    version: typing.ClassVar[str] = '0.2'
+    version: versions.Version = versions.Version('0.2')
 
-    owner: typing.ClassVar[principals.Principal]
-    schemakey: typing.ClassVar[keys.DDHkeyVersioned]
-    transforms_into: typing.ClassVar[keys.DDHkeyVersioned | None] = None
+    owner: principals.Principal
+    schemakey: keys.DDHkeyVersioned
+    transforms_into: keys.DDHkeyVersioned | None = None
     provides_schema: bool = pydantic.Field(
         False, description="True if schemakey is not only defined by this DApp, but also provided.")
 
@@ -183,7 +183,7 @@ def get_dapp_container() -> dapp_attrs.DApp:
     ca = dapp_attrs.DApp(id='SampleDApps',
                          description=SampleDApps.__doc__,
                          owner=users.SystemUser,
-                         version=SampleDApps.version,
+                         version=0,
                          catalog=common_ids.CatalogCategory.system,
                          schemakey=keys.DDHkeyVersioned0(key="//org/sample")
                          )

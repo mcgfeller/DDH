@@ -26,7 +26,7 @@ fastapi_dapp.get_apps = get_apps
 class CoopDApp(dapp_attrs.DApp):
 
     _ddhschema: py_schema.PySchemaElement = None
-    version: versions.Version = '0.2'
+    version: versions.Version = versions.Version('0.2')
     owner: typing.ClassVar[principals.Principal] = users.User(
         id='coop', name='Coop (fake account)')
     schemakey: typing.ClassVar[keys.DDHkeyVersioned] = keys.DDHkeyVersioned0(key="//org/coop.ch")
