@@ -46,7 +46,7 @@ class JsonSchemaReference(schemas.AbstractSchemaReference, JsonSchemaElement):
     @classmethod
     def create_from_key(cls, ddhkey: keys.DDHkeyRange, name: str | None = None) -> typing.Type[JsonSchemaReference]:
         name = name if name else str(ddhkey)
-        m = cls(definition={self.d_ref: str(ddhkey)}).__class__
+        m = cls(definition={JsonSchema.d_ref: str(ddhkey)}).__class__
         return m
 
 
@@ -127,6 +127,10 @@ class JsonSchema(schemas.AbstractSchema):
                 else:
                     return None
             else:
+                # #32: New Pyd2 optional type json: anyof, first element is value, 2nd is null:
+                if (fa := fi.get('anyOf')) and len(fa) == 2 and fa[1].get('type') == 'null':
+                    fi = fa[0]
+
                 if (ref := fi.get(self.d_ref, '')).startswith(self.d_defs):
                     current = definitions.get(ref[len(self.d_defs):])
                 elif fi.get('type') == 'array' and self.d_ref in fi['items']:
