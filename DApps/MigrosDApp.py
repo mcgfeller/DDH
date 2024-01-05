@@ -17,7 +17,7 @@ from utils import key_utils
 from glom import Iter, S, T, glom  # transform
 
 from frontend import fastapi_dapp, user_auth
-app = fastapi.FastAPI()
+app = fastapi.FastAPI(lifespan=fastapi_dapp.lifespan)  # TODO: Workaround #41
 app.include_router(fastapi_dapp.router)
 
 

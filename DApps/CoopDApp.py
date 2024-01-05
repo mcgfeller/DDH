@@ -12,7 +12,7 @@ from core import (common_ids, dapp_attrs, keys, nodes, permissions, principals, 
 
 from schema_formats import py_schema
 from frontend import fastapi_dapp
-app = fastapi.FastAPI()
+app = fastapi.FastAPI(lifespan=fastapi_dapp.lifespan)  # TODO: Workaround #41
 app.include_router(fastapi_dapp.router)
 
 

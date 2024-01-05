@@ -7,23 +7,16 @@ import fastapi.security
 import httpx
 import os
 import asyncio
+import contextlib
 
 from core import dapp_attrs
 from core import keys, permissions, facade, errors, versions, dapp_attrs
 from frontend import sessions
 
 
-router = fastapi.APIRouter()
-
-from frontend import user_auth  # provisional user management
-
-# transport = httpx.HTTPTransport(retries=2)
-CLIENT = httpx.AsyncClient(timeout=15, base_url='http://localhost:8001')  # TODO: Configure or determine URL
-
-
-@router.on_event("startup")
-async def startup_event():
-    """ Connect ourselves """
+@contextlib.asynccontextmanager
+async def lifespan(app: fastapi.APIRouter):
+    print('lifespan startup', app)
     a = get_dapp_container()
 
     location = f"http://localhost:{os.environ.get('port')}"  # our own port is in the environment
@@ -31,13 +24,18 @@ async def startup_event():
     d = dapp_attrs.RunningDApp(id=a.id, dapp_version=a.version,
                                schema_version=versions.Version('0.0'), location=location)
     await asyncio.sleep(1)  # wait till manager is ready
-    await CLIENT.post('connect', data=d.json())
+    await CLIENT.post('connect', data=d.model_dump_json())
+    yield
+    print('lifespan startup', app)
     return
 
 
-@router.on_event("shutdown")
-async def shutdown_event():
-    return
+router = fastapi.APIRouter(lifespan=lifespan)
+
+from frontend import user_auth  # provisional user management
+
+# transport = httpx.HTTPTransport(retries=2)
+CLIENT = httpx.AsyncClient(timeout=15, base_url='http://localhost:8001')  # TODO: Configure or determine URL
 
 
 def get_apps() -> tuple[dapp_attrs.DApp, ...]:

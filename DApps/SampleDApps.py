@@ -12,7 +12,7 @@ from core import (common_ids, dapp_attrs, keys, nodes, permissions, principals, 
                   relationships, schemas, transactions, versions)
 from schema_formats import py_schema
 from frontend import fastapi_dapp
-app = fastapi.FastAPI()
+app = fastapi.FastAPI(lifespan=fastapi_dapp.lifespan)  # TODO: Workaround #41
 app.include_router(fastapi_dapp.router)
 
 
@@ -183,7 +183,7 @@ def get_dapp_container() -> dapp_attrs.DApp:
     ca = dapp_attrs.DApp(id='SampleDApps',
                          description=SampleDApps.__doc__,
                          owner=users.SystemUser,
-                         version=0,
+                         version=versions.Version('0.0'),
                          catalog=common_ids.CatalogCategory.system,
                          schemakey=keys.DDHkeyVersioned0(key="//org/sample")
                          )
