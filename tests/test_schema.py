@@ -10,7 +10,6 @@ from schema_formats import py_schema
 
 def check_schema(schema):
     """ check if schema is valid """
-    assert schema.schema_element.schema()
     assert schema.schema_element.model_json_schema()
     assert [se for se in schema]
 

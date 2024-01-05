@@ -79,7 +79,7 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
 
                 match access.ddhkey.fork:
                     case keys.ForkType.consents:
-                        consents = permissions.Consents.parse_raw(data)
+                        consents = permissions.Consents.model_validate_json(data)
                         await data_node.update_consents(access, transaction, remainder, consents)
 
                     case keys.ForkType.data:
