@@ -126,8 +126,7 @@ class Transformer(Trait):
     only_forks: CV[frozenset[keys.ForkType]] = frozenset()  # This Transformer is restricted to only_forks
     _all_by_modes: typing.ClassVar[dict[permissions.AccessMode, set[str]]] = {}
 
-    phase: CV[Phase] = pydantic.Field(
-        default=..., description="phase in which transformer executes, for ordering.")
+    phase: CV[Phase]  # phase in which transformer executes, for ordering.
     # after Transformer preceedes this one (within the same phase), for ordering.
     after: str | None = None
 

@@ -28,7 +28,7 @@ class JsonSchemaElement(schemas.AbstractSchemaElement):
 
 class JsonSchemaReference(schemas.AbstractSchemaReference, JsonSchemaElement):
 
-    # TODO[pydantic] #32: We couldn't refactor this class, please create the `model_config` manually.
+    # FIXME[pydantic] #32: We couldn't refactor this class, please create the `model_config` manually.
     # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
 
     @staticmethod
