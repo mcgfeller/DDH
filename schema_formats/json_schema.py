@@ -8,9 +8,10 @@ import jsonschema
 import jsonschema.validators
 import jsonschema.exceptions
 
+from utils.pydantic_utils import CV
+
 # to overwrite jsonschema datetime format checker:
 import jsonschema._format
-import pydantic
 import datetime
 
 
@@ -32,7 +33,7 @@ class JsonSchemaReference(schemas.AbstractSchemaReference, JsonSchemaElement):
 
     @staticmethod
     def _json_schema_extra(schema: dict[str, typing.Any], model: typing.Type[JsonSchemaReference]) -> None:
-        schema['properties']['dep'] = {'$ref': model.getURI()}
+        schema['properties']['dep'] = {self.d_ref: model.getURI()}
         return
 
     model_config = pydantic.ConfigDict(json_schema_extra=_json_schema_extra)
@@ -45,7 +46,7 @@ class JsonSchemaReference(schemas.AbstractSchemaReference, JsonSchemaElement):
     @classmethod
     def create_from_key(cls, ddhkey: keys.DDHkeyRange, name: str | None = None) -> typing.Type[JsonSchemaReference]:
         name = name if name else str(ddhkey)
-        m = cls(definition={'$ref': str(ddhkey)}).__class__
+        m = cls(definition={self.d_ref: str(ddhkey)}).__class__
         return m
 
 
@@ -61,12 +62,16 @@ _empty_marker = object()
 
 class JsonSchema(schemas.AbstractSchema):
 
-    format_designator: typing.ClassVar[schemas.SchemaFormat] = schemas.SchemaFormat.json
-    mimetypes: typing.ClassVar[schemas.MimeTypes] = schemas.MimeTypes(
+    format_designator: CV[schemas.SchemaFormat] = schemas.SchemaFormat.json
+    mimetypes: CV[schemas.MimeTypes] = schemas.MimeTypes(
         of_schema=['application/openapi', 'application/json'], of_data=['application/json'])
     json_schema: pydantic.Json
     _v_validators: dict[keys.DDHkey, json_schema.validators.Validator] = {}  # Cache
     _v_descend_cache: dict[tuple[keys.DDHkey | tuple, bool], dict | None] = {}
+
+    d_ref: CV[str] = '$ref'
+    d_defs1: CV[str] = '$defs'
+    d_defs: CV[str] = '#/$defs/'
 
     def __getitem__(self, key: keys.DDHkey, default=None, create_intermediate: bool = False) -> type[JsonSchemaElement] | None:
         d = self.descend_path(key, create_intermediate=create_intermediate)
@@ -106,7 +111,7 @@ class JsonSchema(schemas.AbstractSchema):
         return v
 
     def _descend_path(self, path: keys.DDHkey, create_intermediate: bool = False):
-        definitions = self.json_schema.get('definitions', {})
+        definitions = self.json_schema.get(self.d_defs1, {})
         current = self.json_schema  # before we descend path, this cls is at the current level
         pathit = iter(path)  # so we can peek whether we're at end
         for segment in pathit:
@@ -122,11 +127,11 @@ class JsonSchema(schemas.AbstractSchema):
                 else:
                     return None
             else:
-                if (ref := fi.get('$ref', '')).startswith('#/definitions/'):
-                    current = definitions.get(ref[len('#/definitions/'):])
-                elif fi['type'] == 'array' and '$ref' in fi['items']:
-                    if (ref := fi['items']['$ref']).startswith('#/definitions/'):
-                        current = definitions.get(ref[len('#/definitions/'):])
+                if (ref := fi.get(self.d_ref, '')).startswith(self.d_defs):
+                    current = definitions.get(ref[len(self.d_defs):])
+                elif fi.get('type') == 'array' and self.d_ref in fi['items']:
+                    if (ref := fi['items'][self.d_ref]).startswith(self.d_defs):
+                        current = definitions.get(ref[len(self.d_defs):])
 
                 else:  # we're at a leaf, return
                     if next(pathit, None) is None:  # path ends here
