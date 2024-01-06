@@ -182,7 +182,7 @@ class PySchema(schemas.AbstractSchema):
         subs = self.schema_element.descend_path(remainder)
         print(f'{self.__class__.__name__}.validate_data({type(data)}, {remainder=}, {no_extra=}, {subs=})')
         if subs:
-            data = subs.parse_obj(data)  # FIXME #32
+            data = subs.model_validate(data)
         else:
             raise errors.NotFound(f'Path {remainder} is not in schema')
 
