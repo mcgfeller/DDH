@@ -421,8 +421,6 @@ class SchemaContainer(DDHbaseModel):
     """
     model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
 
-    # __slots__: typing.ClassVar[tuple] = ('__weakref__',)  # allow weak ref to here # FIXME #32?
-
     schemas_by_variant: dict[SchemaVariant | None,
                              dict[versions.Version, AbstractSchema]] = {}
     upgraders: dict[SchemaVariant, versions.Upgraders] = {}
