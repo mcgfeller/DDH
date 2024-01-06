@@ -47,11 +47,8 @@ class DDHbaseModel(pydantic.BaseModel):
             if f_annotation:
                 new_annotations[f_name] = f_annotation
 
-            # new_fields[f_name] = pydantic.fields.ModelField.infer(
-            #     name=f_name, value=f_value, annotation=f_annotation, class_validators=None, config=cls.__config__)
             new_fields[f_name] = pydantic.fields.FieldInfo(annotation=f_annotation, default=f_value,)
 
-        # FIXME #32: This is highly dubious
         cls.model_fields.update(new_fields)
         cls.__annotations__.update(new_annotations)
         cls.model_rebuild()
