@@ -26,7 +26,7 @@ class DDHbaseModel(pydantic.BaseModel):
     @classmethod
     def _add_fields(cls, **field_definitions: typing.Any):
         """ Add fields in-place https://github.com/samuelcolvin/pydantic/issues/1937 """
-        new_fields: dict[str, pydantic.fields.ModelField] = {}
+        new_fields: dict[str, pydantic.fields.FieldInfo] = {}
         new_annotations: dict[str, type | None] = {}
 
         for f_name, f_def in field_definitions.items():
@@ -49,7 +49,7 @@ class DDHbaseModel(pydantic.BaseModel):
 
             # new_fields[f_name] = pydantic.fields.ModelField.infer(
             #     name=f_name, value=f_value, annotation=f_annotation, class_validators=None, config=cls.__config__)
-            new_fields[f_name] = pydantic.fields.FieldInfo(annotation=f_annotation)
+            new_fields[f_name] = pydantic.fields.FieldInfo(annotation=f_annotation, default=f_value,)
 
         # FIXME #32: This is highly dubious
         cls.model_fields.update(new_fields)
