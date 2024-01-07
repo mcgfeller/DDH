@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import typing
 import copy
+import pydantic
+from utils.pydantic_utils import CV
 
 from core import (errors, trait, permissions, keys, nodes, data_nodes, keydirectory, dapp_attrs)
 from backend import persistable
@@ -10,16 +12,16 @@ from backend import persistable
 
 class AccessTransformer(trait.Transformer):
     """ Transformers on data for a schema """
-    supports_modes = frozenset()  # Transformer is not invoked by mode
-    only_modes = {permissions.AccessMode.write}  # no checks for read
-    phase = trait.Phase.validation
+    supports_modes: CV[frozenset[permissions.AccessMode]] = frozenset()  # Transformer is not invoked by mode
+    only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.write})  # no checks for read
+    phase: CV[trait.Phase] = trait.Phase.validation
 
 
 class LoadFromStorage(AccessTransformer):
     """ Load data from storage """
-    phase = trait.Phase.load
-    only_modes = {permissions.AccessMode.read}
-    only_forks = {keys.ForkType.data, keys.ForkType.consents}
+    phase: CV[trait.Phase] = trait.Phase.load
+    only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.read})
+    only_forks: CV[frozenset[keys.ForkType]] = frozenset({keys.ForkType.data, keys.ForkType.consents})
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
         """ load from storage, per storage according to user profile """
@@ -51,10 +53,11 @@ class LoadFromDApp(AccessTransformer):
     """ Load data, passing it through DApp.
         TODO: Obtained data is raw JSON, not schemaed JSON (e.g., datetime remains str) 
     """
-    phase = trait.Phase.load
-    after = 'LoadFromStorage'
-    only_modes = {permissions.AccessMode.read}
-    only_forks = {keys.ForkType.data}  # consents and schemas are never loaded through apps
+    phase: CV[trait.Phase] = trait.Phase.load
+    after: str = 'LoadFromStorage'
+    only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.read})
+    # consents and schemas are never loaded through apps
+    only_forks: CV[frozenset[keys.ForkType]] = frozenset({keys.ForkType.data})
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
         q = None
@@ -73,9 +76,11 @@ class LoadFromDApp(AccessTransformer):
 class ValidateToDApp(AccessTransformer):
     """ Validated Data to be saved by passing it to DApp """
 
-    phase = trait.Phase.pre_store  # It must have passed all of Phase.validation, but not yet be depseudonymized
-    only_modes = {permissions.AccessMode.write}
-    only_forks = {keys.ForkType.data}  # consents and schemas are never loaded through apps
+    # It must have passed all of Phase.validation, but not yet be depseudonymized
+    phase: CV[trait.Phase] = trait.Phase.pre_store
+    only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.write})
+    # consents and schemas are never loaded through apps
+    only_forks: CV[frozenset[keys.ForkType]] = frozenset({keys.ForkType.data})
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
         # Call DApp
@@ -96,10 +101,10 @@ class ValidateToDApp(AccessTransformer):
 
 class SaveToStorage(AccessTransformer):
     """ Save data to storage """
-    phase = trait.Phase.store
-    after = 'ValidateToDApp'
-    only_modes = {permissions.AccessMode.write}
-    only_forks = {keys.ForkType.data, keys.ForkType.consents}
+    phase: CV[trait.Phase] = trait.Phase.store
+    after: str = 'ValidateToDApp'
+    only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.write})
+    only_forks: CV[frozenset[keys.ForkType]] = frozenset({keys.ForkType.data, keys.ForkType.consents})
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
         if trargs.parsed_data is None:

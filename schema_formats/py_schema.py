@@ -1,8 +1,11 @@
 """ Python internal Schema Format using Pydantic """
 from __future__ import annotations
 import typing
+import types
 import pydantic
+from utils import pydantic_utils
 import json
+
 
 from core import schemas, keys, errors
 
@@ -18,9 +21,9 @@ class PySchemaElement(schemas.AbstractSchemaElement):
     def iter_paths(cls, pk=()) -> typing.Generator[tuple[keys.DDHkey, type[PySchemaElement]], None, None]:
         """ recursive descent through schema yielding (key,schema_element) """
         yield (keys.DDHkey(pk), cls)  # yield ourselves first
-        for k, mf in cls.__fields__.items():
-            assert isinstance(mf, pydantic.fields.ModelField)
-            sub_elem = mf.type_
+        for k, fi in cls.model_fields.items():
+            assert isinstance(fi, pydantic.fields.FieldInfo)
+            sub_elem = pydantic_utils.type_from_fi(fi)
             if issubclass(sub_elem, PySchemaElement):
 
                 yield from sub_elem.iter_paths(pk+((k,) if k else ()))  # then descend
@@ -39,8 +42,8 @@ class PySchemaElement(schemas.AbstractSchemaElement):
         for segment in pathit:
             segment = str(segment)
             # look up one segment of path, returning ModelField
-            mf = current.__fields__.get(str(segment), None)
-            if mf is None:
+            fi = current.model_fields.get(str(segment), None)
+            if fi is None:
                 if create_intermediate:
                     new_current = cls.create_from_elements(segment)
                     current._add_fields(**{segment: (new_current, None)})
@@ -48,10 +51,11 @@ class PySchemaElement(schemas.AbstractSchemaElement):
                 else:
                     return None
             else:
-                assert isinstance(mf, pydantic.fields.ModelField)
-                assert mf.type_ is not None
-                if issubclass(mf.type_, PySchemaElement):
-                    current = mf.type_  # this is the next Pydantic class
+                assert isinstance(fi, pydantic.fields.FieldInfo)
+                assert fi.annotation is not None
+                sub_elem = pydantic_utils.type_from_fi(fi)
+                if issubclass(sub_elem, PySchemaElement):
+                    current = sub_elem  # this is the next Pydantic class
                 else:  # we're at a leaf, return
                     if next(pathit, None) is None:  # path ends here
                         break
@@ -70,9 +74,9 @@ class PySchemaElement(schemas.AbstractSchemaElement):
             call super().resolve()
         """
         d = {}
-        for k, mf in cls.__fields__.items():
-            assert isinstance(mf, pydantic.fields.ModelField)
-            sub_elem = mf.type_
+        for k, fi in cls.model_fields.items():
+            assert isinstance(fi, pydantic.fields.FieldInfo)
+            sub_elem = pydantic_utils.type_from_fi(fi)
             if issubclass(sub_elem, PySchemaElement):
                 d[k] = sub_elem.resolve(remainder[:-1], principal, q)  # then descend
         return d
@@ -87,7 +91,7 @@ class PySchemaElement(schemas.AbstractSchemaElement):
 
         # Sensitivities - sensitivity entry in extra field:
         sensitivities = {fn: ex['sensitivity']
-                         for fn, f in cls.__fields__.items() if 'sensitivity' in (ex := f.field_info.extra)}
+                         for fn, f in cls.model_fields.items() if (ex := f.json_schema_extra) and 'sensitivity' in ex}
         if sensitivities:
             atts.add_sensitivities(path, sensitivities)
         return
@@ -104,16 +108,21 @@ class PySchemaElement(schemas.AbstractSchemaElement):
 
 class PySchemaReference(schemas.AbstractSchemaReference, PySchemaElement):
 
-    class Config:
-        @staticmethod
-        def schema_extra(schema: dict[str, typing.Any], model: typing.Type[PySchemaReference]) -> None:
-            schema['properties']['dep'] = {'$ref': model.getURI()}
-            return
+    @staticmethod
+    def _json_schema_extra(schema: dict[str, typing.Any], model: typing.Type[PySchemaReference]) -> None:
+        """ Generate  JSON Schema as a reference to the URI.
+
+            NOTE #43: As Pydantic 2 cannot include an external $ref, we name them $xref and
+            replace the text here.
+        """
+        schema['properties']['dep'] = {'$xref': model.getURI()}
+        return
+    model_config = pydantic.ConfigDict(json_schema_extra=_json_schema_extra)
 
     @classmethod
     def get_target(cls) -> keys.DDHkey:
         """ get target key - oh Pydantic! """
-        return cls.__fields__['ddhkey'].default
+        return cls.model_fields['ddhkey'].default
 
     @classmethod
     def create_from_key(cls, ddhkey: keys.DDHkeyRange, name: str | None = None) -> typing.Type[PySchemaReference]:
@@ -124,6 +133,7 @@ class PySchemaReference(schemas.AbstractSchemaReference, PySchemaElement):
 
 class PySchema(schemas.AbstractSchema):
     """ A AbstractSchema in Pydantic Python, containing a PySchemaElement """
+    format_designator: typing.ClassVar[schemas.SchemaFormat] = schemas.SchemaFormat.internal
     schema_element: typing.Type[PySchemaElement]
     mimetypes: typing.ClassVar[schemas.MimeTypes] = schemas.MimeTypes(
         of_schema=['application/openapi', 'application/json'], of_data=['application/json'])
@@ -149,14 +159,17 @@ class PySchema(schemas.AbstractSchema):
     def to_json_schema(self):
         """ Make a JSON Schema from this Schema """
         jcls = schemas.SchemaFormat2Class[schemas.SchemaFormat.json]
-        js = jcls(json_schema=self.schema_element.schema_json(), schema_attributes=self.schema_attributes.copy())
+        js = jcls(json_schema=self.to_output(), schema_attributes=self.schema_attributes.model_copy())
         js._w_container = self._w_container  # copy container ref
         return js
 
     def to_output(self) -> pydantic.Json:
         """ Python schema is output as JSON """
-        # return self.to_json_schema()
-        return self.schema_element.schema_json()
+        j = json.dumps(self.schema_element.model_json_schema())
+        # NOTE #43: As Pydantic 2 cannot include an external $ref, we name them $xref and
+        # replace the text here.
+        j = j.replace('"$xref"', '"$ref"')
+        return j
 
     def _add_fields(self, fields: dict[str, tuple]):
         """ Add the field in dict to the schema element """
@@ -173,7 +186,7 @@ class PySchema(schemas.AbstractSchema):
         subs = self.schema_element.descend_path(remainder)
         print(f'{self.__class__.__name__}.validate_data({type(data)}, {remainder=}, {no_extra=}, {subs=})')
         if subs:
-            data = subs.parse_obj(data)
+            data = subs.model_validate(data)
         else:
             raise errors.NotFound(f'Path {remainder} is not in schema')
 
@@ -182,3 +195,10 @@ class PySchema(schemas.AbstractSchema):
     def get_type(self, path, field, value) -> type:
         """ return the Python type of a path, field """
         return type(value)
+
+
+def SchemaField(*a, sensitivity: schemas.Sensitivity | None = None, **kw):
+    """ Helper to build a field with sensitivity """
+    e = kw.setdefault('json_schema_extra', {})
+    e['sensitivity'] = sensitivity
+    return pydantic.Field(*a, **kw)

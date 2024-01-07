@@ -1,10 +1,11 @@
 from __future__ import annotations
 import pydantic
 import typing
-
+from fastapi.encoders import jsonable_encoder
+import json
 
 # This cannot be inline in the funtion, as it needs to be module global
-WithClassVar = typing.ForwardRef('WithClassVar')  # resolved problem
+# WithClassVar = typing.ForwardRef('WithClassVar')  # resolved problem in Pyd1, no longer required in Pyd2
 
 
 class WithClassVar(pydantic.BaseModel):
@@ -21,18 +22,40 @@ class WithClassVar2(pydantic.BaseModel):
     i: int = 0
 
 
-WithClassVar.update_forward_refs()
+WithClassVar.model_rebuild()
 
 
 def test_pydantic_issue_3679():
     """ Demonstrates Pydantic Bug https://github.com/pydantic/pydantic/issues/3679#issuecomment-1337575645
     """
     wcv = WithClassVar(i=42)
-    d = wcv.dict()
+    d = wcv.model_dump()
 
 
 def test_pydantic_issue_3679_2():
     """ Demonstrates Pydantic Bug https://github.com/pydantic/pydantic/issues/3679#issuecomment-1337575645
     """
     wcv = WithClassVar2(i=42)
-    d = wcv.dict()
+    d = wcv.model_dump()
+
+
+class Simple(pydantic.BaseModel):
+
+    ext_ref: typing.ClassVar[pydantic.AnyUrl] = pydantic.AnyUrl('https://example.com/schema')
+
+    @staticmethod
+    def _json_schema_extra(schema: dict[str, typing.Any], model: typing.Type[Simple]) -> None:
+        """ Generate  JSON Schema as a reference to the URI.
+
+            NOTE #42: As Pydantic 2 can only include objects that are not instances of str as $ref
+        """
+        schema['properties']['dep'] = {'$ref': model.ext_ref}
+        return
+    model_config = pydantic.ConfigDict(json_schema_extra=_json_schema_extra)
+
+
+def test_pydantic_schema_ref():
+    j = Simple.model_json_schema()
+    s = json.dumps(jsonable_encoder(j))
+    assert str(Simple.ext_ref) in s
+    return

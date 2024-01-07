@@ -15,7 +15,7 @@ import base64
 from core import common_ids
 
 
-from core import keys, permissions, nodes, principals
+from core import keys, permissions, node_types, principals
 from utils.pydantic_utils import DDHbaseModel
 
 
@@ -130,14 +130,14 @@ def get_nonce() -> bytes:
 
 
 def add_consent_hash(key: bytes, consents: permissions.Consents):
-    ch = hashlib.blake2b(consents.json().encode(), digest_size=len(key)).digest()
+    ch = hashlib.blake2b(consents.model_dump_json().encode(), digest_size=len(key)).digest()
     key = base64.urlsafe_b64decode(key)
     key = bytes([a ^ b for a, b in zip(key, ch)])  # xor
     key = base64.urlsafe_b64encode(key)
     return key
 
 
-def set_new_storage_key(node: nodes.Node, principal: principals.Principal, effective: set[principals.Principal], removed: set[principals.Principal]):
+def set_new_storage_key(node: node_types.T_Node, principal: principals.Principal, effective: set[principals.Principal], removed: set[principals.Principal]):
     """ set storage key based on private key of principal and public keys of consentees """
     # assert node.consents
     storage_key = get_nonce()  # add_consent_hash(get_nonce(),node.consents) # new storage key

@@ -10,12 +10,12 @@ import httpx
 from core import keys, schemas, policies, principals, relationships, common_ids, versions, permissions, transactions
 from traits import privileges
 from utils.pydantic_utils import DDHbaseModel
+from pydantic import ConfigDict
 
 
 class DAppOrFamily(DDHbaseModel):
     """ common properties between DApp and DAppFamily """
-    class Config:
-        extra = 'ignore'
+    model_config = pydantic.ConfigDict(extra='ignore')
 
     id: str | None = None  # principals.DAppId causes Pydantic errors - I don't know why
     description: str | None = None
@@ -54,10 +54,7 @@ class DAppOrFamily(DDHbaseModel):
 
     def to_DAppOrFamily(self):
         """ convert DApp or DAppFamily to DAppOrFamily, which is the FastAPI ResponseModel  """
-        return DAppOrFamily(**self.dict())  # excess attributes are ignore
-
-
-DAppOrFamily.update_forward_refs()
+        return DAppOrFamily(**self.model_dump())  # excess attributes are ignore
 
 
 class DAppFamily(DAppOrFamily):
@@ -85,8 +82,7 @@ CostToWeight = {
 
 
 class DApp(DAppOrFamily):
-    class Config:
-        extra = 'allow'  # DApps are free to use their own variables
+    model_config = pydantic.ConfigDict(extra='allow')    # DApps are free to use their own variables
 
     belongsTo: DAppFamily | None = None
     references: list[relationships.Reference] = []
@@ -94,7 +90,7 @@ class DApp(DAppOrFamily):
     estimatedCosts: EstimatedCosts = EstimatedCosts.free
     requested_privileges: privileges.DAppPrivileges = privileges.NoPrivileges
     granted_privileges: privileges.DAppPrivileges = pydantic.Field(
-        default=privileges.NoPrivileges, const=True, description="privileges actually granted, cannot be set")
+        default=privileges.NoPrivileges, description="privileges actually granted, cannot be set")
 
     def __init__(self, *a, **kw):
         """ Add to family as member """
@@ -151,15 +147,12 @@ class DApp(DAppOrFamily):
         return 1.0 + self.estimated_cost()
 
 
-DApp.update_forward_refs()
+DApp.model_rebuild()
 
 
 class RunningDApp(DDHbaseModel):
     """ Record currently running DApp, including client. """
-
-    class Config:
-        arbitrary_types_allowed = True  # for client
-        extra = 'allow'
+    model_config = pydantic.ConfigDict(arbitrary_types_allowed=True, extra='allow')
 
     id: str | None = None  # principals.DAppId causes Pydantic errors - I don't know why
     dapp_version: versions.Version
@@ -177,13 +170,13 @@ class RunningDApp(DDHbaseModel):
     @property
     def client(self) -> httpx.AsyncClient:
         if self._client is None:
-            self._client = httpx.AsyncClient(base_url=self.location)
+            self._client = httpx.AsyncClient(base_url=str(self.location))
         return self._client
 
 
 class ExecuteRequest(DDHbaseModel):
     """ This is the execution request passed between micro services """
-    op: typing.Any  # nodes.Ops
+    op: typing.Any = None  # nodes.Ops
     access: permissions.Access
     transaction: transactions.Transaction
     key_split: int | None = None

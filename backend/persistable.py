@@ -75,11 +75,11 @@ class Persistable(DDHbaseModel):
         return cls.from_json(zlib.decompress(data).decode())
 
     def to_json(self) -> str:
-        return self.json()
+        return self.model_dump_json()
 
     @classmethod
     def from_json(cls, j: str) -> Persistable:
-        o = cls.parse_raw(j)
+        o = cls.model_validate_json(j)
         return o
 
     def get_key(self):

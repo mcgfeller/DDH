@@ -8,17 +8,17 @@ import secrets
 import datetime
 
 import pydantic
-from utils.pydantic_utils import DDHbaseModel, tuple_key_to_str, str_to_tuple_key
+from utils.pydantic_utils import DDHbaseModel, CV, tuple_key_to_str, str_to_tuple_key
 
-from core import (errors, versions, permissions, schemas, transactions, trait, common_ids)
+from core import (errors, keys, versions, permissions, schemas, transactions, trait, common_ids)
 from backend import persistable
 from . import capabilities
 
 
 class Anonymize(capabilities.DataCapability):
-    supports_modes = {permissions.AccessMode.anonymous}
-    only_modes = {permissions.AccessMode.read}
-    phase = trait.Phase.post_load
+    supports_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.anonymous})
+    only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.read})
+    phase: CV[trait.Phase] = trait.Phase.post_load
 
     async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):
         assert trargs.parsed_data is not None and len(trargs.parsed_data) > 0
@@ -79,7 +79,7 @@ class Anonymize(capabilities.DataCapability):
 
 
 class Pseudonymize(Anonymize):
-    supports_modes = {permissions.AccessMode.pseudonym}
+    supports_modes: CV[frozenset[permissions.AccessMode]] = {permissions.AccessMode.pseudonym}
 
     async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):
         assert trargs.parsed_data is not None and len(trargs.parsed_data) > 0
@@ -112,15 +112,15 @@ class PseudonymMap(persistable.Persistable):
         """ JSON export doesn't support dicts with tuple keyes. So convert them to str and convert back in .from_json() """
         if self.inverted_cache is None:
             self.invert()
-        e = self.copy()
+        e = self.model_copy()
         e.cache.clear()  # original cache is not exported
         e.inverted_cache = {tuple_key_to_str(k): v for k, v in e.inverted_cache.items()}
-        return e.json()
+        return e.model_dump_json()
 
     @classmethod
     def from_json(cls, j: str) -> typing.Self:
         """ Convert back dict keys encoded in .to_json() """
-        o = cls.parse_raw(j)
+        o = cls.model_validate_json(j)
         assert o.inverted_cache is not None
         o.inverted_cache = {str_to_tuple_key(k): v for k, v in o.inverted_cache.items()}
         return o
@@ -129,10 +129,10 @@ class PseudonymMap(persistable.Persistable):
 class DePseudonymize(capabilities.DataCapability):
     """ Revert the pseudonymization based on the stored map """
 
-    supports_modes = {permissions.AccessMode.pseudonym}
-    only_modes = {permissions.AccessMode.write}
-    phase = trait.Phase.pre_store  # after validation
-    after = 'ValidateToDApp'  # we don't reveil identity to DApp
+    supports_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.pseudonym})
+    only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.write})
+    phase: CV[trait.Phase] = trait.Phase.pre_store  # after validation
+    after: str = 'ValidateToDApp'  # we don't reveil identity to DApp
 
     async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):
         eid = trargs.access.original_ddhkey.owner  # this is the pseudo-owner uder which the map is stored

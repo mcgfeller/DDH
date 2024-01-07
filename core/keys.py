@@ -1,10 +1,7 @@
 """ DDH Core Key Models """
 from __future__ import annotations
-import pydantic
-import datetime
 import typing
 import enum
-import abc
 import pydantic.json
 
 from pydantic.errors import PydanticErrorMixin
@@ -282,8 +279,10 @@ class DDHkey(DDHbaseModel):
 class DDHkeyGeneric(DDHkey):
     """ DDHKey which must not contain Variant nor Version """
 
-    variant: typing.Final[VariantType] = DefaultVariant
-    version: typing.Final[versions.Version] = versions.Unspecified
+    # variant: typing.Final[VariantType] = DefaultVariant # TODO #32: https://github.com/pydantic/pydantic/issues/6253
+    # version: typing.Final[versions.Version] = versions.Unspecified
+    variant: VariantType = DefaultVariant
+    version: versions.Version = versions.Unspecified
 
     Specifier_types: typing.ClassVar[list] = [ForkType.make_with_default,
                                               variant_with_default, versions.Version.make_with_default]
@@ -367,7 +366,3 @@ class DDHkeyVersioned0(DDHkeyVersioned):
 
     def __eq__(self, o):
         return super().__eq__(o)
-
-
-from . import nodes
-DDHkey.update_forward_refs()

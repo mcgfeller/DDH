@@ -78,11 +78,11 @@ def test_schema_multiple_versions(node_registry):
     assert str(k) == '//p/health:schema:alt:2'
 
     # test number of schemas fulfilling keys and versions:
-    assert 4 == len(list(node_s.schemas.fullfills(keys.DDHkey(key='//p/health:schema'), versions.NoConstraint)))
-    assert 2 == len(list(node_s.schemas.fullfills(keys.DDHkey(
+    assert 4 == len(list(node_s.container.fullfills(keys.DDHkey(key='//p/health:schema'), versions.NoConstraint)))
+    assert 2 == len(list(node_s.container.fullfills(keys.DDHkey(
         key='//p/health:schema'), versions.VersionConstraint('>2'))))
-    assert 1 == len(list(node_s.schemas.fullfills(keys.DDHkey(key='//p/health:schema'),
+    assert 1 == len(list(node_s.container.fullfills(keys.DDHkey(key='//p/health:schema'),
                     versions.VersionConstraint('>4')))), 'only schema with unspecified version'
-    assert 3 == len(list(node_s.schemas.fullfills(keys.DDHkey(
+    assert 3 == len(list(node_s.container.fullfills(keys.DDHkey(
         key='//p/health:schema:alt'), versions.VersionConstraint('>1'))))
     return

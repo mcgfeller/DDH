@@ -17,6 +17,12 @@ class Variant(enum.IntEnum):
     zlib = 1
 
 
+class StorageBlock(DDHbaseModel):
+    """ Elementary block of storage """
+    variant: Variant = Variant.uncompressed
+    blob: bytes
+
+
 class StorageClass(DDHbaseModel):
 
     byId: dict[common_ids.PersistId, StorageBlock] = {}
@@ -49,9 +55,3 @@ class StorageClass(DDHbaseModel):
 
 
 Storage = StorageClass()
-
-
-class StorageBlock(DDHbaseModel):
-    """ Elementary block of storage """
-    variant: Variant = Variant.uncompressed
-    blob: bytes

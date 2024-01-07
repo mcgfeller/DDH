@@ -5,7 +5,7 @@ import typing
 import copy
 
 from core import (errors,  schemas, trait, versions, permissions, keys, nodes, keydirectory, dapp_attrs)
-from utils import pydantic_utils
+from utils.pydantic_utils import DDHbaseModel, CV
 Validations = trait.Transformers  # Synonym, for easier reference, Validations are just Traits
 
 
@@ -21,10 +21,10 @@ class SchemaValidation(trait.Transformer):
             uniform schema tree - all references must be in same schema repr 
 
     """
-    supports_modes = frozenset()  # Validation is not invoked by mode
-    only_modes = {permissions.AccessMode.write}  # no checks for read
-    only_forks = {keys.ForkType.schema}
-    phase = trait.Phase.validation
+    supports_modes: CV[frozenset[permissions.AccessMode]] = frozenset()  # Validation is not invoked by mode
+    only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.write})  # no checks for read
+    only_forks: CV[frozenset[keys.ForkType]] = frozenset({keys.ForkType.schema})
+    phase: CV[trait.Phase] = trait.Phase.validation
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
         """ in a SchemaValidation, the subject is schema. """
@@ -33,10 +33,10 @@ class SchemaValidation(trait.Transformer):
 
 class DataValidation(trait.Transformer):
     """ Validations on data for a schema """
-    supports_modes = frozenset()  # Validation is not invoked by mode
-    only_modes = {permissions.AccessMode.write}  # no checks for read
-    only_forks = {keys.ForkType.data}
-    phase = trait.Phase.validation
+    supports_modes: CV[frozenset[permissions.AccessMode]] = frozenset()  # Validation is not invoked by mode
+    only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.write})  # no checks for read
+    only_forks: CV[frozenset[keys.ForkType]] = frozenset({keys.ForkType.data})
+    phase: CV[trait.Phase] = trait.Phase.validation
 
 
 class MustReview(SchemaValidation):
@@ -50,7 +50,7 @@ class MustReview(SchemaValidation):
         r = super().merge(other)
         if r is not None:
             if r.by_roles != other.by_roles:
-                d = self.dict()
+                d = self.model_dump()
                 if self.may_overwrite:
                     d['by_roles'] = other.by_roles
                 else:
@@ -67,7 +67,8 @@ class MustHaveSensitivites(SchemaValidation):
 class SchemaExpandReferences(SchemaValidation):
     """ Expand references in schema read """
 
-    only_modes = {permissions.AccessMode.read, permissions.AccessMode.write}  # check on reads
+    only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({
+        permissions.AccessMode.read, permissions.AccessMode.write})  # check on reads
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, includes_owner: bool = False, **kw):
         trargs.schema = trargs.schema.expand_references()
@@ -84,7 +85,7 @@ class SchemaMustValidate(SchemaValidation):
 class ParseData(DataValidation):
     """ Data being parsed """
 
-    phase = trait.Phase.parse
+    phase: CV[trait.Phase] = trait.Phase.parse
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, includes_owner: bool = False, **kw):
         try:
@@ -121,8 +122,8 @@ class MustValidate(DataValidation):
         except Exception as e:
             raise errors.ValidationError(e)
 
-        if isinstance(trargs.parsed_data, pydantic_utils.DDHbaseModel):  # for PySchemas, we have a model, not a dict
-            trargs.parsed_data = trargs.parsed_data.dict()  # make dict
+        if isinstance(trargs.parsed_data, DDHbaseModel):  # for PySchemas, we have a model, not a dict
+            trargs.parsed_data = trargs.parsed_data.model_dump()  # make dict
 
         return
 

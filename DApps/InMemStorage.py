@@ -8,12 +8,12 @@ import fastapi
 import fastapi.security
 from utils.pydantic_utils import DDHbaseModel
 from core import (common_ids, dapp_attrs, keys, nodes, principals, users,
-                  schemas, transactions, errors)
+                  schemas, transactions, errors, versions)
 
 from schema_formats import py_schema
 from backend import storage
 from frontend import fastapi_dapp, fastapi_transactionable, sessions, user_auth
-app = fastapi.FastAPI()
+app = fastapi.FastAPI(lifespan=fastapi_dapp.lifespan)  # TODO: Workaround #41
 app.include_router(fastapi_dapp.router)
 app.include_router(fastapi_transactionable.router)
 
@@ -117,9 +117,9 @@ async def purge_all(
 class InMemStorageDApp(dapp_attrs.DApp):
 
     _ddhschema: py_schema.PySchemaElement = None
-    version = '0.0'
+    version: versions.Version = versions.Version('0.0')
     owner: typing.ClassVar[principals.Principal] = users.SystemUser
-    catalog = common_ids.CatalogCategory.system
+    catalog: common_ids.CatalogCategory = common_ids.CatalogCategory.system
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)

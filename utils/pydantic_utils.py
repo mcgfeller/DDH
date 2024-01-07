@@ -5,17 +5,16 @@ import pydantic
 import typing
 import datetime
 
+global CV
+CV = typing.ClassVar
+
 
 class DDHbaseModel(pydantic.BaseModel):
     """ Default Model behavior
     """
-    class Config:
-        """ This forbids wrong keywords, preventing silly mistakes when defaulted
-            attributes are not set.
-        """
-        extra = 'forbid'
-        underscore_attrs_are_private = True
-        copy_on_model_validation = 'none'  # see https://github.com/pydantic/pydantic/pull/2193
+    # TODO[pydantic]: The following keys were removed: `underscore_attrs_are_private`, `copy_on_model_validation`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = pydantic.ConfigDict(extra='forbid')
 
     # @classmethod
     # def validate(cls: typing.Type[pydantic.BaseModel], value: typing.Any) -> pydantic.BaseModel:
@@ -27,7 +26,7 @@ class DDHbaseModel(pydantic.BaseModel):
     @classmethod
     def _add_fields(cls, **field_definitions: typing.Any):
         """ Add fields in-place https://github.com/samuelcolvin/pydantic/issues/1937 """
-        new_fields: dict[str, pydantic.fields.ModelField] = {}
+        new_fields: dict[str, pydantic.fields.FieldInfo] = {}
         new_annotations: dict[str, type | None] = {}
 
         for f_name, f_def in field_definitions.items():
@@ -48,12 +47,11 @@ class DDHbaseModel(pydantic.BaseModel):
             if f_annotation:
                 new_annotations[f_name] = f_annotation
 
-            new_fields[f_name] = pydantic.fields.ModelField.infer(
-                name=f_name, value=f_value, annotation=f_annotation, class_validators=None, config=cls.__config__)
+            new_fields[f_name] = pydantic.fields.FieldInfo(annotation=f_annotation, default=f_value,)
 
-        cls.__fields__.update(new_fields)
+        cls.model_fields.update(new_fields)
         cls.__annotations__.update(new_annotations)
-        cls.__schema_cache__.clear()
+        cls.model_rebuild()
         return
 
 
@@ -83,3 +81,15 @@ def str_to_tuple_key(s: str) -> tuple:
         t = _type_map.get(tn, str)
         r.append(t(v))
     return tuple(r)
+
+
+def type_from_fi(fi: pydantic.fields.FieldInfo) -> type:
+    """ Extract type from FieldInfo fi. 
+        fi.annotation may be a generic container, get its argument. """
+    t = typing.get_args(fi.annotation)
+    if t:  # container, use first argument
+        t = t[0]
+    else:  # no container, must be class
+        t = fi.annotation
+    assert isinstance(t, type)
+    return t

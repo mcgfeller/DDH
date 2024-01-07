@@ -6,35 +6,10 @@ import pydantic
 import typing
 import enum
 
-from core import dapp_attrs
 
-
-from . import permissions, schemas,  principals, common_ids
+from core import permissions, schemas,  principals, common_ids, node_types
 from backend import persistable
-
-
-@enum.unique
-class NodeSupports(str, enum.Enum):
-    """ Node supports protocol """
-
-    schema = 'schema'
-    data = 'data'
-    execute = 'execute'
-    consents = 'consents'
-
-    def __repr__(self): return self.value
-
-
-@enum.unique
-class Ops(str, enum.Enum):
-    """ Operations """
-
-    get = 'get'
-    post = 'post'
-    put = 'put'
-    delete = 'delete'
-
-    def __repr__(self): return self.value
+from core.node_types import NodeSupports, Ops
 
 
 class NodeProxy(persistable.PersistableProxy):
@@ -42,7 +17,7 @@ class NodeProxy(persistable.PersistableProxy):
     owner_id: common_ids.PrincipalId
 
 
-class Node(pydantic.BaseModel):
+class Node(node_types.T_Node):
 
     owner: principals.Principal
     consents: permissions.Consents | None = permissions.DefaultConsents
@@ -74,7 +49,7 @@ class Node(pydantic.BaseModel):
 
 
 from . import keys  # avoid circle
-Node.update_forward_refs()  # Now Node is known, update before it's derived
+Node.model_rebuild()  # Now Node is known, update before it's derived
 NodeOrProxy = Node | persistable.PersistableProxy
 
 
@@ -102,9 +77,9 @@ class MultiOwnerNode(Node):
         return self.all_owners
 
 
-class SchemaNode(Node, persistable.NonPersistable):
+class SchemaNode(node_types.T_SchemaNode,  Node, persistable.NonPersistable):
 
-    schemas: schemas.SchemaContainer = schemas.SchemaContainer()
+    container: schemas.SchemaContainer = schemas.SchemaContainer()
     key: keys.DDHkeyGeneric | None = None
 
     def __init__(self, *a, **kw):
@@ -112,7 +87,7 @@ class SchemaNode(Node, persistable.NonPersistable):
 
     def add_schema(self, schema: schemas.AbstractSchema):
         assert self.key, 'add schema node to keydirectory.NodeRegistry first'
-        self.schemas.add(self.key, schema)
+        self.container.add(self.key, schema)
         return
 
     @property
@@ -123,7 +98,10 @@ class SchemaNode(Node, persistable.NonPersistable):
         return s
 
 
-class ExecutableNode(Node, persistable.NonPersistable):
+from core import dapp_attrs
+
+
+class ExecutableNode(node_types.T_ExecutableNode, Node, persistable.NonPersistable):
     """ A node that provides for execution capabilities """
 
     @property

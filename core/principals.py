@@ -5,13 +5,12 @@ import pydantic
 import typing
 
 from utils.pydantic_utils import DDHbaseModel
-from . import errors, keys, common_ids
+from core import errors, keys, common_ids
 
 
 class Principal(DDHbaseModel):
     """ Abstract identification of a party """
-    class Config:
-        extra = pydantic.Extra.ignore  # for parsing of subclass
+    model_config = pydantic.ConfigDict(extra='ignore')  # for parsing of subclass
 
     id: common_ids.PrincipalId
     # Delim: typing.ClassVar[str] = ','

@@ -10,14 +10,14 @@ import pandas  # for example
 import pydantic
 
 from core import (common_ids, dapp_attrs, keys, nodes, permissions, users,
-                  relationships, schemas, errors, versions, trait)
+                  relationships, schemas, errors, versions, trait, principals)
 from traits import anonymization
 from schema_formats import py_schema
 from utils import key_utils
 from glom import Iter, S, T, glom  # transform
 
 from frontend import fastapi_dapp, user_auth
-app = fastapi.FastAPI()
+app = fastapi.FastAPI(lifespan=fastapi_dapp.lifespan)  # TODO: Workaround #41
 app.include_router(fastapi_dapp.router)
 
 
@@ -30,7 +30,7 @@ fastapi_dapp.get_apps = get_apps
 
 class MigrosDApp(dapp_attrs.DApp):
 
-    version = '0.2'
+    version: versions.Version = versions.Version('0.2')
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
@@ -44,7 +44,7 @@ class MigrosDApp(dapp_attrs.DApp):
         """
         caps = trait.Transformers(anonymization.Anonymize(), anonymization.Pseudonymize(),
                                   anonymization.DePseudonymize())
-        sa = schemas.SchemaAttributes(version=versions.Version(self.version), transformers=caps)
+        sa = schemas.SchemaAttributes(version=self.version, transformers=caps)
         sa_prev = schemas.SchemaAttributes(version=versions.Version('0.1'), transformers=caps)
         return {keys.DDHkeyVersioned0(key="//org/migros.ch"): py_schema.PySchema(schema_element=MigrosSchema,
                                                                                  schema_attributes=sa),
@@ -115,8 +115,8 @@ class Receipt(py_schema.PySchemaElement):
 
     """ The Receipt of an individual purchase """
 
-    Datum_Zeit: datetime.datetime = pydantic.Field(sensitivity=schemas.Sensitivity.sa)
-    Filiale:    str = pydantic.Field(sensitivity=schemas.Sensitivity.sa)
+    Datum_Zeit: datetime.datetime = py_schema.SchemaField(sensitivity=schemas.Sensitivity.sa)
+    Filiale:    str = py_schema.SchemaField(sensitivity=schemas.Sensitivity.sa)
     Kassennummer:  int
     Transaktionsnummer: int
     Artikel:    str
@@ -144,7 +144,7 @@ class Receipt(py_schema.PySchemaElement):
 
 class MigrosSchema(py_schema.PySchemaElement):
     """ A fake Migros schema, showing Cumulus receipts """
-    cumulus: int | None = pydantic.Field(None, sensitivity=schemas.Sensitivity.qid)
+    cumulus: int | None = py_schema.SchemaField(None, sensitivity=schemas.Sensitivity.qid)
     receipts: list[Receipt] = []
 
     @classmethod

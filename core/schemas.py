@@ -11,16 +11,13 @@ import pydantic
 from frontend import user_auth
 from utils.pydantic_utils import DDHbaseModel
 
-from . import (errors, keydirectory, keys, nodes, permissions, principals,
-               versions, schema_network, trait)
+from core import (errors, keys, permissions, principals,
+                  versions, trait)
 
 
 import logging
 
 logger = logging.getLogger(__name__)
-
-# Global reference to singleton Schema Network:
-SchemaNetwork: schema_network.SchemaNetworkClass = schema_network.SchemaNetworkClass()
 
 
 @enum.unique
@@ -63,7 +60,8 @@ class SchemaVariantUsage(str, enum.Enum):
 
 
 # Schema name in case of multiple schemas in the same space, e.g., ISO-20022 and Swift MT.
-SchemaVariant = pydantic.constr(strip_whitespace=True, max_length=30, regex='[a-zA-Z0-9_-]+')
+SchemaVariant = typing.Annotated[str, pydantic.StringConstraints(
+    strip_whitespace=True, max_length=30, pattern='[a-zA-Z0-9_-]+')]
 
 
 class MimeTypes(DDHbaseModel):
@@ -179,7 +177,7 @@ class AbstractSchemaElement(DDHbaseModel, abc.ABC):
 class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
     format_designator: typing.ClassVar[SchemaFormat] = SchemaFormat.internal
     schema_attributes: SchemaAttributes = pydantic.Field(
-        default=SchemaAttributes(), descriptor="Attributes associated with this Schema")
+        default=SchemaAttributes(), description="Attributes associated with this Schema")
     mimetypes: typing.ClassVar[MimeTypes | None] = None
     _w_container: weakref.ReferenceType[SchemaContainer] | None = None
 
@@ -421,10 +419,7 @@ class SchemaContainer(DDHbaseModel):
         keeps latest version in versions.Unspecified per variant
         and recommended as variant ''.
     """
-    class Config:
-        arbitrary_types_allowed = True  # for upgraders
-
-    __slots__: typing.ClassVar[tuple] = ('__weakref__',)  # allow weak ref to here
+    model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
 
     schemas_by_variant: dict[SchemaVariant | None,
                              dict[versions.Version, AbstractSchema]] = {}
@@ -472,7 +467,7 @@ class SchemaContainer(DDHbaseModel):
             schema_ddhkey, nodes.NodeSupports.schema, transaction)
         if snode:
             assert isinstance(snode, nodes.SchemaNode)
-            schema = snode.schemas.get_schema_key(schema_ddhkey)
+            schema = snode.container.get_schema_key(schema_ddhkey)
             # build key with actual variant and version:
             fqkey = keys.DDHkey(ddhkey.key, specifiers=(
                 ddhkey.fork, schema.schema_attributes.variant, schema.schema_attributes.version))
@@ -513,4 +508,10 @@ class SchemaContainer(DDHbaseModel):
         upgraders.add_upgrader(v_from, v_to, function)
 
 
-trait.TransformerArgs.update_forward_refs()
+from core import nodes, keydirectory, schema_network
+SchemaContainer.model_rebuild()
+
+# Global reference to singleton Schema Network:
+SchemaNetwork: schema_network.SchemaNetworkClass = schema_network.SchemaNetworkClass()
+
+# trait.TransformerArgs.model_rebuild()

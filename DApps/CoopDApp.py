@@ -8,11 +8,11 @@ import fastapi
 import fastapi.security
 import pydantic
 from core import (common_ids, dapp_attrs, keys, nodes, permissions, principals, users,
-                  relationships, schemas)
+                  relationships, schemas, versions)
 
 from schema_formats import py_schema
 from frontend import fastapi_dapp
-app = fastapi.FastAPI()
+app = fastapi.FastAPI(lifespan=fastapi_dapp.lifespan)  # TODO: Workaround #41
 app.include_router(fastapi_dapp.router)
 
 
@@ -26,11 +26,11 @@ fastapi_dapp.get_apps = get_apps
 class CoopDApp(dapp_attrs.DApp):
 
     _ddhschema: py_schema.PySchemaElement = None
-    version = '0.2'
+    version: versions.Version = versions.Version('0.2')
     owner: typing.ClassVar[principals.Principal] = users.User(
         id='coop', name='Coop (fake account)')
     schemakey: typing.ClassVar[keys.DDHkeyVersioned] = keys.DDHkeyVersioned0(key="//org/coop.ch")
-    catalog = common_ids.CatalogCategory.living
+    catalog: common_ids.CatalogCategory = common_ids.CatalogCategory.living
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
@@ -66,7 +66,7 @@ class CoopDApp(dapp_attrs.DApp):
 class CoopSchema(py_schema.PySchemaElement):
     """ There is no Schema for Coop yet """
 
-    supercard: int | None = pydantic.Field(None, sensitivity=schemas.Sensitivity.qid)
+    supercard: int | None = py_schema.SchemaField(None, sensitivity=schemas.Sensitivity.qid)
     receipts: list[py_schema.PySchemaReference.create_from_key(
         keys.DDHkeyRange('//p/living/shopping/receipts:::>=0'))] = []
 

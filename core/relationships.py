@@ -50,4 +50,4 @@ class Quality(DDHbaseModel):
     ...
 
 
-Reference.update_forward_refs()
+Reference.model_rebuild()

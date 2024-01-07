@@ -8,9 +8,10 @@ import jsonschema
 import jsonschema.validators
 import jsonschema.exceptions
 
+from utils.pydantic_utils import CV
+
 # to overwrite jsonschema datetime format checker:
 import jsonschema._format
-from pydantic import datetime_parse
 import datetime
 
 
@@ -27,21 +28,22 @@ class JsonSchemaElement(schemas.AbstractSchemaElement):
 
 class JsonSchemaReference(schemas.AbstractSchemaReference, JsonSchemaElement):
 
-    class Config:
-        @staticmethod
-        def schema_extra(schema: dict[str, typing.Any], model: typing.Type[JsonSchemaReference]) -> None:
-            schema['properties']['dep'] = {'$ref': model.getURI()}
-            return
+    @staticmethod
+    def _json_schema_extra(schema: dict[str, typing.Any], model: typing.Type[JsonSchemaReference]) -> None:
+        schema['properties']['dep'] = {JsonSchema.d_ref: model.getURI()}
+        return
+
+    model_config = pydantic.ConfigDict(json_schema_extra=_json_schema_extra)
 
     @classmethod
     def get_target(cls) -> keys.DDHkey:
         """ get target key - oh Pydantic! """
-        return cls.__fields__['ddhkey'].default
+        return cls.model_fields['ddhkey'].default
 
     @classmethod
     def create_from_key(cls, ddhkey: keys.DDHkeyRange, name: str | None = None) -> typing.Type[JsonSchemaReference]:
         name = name if name else str(ddhkey)
-        m = cls(definition={'$ref': str(ddhkey)}).__class__
+        m = cls(definition={JsonSchema.d_ref: str(ddhkey)}).__class__
         return m
 
 
@@ -57,12 +59,16 @@ _empty_marker = object()
 
 class JsonSchema(schemas.AbstractSchema):
 
-    format_designator: typing.ClassVar[schemas.SchemaFormat] = schemas.SchemaFormat.json
-    mimetypes: typing.ClassVar[schemas.MimeTypes] = schemas.MimeTypes(
+    format_designator: CV[schemas.SchemaFormat] = schemas.SchemaFormat.json
+    mimetypes: CV[schemas.MimeTypes] = schemas.MimeTypes(
         of_schema=['application/openapi', 'application/json'], of_data=['application/json'])
     json_schema: pydantic.Json
     _v_validators: dict[keys.DDHkey, json_schema.validators.Validator] = {}  # Cache
     _v_descend_cache: dict[tuple[keys.DDHkey | tuple, bool], dict | None] = {}
+
+    d_ref: CV[str] = '$ref'
+    d_defs1: CV[str] = '$defs'
+    d_defs: CV[str] = '#/$defs/'
 
     def __getitem__(self, key: keys.DDHkey, default=None, create_intermediate: bool = False) -> type[JsonSchemaElement] | None:
         d = self.descend_path(key, create_intermediate=create_intermediate)
@@ -102,15 +108,15 @@ class JsonSchema(schemas.AbstractSchema):
         return v
 
     def _descend_path(self, path: keys.DDHkey, create_intermediate: bool = False):
-        definitions = self.json_schema.get('definitions', {})
+        definitions = self.json_schema.get(self.d_defs1, {})
         current = self.json_schema  # before we descend path, this cls is at the current level
         pathit = iter(path)  # so we can peek whether we're at end
         for segment in pathit:
             segment = str(segment)
             # look up one segment of path, returning ModelField
             assert 'properties' in current
-            mf = current['properties'].get(str(segment), None)
-            if mf is None:
+            fi = current['properties'].get(str(segment), None)
+            if fi is None:
                 if create_intermediate:
                     new_current = self.create_from_elements(segment)
                     current['properties'][segment] = new_current
@@ -118,15 +124,19 @@ class JsonSchema(schemas.AbstractSchema):
                 else:
                     return None
             else:
-                if (ref := mf.get('$ref', '')).startswith('#/definitions/'):
-                    current = definitions.get(ref[len('#/definitions/'):])
-                elif mf['type'] == 'array' and '$ref' in mf['items']:
-                    if (ref := mf['items']['$ref']).startswith('#/definitions/'):
-                        current = definitions.get(ref[len('#/definitions/'):])
+                # #32: New Pyd2 optional type json: anyof, first element is value, 2nd is null:
+                if (fa := fi.get('anyOf')) and len(fa) == 2 and fa[1].get('type') == 'null':
+                    fi = fa[0]
+
+                if (ref := fi.get(self.d_ref, '')).startswith(self.d_defs):
+                    current = definitions.get(ref[len(self.d_defs):])
+                elif fi.get('type') == 'array' and self.d_ref in fi['items']:
+                    if (ref := fi['items'][self.d_ref]).startswith(self.d_defs):
+                        current = definitions.get(ref[len(self.d_defs):])
 
                 else:  # we're at a leaf, return
                     if next(pathit, None) is None:  # path ends here
-                        current = mf
+                        current = fi
                         break
                     else:  # path continues beyond this point, so this is not found and not creatable
                         return None
@@ -194,6 +204,10 @@ class JsonSchema(schemas.AbstractSchema):
         return pt if pt else type(value)
 
 
+# #32: Unfortunately, pydantic.datetime_parse.parse_datetime disappeared in Pyd2:
+_parse_datetime = pydantic.TypeAdapter(datetime.datetime).validate_strings
+
+
 @jsonschema._format._checks_drafts(name="date-time")
 def is_datetime(instance: object) -> bool:
     """ json_schema DateTime format check is more restrictive than and not compatible
@@ -201,7 +215,7 @@ def is_datetime(instance: object) -> bool:
         Overwrite the date-time format check using Pydantic's datetime_parse.
     """
     try:
-        d = datetime_parse.parse_datetime(instance)  # type:ignore
+        d = _parse_datetime(instance)  # type:ignore
         return True
     except ValueError:
         return False

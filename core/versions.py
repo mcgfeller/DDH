@@ -27,7 +27,7 @@ class Version(DDHbaseModel, typing.Hashable):
 
     Maxparts: typing.ClassVar[int] = 4
 
-    vtup: tuple[pydantic.conint(ge=0, le=100000), ...] = ()
+    vtup: tuple[typing.Annotated[int, pydantic.Field(ge=0, le=100000)], ...] = ()
     alias: str | None = None
 
     def __init__(self, *v, **kw):
@@ -85,6 +85,10 @@ class _UnspecifiedVersion(Version):
         """ only equal to unspecified """
         return isinstance(other, _UnspecifiedVersion)
 
+    def __hash__(self):
+        """ hash (not inherited) is hash of empty tuple """
+        return hash(())
+
 
 Unspecified = _UnspecifiedVersion(alias='unspecified')
 
@@ -110,7 +114,7 @@ class VersionConstraint(DDHbaseModel, typing.Hashable):
     def make_with_default(cls, v: str | None) -> VersionConstraint:
         return cls(v) if v and not v == 'unspecified' else NoConstraint
 
-    @pydantic.validator('op1', 'op2')
+    @pydantic.field_validator('op1', 'op2')
     def v_op1(cls, v):
         if v and v not in cls._vops:
             raise ValueError(
