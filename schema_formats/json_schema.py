@@ -28,12 +28,9 @@ class JsonSchemaElement(schemas.AbstractSchemaElement):
 
 class JsonSchemaReference(schemas.AbstractSchemaReference, JsonSchemaElement):
 
-    # FIXME[pydantic] #32: We couldn't refactor this class, please create the `model_config` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
-
     @staticmethod
     def _json_schema_extra(schema: dict[str, typing.Any], model: typing.Type[JsonSchemaReference]) -> None:
-        schema['properties']['dep'] = {self.d_ref: model.getURI()}
+        schema['properties']['dep'] = {JsonSchema.d_ref: model.getURI()}
         return
 
     model_config = pydantic.ConfigDict(json_schema_extra=_json_schema_extra)
