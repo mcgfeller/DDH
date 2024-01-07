@@ -279,7 +279,7 @@ class DDHkey(DDHbaseModel):
 class DDHkeyGeneric(DDHkey):
     """ DDHKey which must not contain Variant nor Version """
 
-    # variant: typing.Final[VariantType] = DefaultVariant # TODO: https://github.com/pydantic/pydantic/issues/6253
+    # variant: typing.Final[VariantType] = DefaultVariant # TODO #32: https://github.com/pydantic/pydantic/issues/6253
     # version: typing.Final[versions.Version] = versions.Unspecified
     variant: VariantType = DefaultVariant
     version: versions.Version = versions.Unspecified
