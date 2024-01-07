@@ -5,6 +5,8 @@ import types
 import pydantic
 from utils import pydantic_utils
 import json
+import pydantic_core
+import pydantic.json_schema
 
 from core import schemas, keys, errors
 
@@ -107,15 +109,20 @@ class PySchemaElement(schemas.AbstractSchemaElement):
 
 class PySchemaReference(schemas.AbstractSchemaReference, PySchemaElement):
 
-    # TODO[pydantic]: We couldn't refactor this class, please create the `model_config` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    @classmethod
+    def __get_pydantic_json_schema__(
+        cls, core_schema: pydantic_core.CoreSchema, handler: pydantic.GetJsonSchemaHandler
+    ) -> pydantic.json_schema.JsonSchemaValue:
+        """ Generate  JSON Schema as a refrence to the URI.
 
-    @staticmethod
-    def _json_schema_extra(schema: dict[str, typing.Any], model: typing.Type[PySchemaReference]) -> None:
-        schema['properties']['dep'] = {'$ref': model.getURI()}
-        return
-    # FIXME #32 - Schema with $ref fails.
-    # model_config = pydantic.ConfigDict(json_schema_extra=_json_schema_extra)
+            NOTE #43: As Pydantic 2 cannot include an external $ref, we name them $xref and 
+            replace the text here.  
+        """
+        uri = cls.getURI()
+        json_schema = handler(core_schema)
+        json_schema = handler.resolve_ref_schema(json_schema)
+        json_schema['properties'] = {'dep': {'$xref': uri}}
+        return json_schema
 
     @classmethod
     def get_target(cls) -> keys.DDHkey:
@@ -157,15 +164,17 @@ class PySchema(schemas.AbstractSchema):
     def to_json_schema(self):
         """ Make a JSON Schema from this Schema """
         jcls = schemas.SchemaFormat2Class[schemas.SchemaFormat.json]
-        js = jcls(json_schema=json.dumps(self.schema_element.model_json_schema()),
-                  schema_attributes=self.schema_attributes.model_copy())
+        js = jcls(json_schema=self.to_output(), schema_attributes=self.schema_attributes.model_copy())
         js._w_container = self._w_container  # copy container ref
         return js
 
     def to_output(self) -> pydantic.Json:
         """ Python schema is output as JSON """
-        # return self.to_json_schema()
-        return json.dumps(self.schema_element.model_json_schema())
+        j = json.dumps(self.schema_element.model_json_schema())
+        # NOTE #43: As Pydantic 2 cannot include an external $ref, we name them $xref and
+        # replace the text here.
+        j = j.replace('"$xref"', '"$ref"')
+        return j
 
     def _add_fields(self, fields: dict[str, tuple]):
         """ Add the field in dict to the schema element """

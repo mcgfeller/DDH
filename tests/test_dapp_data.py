@@ -131,6 +131,15 @@ def test_p_schema(user1):
     return
 
 
+def test_p_schema_ref(user1):
+    """ test the inclusion of a reference URL pointing from //p/living/shopping to receipts """
+    r = user1.get('/ddh//p:schema')
+    r.raise_for_status()
+    t = r.text
+    assert '"$ref":"//p/employment/salary/statements::PySchema' in t, 'reference not in json schema'
+    return
+
+
 def test_graph_from(user1):
     r = user1.get('/graph/from/MigrosDApp+SwisscomEmpDApp')
     r.raise_for_status()
