@@ -5,8 +5,7 @@ import types
 import pydantic
 from utils import pydantic_utils
 import json
-import pydantic_core
-import pydantic.json_schema
+
 
 from core import schemas, keys, errors
 
@@ -109,20 +108,16 @@ class PySchemaElement(schemas.AbstractSchemaElement):
 
 class PySchemaReference(schemas.AbstractSchemaReference, PySchemaElement):
 
-    @classmethod
-    def __get_pydantic_json_schema__(
-        cls, core_schema: pydantic_core.CoreSchema, handler: pydantic.GetJsonSchemaHandler
-    ) -> pydantic.json_schema.JsonSchemaValue:
-        """ Generate  JSON Schema as a refrence to the URI.
+    @staticmethod
+    def _json_schema_extra(schema: dict[str, typing.Any], model: typing.Type[PySchemaReference]) -> None:
+        """ Generate  JSON Schema as a reference to the URI.
 
-            NOTE #43: As Pydantic 2 cannot include an external $ref, we name them $xref and 
-            replace the text here.  
+            NOTE #43: As Pydantic 2 cannot include an external $ref, we name them $xref and
+            replace the text here.
         """
-        uri = cls.getURI()
-        json_schema = handler(core_schema)
-        json_schema = handler.resolve_ref_schema(json_schema)
-        json_schema['properties'] = {'dep': {'$xref': uri}}
-        return json_schema
+        schema['properties']['dep'] = {'$xref': model.getURI()}
+        return
+    model_config = pydantic.ConfigDict(json_schema_extra=_json_schema_extra)
 
     @classmethod
     def get_target(cls) -> keys.DDHkey:
