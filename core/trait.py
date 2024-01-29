@@ -102,7 +102,7 @@ class Trait(DDHbaseModel, typing.Hashable):
         d['cancel'] = True
         return self.__class__(**d)
 
-    def merge(self, other: Trait) -> typing.Self | None:
+    def merge(self, other: Trait) -> Trait | None:
         """ return the stronger of self and other traits if self.may_overwrite,
             or None if self.may_overwrite and cancels. 
 
@@ -138,13 +138,6 @@ class Transformer(Trait):
         assert sm is not None, f'{cls} must have support_modes set'
         [cls._all_by_modes.setdefault(m, set()).add(cls.__name__) for m in sm]
         return
-
-    # def __init__(self, *a, **kw):
-    #     super().__init__(*a, **kw)
-    #     sm = getattr(self, 'supports_modes', None)
-    #     assert sm is not None, f'{self} must have support_modes set'
-    #     [self.__class__._all_by_modes.setdefault(m, set()).add(self.__class__.__name__) for m in sm]
-    #     return
 
     @classmethod
     def capabilities_for_modes(cls, modes: typing.Iterable[permissions.AccessMode], fork: keys.ForkType) -> set[str]:
@@ -219,8 +212,9 @@ class Traits(DDHbaseModel):
             return False
 
     def merge(self, other: Traits) -> typing.Self:
-        """ return the stronger of self and other traits, creating a new combined 
-            Traits.
+        """ return the combintion of self and other traits, creating a new combined 
+            Traits. Traits occuring in self and other are merged. Merging may result
+            in None, if one of the traits cancels. 
         """
         if self == other:
             return self
