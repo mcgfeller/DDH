@@ -46,11 +46,13 @@ class MigrosDApp(dapp_attrs.DApp):
                                   anonymization.DePseudonymize())
         sa = schemas.SchemaAttributes(version=self.version, transformers=caps)
         sa_prev = schemas.SchemaAttributes(version=versions.Version('0.1'), transformers=caps)
-        return {keys.DDHkeyVersioned0(key="//org/migros.ch"): py_schema.PySchema(schema_element=MigrosSchema,
-                                                                                 schema_attributes=sa),
-                keys.DDHkeyVersioned(key="//org/migros.ch:::0.1"): py_schema.PySchema(schema_element=MigrosSchema,
-                                                                                      schema_attributes=sa_prev),
-                }  # type:ignore
+        return {
+            keys.DDHkeyVersioned(key=f"//org/migros.ch:schema::0.1"): py_schema.PySchema(schema_element=MigrosSchema,
+                                                                                         schema_attributes=sa_prev),
+
+            keys.DDHkeyVersioned0(key=f"//org/migros.ch:schema::{self.version}"): py_schema.PySchema(schema_element=MigrosSchema,
+                                                                                                     schema_attributes=sa),
+        }  # type:ignore
 
     def execute(self, req: dapp_attrs.ExecuteRequest):
         """ obtain data by recursing to schema """
