@@ -7,7 +7,7 @@ import json
 import accept_types
 
 
-from . import permissions, keys, schemas, nodes, data_nodes, keydirectory, transactions, errors, dapp_attrs
+from . import permissions, keys, schemas, nodes, data_nodes, keydirectory, transactions, errors, dapp_attrs, users
 from frontend import sessions
 from traits import anonymization
 
@@ -62,20 +62,26 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
             # modify access.ddhkey according to real owner:
             await anonymization.resolve_owner(access, transaction)
 
-        # We need a data node, even for a schema, as it carries the consents:
-        data_node, d_key_split, remainder = await get_or_create_dnode(access, transaction)
-        access.raise_if_not_permitted(data_node)
+        # we need a (parent) schema node, even if we put a schema:
+        schema, access.ddhkey, access.schema_key_split, schema_node, * \
+            d = schemas.SchemaContainer.get_node_schema_key(access.ddhkey, transaction)
+
         headers = {}
 
         match access.ddhkey.fork:
             case keys.ForkType.schema:
-                schema = typing.cast(schemas.AbstractSchema, data)
-                await put_schema(access, transaction, schema)
+                access.raise_if_not_permitted(schema_node)
+                new_schema = typing.cast(schemas.AbstractSchema, data)
+                trargs = await schema.apply_transformers_to_schema(access, transaction, new_schema)
+                data = trargs.parsed_data
 
             case keys.ForkType.consents | keys.ForkType.data:
-                schema, access.ddhkey, access.schema_key_split, * \
-                    d = schemas.SchemaContainer.get_node_schema_key(access.ddhkey, transaction)
+
                 check_mimetype_schema(access.ddhkey, schema, [content_type], header_field='Content-Type')
+
+                # We need a data node, even for consents, as it carries the consents:
+                data_node, d_key_split, remainder = await get_or_create_dnode(access, transaction)
+                access.raise_if_not_permitted(data_node)
 
                 match access.ddhkey.fork:
                     case keys.ForkType.consents:
@@ -118,7 +124,8 @@ async def get_or_create_dnode(access: permissions.Access, transaction: transacti
 
         topkey, remainder = access.ddhkey.split_at(2)
         # there is no node, create it if owner asks for it:
-        if access.principal.id in topkey.owners:
+        # TODO #11: What to do for schemas??
+        if (access.principal.id in topkey.owners) or ((access.principal == users.SystemUser) and not topkey.owners):
             data_node = data_nodes.DataNode(owner=access.principal, key=topkey)
             await data_node.store(transaction)  # put node into directory
         else:  # not owner, we simply say no access to this path
@@ -129,18 +136,6 @@ async def get_or_create_dnode(access: permissions.Access, transaction: transacti
 
     data_node = typing.cast(data_nodes.DataNode, data_node)
     return data_node, d_key_split, remainder
-
-
-async def get_enode(op: nodes.Ops, access: permissions.Access, transaction: transactions.Transaction, data: typing.Any, q: str | None = None) -> typing.Any:
-    e_node, e_key_split = keydirectory.NodeRegistry.get_node(
-        access.ddhkey.without_owner(), nodes.NodeSupports.execute, transaction)
-    if e_node:
-        e_node = await e_node.ensure_loaded(transaction)
-        e_node = typing.cast(nodes.ExecutableNode, e_node)
-        req = dapp_attrs.ExecuteRequest(
-            op=op, access=access, transaction=transaction, key_split=e_key_split, data=data, q=q)
-        data = await e_node.execute(req)
-    return data
 
 
 async def get_schema(access: permissions.Access, transaction: transactions.Transaction, schemaformat: schemas.SchemaFormat = schemas.SchemaFormat.json) -> pydantic.Json | None:
@@ -154,22 +149,6 @@ async def get_schema(access: permissions.Access, transaction: transactions.Trans
     else:
         formatted_schema = None  # in case of not found.
     return formatted_schema
-
-
-async def put_schema(access: permissions.Access, transaction: transactions.Transaction, schema: schemas.AbstractSchema):
-    """ Service utility to store a Schema.
-        TODO: WIP
-    """
-    snode, split = keydirectory.NodeRegistry.get_node(
-        access.ddhkey, nodes.NodeSupports.schema, transaction)  # get transformer schema nodes
-
-    if snode:
-        access.raise_if_not_permitted(keydirectory.NodeRegistry._get_consent_node(
-            access.ddhkey.without_variant_version(), nodes.NodeSupports.schema, snode, transaction))
-
-        trargs = await schema.apply_transformers_to_schema(access, transaction, None)
-        # schema = snode.get_sub_schema(access.ddhkey, split) # TODO!
-    return
 
 
 def check_mimetype_schema(ddhkey: keys.DDHkey, schema: schemas.AbstractSchema, accept_header: list[str] | None, header_field: str = 'Accept') -> str:
