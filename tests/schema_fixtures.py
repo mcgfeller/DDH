@@ -29,10 +29,10 @@ def migros_key_schema(transaction):
     from DApps import MigrosDApp
     app = MigrosDApp.get_apps()[0]
     s = app.get_schemas()
-    k, schema = list(s.items())[0]
-
-    # register in Schema Node, so tests can retrieve it:
-    dapp_proxy.DAppProxy.register_schema(k, schema, app.owner, transaction)
+    assert s
+    for k, schema in s.items():
+        # register in Schema Node, so tests can retrieve it:
+        dapp_proxy.DAppProxy.register_schema(k, schema, app.owner, transaction)
     return k, schema
 
 
