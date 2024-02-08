@@ -456,10 +456,12 @@ class SchemaContainer(DDHbaseModel):
         return self.get()
 
     @staticmethod
-    def get_node_schema_key(ddhkey: keys.DDHkey, transaction) -> tuple[AbstractSchema, keys.DDHkey, int, nodes.SchemaNode]:
+    def get_node_schema_key(ddhkey: keys.DDHkey, transaction, default: bool = False) -> tuple[AbstractSchema, keys.DDHkey, int, nodes.SchemaNode]:
         """ for a ddhkey, get the node, then get its schema and the fully qualified key with the schema variant 
             and version, and the split separting the schema and the key into the schema. 
             The key returned will have the fork and owner of the original key, except there is no owner when the fork is schema.
+
+            If default, retrieve default schema if key does not match variant/version.              
         """
         schema_ddhkey = ddhkey.ens()  # schema key to get the schema node
         ddhkey = schema_ddhkey if ddhkey.fork == keys.ForkType.schema else ddhkey  # but return only if schema fork is asked for
@@ -467,7 +469,7 @@ class SchemaContainer(DDHbaseModel):
             schema_ddhkey, nodes.NodeSupports.schema, transaction)
         if snode:
             assert isinstance(snode, nodes.SchemaNode)
-            schema = snode.container.get_schema_key(schema_ddhkey)
+            schema = snode.container.get_schema_key(schema_ddhkey, default=default)
             # build key with actual variant and version:
             fqkey = keys.DDHkey(ddhkey.key, specifiers=(
                 ddhkey.fork, schema.schema_attributes.variant, schema.schema_attributes.version))
@@ -475,11 +477,18 @@ class SchemaContainer(DDHbaseModel):
         else:
             raise errors.NotFound(f'No schema node found for {ddhkey}')
 
-    def get_schema_key(self, ddhkey: keys.DDHkeyVersioned) -> AbstractSchema:
-        """ for a ddhkey, get its schema  """
+    def get_schema_key(self, ddhkey: keys.DDHkeyVersioned, default: bool = False) -> AbstractSchema:
+        """ for a ddhkey, get its schema. 
+            If default, retrieve default schema if key does not match variant/version and default is set.
+        """
         schema = self.get(ddhkey.variant, ddhkey.version)
         if not schema:
-            raise errors.NotFound(f'No schema variant and version found for {ddhkey}')
+            if default:
+                if self.default_schema is None:
+                    raise errors.NotFound(f'No specific or default schema found for {ddhkey}')
+                return self.default_schema
+            else:
+                raise errors.NotFound(f'No schema variant and version found for {ddhkey}')
         else:
             return schema
 

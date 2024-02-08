@@ -62,9 +62,9 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
             # modify access.ddhkey according to real owner:
             await anonymization.resolve_owner(access, transaction)
 
-        # we need a (parent) schema node, even if we put a schema:
+        # we need a (parent) schema node, even if we put a schema (we accept default parent):
         schema, access.ddhkey, access.schema_key_split, schema_node, * \
-            d = schemas.SchemaContainer.get_node_schema_key(access.ddhkey, transaction)
+            d = schemas.SchemaContainer.get_node_schema_key(access.ddhkey, transaction, default=True)
 
         headers = {}
 
