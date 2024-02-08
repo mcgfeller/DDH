@@ -71,7 +71,7 @@ class SchemaExpandReferences(SchemaValidation):
         permissions.AccessMode.read, permissions.AccessMode.write})  # check on reads
 
     async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, includes_owner: bool = False, **kw):
-        trargs.schema = trargs.schema.expand_references()
+        trargs.nschema = trargs.nschema.expand_references()
         return
 
 

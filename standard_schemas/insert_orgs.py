@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from core import schemas, keys, nodes, principals, keydirectory, errors, permissions
 from frontend import sessions
+from schema_formats import py_schema
 
 # org and seq of users allowed to write them.
 orgs: dict[str, tuple[str, ...]] = {
@@ -18,7 +19,7 @@ orgs: dict[str, tuple[str, ...]] = {
 
 def install():
     """ Install SchemaNodes for each .org, and with write consent to their owners.
-        We don't actually have a schema yet. 
+        We don't actually have a schema yet, so we use a dummy schema.
     """
     transaction = sessions.get_system_session().get_or_create_transaction()
     for k, owners in orgs.items():
@@ -32,6 +33,9 @@ def install():
         # SchemaNode has single owner.
         s_node = nodes.SchemaNode(owner=owners[0], consents=consents)
         keydirectory.NodeRegistry[key] = s_node
+        # create and add dummy schema:
+        dummy_schema = py_schema.PySchema(schema_element=py_schema.PySchemaElement)
+        s_node.add_schema(dummy_schema)
     # transaction.commit()
 
 
