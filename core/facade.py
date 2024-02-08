@@ -124,8 +124,7 @@ async def get_or_create_dnode(access: permissions.Access, transaction: transacti
 
         topkey, remainder = access.ddhkey.split_at(2)
         # there is no node, create it if owner asks for it:
-        # TODO #11: What to do for schemas??
-        if (access.principal.id in topkey.owners) or ((access.principal == users.SystemUser) and not topkey.owners):
+        if access.principal.id in topkey.owners:
             data_node = data_nodes.DataNode(owner=access.principal, key=topkey)
             await data_node.store(transaction)  # put node into directory
         else:  # not owner, we simply say no access to this path
