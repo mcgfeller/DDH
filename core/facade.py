@@ -169,15 +169,3 @@ def check_mimetype_schema(ddhkey: keys.DDHkey, schema: schemas.AbstractSchema, a
             raise errors.NotAcceptable(f'The mime types {", ".join(smt)} of the selected schema variant {schema.schema_attributes.variant} ' +
                                        f'does not correspond to the {header_field} header media types {amt}; try an alternate schema variant.')
     return smt[0]
-
-
-async def _get_consent_node(ddhkey: keys.DDHkey, support: nodes.NodeSupports, node: nodes.Node | None, transaction: transactions.Transaction) -> nodes.Node | None:
-    """ get consents, from current node or from its parent """
-    if node and node.has_consents():
-        cnode = node
-    else:
-        cnode, d = await keydirectory.NodeRegistry.get_node_async(
-            ddhkey, support, transaction, condition=nodes.Node.has_consents)
-        if not cnode:  # means that upper nodes don't have consent
-            cnode = node
-    return cnode
