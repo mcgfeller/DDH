@@ -53,4 +53,5 @@ async def test_schema_node(node_registry):
     remainder = access.ddhkey.remainder(split)
     schema_element = parent_schema.__getitem__(remainder, create_intermediate=False)
     assert schema_element is None, 'missing intermediate nodes must not be created'
-    assert (await facade.ddh_get(access, session))[0] is None  # this should be same in one go.
+    d, h = await facade.ddh_get(access, session)
+    assert d is None  # this should be same in one go.

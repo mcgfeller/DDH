@@ -87,12 +87,11 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
 
                 check_mimetype_schema(access.ddhkey, schema, [content_type], header_field='Content-Type')
 
-                # We need a data node, even for consents, as it carries the consents:
-                data_node, d_key_split, remainder = await get_or_create_dnode(access, transaction)
-                access.raise_if_not_permitted(data_node)
-
                 match access.ddhkey.fork:
                     case keys.ForkType.consents:
+                        # We need a data node, even for consents, as it carries the consents:
+                        data_node, d_key_split, remainder = await get_or_create_dnode(access, transaction)
+                        access.raise_if_not_permitted(data_node)
                         consents = permissions.Consents.model_validate_json(data)
                         await data_node.update_consents(access, transaction, remainder, consents)
 
