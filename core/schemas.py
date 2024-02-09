@@ -492,20 +492,6 @@ class SchemaContainer(DDHbaseModel):
         else:
             return schema
 
-    @staticmethod
-    def get_sub_schema(access: permissions.Access, transaction, create_intermediate: bool = False) -> AbstractSchema | None:
-        schema = None
-        parent_schema, access.ddhkey, split, snode = SchemaContainer.get_node_schema_key(
-            access.ddhkey, transaction)
-        if parent_schema:
-            access.raise_if_not_permitted(keydirectory.NodeRegistry._get_consent_node(
-                access.ddhkey.without_variant_version(), nodes.NodeSupports.schema, snode, transaction))
-            remainder = access.ddhkey.remainder(split)
-            schema_element = parent_schema.__getitem__(remainder, create_intermediate=create_intermediate)
-            if schema_element:
-                schema = schema_element.to_schema()
-        return schema
-
     def fullfills(self, ddhkey: keys.DDHkey, version_constraint: versions.VersionConstraint) -> typing.Iterator[AbstractSchema]:
         """ return iterator of schemas that fulfill key and VersionConstraint """
         # cands is dict of either specified variant or None for default variant (which has key None):
@@ -522,5 +508,3 @@ SchemaContainer.model_rebuild()
 
 # Global reference to singleton Schema Network:
 SchemaNetwork: schema_network.SchemaNetworkClass = schema_network.SchemaNetworkClass()
-
-# trait.TransformerArgs.model_rebuild()

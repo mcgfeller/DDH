@@ -36,12 +36,15 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
 
         match access.ddhkey.fork:
             case keys.ForkType.schema:  # if we ask for schema, we don't need an owner:
-                schema = schemas.SchemaContainer.get_sub_schema(access, transaction)
+                data = None
                 if schema:
-                    trstate = await schema.apply_transformers_to_schema(access, transaction, None)
-                    data = trstate.nschema.to_format(schemas.SchemaFormat.json)
-                else:
-                    data = None  # in case of not found.
+                    access.raise_if_not_permitted(schema_node)
+                    remainder = access.ddhkey.remainder(access.schema_key_split)
+                    schema_element = schema.__getitem__(remainder)
+                    if schema_element:
+                        schema = schema_element.to_schema()
+                        trstate = await schema.apply_transformers_to_schema(access, transaction, None)
+                        data = trstate.nschema.to_format(schemas.SchemaFormat.json)
 
             case keys.ForkType.consents:
                 access.ddhkey.raise_if_no_owner()

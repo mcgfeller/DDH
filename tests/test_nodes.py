@@ -38,15 +38,19 @@ async def test_schema_node(node_registry):
     session = sessions.Session(token_str='test_session', user=user)
     transaction = session.get_or_create_transaction(for_user=user)
     node_s = nodes.SchemaNode(owner=user)
-    keydirectory.NodeRegistry[keys.DDHkey(key='//p/health')] = node_s
+    keydirectory.NodeRegistry[keys.DDHkey(key='//p/health:schema')] = node_s
     node_s.add_schema(schema)
-    ddhkey = keys.DDHkey(key='//p/health/bmi/weight')  # does not exist
+    ddhkey = keys.DDHkey(key='//p/health/bmi/weight:schema')  # does not exist
     node_s, split = keydirectory.NodeRegistry.get_node(
         ddhkey, nodes.NodeSupports.schema, transaction)
     assert node_s.container.get() is schema
 
     access = permissions.Access(ddhkey=ddhkey, principal=user, modes=[
                                 permissions.AccessMode.read])
-    assert schemas.SchemaContainer.get_sub_schema(
-        access, transaction) is None, 'missing intermediate nodes must not be created'
-    assert await facade.get_schema(access, transaction) is None  # this should be same in one go.
+
+    parent_schema, access.ddhkey, split, snode, *d = schemas.SchemaContainer.get_node_schema_key(
+        access.ddhkey, transaction)
+    remainder = access.ddhkey.remainder(split)
+    schema_element = parent_schema.__getitem__(remainder, create_intermediate=False)
+    assert schema_element is None, 'missing intermediate nodes must not be created'
+    assert (await facade.ddh_get(access, session))[0] is None  # this should be same in one go.
