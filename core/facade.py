@@ -145,19 +145,6 @@ async def get_or_create_dnode(access: permissions.Access, transaction: transacti
     return data_node, d_key_split, remainder
 
 
-async def get_schema(access: permissions.Access, transaction: transactions.Transaction, schemaformat: schemas.SchemaFormat = schemas.SchemaFormat.json) -> pydantic.Json | None:
-    """ Service utility to retrieve a Schema and return it in the desired format.
-        Returns None if no schema found.
-    """
-    schema = schemas.SchemaContainer.get_sub_schema(access, transaction)
-    if schema:
-        trstate = await schema.apply_transformers_to_schema(access, transaction, None)
-        formatted_schema = schema.to_format(schemaformat)
-    else:
-        formatted_schema = None  # in case of not found.
-    return formatted_schema
-
-
 def check_mimetype_schema(ddhkey: keys.DDHkey, schema: schemas.AbstractSchema, accept_header: list[str] | None, header_field: str = 'Accept') -> str:
     """ raise error if selected schema variant's mimetype is not acceptable in accept_header.
         Design decision:
