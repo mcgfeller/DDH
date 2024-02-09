@@ -26,7 +26,7 @@ class SchemaValidation(trait.Transformer):
     only_forks: CV[frozenset[keys.ForkType]] = frozenset({keys.ForkType.schema})
     phase: CV[trait.Phase] = trait.Phase.validation
 
-    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
         """ in a SchemaValidation, the subject is schema. """
         return
 
@@ -70,14 +70,14 @@ class SchemaExpandReferences(SchemaValidation):
     only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({
         permissions.AccessMode.read, permissions.AccessMode.write})  # check on reads
 
-    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, includes_owner: bool = False, **kw):
-        trargs.nschema = trargs.nschema.expand_references()
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, includes_owner: bool = False, **kw):
+        trstate.nschema = trstate.nschema.expand_references()
         return
 
 
 class SchemaMustValidate(SchemaValidation):
     """ This schema must be validated """
-    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, includes_owner: bool = False, **kw):
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, includes_owner: bool = False, **kw):
         # TODO
         return
 
@@ -87,9 +87,9 @@ class ParseData(DataValidation):
 
     phase: CV[trait.Phase] = trait.Phase.parse
 
-    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, includes_owner: bool = False, **kw):
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, includes_owner: bool = False, **kw):
         try:
-            trargs.parsed_data = trargs.nschema.parse(trargs.orig_data)
+            trstate.parsed_data = trstate.nschema.parse(trstate.orig_data)
         except Exception as e:
             raise errors.ParseError(e)
         return
@@ -98,32 +98,32 @@ class ParseData(DataValidation):
 class MustValidate(DataValidation):
     """ Data must be validated """
 
-    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, includes_owner: bool = False, **kw):
-        owners = trargs.access.original_ddhkey.owners  # original, in case of Pseudonymized
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, includes_owner: bool = False, **kw):
+        owners = trstate.access.original_ddhkey.owners  # original, in case of Pseudonymized
         if len(owners) != 1:
             raise errors.NotSelectable(f"Cannot have multiple owners in key: {','.join(owners)}")
-        assert isinstance(trargs.parsed_data, dict)
+        assert isinstance(trstate.parsed_data, dict)
         if includes_owner:
-            if len(trargs.parsed_data) > 1:
+            if len(trstate.parsed_data) > 1:
                 raise errors.NotSelectable('Cannot have multiple owners in data')
             else:
-                data = trargs.parsed_data.get(owners[0])
+                data = trstate.parsed_data.get(owners[0])
                 if data is None:
                     raise errors.NotSelectable(f'No data supplied for owner: {owners[0]}')
         else:
-            data = trargs.parsed_data
+            data = trstate.parsed_data
 
-        remainder = trargs.access.ddhkey.remainder(trargs.access.schema_key_split)
+        remainder = trstate.access.ddhkey.remainder(trstate.access.schema_key_split)
 
         try:
-            trargs.parsed_data = trargs.nschema.validate_data(data, remainder, no_extra=NoExtraElements in traits)
+            trstate.parsed_data = trstate.nschema.validate_data(data, remainder, no_extra=NoExtraElements in traits)
         except errors.DDHerror as e:
             raise
         except Exception as e:
             raise errors.ValidationError(e)
 
-        if isinstance(trargs.parsed_data, DDHbaseModel):  # for PySchemas, we have a model, not a dict
-            trargs.parsed_data = trargs.parsed_data.model_dump()  # make dict
+        if isinstance(trstate.parsed_data, DDHbaseModel):  # for PySchemas, we have a model, not a dict
+            trstate.parsed_data = trstate.parsed_data.model_dump()  # make dict
 
         return
 
@@ -139,8 +139,8 @@ class LatestVersion(DataValidation):
     """ Data must match latest version of schema or must be upgradable.
     """
 
-    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
-        schema = trargs.nschema
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
+        schema = trstate.nschema
         v_schema = schema.schema_attributes.version  # the version of our schema.
         container = schema.container
         latest = container.get(schema.schema_attributes.variant)  # latest schema version of this variant
@@ -164,7 +164,7 @@ class LatestVersion(DataValidation):
 class UnderSchemaReference(DataValidation):
     """ TODO: Data within schema that includes schema reference only if schema can be expanded """
 
-    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
         return
 
 

@@ -102,8 +102,8 @@ async def check_data_with_mode(user, transaction, migros_key_schema, migros_data
     access = permissions.Access(ddhkey=k.ensure_fork(keys.ForkType.data), principal=user, modes=modes)
     cumulus = migros_data[user.id]['cumulus']
     access.schema_key_split = 4  # split after the migros.org
-    trargs = await schema.apply_transformers(access, trx, None)  # transformer processing happens here
-    data = trargs.parsed_data
+    trstate = await schema.apply_transformers(access, trx, None)  # transformer processing happens here
+    data = trstate.parsed_data
     assert user.id not in data, 'eid must be anonymized'
     assert len(data) == 1, 'one user only'
     d = list(data.values())[0]
@@ -113,7 +113,7 @@ async def check_data_with_mode(user, transaction, migros_key_schema, migros_data
     else:
         receipts = d
     assert not any(rec['Filiale'].startswith('MM ') for rec in receipts), 'sa Filiale must be anonymized'
-    return trargs
+    return trstate
 
 
 @pytest.mark.asyncio
@@ -128,8 +128,8 @@ async def test_read_anon_migros(user, transaction, migros_key_schema, migros_dat
 async def test_read_pseudo_migros(user, transaction, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
     """ read pseudonymous whole schema """
     modes = {permissions.AccessMode.read, permissions.AccessMode.pseudonym}
-    trargs = await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, monkeypatch)
-    eid = list(trargs.parsed_data.keys())[0]
+    trstate = await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, monkeypatch)
+    eid = list(trstate.parsed_data.keys())[0]
     pm = await anonymization.PseudonymMap.load(eid, user, transaction)  # retrieve it
     assert isinstance(pm, anonymization.PseudonymMap)
     assert isinstance(pm.inverted_cache, dict)
@@ -142,19 +142,19 @@ async def test_read_pseudo_migros(user, transaction, migros_key_schema, migros_d
 async def test_read_write_pseudo_migros(user, transaction, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
     """ read pseudonymous whole schema """
     modes = {permissions.AccessMode.read, permissions.AccessMode.pseudonym}
-    trargs = await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, monkeypatch)
-    schema = trargs.nschema  # modified in check_data_with_mode
+    trstate = await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, monkeypatch)
+    schema = trstate.nschema  # modified in check_data_with_mode
     k = migros_key_schema[0]
-    eid = list(trargs.parsed_data.keys())[0]
+    eid = list(trstate.parsed_data.keys())[0]
 
-    data = trargs.parsed_data[eid]  # without owner for writing
+    data = trstate.parsed_data[eid]  # without owner for writing
     data = json.dumps(jsonable_encoder(data))  # back to json
     modes = {permissions.AccessMode.write, permissions.AccessMode.pseudonym}
     ddhkey = k.ensure_fork(keys.ForkType.data).with_new_owner(eid)
     access = permissions.Access(ddhkey=ddhkey, principal=user, modes=modes)
     access.schema_key_split = 4  # split after the migros.org
-    trargs = await schema.apply_transformers(access, transaction, data)  # transformer processing happens here
-    data = trargs.parsed_data
+    trstate = await schema.apply_transformers(access, transaction, data)  # transformer processing happens here
+    data = trstate.parsed_data
     return
 
 

@@ -25,7 +25,7 @@ class BeginTransformer(BracketTransformer):
     """ First transformer in chain """
     phase: CV[trait.Phase] = trait.Phase.first
 
-    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
 
         return
 
@@ -34,10 +34,10 @@ class FinalTransformer(BracketTransformer):
     """ Final transformer in chain """
     phase: CV[trait.Phase] = trait.Phase.last
 
-    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
-        self.audit(trargs.access, trargs.transaction)
-        print(f'FinalTransformer: {trargs.transaction!s}')
-        await trargs.transaction.commit()
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
+        self.audit(trstate.access, trstate.transaction)
+        print(f'FinalTransformer: {trstate.transaction!s}')
+        await trstate.transaction.commit()
         return
 
 
@@ -45,12 +45,12 @@ class AbortTransformer(BracketTransformer):
     """ Special transformer called only if other transformers cause exceptions """
     phase: CV[trait.Phase] = trait.Phase.none_
 
-    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, failing: trait.Transformer, exception: Exception, **kw):
-        await trargs.transaction.abort()
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, failing: trait.Transformer, exception: Exception, **kw):
+        await trstate.transaction.abort()
         # Record failure and commit audit log
-        trargs.access.failed = str(exception)
-        self.audit(trargs.access, trargs.transaction)
-        await trargs.transaction.commit()
+        trstate.access.failed = str(exception)
+        self.audit(trstate.access, trstate.transaction)
+        await trstate.transaction.commit()
         return
 
 

@@ -255,18 +255,18 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         """ validate - called by validations.MustValidate """
         return data
 
-    async def apply_transformers(self, access: permissions.Access, transaction, data, **kw) -> trait.TransformerArgs:
+    async def apply_transformers(self, access: permissions.Access, transaction, data, **kw) -> trait.TransformerState:
         """ Apply Transformers in sequence, doing loading, validation, capabilities... """
-        trargs = trait.TransformerArgs(schema=self, orig_data=data, access=access, transaction=transaction)
-        await self.schema_attributes.transformers.apply(trargs, **kw)
-        return trargs
+        trstate = trait.TransformerState(schema=self, orig_data=data, access=access, transaction=transaction)
+        await self.schema_attributes.transformers.apply(trstate, **kw)
+        return trstate
 
-    async def apply_transformers_to_schema(self, access: permissions.Access, transaction, data, **kw) -> trait.TransformerArgs:
+    async def apply_transformers_to_schema(self, access: permissions.Access, transaction, data, **kw) -> trait.TransformerState:
         """ Lik .apply_transformers(), but to schema itself  """
         schema = self
-        trargs = trait.TransformerArgs(schema=schema, orig_data=schema, access=access, transaction=transaction)
-        await self.schema_attributes.transformers.apply(trargs, **kw)
-        return trargs
+        trstate = trait.TransformerState(schema=schema, orig_data=schema, access=access, transaction=transaction)
+        await self.schema_attributes.transformers.apply(trstate, **kw)
+        return trstate
 
     def expand_references(self) -> AbstractSchema:
         """ Replace all references to other schemas by embedding the other schema into

@@ -27,7 +27,7 @@ import pydantic
 from utils.pydantic_utils import DDHbaseModel, CV
 from utils import utils
 
-from . import errors, schemas, permissions, transactions, keys
+from . import errors, schemas, permissions, transactions, keys, node_types
 
 
 @enum.unique
@@ -150,7 +150,7 @@ class Transformer(Trait):
             Transformer, cls._cls_by_name[c]).only_modes) or any(mode in om for mode in modes)}
         return caps
 
-    async def apply(self, traits: Traits, trargs: TransformerArgs, **kw):
+    async def apply(self, traits: Traits, trstate: TransformerState, **kw):
         return
 
 
@@ -257,30 +257,32 @@ class Traits(DDHbaseModel):
 schemas.AbstractSchema = typing.ForwardRef('schemas.AbstractSchema')
 
 
-class TransformerArgs(DDHbaseModel):
+class TransformerState(DDHbaseModel):
+    """ keeps the state during the Transformers chain application """
     nschema: schemas.AbstractSchema = pydantic.Field(alias='schema')
     access: permissions.Access
     transaction: transactions.Transaction
     orig_data: typing.Any
     parsed_data: dict | None = None
-    data_node: typing.Any | None = None  # Nodes gives circ import
+    data_node: node_types.T_Node | None = None
+    schema_node: node_types.T_SchemaNode | None = None
 
 
 class Transformers(Traits):
 
-    async def apply(self,  trargs: TransformerArgs, subclass: type[Transformer] | None = None, **kw):
+    async def apply(self,  trstate: TransformerState, subclass: type[Transformer] | None = None, **kw):
         """ apply traits of subclass in turn """
-        access = trargs.access
+        access = trstate.access
         traits = self.select_for_apply(access.modes, access.ddhkey.fork, subclass)
         traits = self.sorted(traits, access.modes)
         trait = None  # just for error handling
         try:
             for trait in traits:
-                subject = await trait.apply(self, trargs, **kw)
+                subject = await trait.apply(self, trstate, **kw)
         except Exception as e:
             for abort_trait in DefaultTraits._AbortTransformer.traits:
                 assert isinstance(abort_trait, Transformer)
-                await abort_trait.apply(self, trargs, failing=trait, exception=e)
+                await abort_trait.apply(self, trstate, failing=trait, exception=e)
             raise  # re-raise exception
         return
 

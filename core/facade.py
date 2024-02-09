@@ -29,14 +29,19 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
 
         # fork-independent checks:
         # get schema and key with specifiers:
-        schema, access.ddhkey, access.schema_key_split, * \
+        schema, access.ddhkey, access.schema_key_split, schema_node, * \
             d = schemas.SchemaContainer.get_node_schema_key(access.ddhkey, transaction)
         mt = check_mimetype_schema(access.ddhkey, schema, accept_header)
         headers = {'Content-Location': str(access.ddhkey), 'Content-Type': mt, }
 
         match access.ddhkey.fork:
             case keys.ForkType.schema:  # if we ask for schema, we don't need an owner:
-                data = await get_schema(access, transaction, schemaformat=schemas.SchemaFormat.json)
+                schema = schemas.SchemaContainer.get_sub_schema(access, transaction)
+                if schema:
+                    trstate = await schema.apply_transformers_to_schema(access, transaction, None)
+                    data = trstate.nschema.to_format(schemas.SchemaFormat.json)
+                else:
+                    data = None  # in case of not found.
 
             case keys.ForkType.consents:
                 access.ddhkey.raise_if_no_owner()
@@ -44,8 +49,8 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
 
             case keys.ForkType.data:
                 access.ddhkey.raise_if_no_owner()
-                trargs = await schema.apply_transformers(access, transaction, None)
-                data = trargs.parsed_data
+                trstate = await schema.apply_transformers(access, transaction, None)
+                data = trstate.parsed_data
 
     return data, headers
 
@@ -72,8 +77,8 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
             case keys.ForkType.schema:
                 access.raise_if_not_permitted(schema_node)
                 new_schema = typing.cast(schemas.AbstractSchema, data)
-                trargs = await schema.apply_transformers_to_schema(access, transaction, new_schema)
-                data = trargs.parsed_data
+                trstate = await schema.apply_transformers_to_schema(access, transaction, new_schema)
+                data = trstate.parsed_data
 
             case keys.ForkType.consents | keys.ForkType.data:
 
@@ -89,8 +94,8 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                         await data_node.update_consents(access, transaction, remainder, consents)
 
                     case keys.ForkType.data:
-                        trargs = await schema.apply_transformers(access, transaction, data, includes_owner=includes_owner)
-                        data = trargs.parsed_data
+                        trstate = await schema.apply_transformers(access, transaction, data, includes_owner=includes_owner)
+                        data = trstate.parsed_data
 
     return data, headers
 
@@ -143,7 +148,7 @@ async def get_schema(access: permissions.Access, transaction: transactions.Trans
     """
     schema = schemas.SchemaContainer.get_sub_schema(access, transaction)
     if schema:
-        trargs = await schema.apply_transformers_to_schema(access, transaction, None)
+        trstate = await schema.apply_transformers_to_schema(access, transaction, None)
         formatted_schema = schema.to_format(schemaformat)
     else:
         formatted_schema = None  # in case of not found.

@@ -20,11 +20,11 @@ class Anonymize(capabilities.DataCapability):
     only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.read})
     phase: CV[trait.Phase] = trait.Phase.post_load
 
-    async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):
-        assert trargs.parsed_data is not None and len(trargs.parsed_data) > 0
+    async def apply(self, traits: trait.Traits, trstate: trait.TransformerState, **kw: dict):
+        assert trstate.parsed_data is not None and len(trstate.parsed_data) > 0
         cache = {}
-        trargs.parsed_data = self.transform(trargs.nschema, trargs.access,
-                                            trargs.transaction, trargs.parsed_data, cache)
+        trstate.parsed_data = self.transform(trstate.nschema, trstate.access,
+                                             trstate.transaction, trstate.parsed_data, cache)
 
     def transform(self, schema, access, transaction, data_by_principal: dict, cache: dict) -> dict:
         """ Apply self.transform_value to sensitivities in schema, keeping
@@ -81,20 +81,20 @@ class Anonymize(capabilities.DataCapability):
 class Pseudonymize(Anonymize):
     supports_modes: CV[frozenset[permissions.AccessMode]] = {permissions.AccessMode.pseudonym}
 
-    async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):
-        assert trargs.parsed_data is not None and len(trargs.parsed_data) > 0
+    async def apply(self, traits: trait.Traits, trstate: trait.TransformerState, **kw: dict):
+        assert trstate.parsed_data is not None and len(trstate.parsed_data) > 0
         cache = {}
-        for pid in trargs.parsed_data.keys():
-            tid = trargs.transaction.trxid+'_'+secrets.token_urlsafe(max(10, len(pid)))
+        for pid in trstate.parsed_data.keys():
+            tid = trstate.transaction.trxid+'_'+secrets.token_urlsafe(max(10, len(pid)))
             cache[('', '', pid)] = tid
 
-        trargs.parsed_data = self.transform(trargs.nschema, trargs.access,
-                                            trargs.transaction,  trargs.parsed_data, cache)
+        trstate.parsed_data = self.transform(trstate.nschema, trstate.access,
+                                             trstate.transaction,  trstate.parsed_data, cache)
         # the cache was filled during the transform - save it per principal:
-        for tid, data in trargs.parsed_data.items():
+        for tid, data in trstate.parsed_data.items():
             pm = PseudonymMap(id=typing.cast(common_ids.PersistId, tid), cache=cache)
             pm.invert()
-            trargs.transaction.add(persistable.SystemDataPersistAction(obj=pm))
+            trstate.transaction.add(persistable.SystemDataPersistAction(obj=pm))
         return
 
 
@@ -134,16 +134,16 @@ class DePseudonymize(capabilities.DataCapability):
     phase: CV[trait.Phase] = trait.Phase.pre_store  # after validation
     after: str = 'ValidateToDApp'  # we don't reveil identity to DApp
 
-    async def apply(self, traits: trait.Traits, trargs: trait.TransformerArgs, **kw: dict):
-        eid = trargs.access.original_ddhkey.owner  # this is the pseudo-owner uder which the map is stored
+    async def apply(self, traits: trait.Traits, trstate: trait.TransformerState, **kw: dict):
+        eid = trstate.access.original_ddhkey.owner  # this is the pseudo-owner uder which the map is stored
         try:
-            pm = await PseudonymMap.load(eid, trargs.access.principal, trargs.transaction)  # retrieve it
+            pm = await PseudonymMap.load(eid, trstate.access.principal, trstate.transaction)  # retrieve it
         except KeyError:
             raise errors.NotFound(f'Not a valid pseudonymous id: {eid}').to_http()
-        assert trargs.parsed_data is not None and len(trargs.parsed_data) > 0
+        assert trstate.parsed_data is not None and len(trstate.parsed_data) > 0
         assert pm.inverted_cache
-        trargs.parsed_data = self.transform(trargs.nschema, trargs.access,
-                                            trargs.transaction, trargs.parsed_data, eid, pm.inverted_cache)
+        trstate.parsed_data = self.transform(trstate.nschema, trstate.access,
+                                             trstate.transaction, trstate.parsed_data, eid, pm.inverted_cache)
         return
 
     def transform(self, schema, access, transaction, data: dict, eid, lookup: dict) -> dict:

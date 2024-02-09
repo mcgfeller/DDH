@@ -21,5 +21,5 @@ class DataCapability(trait.Transformer):
     supports_modes: CV[frozenset[permissions.AccessMode]] = frozenset()
     only_forks: CV[frozenset[keys.ForkType]] = frozenset({keys.ForkType.data})
 
-    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
         return  # TODO: Check method in superclass

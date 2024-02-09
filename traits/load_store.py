@@ -23,28 +23,28 @@ class LoadFromStorage(AccessTransformer):
     only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.read})
     only_forks: CV[frozenset[keys.ForkType]] = frozenset({keys.ForkType.data, keys.ForkType.consents})
 
-    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
         """ load from storage, per storage according to user profile """
         data_node, d_key_split = await keydirectory.NodeRegistry.get_node_async(
-            trargs.access.ddhkey, nodes.NodeSupports.data, trargs.transaction)
+            trstate.access.ddhkey, nodes.NodeSupports.data, trstate.transaction)
         q = None
         if data_node:
-            if trargs.access.ddhkey.fork == keys.ForkType.consents:
-                trargs.access.include_mode(permissions.AccessMode.read)
-                *d, consentees, msg = trargs.access.raise_if_not_permitted(data_node)
+            if trstate.access.ddhkey.fork == keys.ForkType.consents:
+                trstate.access.include_mode(permissions.AccessMode.read)
+                *d, consentees, msg = trstate.access.raise_if_not_permitted(data_node)
                 return data_node.consents
             else:
-                data_node = await data_node.ensure_loaded(trargs.transaction)
+                data_node = await data_node.ensure_loaded(trstate.transaction)
                 data_node = typing.cast(data_nodes.DataNode, data_node)
-                *d, consentees, msg = trargs.access.raise_if_not_permitted(data_node)
-                data = await data_node.execute(nodes.Ops.get, trargs.access, trargs.transaction, d_key_split, None, q)
-            trargs.data_node = data_node
+                *d, consentees, msg = trstate.access.raise_if_not_permitted(data_node)
+                data = await data_node.execute(nodes.Ops.get, trstate.access, trstate.transaction, d_key_split, None, q)
+            trstate.data_node = data_node
         else:
-            *d, consentees, msg = trargs.access.raise_if_not_permitted(await keydirectory.NodeRegistry._get_consent_node_async(
-                trargs.access.ddhkey, nodes.NodeSupports.data, None, trargs.transaction))
+            *d, consentees, msg = trstate.access.raise_if_not_permitted(await keydirectory.NodeRegistry._get_consent_node_async(
+                trstate.access.ddhkey, nodes.NodeSupports.data, None, trstate.transaction))
             data = {}
-        trargs.transaction.add_read_consentees({c.id for c in consentees})
-        trargs.parsed_data = data
+        trstate.transaction.add_read_consentees({c.id for c in consentees})
+        trstate.parsed_data = data
 
         return
 
@@ -59,17 +59,17 @@ class LoadFromDApp(AccessTransformer):
     # consents and schemas are never loaded through apps
     only_forks: CV[frozenset[keys.ForkType]] = frozenset({keys.ForkType.data})
 
-    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
         q = None
         e_node, e_key_split = await keydirectory.NodeRegistry.get_node_async(
-            trargs.access.ddhkey.without_owner(), nodes.NodeSupports.execute, trargs.transaction)
+            trstate.access.ddhkey.without_owner(), nodes.NodeSupports.execute, trstate.transaction)
         if e_node:
-            e_node = await e_node.ensure_loaded(trargs.transaction)
+            e_node = await e_node.ensure_loaded(trstate.transaction)
             e_node = typing.cast(nodes.ExecutableNode, e_node)
             req = dapp_attrs.ExecuteRequest(
-                op=nodes.Ops.get, access=trargs.access, transaction=trargs.transaction, key_split=e_key_split, data=trargs.parsed_data, q=q)
+                op=nodes.Ops.get, access=trstate.access, transaction=trstate.transaction, key_split=e_key_split, data=trstate.parsed_data, q=q)
             data = await e_node.execute(req)
-            trargs.parsed_data = data
+            trstate.parsed_data = data
         return
 
 
@@ -82,20 +82,20 @@ class ValidateToDApp(AccessTransformer):
     # consents and schemas are never loaded through apps
     only_forks: CV[frozenset[keys.ForkType]] = frozenset({keys.ForkType.data})
 
-    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
         # Call DApp
         q = None
         e_node, e_key_split = await keydirectory.NodeRegistry.get_node_async(
-            trargs.access.ddhkey.without_owner(), nodes.NodeSupports.execute, trargs.transaction)
+            trstate.access.ddhkey.without_owner(), nodes.NodeSupports.execute, trstate.transaction)
         if e_node:
-            e_node = await e_node.ensure_loaded(trargs.transaction)
+            e_node = await e_node.ensure_loaded(trstate.transaction)
             e_node = typing.cast(nodes.ExecutableNode, e_node)
             req = dapp_attrs.ExecuteRequest(
-                op=nodes.Ops.put, access=trargs.access, transaction=trargs.transaction, key_split=e_key_split, data=trargs.parsed_data, q=q)
+                op=nodes.Ops.put, access=trstate.access, transaction=trstate.transaction, key_split=e_key_split, data=trstate.parsed_data, q=q)
             data = await e_node.execute(req)
 
             if data is not None:
-                trargs.parsed_data = data
+                trstate.parsed_data = data
         return
 
 
@@ -106,13 +106,13 @@ class SaveToStorage(AccessTransformer):
     only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.write})
     only_forks: CV[frozenset[keys.ForkType]] = frozenset({keys.ForkType.data, keys.ForkType.consents})
 
-    async def apply(self,  traits: trait.Traits, trargs: trait.TransformerArgs, **kw):
-        if trargs.parsed_data is None:
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
+        if trstate.parsed_data is None:
             #  nothing to store, perhaps ValidateToDApp stored everything
             return None
         else:
-            access = trargs.access
-            transaction = trargs.transaction
+            access = trstate.access
+            transaction = trstate.transaction
 
             data_node, d_key_split = await keydirectory.NodeRegistry.get_node_async(
                 access.ddhkey, nodes.NodeSupports.data, transaction)
@@ -131,9 +131,9 @@ class SaveToStorage(AccessTransformer):
 
             data_node = typing.cast(data_nodes.DataNode, data_node)
             # TODO: Insert data into data_node
-            await data_node.execute(nodes.Ops.put, access, transaction, d_key_split, trargs.parsed_data)
+            await data_node.execute(nodes.Ops.put, access, transaction, d_key_split, trstate.parsed_data)
 
-            trargs.data_node = data_node  # TODO NEW NODE!
+            trstate.data_node = data_node  # TODO NEW NODE!
             # Add it to transaction:
             transaction.add(persistable.UserDataPersistAction(obj=data_node))
         return
