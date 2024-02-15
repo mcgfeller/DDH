@@ -56,10 +56,17 @@ async def test_write_data_other_owner(user, no_storage_dapp):
 async def test_set_consent_top(user, user2, no_storage_dapp):
     """ test set consent at top """
     session = get_session(user)
+    trx = session.get_or_create_transaction()
     ddhkey = keys.DDHkey(key="/mgf:consents")
     access = permissions.Access(ddhkey=ddhkey, principal=user, modes={permissions.AccessMode.write})
     consents = permissions.Consents(consents=[permissions.Consent(grantedTo=[user2])])
     await facade.ddh_put(access, session, consents.model_dump_json())
+    await trx.commit()
+    # now read it back
+    access = permissions.Access(ddhkey=ddhkey, principal=user, modes={permissions.AccessMode.read})
+    c2, h = await facade.ddh_get(access, session)
+    assert consents == c2
+    return
 
 
 @pytest.mark.asyncio
