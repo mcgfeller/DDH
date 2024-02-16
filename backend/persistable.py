@@ -37,7 +37,15 @@ class NonPersistable(DDHbaseModel):
         return self
 
 
-class Persistable(DDHbaseModel):
+class SupportsLoading(DDHbaseModel):
+
+    async def ensure_loaded(self, transaction: transactions.Transaction) -> Persistable:
+        """ must be refined to ensure self if Persistable """
+        assert isinstance(self, Persistable)
+        return self
+
+
+class Persistable(SupportsLoading):
     """ class that provides methods to get persistent state.
         Works with storage.
     """
@@ -85,16 +93,12 @@ class Persistable(DDHbaseModel):
     def get_key(self):
         raise NotImplementedError()
 
-    async def ensure_loaded(self, transaction: transactions.Transaction) -> Persistable:
-        """ self is already loaded, make operation idempotent """
-        return self
-
     def get_proxy(self) -> PersistableProxy:
         """ get a loadable proxy for us; idempotent. Reverse .ensureLoaded() """
         return PersistableProxy(id=self.id, classname=self.__class__.__name__, owner_id=self.owner.id if self.owner else None)
 
 
-class PersistableProxy(DDHbaseModel):
+class PersistableProxy(SupportsLoading):
     """ Proxy with minimal data to load Persistable """
     id: common_ids.PersistId
     classname: str
