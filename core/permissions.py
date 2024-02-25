@@ -146,7 +146,7 @@ class Consents(DDHbaseModel):
         else:
             return False, [consent] if consent else [], msg
 
-    def changes(self, new_consents: Consents) -> tuple:
+    def changes(self, new_consents: Consents) -> tuple[frozenset[Consent], frozenset[Consent]]:
         """ return added and removed consents as (set(),set()) """
         old = frozenset(self.consents); new = frozenset(new_consents.consents)
         return (new-old, old-new)
@@ -264,12 +264,19 @@ class Access(DDHbaseModel):
             self.byConsents = used_consents
         return ok, used_consents, consentees, msg
 
-    def raise_if_not_permitted(self, node: node_types.T_Node, owner: principals.Principal | None = None, record_access: bool = True):
+    def raise_if_not_permitted(self, node: node_types.T_Node | None, owner: principals.Principal | None = None, record_access: bool = True):
         """ raise access error if this access to node is not permitted """
         ok, used_consents, consentees, msg = self.permitted(node)
         if not ok:
             raise errors.AccessError(msg)
         return ok, used_consents, consentees, msg
+
+    def remainder(self) -> keys.DDHkey:
+        """ return remainder key """
+        if self.schema_key_split is None:
+            return self.ddhkey
+        else:
+            return self.ddhkey.remainder(self.schema_key_split)
 
 
 from . import keys
