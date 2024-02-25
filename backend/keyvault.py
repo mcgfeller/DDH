@@ -50,7 +50,7 @@ class AccessKey(DDHbaseModel):
 
 class AccessKeyVaultClass(DDHbaseModel):
     """ Hold AccessKey by (principal.id, and key.nodeid) """
-    access_keys: dict[tuple, AccessKey] = {}
+    access_keys: dict[tuple[common_ids.PrincipalId, str], AccessKey] = {}
 
     def clear_vault(self):
         self.access_keys.clear()
@@ -67,7 +67,7 @@ class AccessKeyVaultClass(DDHbaseModel):
             raise KeyError(f'no key found for principal={principal}')
         else:
             a_key = self.access_keys[(principal.id, nodeid)]
-            # s_key = StorageKey(add_consent_hash(p_key.decrypt(a_key.key),node.consents))
+            # s_key = StorageKey(_add_consent_hash(p_key.decrypt(a_key.key),node.consents))
             s_key = StorageKey(p_key.decrypt(a_key.key))
         return s_key
 
@@ -90,16 +90,20 @@ class PrincipalKey(DDHbaseModel):
     )
 
     @classmethod
-    def create(cls, principal):
-        """ Would like to be more generic with key generation here, but Padding needs to corrspond. """
+    def _create(cls, principal):
+        """ Would like to be more generic with key generation here, but Padding needs to corrspond. 
+            Note: Keys must be created by PrincipalKeyVaultClass.create(), so this method is private.
+        """
         return cls(principal=principal, key=rsa.generate_private_key(public_exponent=65537, key_size=cls.key_params['crv_or_size'],))
 
     def encrypt(self, plaintext: bytes) -> bytes:
+        """ encrypt with public key """
         public_key = self.key.public_key()
         ciphertext = public_key.encrypt(plaintext, self.Padding)
         return ciphertext
 
     def decrypt(self, ciphertext: bytes) -> bytes:
+        """ decryp with private key """
         plaintext = self.key.decrypt(ciphertext, self.Padding)
         return plaintext
 
@@ -116,8 +120,8 @@ class PrincipalKeyVaultClass(DDHbaseModel):
 
     def create(self, principal: principals.Principal) -> PrincipalKey:
         """ create a user key, store and return it """
-        assert principal.id not in self.key_by_principal
-        key = PrincipalKey.create(principal=principal)
+        assert principal.id not in self.key_by_principal, 'cannot recreate user key'
+        key = PrincipalKey._create(principal=principal)
         self.key_by_principal[principal.id] = key
         return key
 
@@ -129,7 +133,7 @@ def get_nonce() -> bytes:
     return cryptography.fernet.Fernet.generate_key()
 
 
-def add_consent_hash(key: bytes, consents: permissions.Consents):
+def _add_consent_hash(key: bytes, consents: permissions.Consents):
     ch = hashlib.blake2b(consents.model_dump_json().encode(), digest_size=len(key)).digest()
     key = base64.urlsafe_b64decode(key)
     key = bytes([a ^ b for a, b in zip(key, ch)])  # xor
@@ -140,7 +144,7 @@ def add_consent_hash(key: bytes, consents: permissions.Consents):
 def set_new_storage_key(node: node_types.T_Node, principal: principals.Principal, effective: set[principals.Principal], removed: set[principals.Principal]):
     """ set storage key based on private key of principal and public keys of consentees """
     # assert node.consents
-    storage_key = get_nonce()  # add_consent_hash(get_nonce(),node.consents) # new storage key
+    storage_key = get_nonce()  # _add_consent_hash(get_nonce(),node.consents) # new storage key
 
     for p in {principal} | effective:
         p_key = PrincipalKeyVault.key_for_principal(p)
