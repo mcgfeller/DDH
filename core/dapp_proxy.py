@@ -191,7 +191,7 @@ class DAppResource(transactions.Resource):
 
     async def added(self, trx: transactions.Transaction):
         """ Issue begin transaction req to DApp """
-        print(f'*DAppResource added {trx=}, {trx.user_token=}')
+        # print(f'*DAppResource added {trx=}, {trx.user_token=}')
         await self.begin(trx)
         return
 
