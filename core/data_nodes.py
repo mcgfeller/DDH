@@ -92,11 +92,14 @@ class DataNode(nodes.Node, persistable.Persistable):
             section 7.3 "Protection of data at rest and on the move" of the DDH paper.
         """
         assert self.key
+        eff_principals = consents.consentees()
         if self.consents:  # had consents before, check changes:
             added, removed = self.consents.changes(consents)
-            effective = consents.consentees()
+            # existing principals now longer effective - must be deleted:
+            del_principals = self.consents.consentees() - eff_principals
         else:  # all new
-            added = effective = consents.consentees(); removed = set()
+            added = consents.consents; removed = frozenset()
+            del_principals = set()  # all new, nobody to remove
 
         if added or removed:  # expensive op follows, do only if something has changed
             self.consents = consents  # actually update
@@ -107,8 +110,8 @@ class DataNode(nodes.Node, persistable.Persistable):
                 above = None
                 node = self  # top level
 
-            keyvault.set_new_storage_key(node, access.principal, effective,
-                                         removed)  # now we can set the new key
+            keyvault.set_new_storage_key(node, access.principal, eff_principals,
+                                         del_principals)  # now we can set the new key
 
             # re-encrypt on new node (may be self if there is not remainder)
             await node.store(transaction)
