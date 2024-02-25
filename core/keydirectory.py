@@ -29,6 +29,13 @@ class _NodeRegistry:
     def __init__(self):
         self.nodes_by_key = {}
 
+    def _clear(self, supports: set[nodes.NodeSupports]):
+        """ clear selective supports, for testing only """
+        for s in self.nodes_by_key:
+            if s in supports:
+                self.nodes_by_key[s].clear()
+        return
+
     def __setitem__(self, key: keys.DDHkey, node: nodes.NodeOrProxy):
         """ Store the node, with a reference per NodeSupports """
         node.key = key
