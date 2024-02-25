@@ -153,6 +153,10 @@ class Transformer(Trait):
     async def apply(self, traits: Traits, trstate: TransformerState, **kw):
         return
 
+    def __repr__(self) -> str:
+        """ Abbreviated output for debugging """
+        return self.__class__.__name__
+
 
 class Traits(DDHbaseModel):
     """ A collection of Trait.
