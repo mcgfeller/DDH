@@ -41,11 +41,11 @@ async def test_write_data(user, no_storage_dapp):
 
 
 @pytest.mark.asyncio
-async def test_write_data_other_owner(user, no_storage_dapp):
+async def test_write_data_other_owner(user3, no_storage_dapp):
     """ test write through facade.ddh_put() using another owner"""
-    session = get_session(user)
+    session = get_session(user3)
     ddhkey = keys.DDHkey(key="/another/org/private/documents/doc1")
-    access = permissions.Access(ddhkey=ddhkey, principal=user, modes={permissions.AccessMode.write})
+    access = permissions.Access(ddhkey=ddhkey, principal=user3, modes={permissions.AccessMode.write})
     data = json.dumps({'document': 'not much'})
     with pytest.raises(errors.AccessError):
         await facade.ddh_put(access, session, data)
@@ -64,8 +64,9 @@ async def test_set_consent_top(user, user2, no_storage_dapp):
     await trx.commit()
     # now read it back
     access = permissions.Access(ddhkey=ddhkey, principal=user, modes={permissions.AccessMode.read})
-    c2, h = await facade.ddh_get(access, session)
-    assert consents == c2
+    cj, h = await facade.ddh_get(access, session)
+    new_consents = permissions.Consents.model_validate(cj)
+    assert consents == new_consents
     return
 
 
