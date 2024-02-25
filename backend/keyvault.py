@@ -3,7 +3,8 @@
     It implements the section 7.3 "Protection of data at rest and on the move" of the DDH paper.
 """
 from __future__ import annotations
-from abc import abstractmethod
+
+import logging
 import typing
 import hashlib
 import cryptography.fernet
@@ -13,6 +14,8 @@ from cryptography.hazmat.primitives.asymmetric import padding, rsa
 import cryptography.fernet
 import base64
 from core import common_ids
+
+logger = logging.getLogger(__file__)
 
 
 from core import keys, permissions, node_types, principals
@@ -28,6 +31,9 @@ class StorageKey:
         except Exception as e:
             print(e, key)
             self._fernet = cryptography.fernet.Fernet(base64.urlsafe_b64encode(key))
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}(signing={self._fernet._signing_key}, encryption={self._fernet._encryption_key})'
 
     def encrypt(self, plaintext: bytes) -> bytes:
         ciphertext = self._fernet.encrypt(plaintext)
@@ -134,6 +140,9 @@ def get_nonce() -> bytes:
 
 
 def _add_consent_hash(key: bytes, consents: permissions.Consents):
+    """ Note: Unused, as we cannot add consent to encryption key, as consent
+        is stored within the node and hence is encrypted under the key.
+    """
     ch = hashlib.blake2b(consents.model_dump_json().encode(), digest_size=len(key)).digest()
     key = base64.urlsafe_b64decode(key)
     key = bytes([a ^ b for a, b in zip(key, ch)])  # xor
@@ -160,6 +169,7 @@ def set_new_storage_key(node: node_types.T_Node, principal: principals.Principal
 def encrypt_data(principal: principals.Principal, nodeid: common_ids.PersistId, data: bytes) -> bytes:
     """ Encrypt data going to storage for a node and accessing Principal """
     storage_key = AccessKeyVault.get_storage_key(principal, nodeid)
+    logger.debug(f'Encrypting {principal.id=}, {nodeid=} using {storage_key=}')
     cipherdata = storage_key.encrypt(data)
     return cipherdata
 
@@ -167,6 +177,7 @@ def encrypt_data(principal: principals.Principal, nodeid: common_ids.PersistId, 
 def decrypt_data(principal: principals.Principal, nodeid: common_ids.PersistId, cipherdata: bytes) -> bytes:
     """ Decrypt data coming from storage for a node and accessing Principal """
     storage_key = AccessKeyVault.get_storage_key(principal, nodeid)
+    logger.debug(f'Decrypting {principal.id=}, {nodeid=} using {storage_key=}')
     data = storage_key.decrypt(cipherdata)
     return data
 
