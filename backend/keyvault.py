@@ -11,9 +11,8 @@ import cryptography.fernet
 
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
-import cryptography.fernet
 import base64
-from core import common_ids
+from core import common_ids, errors
 
 logger = logging.getLogger(__file__)
 
@@ -40,7 +39,10 @@ class StorageKey:
         return ciphertext
 
     def decrypt(self, ciphertext: bytes) -> bytes:
-        plaintext = self._fernet.decrypt(ciphertext)
+        try:
+            plaintext = self._fernet.decrypt(ciphertext)
+        except cryptography.fernet.InvalidToken as e:
+            raise errors.DecryptionError(f'Error accessing storage: {e!r}: {e.__context__}')
         return plaintext
 
 
@@ -70,7 +72,7 @@ class AccessKeyVaultClass(DDHbaseModel):
     def get_storage_key(self, principal: principals.Principal, nodeid: common_ids.PersistId) -> StorageKey:
         p_key = PrincipalKeyVault.key_for_principal(principal)
         if not p_key:
-            raise KeyError(f'no key found for principal={principal}')
+            raise KeyError(f'No key found for principal={principal}')
         else:
             a_key = self.access_keys[(principal.id, nodeid)]
             # s_key = StorageKey(_add_consent_hash(p_key.decrypt(a_key.key),node.consents))

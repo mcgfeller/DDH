@@ -39,6 +39,11 @@ class AccessError(DDHerror):
     http_status = 403
 
 
+class DecryptionError(AccessError):
+    """ Errors encountered during accessing encrypted data """
+    ...
+
+
 class DAppAuthorizationError(DDHerror):
     """ Delegated request does not access this user """
     http_status = 401

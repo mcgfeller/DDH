@@ -63,7 +63,10 @@ class DataNode(nodes.Node, persistable.Persistable):
         res = await cls.get_storage_resource(owner, transaction)
         enc = await res.load(id, transaction)
         # enc = storage.Storage.load(id, transaction)
-        plain = keyvault.decrypt_data(transaction.for_user, id, enc)
+        try:
+            plain = keyvault.decrypt_data(transaction.for_user, id, enc)
+        except KeyError as e:  # there is no entry for the user in keyvault.PrincipalKeyVault, so we cannot load this node
+            raise errors.AccessError(f'User {transaction.for_user.id} not authorized to load node {id}')
         o = cls.from_compressed(plain)
         return o
 
@@ -102,6 +105,7 @@ class DataNode(nodes.Node, persistable.Persistable):
             del_principals = set()  # all new, nobody to remove
 
         if added or removed:  # expensive op follows, do only if something has changed
+            await self.ensure_loaded(transaction)  # we must ensure data is read
             self.consents = consents  # actually update
 
             if remainder.key:  # change is not at this level, insert a new node:
@@ -113,7 +117,7 @@ class DataNode(nodes.Node, persistable.Persistable):
             keyvault.set_new_storage_key(node, access.principal, eff_principals,
                                          del_principals)  # now we can set the new key
 
-            # re-encrypt on new node (may be self if there is not remainder)
+            # re-encrypt on new node (may be self if there is no remainder)
             await node.store(transaction)
             if remainder.key:  # need to write data with below part cut out again, but with changed key
 
