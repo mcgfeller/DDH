@@ -47,7 +47,9 @@ class DataNode(nodes.Node, persistable.Persistable):
         res = await self.get_storage_resource(self.owner, transaction)
         d = self.to_compressed()
         if self.id not in storage.Storage:
-            keyvault.set_new_storage_key(self, transaction.for_user, set(), set())
+            effective = (self.consents.consentees() | set(self.owners)) if self.consents\
+                else set(self.owners)  # if we have consents for others, set it
+            keyvault.set_new_storage_key(self, transaction.for_user, effective, set())
         enc = keyvault.encrypt_data(transaction.for_user, self.id, d)
         await res.store(self.id, enc, transaction)
         return
@@ -121,6 +123,9 @@ class DataNode(nodes.Node, persistable.Persistable):
             await node.store(transaction)
             if remainder.key:  # need to write data with below part cut out again, but with changed key
 
+                # keyvault.set_new_storage_key(self, access.principal, self.consents.consentees(),
+                #                              set())  # now we can set the new key
+                ...
                 await self.store(transaction)  # old node
 
         return

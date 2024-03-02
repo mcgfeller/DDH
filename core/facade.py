@@ -48,7 +48,9 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
 
             case keys.ForkType.consents:
                 access.ddhkey.raise_if_no_owner()
-                data = await get_data(access, transaction, q)
+                trstate = await schema.apply_transformers(access, transaction, None)
+                data = trstate.parsed_data
+                # data = await get_data(access, transaction, q)
 
             case keys.ForkType.data:
                 access.ddhkey.raise_if_no_owner()
@@ -90,10 +92,8 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                 match access.ddhkey.fork:
                     case keys.ForkType.consents:
                         # We need a data node, even for consents, as it carries the consents:
-                        data_node, d_key_split, remainder = await get_or_create_dnode(access, transaction)
-                        access.raise_if_not_permitted(data_node)
-                        consents = permissions.Consents.model_validate_json(data)
-                        await data_node.update_consents(access, transaction, remainder, consents)
+                        trstate = await schema.apply_transformers(access, transaction, data)
+                        data = trstate.parsed_data
 
                     case keys.ForkType.data:
                         trstate = await schema.apply_transformers(access, transaction, data, includes_owner=includes_owner)

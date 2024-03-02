@@ -1,12 +1,18 @@
 """ Set up some Test data """
-from core import keys, permissions, facade, errors, transactions, principals
+from core import keys, permissions, facade, errors, transactions, principals, keydirectory, nodes
 from core import pillars
 from frontend import user_auth, sessions
 from backend import keyvault
 import pytest
 import json
 
-keyvault.clear_vaults()  # need to be independet of other tests
+
+def clear_data():
+    keydirectory.NodeRegistry._clear({nodes.NodeSupports.data})
+    keyvault.clear_vaults()  # need to be independet of other tests
+
+
+clear_data()
 
 
 @pytest.fixture(scope="module")
@@ -154,6 +160,7 @@ async def test_read_and_write_data(user, user2, no_storage_dapp):
 @pytest.mark.asyncio
 async def test_read_and_write_data2(user, user2, no_storage_dapp):
     session = get_session(user)
+
     # first, set up some data:
     await test_write_data_with_consent(user, user2, no_storage_dapp)
     await session.reinit()  # ensure we have a clean slate

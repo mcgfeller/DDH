@@ -7,7 +7,7 @@ import pydantic
 from utils.pydantic_utils import CV
 
 from core import (errors, trait, permissions, keys, nodes, data_nodes, keydirectory, dapp_attrs)
-from backend import persistable
+from backend import persistable, keyvault
 
 
 class AccessTransformer(trait.Transformer):
@@ -15,6 +15,38 @@ class AccessTransformer(trait.Transformer):
     supports_modes: CV[frozenset[permissions.AccessMode]] = frozenset()  # Transformer is not invoked by mode
     only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.write})  # no checks for read
     phase: CV[trait.Phase] = trait.Phase.validation
+
+    async def get_or_create_dnode(self, trstate: trait.TransformerState, create: bool = False, condition: typing.Callable | None = None) -> tuple[data_nodes.DataNode | None, int, keys.DDHkey]:
+        if create and condition:
+            raise ValueError('create and condition may not be set simultaneously')
+        try:
+            data_node, d_key_split = await keydirectory.NodeRegistry.get_node_async(
+                trstate.access.ddhkey, nodes.NodeSupports.data, trstate.transaction, condition=condition)
+        except errors.AccessError as e:
+            raise errors.AccessError(
+                f'User {trstate.access.principal.id} not authorized to read {trstate.access.ddhkey}')
+
+        if data_node:
+            data_node = typing.cast(persistable.SupportsLoading, data_node)  # we can apply ensure_loaded
+            data_node = await data_node.ensure_loaded(trstate.transaction)
+            data_node = typing.cast(data_nodes.DataNode, data_node)  # now we know it's a DataNode
+            topkey, remainder = trstate.access.ddhkey.split_at(d_key_split)
+        else:
+            topkey, remainder = trstate.access.ddhkey.split_at(2)
+            # there is no node, create it if owner asks for it:
+            if create:
+                if trstate.access.principal.id in topkey.owner:
+                    data_node = data_nodes.DataNode(owner=trstate.access.principal, key=topkey)
+                    await data_node.store(trstate.transaction)  #
+                    keyvault.set_new_storage_key(data_node, trstate.access.principal, set(), set())
+                    keydirectory.NodeRegistry[data_node.key] = data_node  # XXX? # put node into directory
+
+                else:  # not owner, we simply say no access to this path
+                    raise errors.AccessError(f'User {trstate.access.principal.id} not authorized to write to {topkey}')
+
+        trstate.data_node = data_node
+
+        return data_node, d_key_split, remainder
 
 
 class LoadFromStorage(AccessTransformer):
@@ -25,23 +57,27 @@ class LoadFromStorage(AccessTransformer):
 
     async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
         """ load from storage, per storage according to user profile """
-        data_node, d_key_split = await keydirectory.NodeRegistry.get_node_async(
-            trstate.access.ddhkey, nodes.NodeSupports.data, trstate.transaction)
+
+        for_consents = trstate.access.ddhkey.fork == keys.ForkType.consents
+        data_node, d_key_split, remainder = await self.get_or_create_dnode(trstate, create=for_consents)
+
+        # *d, consentees, msg = trstate.access.raise_if_not_permitted(data_node)
         q = None
+
         if data_node:
             if trstate.access.ddhkey.fork == keys.ForkType.consents:
                 trstate.access.include_mode(permissions.AccessMode.read)
                 *d, consentees, msg = trstate.access.raise_if_not_permitted(data_node)
-                return data_node.consents
+                consents = data_node.consents if data_node.consents else permissions.DefaultConsents
+                data = consents.model_dump()
             else:
-                data_node = await data_node.ensure_loaded(trstate.transaction)
-                data_node = typing.cast(data_nodes.DataNode, data_node)
                 *d, consentees, msg = trstate.access.raise_if_not_permitted(data_node)
                 data = await data_node.execute(nodes.Ops.get, trstate.access, trstate.transaction, d_key_split, None, q)
             trstate.data_node = data_node
-        else:
-            *d, consentees, msg = trstate.access.raise_if_not_permitted(await keydirectory.NodeRegistry._get_consent_node_async(
-                trstate.access.ddhkey, nodes.NodeSupports.data, None, trstate.transaction))
+        else:  # we have no data_node, but need a consent node to check whether we can read here:
+            data_node, d_key_split, remainder = await self.get_or_create_dnode(trstate, condition=nodes.Node.has_consents)
+            *d, consentees, msg = trstate.access.raise_if_not_permitted(data_node)
+
             data = {}
         trstate.transaction.add_read_consentees({c.id for c in consentees})
         trstate.parsed_data = data
@@ -99,12 +135,35 @@ class ValidateToDApp(AccessTransformer):
         return
 
 
+class UpdateConsents(AccessTransformer):
+    """ Upate consents with validated data """
+    phase: CV[trait.Phase] = trait.Phase.validation
+    only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.write})
+    only_forks: CV[frozenset[keys.ForkType]] = frozenset({keys.ForkType.consents})
+
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
+
+        # validate new consents first:
+        trstate.parsed_data = permissions.Consents.model_validate_json(trstate.orig_data)
+
+        if not trstate.data_node:
+            data_node, d_key_split, remainder = await self.get_or_create_dnode(trstate, create=True)
+            assert trstate.data_node
+        trstate.data_node = typing.cast(data_nodes.DataNode, trstate.data_node)
+
+        trstate.access.raise_if_not_permitted(trstate.data_node)
+
+        await trstate.data_node.update_consents(trstate.access, trstate.transaction, remainder, trstate.parsed_data)
+        await trstate.data_node.store(trstate.transaction)
+        return
+
+
 class SaveToStorage(AccessTransformer):
     """ Save data to storage """
     phase: CV[trait.Phase] = trait.Phase.store
     after: str = 'ValidateToDApp'
     only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.write})
-    only_forks: CV[frozenset[keys.ForkType]] = frozenset({keys.ForkType.data, keys.ForkType.consents})
+    only_forks: CV[frozenset[keys.ForkType]] = frozenset({keys.ForkType.data, })
 
     async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
         if trstate.parsed_data is None:
@@ -122,7 +181,7 @@ class SaveToStorage(AccessTransformer):
                 # there is no node, create it if owner asks for it:
                 if access.principal.id in topkey.owner:
                     data_node = data_nodes.DataNode(owner=access.principal, key=topkey)
-                    # data_node.store(transaction)  # XXX? # put node into directory
+                    await data_node.store(transaction)  # XXX? # put node into directory
                 else:  # not owner, we simply say no access to this path
                     raise errors.AccessError(f'User {access.principal.id} not authorized to write to {topkey}')
             else:
@@ -141,4 +200,4 @@ class SaveToStorage(AccessTransformer):
 
 # Root Tranformers may be overwritten:
 trait.DefaultTraits.RootTransformers += trait.Transformers(
-    LoadFromStorage(may_overwrite=True), LoadFromDApp(may_overwrite=True), ValidateToDApp(may_overwrite=True), SaveToStorage(may_overwrite=True))
+    LoadFromStorage(may_overwrite=True), LoadFromDApp(may_overwrite=True), ValidateToDApp(may_overwrite=True),  UpdateConsents(), SaveToStorage(may_overwrite=True))
