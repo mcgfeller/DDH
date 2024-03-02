@@ -42,9 +42,7 @@ class Transaction(DDHbaseModel):
 
     trx_local: dict = pydantic.Field(default_factory=dict, description="dict for storage local to transactionn")
 
-    # https://github.com/pydantic/pydantic/issues/3679#issuecomment-1337575645
-    Transactions: typing.ClassVar[dict[common_ids.TrxId, typing.Any]] = {}
-    # Transactions : typing.ClassVar[dict[common_ids.TrxId,'Transaction']] = {}
+    Transactions: typing.ClassVar[dict[common_ids.TrxId, Transaction]] = {}
     TTL: typing.ClassVar[datetime.timedelta] = datetime.timedelta(
         seconds=30)  # max duration of a transaction in seconds
 
