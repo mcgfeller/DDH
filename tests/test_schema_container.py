@@ -35,7 +35,7 @@ def test_schema_multiple_versions(node_registry):
     user = users.User(id='1', name='martin', email='martin.gfeller@swisscom.com')
 
     session = sessions.Session(token_str='test_session', user=user)
-    transaction = session.get_or_create_transaction(for_user=user)
+    transaction = session.get_or_create_transaction()
     node_s = nodes.SchemaNode(owner=user)
     keydirectory.NodeRegistry[keys.DDHkey(key='//p/health')] = node_s
 

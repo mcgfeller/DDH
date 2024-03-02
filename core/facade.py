@@ -23,7 +23,7 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
         First we get the data (and consent), then we pass it to an enode if an enode is found.
 
     """
-    async with session.get_or_create_transaction(for_user=access.principal) as transaction:
+    async with session.get_or_create_transaction() as transaction:
         access.include_mode(permissions.AccessMode.read)
         transaction.add_and_validate(access)
 
@@ -64,7 +64,7 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
     """ Service utility to store data.
 
     """
-    async with session.get_or_create_transaction(for_user=access.principal) as transaction:
+    async with session.get_or_create_transaction() as transaction:
         access.include_mode(permissions.AccessMode.write)
         transaction.add_and_validate(access)
 

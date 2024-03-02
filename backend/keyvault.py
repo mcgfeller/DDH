@@ -152,8 +152,8 @@ def _add_consent_hash(key: bytes, consents: permissions.Consents):
     return key
 
 
-def set_new_storage_key(node: node_types.T_Node, transaction_principal: principals.Principal, effective: set[principals.Principal], removed: set[principals.Principal]):
-    """ set storage key based on private key of transaction_principal and public keys of node.owner+consentees """
+def set_new_storage_key(node: node_types.T_Node, transaction_owner: principals.Principal, effective: set[principals.Principal], removed: set[principals.Principal]):
+    """ set storage key based on private key of transaction_owner and public keys of node.owner+consentees """
     # assert node.consents
 
     for p in removed:  # remove old entries
@@ -161,7 +161,7 @@ def set_new_storage_key(node: node_types.T_Node, transaction_principal: principa
 
     storage_key = get_nonce()  # _add_consent_hash(get_nonce(),node.consents) # new storage key
 
-    for p in {transaction_principal} | effective:
+    for p in {transaction_owner} | effective:
         p_key = PrincipalKeyVault.key_for_principal(p)
         if not p_key:
             p_key = PrincipalKeyVault.create(p)
@@ -171,18 +171,18 @@ def set_new_storage_key(node: node_types.T_Node, transaction_principal: principa
     return
 
 
-def encrypt_data(transaction_principal: principals.Principal, nodeid: common_ids.PersistId, data: bytes) -> bytes:
+def encrypt_data(transaction_owner: principals.Principal, nodeid: common_ids.PersistId, data: bytes) -> bytes:
     """ Encrypt data going to storage for a node and accessing Principal """
-    storage_key = AccessKeyVault.get_storage_key(transaction_principal, nodeid)
-    logger.debug(f'Encrypting {transaction_principal.id=}, {nodeid=} using {storage_key=}')
+    storage_key = AccessKeyVault.get_storage_key(transaction_owner, nodeid)
+    logger.debug(f'Encrypting {transaction_owner.id=}, {nodeid=} using {storage_key=}')
     cipherdata = storage_key.encrypt(data)
     return cipherdata
 
 
-def decrypt_data(transaction_principal: principals.Principal, nodeid: common_ids.PersistId, cipherdata: bytes) -> bytes:
+def decrypt_data(transaction_owner: principals.Principal, nodeid: common_ids.PersistId, cipherdata: bytes) -> bytes:
     """ Decrypt data coming from storage for a node and accessing Principal """
-    storage_key = AccessKeyVault.get_storage_key(transaction_principal, nodeid)
-    logger.debug(f'Decrypting {transaction_principal.id=}, {nodeid=} using {storage_key=}')
+    storage_key = AccessKeyVault.get_storage_key(transaction_owner, nodeid)
+    logger.debug(f'Decrypting {transaction_owner.id=}, {nodeid=} using {storage_key=}')
     data = storage_key.decrypt(cipherdata)
     return data
 

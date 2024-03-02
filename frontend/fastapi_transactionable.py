@@ -19,7 +19,7 @@ async def trx_begin(
 
 ) -> common_ids.TrxId:
     # print(f"/transaction/{trxid}/begin")
-    trx = transactions.Transaction.get_or_create_transaction_with_id(trxid=trxid, for_user=session.user)
+    trx = transactions.Transaction.get_or_create_transaction_with_id(trxid=trxid, owner=session.user)
     return trx.trxid
 
 

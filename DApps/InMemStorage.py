@@ -61,7 +61,7 @@ async def load(
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     trxid: common_ids.TrxId = fastapi.Query(),
 ) -> bytes:
-    trx = transactions.Transaction.get_or_create_transaction_with_id(trxid=trxid, for_user=session.user)
+    trx = transactions.Transaction.get_or_create_transaction_with_id(trxid=trxid, owner=session.user)
     data = trx.trx_local.get(key, _missing)
     if data is _missing:
         try:
@@ -82,7 +82,7 @@ async def store(
     trxid: common_ids.TrxId = fastapi.Query(),
     data: bytes = fastapi.Body(..., media_type='data/binary')
 ):
-    trx = transactions.Transaction.get_or_create_transaction_with_id(trxid=trxid, for_user=session.user)
+    trx = transactions.Transaction.get_or_create_transaction_with_id(trxid=trxid, owner=session.user)
     trx.add(WriteAction(key=key, data=data))
     return
 
@@ -95,7 +95,7 @@ async def delete(
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     trxid: common_ids.TrxId = fastapi.Query(),
 ):
-    trx = transactions.Transaction.get_or_create_transaction_with_id(trxid=trxid, for_user=session.user)
+    trx = transactions.Transaction.get_or_create_transaction_with_id(trxid=trxid, owner=session.user)
     # print(f'storage.delete {key=}, {trx.trxid=}, ')
     trx.add(WriteAction(key=key, data=_missing))
     return

@@ -36,7 +36,7 @@ async def test_schema_node(node_registry):
     schema = py_schema.PySchema(schema_element=DummyElement)
     user = users.User(id='1', name='martin', email='martin.gfeller@swisscom.com')
     session = sessions.Session(token_str='test_session', user=user)
-    transaction = session.get_or_create_transaction(for_user=user)
+    transaction = session.get_or_create_transaction()
     node_s = nodes.SchemaNode(owner=user)
     keydirectory.NodeRegistry[keys.DDHkey(key='//p/health:schema')] = node_s
     node_s.add_schema(schema)
@@ -45,7 +45,7 @@ async def test_schema_node(node_registry):
         ddhkey, nodes.NodeSupports.schema, transaction)
     assert node_s.container.get() is schema
 
-    access = permissions.Access(ddhkey=ddhkey, principal=user, modes=[
+    access = permissions.Access(ddhkey=ddhkey, modes=[
                                 permissions.AccessMode.read])
 
     parent_schema, access.ddhkey, split, snode, *d = schemas.SchemaContainer.get_node_schema_key(

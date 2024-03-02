@@ -207,7 +207,7 @@ class Access(DDHbaseModel):
     op:        Operation = Operation.get
     ddhkey:    DDHkey  # type: ignore
     original_ddhkey: DDHkey | None = None  # type: ignore # original key if ddhkey is modified in pseudonymous access
-    principal: principals.Principal
+    principal: principals.Principal | None = None  # will be set once added to a trx
     byDApp:    principals.DAppId | None = None
     modes:     set[AccessMode] = {AccessMode.read}
     time:      datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow)  # defaults to now
@@ -230,6 +230,8 @@ class Access(DDHbaseModel):
         """ checks whether access is permitted, returning (bool,required flags,transformer consent,explanation text)
             if record_access is set, the result is recorded into self.
         """
+        if self.principal is None:
+            raise errors.AccessError('Add Access to Transaction first.')
         used_consents = []
         consentees = set()
         if owner is not None:

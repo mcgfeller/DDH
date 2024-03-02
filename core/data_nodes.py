@@ -49,8 +49,8 @@ class DataNode(nodes.Node, persistable.Persistable):
         if self.id not in storage.Storage:
             effective = (self.consents.consentees() | set(self.owners)) if self.consents\
                 else set(self.owners)  # if we have consents for others, set it
-            keyvault.set_new_storage_key(self, transaction.for_user, effective, set())
-        enc = keyvault.encrypt_data(transaction.for_user, self.id, d)
+            keyvault.set_new_storage_key(self, transaction.owner, effective, set())
+        enc = keyvault.encrypt_data(transaction.owner, self.id, d)
         await res.store(self.id, enc, transaction)
         return
 
@@ -66,9 +66,9 @@ class DataNode(nodes.Node, persistable.Persistable):
         enc = await res.load(id, transaction)
         # enc = storage.Storage.load(id, transaction)
         try:
-            plain = keyvault.decrypt_data(transaction.for_user, id, enc)
+            plain = keyvault.decrypt_data(transaction.owner, id, enc)
         except KeyError as e:  # there is no entry for the user in keyvault.PrincipalKeyVault, so we cannot load this node
-            raise errors.AccessError(f'User {transaction.for_user.id} not authorized to load node {id}')
+            raise errors.AccessError(f'User {transaction.owner.id} not authorized to load node {id}')
         o = cls.from_compressed(plain)
         return o
 

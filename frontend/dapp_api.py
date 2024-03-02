@@ -96,13 +96,12 @@ async def put_data(
 
 @app.post("/transaction")
 async def create_transaction(
-    for_user: principals.Principal,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     dapp: principals.DAppId | None = None,
 
 ):
     try:
-        trx = await session.ensure_new_transaction(for_user)
+        trx = await session.ensure_new_transaction()
     except errors.DDHerror as e:
         raise e.to_http()
 
@@ -111,12 +110,11 @@ async def create_transaction(
 
 @app.post("/reinitialize")
 async def reinitialize(
-    for_user: principals.Principal,
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
 
 ):
     try:
-        trx = await session.ensure_new_transaction(for_user)
+        trx = await session.ensure_new_transaction()
     except errors.DDHerror as e:
         raise e.to_http()
 

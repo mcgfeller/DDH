@@ -25,7 +25,7 @@ DefaultReadConsentees = {principals.AllPrincipal.id}  # by default, nothing is r
 
 class Transaction(DDHbaseModel):
     trxid: common_ids.TrxId
-    for_user: principals.Principal
+    owner: principals.Principal
     user_token: str | None = None
     accesses: list[permissions.Access] = pydantic.Field(default_factory=list)
     exp: datetime.datetime = datetime.datetime.now()
@@ -44,7 +44,7 @@ class Transaction(DDHbaseModel):
 
     Transactions: typing.ClassVar[dict[common_ids.TrxId, Transaction]] = {}
     TTL: typing.ClassVar[datetime.timedelta] = datetime.timedelta(
-        seconds=30)  # max duration of a transaction in seconds
+        seconds=120)  # max duration of a transaction in seconds (high for debugging)
 
     def __init__(self, **kw):
         super().__init__(**kw)
@@ -52,12 +52,12 @@ class Transaction(DDHbaseModel):
         return
 
     @classmethod
-    def create(cls, for_user: principals.Principal, user_token: str | None = None, **kw) -> Transaction:
+    def create(cls, owner: principals.Principal, user_token: str | None = None, **kw) -> Transaction:
         """ Create Trx, and begin it """
         trxid = secrets.token_urlsafe()
         if trxid in cls.Transactions:
             raise KeyError(f'duplicate key: {trxid}')
-        trx = cls(trxid=trxid, for_user=for_user, user_token=user_token, **kw)
+        trx = cls(trxid=trxid, owner=owner, user_token=user_token, **kw)
         trx.begin()
         return trx
 
@@ -146,6 +146,12 @@ class Transaction(DDHbaseModel):
 
     def add_and_validate(self, access: permissions.Access):
         """ add an access and validate whether it is ok """
+        if access.principal:
+            if access.principal != self.owner:
+                raise TrxAccessError(
+                    f'Access.principal {access.principal.id} must correspond to transaction.owner {self.owner.id}')
+        else:
+            access.principal = self.owner
         self.accesses.append(access)
         if permissions.AccessMode.write in access.modes:  # we must check writes for presence of read objects
             if principals.AllPrincipal.id not in self.read_consentees and access.ddhkey.owner not in self.read_consentees:
@@ -181,13 +187,15 @@ class Transaction(DDHbaseModel):
             raise TrxAccessError(f'action {resource} cannot be added to {self}')
 
     @classmethod
-    def get_or_create_transaction_with_id(cls, trxid: common_ids.TrxId, for_user: principals.Principal) -> Transaction:
+    def get_or_create_transaction_with_id(cls, trxid: common_ids.TrxId, owner: principals.Principal) -> Transaction:
         """ If you need a cross-process trx with a trxid, use this method. """
         trx = cls.Transactions.get(trxid)
         if trx:
+            if trx.owner != owner:
+                raise TrxOpenError(f'Transaction owner {trx.owner.id} is now requested owner {owner.id}')
             trx.use()
         else:
-            trx = cls(trxid=trxid, for_user=for_user)
+            trx = cls(trxid=trxid, owner=owner)
             trx.begin()
         return trx
 

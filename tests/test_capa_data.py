@@ -45,22 +45,22 @@ async def test_read_anon_failures(user, user2, no_storage_dapp):
     assert trx.read_consentees == transactions.DefaultReadConsentees
 
     ddhkey1 = keys.DDHkey(key="/mgf/org/private/documents/doc10")
-    access = permissions.Access(ddhkey=ddhkey1, principal=user, modes={permissions.AccessMode.read})
+    access = permissions.Access(ddhkey=ddhkey1, modes={permissions.AccessMode.read})
     await facade.ddh_get(access, session)
 
     # read anonymous
-    access = permissions.Access(ddhkey=ddhkey1, principal=user, modes={
+    access = permissions.Access(ddhkey=ddhkey1, modes={
                                 permissions.AccessMode.read, permissions.AccessMode.anonymous})
     with pytest.raises(errors.CapabilityMissing):  # private schema does not have this capability
         await facade.ddh_get(access, session)
 
     # granted only with read anonymous
     ddhkey2 = keys.DDHkey(key="/another/org/private/documents/doc20")
-    access = permissions.Access(ddhkey=ddhkey2, principal=user, modes={permissions.AccessMode.read})
+    access = permissions.Access(ddhkey=ddhkey2, modes={permissions.AccessMode.read})
     with pytest.raises(errors.AccessError):  # we must supply AccessMode.anonymous, so this must raise AccessError
         await facade.ddh_get(access, session)
 
-    access = permissions.Access(ddhkey=ddhkey2, principal=user, modes={
+    access = permissions.Access(ddhkey=ddhkey2, modes={
                                 permissions.AccessMode.read, permissions.AccessMode.anonymous})
 
     with pytest.raises(errors.CapabilityMissing):  # private schema does not have this capability
@@ -99,7 +99,7 @@ async def check_data_with_mode(user, transaction, migros_key_schema, migros_data
     # data is obtained from DApp via JSON, so convert to JSON and load again
     m_data = json.loads(json.dumps(jsonable_encoder(m_data)))
     # read anonymous
-    access = permissions.Access(ddhkey=k.ensure_fork(keys.ForkType.data), principal=user, modes=modes)
+    access = permissions.Access(ddhkey=k.ensure_fork(keys.ForkType.data), modes=modes)
     cumulus = migros_data[user.id]['cumulus']
     access.schema_key_split = 4  # split after the migros.org
     trstate = await schema.apply_transformers(access, trx, None)  # transformer processing happens here
@@ -175,27 +175,28 @@ async def test_write_data_with_consent(user, user2, no_storage_dapp):
     """
     session = get_session(user)
     ddhkey1 = keys.DDHkey(key="/mgf/org/private/documents/doc10")
-    access = permissions.Access(ddhkey=ddhkey1, principal=user, modes={permissions.AccessMode.write})
+    access = permissions.Access(ddhkey=ddhkey1, modes={permissions.AccessMode.write})
     data = json.dumps({'document': 'not much'})
     await facade.ddh_put(access, session, data)
 
+    session2 = get_session(user2)
     ddhkey2 = keys.DDHkey(key="/another/org/private/documents/doc20")
-    access = permissions.Access(ddhkey=ddhkey2, principal=user2, modes={permissions.AccessMode.write})
+    access = permissions.Access(ddhkey=ddhkey2, modes={permissions.AccessMode.write})
     data = json.dumps({'document': 'not much'})
-    await facade.ddh_put(access, session, data)
+    await facade.ddh_put(access, session2, data)
     # grant anonymous read access to user1
     consents = permissions.Consent.single(grantedTo=[user], withModes={
                                           permissions.AccessMode.read, permissions.AccessMode.anonymous})
     ddhkey2f = ddhkey2.ensure_fork(keys.ForkType.consents)
-    access = permissions.Access(ddhkey=ddhkey2f, principal=user2, modes={permissions.AccessMode.write})
-    await facade.ddh_put(access, session, consents.model_dump_json())
+    access = permissions.Access(ddhkey=ddhkey2f, modes={permissions.AccessMode.write})
+    await facade.ddh_put(access, session2, consents.model_dump_json())
 
     # TODO: We need to put a schema here that supports the Anonymous capability:
     ddhkey2s = ddhkey2.ensure_fork(keys.ForkType.schema)
 
     ddhkey3 = keys.DDHkey(key="/another/org/private/documents/doc30")
-    access = permissions.Access(ddhkey=ddhkey3, principal=user2, modes={permissions.AccessMode.write})
+    access = permissions.Access(ddhkey=ddhkey3, modes={permissions.AccessMode.write})
     data = json.dumps({'document': 'not much more'})
-    await facade.ddh_put(access, session, data)
+    await facade.ddh_put(access, session2, data)
 
     return

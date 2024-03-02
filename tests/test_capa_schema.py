@@ -64,7 +64,7 @@ async def test_read_schema_top(user, transaction, migros_key_schema):
     session = get_session(user)
     trx = await session.ensure_new_transaction()
     ddhkey1 = keys.DDHkeyVersioned0('//p:schema::0')
-    access = permissions.Access(ddhkey=ddhkey1, principal=user)
+    access = permissions.Access(ddhkey=ddhkey1)
     await facade.ddh_get(access, session)
     return
 
@@ -74,7 +74,7 @@ async def test_put_schema_migros(migros_user, migros_key_schema_json):
     """ put the migros schema with authorized user """
     session = get_session(migros_user)
     trx = await session.ensure_new_transaction()
-    access = permissions.Access(ddhkey=migros_key_schema_json[0], principal=migros_user)
+    access = permissions.Access(ddhkey=migros_key_schema_json[0])
     await facade.ddh_put(access, session, migros_key_schema_json[1])
     return
 
@@ -84,7 +84,7 @@ async def test_put_schema_migros_bad_user(user, migros_key_schema_json):
     """ put schema with user who is not authorized """
     session = get_session(user)
     trx = await session.ensure_new_transaction()
-    access = permissions.Access(ddhkey=migros_key_schema_json[0], principal=user)
+    access = permissions.Access(ddhkey=migros_key_schema_json[0])
     with pytest.raises(errors.AccessError):
         await facade.ddh_put(access, session, migros_key_schema_json[1])
     return
@@ -95,7 +95,7 @@ async def test_put_schema_coop(coop_user, coop_key_schema_json):
     """ put the coop schema (which doesn't exist) with authorized user """
     session = get_session(coop_user)
     trx = await session.ensure_new_transaction()
-    access = permissions.Access(ddhkey=coop_key_schema_json[0], principal=coop_user)
+    access = permissions.Access(ddhkey=coop_key_schema_json[0])
     await facade.ddh_put(access, session, coop_key_schema_json[1])
     return
 
@@ -106,7 +106,7 @@ async def test_write_schema_top_noaccess(user, transaction, migros_key_schema):
     session = get_session(user)
     trx = await session.ensure_new_transaction()
     ddhkey1 = keys.DDHkeyVersioned0('//p:schema::0')
-    access = permissions.Access(ddhkey=ddhkey1, principal=user)
+    access = permissions.Access(ddhkey=ddhkey1)
     with pytest.raises(errors.AccessError):
         s = await facade.ddh_put(access, session, {})
     return
