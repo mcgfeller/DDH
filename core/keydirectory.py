@@ -45,6 +45,14 @@ class _NodeRegistry:
             by_supports[s] = proxy
         return
 
+    def check_and_set(self, key: keys.DDHkey, node: nodes.NodeOrProxy) -> bool:
+        """ Conditional store, do nothing if already stored under some support.
+            Return True if newly inserted. 
+        """
+        if (inserted := key not in self.nodes_by_key):
+            self.__setitem__(key, node)
+        return inserted
+
     def __getitem__(self, key: keys.DDHkey) -> dict[nodes.NodeSupports, persistable.PersistableProxy]:
         return self.nodes_by_key.get(key.key, {})
 

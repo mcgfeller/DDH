@@ -37,9 +37,9 @@ class AccessTransformer(trait.Transformer):
             if create:
                 if trstate.access.principal.id in topkey.owner:
                     data_node = data_nodes.DataNode(owner=trstate.access.principal, key=topkey)
-                    await data_node.store(trstate.transaction)  #
                     keyvault.set_new_storage_key(data_node, trstate.access.principal, set(), set())
-                    keydirectory.NodeRegistry[data_node.key] = data_node  # XXX? # put node into directory
+                    await data_node.store(trstate.transaction)  #
+                    data_node.ensure_in_dir(data_node.key, trstate.transaction)  # put node into directory
 
                 else:  # not owner, we simply say no access to this path
                     raise errors.AccessError(f'User {trstate.access.principal.id} not authorized to write to {topkey}')

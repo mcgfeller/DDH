@@ -51,6 +51,9 @@ class DataNode(nodes.Node, persistable.Persistable):
         return res
 
     async def store(self, transaction: transactions.Transaction):
+        """ Store then node on encrypted storage.
+            Does not add it to the directory, use .ensure_in_dir() for this. 
+        """
         res = await self.get_storage_resource(self.owner, transaction)
         d = self.to_compressed()
         if self.id not in storage.Storage:
@@ -59,6 +62,10 @@ class DataNode(nodes.Node, persistable.Persistable):
         enc = keyvault.encrypt_data(transaction.owner, self.id, d)
         await res.store(self.id, enc, transaction)
         return
+
+    def ensure_in_dir(self, key, transaction: transactions.Transaction):
+        """ Add this Node to the registry unless it is there already. """
+        keydirectory.NodeRegistry.check_and_set(key, self)
 
     async def delete(self, transaction: transactions.Transaction):
         await self.__class__.load(self.id, self.owner, transaction)  # verify encryption by loading
@@ -118,6 +125,9 @@ class DataNode(nodes.Node, persistable.Persistable):
 
             if remainder.key:  # change is not at this level, insert a new node:
                 node = self.split_node(remainder, consents)
+                # Record the hole with reference to the below-node. We keep the below node in the directory, so
+                # its data can be accessed without access to self:
+                node.ensure_in_dir(node.key, transaction)
             else:
                 above = None
                 node = self  # top level
@@ -128,10 +138,6 @@ class DataNode(nodes.Node, persistable.Persistable):
             # re-encrypt on new node (may be self if there is no remainder)
             await node.store(transaction)
             if remainder.key:  # need to write data with below part cut out again, but with changed key
-
-                # keyvault.set_new_storage_key(self, access.principal, self.consents.consentees(),
-                #                              set())  # now we can set the new key
-                ...
                 await self.store(transaction)  # old node
 
         return
@@ -148,9 +154,6 @@ class DataNode(nodes.Node, persistable.Persistable):
             prev_data, remainder, raise_error=errors.NotFound)  # if we're deep in data
         node = self.__class__(owner=self.owner, key=key, consents=consents, data=below)
         self.data = above
-        # Record the hole with reference to the below-node. We keep the below node in the directory, so
-        # its data can be accessed without access to self.
-        keydirectory.NodeRegistry[key] = node
         return node
 
     async def unsplit_data(self, data, transaction):
