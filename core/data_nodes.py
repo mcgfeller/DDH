@@ -33,6 +33,13 @@ class DataNode(nodes.Node, persistable.Persistable):
             s.add(nodes.NodeSupports.consents)
         return s
 
+    def all_accessors(self) -> set[principals.Principal]:
+        """ return set of all principals that access this node and hence needs keys """
+        r = set(self.owners)
+        if self.consents:  # add consentees
+            r = r | self.consents.consentees()
+        return r
+
     @classmethod
     async def get_storage_resource(cls, owner: principals.Principal,  transaction: transactions.Transaction) -> storage_resource.StorageResource:
         da = cls.get_storage_dapp_id(owner)
@@ -47,9 +54,8 @@ class DataNode(nodes.Node, persistable.Persistable):
         res = await self.get_storage_resource(self.owner, transaction)
         d = self.to_compressed()
         if self.id not in storage.Storage:
-            effective = (self.consents.consentees() | set(self.owners)) if self.consents\
-                else set(self.owners)  # if we have consents for others, set it
-            keyvault.set_new_storage_key(self, transaction.owner, effective, set())
+            # we need a storage key first:
+            keyvault.set_new_storage_key(self, transaction.owner, self.all_accessors(), set())
         enc = keyvault.encrypt_data(transaction.owner, self.id, d)
         await res.store(self.id, enc, transaction)
         return
