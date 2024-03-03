@@ -7,7 +7,7 @@ import json
 import accept_types
 
 
-from . import permissions, keys, schemas, nodes, data_nodes, keydirectory, transactions, errors, dapp_attrs, users
+from . import permissions, keys, schemas, errors
 from frontend import sessions
 from traits import anonymization
 
@@ -50,7 +50,6 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
                 access.ddhkey.raise_if_no_owner()
                 trstate = await schema.apply_transformers(access, transaction, None)
                 data = trstate.parsed_data
-                # data = await get_data(access, transaction, q)
 
             case keys.ForkType.data:
                 access.ddhkey.raise_if_no_owner()
@@ -100,48 +99,6 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                         data = trstate.parsed_data
 
     return data, headers
-
-
-async def get_data(access: permissions.Access, transaction: transactions.Transaction, q: str | None = None) -> typing.Any:
-
-    data_node, d_key_split = await keydirectory.NodeRegistry.get_node_async(
-        access.ddhkey, nodes.NodeSupports.data, transaction)
-    if data_node:
-        if access.ddhkey.fork == keys.ForkType.consents:
-            access.include_mode(permissions.AccessMode.read)
-            *d, consentees, msg = access.raise_if_not_permitted(data_node)
-            return data_node.consents
-        else:
-            data_node = await data_node.ensure_loaded(transaction)
-            data_node = typing.cast(data_nodes.DataNode, data_node)
-            *d, consentees, msg = access.raise_if_not_permitted(data_node)
-            data = await data_node.execute(nodes.Ops.get, access, transaction, d_key_split, None, q)
-    else:
-        *d, consentees, msg = access.raise_if_not_permitted(await keydirectory.NodeRegistry._get_consent_node_async(
-            access.ddhkey, nodes.NodeSupports.data, None, transaction))
-        data = {}
-    transaction.add_read_consentees({c.id for c in consentees})
-    return data
-
-
-async def get_or_create_dnode(access: permissions.Access, transaction: transactions.Transaction) -> tuple[data_nodes.DataNode, int, keys.DDHkey]:
-    data_node, d_key_split = await keydirectory.NodeRegistry.get_node_async(
-        access.ddhkey, nodes.NodeSupports.data, transaction)
-    if not data_node:
-
-        topkey, remainder = access.ddhkey.split_at(2)
-        # there is no node, create it if owner asks for it:
-        if access.principal.id in topkey.owners:
-            data_node = data_nodes.DataNode(owner=access.principal, key=topkey)
-            await data_node.store(transaction)  # put node into directory
-        else:  # not owner, we simply say no access to this path
-            raise errors.AccessError(f'not authorized to write to {topkey}')
-    else:
-        data_node = await data_node.ensure_loaded(transaction)
-        topkey, remainder = access.ddhkey.split_at(d_key_split)
-
-    data_node = typing.cast(data_nodes.DataNode, data_node)
-    return data_node, d_key_split, remainder
 
 
 def check_mimetype_schema(ddhkey: keys.DDHkey, schema: schemas.AbstractSchema, accept_header: list[str] | None, header_field: str = 'Accept') -> str:
