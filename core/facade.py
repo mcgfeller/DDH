@@ -3,7 +3,6 @@
 from __future__ import annotations
 import pydantic
 import typing
-import json
 import accept_types
 
 
