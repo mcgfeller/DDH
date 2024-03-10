@@ -19,6 +19,7 @@ class AccessMode(str, enum.Enum):
     read = 'read'
     protected = 'protected'  # flag with read and write, mandatory if consented for write
     write = 'write'
+    combined = 'combined'
     anonymous = 'anonymous'
     pseudonym = 'pseudonym'
     aggregated = 'aggregated'

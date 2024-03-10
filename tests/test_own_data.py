@@ -34,14 +34,39 @@ def get_session(user):
     return sessions.Session(token_str='test_session_'+user.id, user=user)
 
 
-@pytest.mark.asyncio
-async def test_write_data(user, no_storage_dapp):
-    """ test write through facade.ddh_put() """
+async def write_with_consent(ddhkey: keys.DDHkey | str, consented_users: list[principals.Principal | str] = [], consent_modes: set[permissions.AccessMode] = {permissions.AccessMode.read}, no_storage_dapp=None):
+    """ utility to write a document to ddhkey, with optional consent grant
+        session user is derived from key owner.
+        keys and consented_users may be passed as str.
+    """
+    if isinstance(ddhkey, str):
+        ddhkey = keys.DDHkey(ddhkey)
+    user = user_auth.UserInDB.load(ddhkey.owner)
     session = get_session(user)
-    ddhkey = keys.DDHkey(key="/mgf/org/private/documents/doc1")
     access = permissions.Access(ddhkey=ddhkey, modes={permissions.AccessMode.write})
     data = json.dumps({'document': 'not much'})
     await facade.ddh_put(access, session, data)
+    if consented_users:
+        consented_users = [user_auth.UserInDB.load(c) if isinstance(c, str) else c for c in consented_users]
+        # grant read access to consented_users
+        consents = permissions.Consent.single(grantedTo=consented_users, withModes=consent_modes)
+        ddhkey_c = ddhkey.ensure_fork(keys.ForkType.consents)
+        access = permissions.Access(ddhkey=ddhkey_c, modes={permissions.AccessMode.write})
+        await facade.ddh_put(access, session, consents.model_dump_json())
+    return
+
+
+async def read(ddhkey: keys.DDHkey | str, session: sessions.Session, modes: set[permissions.AccessMode] = {permissions.AccessMode.read}):
+    if isinstance(ddhkey, str):
+        ddhkey = keys.DDHkey(ddhkey)
+    access = permissions.Access(ddhkey=ddhkey, modes={permissions.AccessMode.read})
+    return await facade.ddh_get(access, session)
+
+
+@pytest.mark.asyncio
+async def test_write_data(no_storage_dapp):
+    """ test write through facade.ddh_put() """
+    await write_with_consent("/mgf/org/private/documents/doc1")
 
     return
 
@@ -94,33 +119,20 @@ async def test_set_consent_deep(user, user2, user3, no_storage_dapp):
 
 
 @pytest.mark.asyncio
-async def test_write_data_with_consent(user, user2, no_storage_dapp):
+async def test_write_data_with_consent(no_storage_dapp):
     """ test write through facade.ddh_put() with three objects:
         - mgf/.../doc1
-        - another/.../doc2 with read grant to user
+        - another/.../doc2 with read grant to mgf
         - another/.../doc3
     """
-    session = get_session(user)
-    ddhkey1 = keys.DDHkey(key="/mgf/org/private/documents/doc1")
-    access = permissions.Access(ddhkey=ddhkey1, modes={permissions.AccessMode.write})
-    data = json.dumps({'document': 'not much'})
-    await facade.ddh_put(access, session, data)
-
-    session2 = get_session(user2)
-    ddhkey2 = keys.DDHkey(key="/another/org/private/documents/doc2")
-    access = permissions.Access(ddhkey=ddhkey2, modes={permissions.AccessMode.write})
-    data = json.dumps({'document': 'not much'})
-    await facade.ddh_put(access, session2, data)
-    # grant read access to user1
-    consents = permissions.Consent.single(grantedTo=[user], withModes={permissions.AccessMode.read})
-    ddhkey2f = ddhkey2.ensure_fork(keys.ForkType.consents)
-    access = permissions.Access(ddhkey=ddhkey2f, modes={permissions.AccessMode.write})
-    await facade.ddh_put(access, session2, consents.model_dump_json())
-
-    ddhkey3 = keys.DDHkey(key="/another/org/private/documents/doc3")
-    access = permissions.Access(ddhkey=ddhkey3, modes={permissions.AccessMode.write})
-    data = json.dumps({'document': 'not much more'})
-    await facade.ddh_put(access, session2, data)
+    await write_with_consent("/mgf/org/private/documents/doc1")
+    await write_with_consent("/another/org/private/documents/doc2", consented_users=['mgf'])
+    await write_with_consent("/another/org/private/documents/doc3")
+    # consent shared
+    await write_with_consent("/another3/org/private/documents/doc4", consented_users=['mgf', 'another'])
+    # consent combinable, may be merged with doc from another
+    await write_with_consent("/another3/org/private/documents/doc5", consented_users=['mgf'], consent_modes={permissions.AccessMode.read, permissions.AccessMode.combined, })
+    await write_with_consent("/another3/org/private/documents/doc6", consented_users=['mgf'])
 
     return
 
@@ -129,19 +141,15 @@ async def test_write_data_with_consent(user, user2, no_storage_dapp):
 async def test_read_and_write_data(user, user2, no_storage_dapp):
     session = get_session(user)
     # first, set up some data:
-    await test_write_data_with_consent(user, user2, no_storage_dapp)
+    await test_write_data_with_consent(no_storage_dapp)
     await session.reinit()  # ensure we have a clean slate
     trx = await session.ensure_new_transaction()
     assert trx.read_consentees == transactions.DefaultReadConsentees
 
-    ddhkey1 = keys.DDHkey(key="/mgf/org/private/documents/doc1")
-    access = permissions.Access(ddhkey=ddhkey1, modes={permissions.AccessMode.read})
-    await facade.ddh_get(access, session)
+    await read("/mgf/org/private/documents/doc1", session)
 
     # we have grant to read:
-    ddhkey2 = keys.DDHkey(key="/another/org/private/documents/doc2")
-    access = permissions.Access(ddhkey=ddhkey2, modes={permissions.AccessMode.read})
-    await facade.ddh_get(access, session)
+    await read("/another/org/private/documents/doc2", session)
 
     # we can write both docs to user
     ddhkeyW1 = keys.DDHkey(key="/mgf/org/private/documents/docnew")
@@ -163,35 +171,38 @@ async def test_read_and_write_data2(user, user2, no_storage_dapp):
     session = get_session(user)
 
     # first, set up some data:
-    await test_write_data_with_consent(user, user2, no_storage_dapp)
+    await test_write_data_with_consent(no_storage_dapp)
     await session.reinit()  # ensure we have a clean slate
     trx = await session.ensure_new_transaction()
 
-    ddhkey1 = keys.DDHkey(key="/mgf/org/private/documents/doc1")
-    access = permissions.Access(ddhkey=ddhkey1, modes={permissions.AccessMode.read})
-    await facade.ddh_get(access, session)
+    await read("/mgf/org/private/documents/doc1", session)
     assert principals.AllPrincipal.id not in trx.read_consentees, 'we have read object which does not have universal access'
 
     # we have grant to read:
-    ddhkey2 = keys.DDHkey(key="/another/org/private/documents/doc2")
-    access = permissions.Access(ddhkey=ddhkey2, modes={permissions.AccessMode.read})
-    await facade.ddh_get(access, session)
+    await read("/another/org/private/documents/doc2", session)
 
-    # but we cannot write back because we have two objects from different users in session:
-    ddhkeyW1 = keys.DDHkey(key="/mgf/org/private/documents/docnew")
-    data = json.dumps({'document': 'no need to be related'})
-    access = permissions.Access(ddhkey=ddhkeyW1, modes={permissions.AccessMode.write})
+    # we have a grant and it's with an explicit grant to mgf and another, so it can be combined:
+    await read("/another3/org/private/documents/doc4", session)
+
+    # we have a grant and it's shared as combined
+    await read("/another3/org/private/documents/doc5", session)
+
+    # we have a grant and but this cannot be shared with mgf:
     with pytest.raises(transactions.TrxAccessError):
-        await facade.ddh_put(access, session, data)
+        await read("/another3/org/private/documents/doc6", session)
 
     # even with a new transaction
     await session.ensure_new_transaction()
-    access = permissions.Access(ddhkey=ddhkeyW1, modes={permissions.AccessMode.write})
     with pytest.raises(transactions.TrxAccessError):
-        await facade.ddh_put(access, session, data)
+        await read("/another3/org/private/documents/doc6", session)
 
     # but with a reinit
     await session.reinit()
-    access = permissions.Access(ddhkey=ddhkeyW1, modes={permissions.AccessMode.write})
-    await facade.ddh_put(access, session, data)
+    # new workspace after re-init - we need to reread the whole sequence
+    await read("/mgf/org/private/documents/doc1", session)
+    await read("/another/org/private/documents/doc2", session)
+    await read("/another3/org/private/documents/doc4", session)
+    await read("/another3/org/private/documents/doc5", session)
+    await read("/another3/org/private/documents/doc6", session)
+
     return

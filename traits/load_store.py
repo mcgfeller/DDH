@@ -60,8 +60,6 @@ class LoadFromStorage(AccessTransformer):
 
         for_consents = trstate.access.ddhkey.fork == keys.ForkType.consents
         data_node, d_key_split, remainder = await self.get_or_create_dnode(trstate, create=for_consents)
-
-        # *d, consentees, msg = trstate.access.raise_if_not_permitted(data_node)
         q = None
 
         if data_node:
