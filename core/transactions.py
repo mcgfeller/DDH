@@ -17,10 +17,11 @@ import secrets
 
 
 class TrxAccessError(errors.AccessError): ...
+class SessionReinitRequired(TrxAccessError): ...
 class TrxOpenError(errors.DDHerror): ...
 
 
-DefaultReadConsentees = {principals.AllPrincipal.id}  # by default, nothing is readable by everybody
+DefaultReadConsentees = set()  # by default, nothing is in transaction
 
 
 class Transaction(DDHbaseModel):
@@ -159,21 +160,22 @@ class Transaction(DDHbaseModel):
         # record if it cannot be combined or is not shared with everybody:
         if permissions.AccessMode.combined not in modes and principals.AllPrincipal.id not in read_consentees:
             read_consentees.discard(self.owner.id)  # remove ourselves, as we have consented access
-            if principals.AllPrincipal.id in self.read_consentees:
-                self.read_consentees = read_consentees
-            elif self.read_consentees:
+            assert principals.AllPrincipal.id not in self.read_consentees
+            if self.read_consentees:
                 common = self.read_consentees & read_consentees
                 if not common:
-                    msg = f'transactions contains data that cannot be combined with data shared with {self.read_consentees}'
-                    if False:  # principals.AllPrincipal.id not in self.initial_read_consentees and access.ddhkey.owner not in self.initial_read_consentees:
+                    msg = f'transaction already contains data shared with {self.read_consentees} that cannot be combined with data shared with {read_consentees}'
+                    # already present in initial trx?
+                    if self.initial_read_consentees and self.initial_read_consentees.isdisjoint(read_consentees):
                         # this transaction contains data from previous transaction, must reinit
-                        raise TrxAccessError('call session.reinit(); '+msg)
+                        raise SessionReinitRequired('call session.reinit(); '+msg)
                     else:
                         raise TrxAccessError(msg)
                 else:
                     self.read_consentees = common
             else:
                 self.read_consentees = read_consentees  # first set
+        return
 
     def add(self, action: Action):
         """ Add action to this transaction """

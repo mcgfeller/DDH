@@ -192,12 +192,14 @@ async def test_read_and_write_data2(user, user2, no_storage_dapp):
     await read("/another3/org/private/documents/doc5", session, modes=combined_read)
 
     # we have a grant and but this cannot be shared with mgf:
-    with pytest.raises(transactions.TrxAccessError):
+    with pytest.raises(transactions.TrxAccessError) as exc_info:
         await read("/another3/org/private/documents/doc6", session)
+    # SessionReinitRequired is subclass of TrxAccessError, so have to check specifically:
+    assert not isinstance(exc_info.value, transactions.SessionReinitRequired), 'within trx, no reinit required'
 
     # even with a new transaction
     await session.ensure_new_transaction()
-    with pytest.raises(transactions.TrxAccessError):
+    with pytest.raises(transactions.SessionReinitRequired):
         await read("/another3/org/private/documents/doc6", session)
 
     # but with a reinit
