@@ -77,7 +77,10 @@ class LoadFromStorage(AccessTransformer):
             *d, consentees, msg = trstate.access.raise_if_not_permitted(data_node)
 
             data = {}
-        trstate.transaction.add_read_consentees({c.id for c in consentees})
+
+        owner_ids = {o.id for o in data_node.owners} if data_node else set(trstate.access.ddhkey.owners)
+        consentee_ids = {c.id for c in consentees}
+        trstate.transaction.add_read_consentees(owner_ids | consentee_ids, trstate.access.modes)
         trstate.parsed_data = data
 
         return

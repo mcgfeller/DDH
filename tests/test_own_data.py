@@ -59,7 +59,7 @@ async def write_with_consent(ddhkey: keys.DDHkey | str, consented_users: list[pr
 async def read(ddhkey: keys.DDHkey | str, session: sessions.Session, modes: set[permissions.AccessMode] = {permissions.AccessMode.read}):
     if isinstance(ddhkey, str):
         ddhkey = keys.DDHkey(ddhkey)
-    access = permissions.Access(ddhkey=ddhkey, modes={permissions.AccessMode.read})
+    access = permissions.Access(ddhkey=ddhkey, modes=modes)
     return await facade.ddh_get(access, session)
 
 
@@ -169,6 +169,7 @@ async def test_read_and_write_data(user, user2, no_storage_dapp):
 @pytest.mark.asyncio
 async def test_read_and_write_data2(user, user2, no_storage_dapp):
     session = get_session(user)
+    combined_read = {permissions.AccessMode.read, permissions.AccessMode.combined}
 
     # first, set up some data:
     await test_write_data_with_consent(no_storage_dapp)
@@ -181,11 +182,14 @@ async def test_read_and_write_data2(user, user2, no_storage_dapp):
     # we have grant to read:
     await read("/another/org/private/documents/doc2", session)
 
+    with pytest.raises(errors.AccessError):  # combined read is not consented
+        await read("/another/org/private/documents/doc2", session, modes=combined_read)
+
     # we have a grant and it's with an explicit grant to mgf and another, so it can be combined:
     await read("/another3/org/private/documents/doc4", session)
 
     # we have a grant and it's shared as combined
-    await read("/another3/org/private/documents/doc5", session)
+    await read("/another3/org/private/documents/doc5", session, modes=combined_read)
 
     # we have a grant and but this cannot be shared with mgf:
     with pytest.raises(transactions.TrxAccessError):
@@ -198,11 +202,10 @@ async def test_read_and_write_data2(user, user2, no_storage_dapp):
 
     # but with a reinit
     await session.reinit()
-    # new workspace after re-init - we need to reread the whole sequence
+    # new workspace after re-init - we need to reread the combinable sequence
     await read("/mgf/org/private/documents/doc1", session)
-    await read("/another/org/private/documents/doc2", session)
     await read("/another3/org/private/documents/doc4", session)
-    await read("/another3/org/private/documents/doc5", session)
+    await read("/another3/org/private/documents/doc5", session, modes=combined_read)
     await read("/another3/org/private/documents/doc6", session)
 
     return

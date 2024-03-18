@@ -153,22 +153,27 @@ class Transaction(DDHbaseModel):
         else:
             access.principal = self.owner
         self.accesses.append(access)
-        if permissions.AccessMode.write in access.modes:  # we must check writes for presence of read objects
-            if principals.AllPrincipal.id not in self.read_consentees and access.ddhkey.owner not in self.read_consentees:
-                msg = f'transactions contains data with no consent to use for {access.ddhkey.owner}'
-                if principals.AllPrincipal.id not in self.initial_read_consentees and access.ddhkey.owner not in self.initial_read_consentees:
-                    # this transaction contains data from previous transaction, must reinit
-                    raise TrxAccessError('call session.reinit(); '+msg)
-                else:
-                    raise TrxAccessError(msg)
         return
 
-    def add_read_consentees(self, read_consentees: set[common_ids.PrincipalId]):
-        if principals.AllPrincipal.id in self.read_consentees:
-            self.read_consentees = read_consentees
-        else:
-            self.read_consentees &= read_consentees
-        return
+    def add_read_consentees(self, read_consentees: set[common_ids.PrincipalId], modes: set[permissions.AccessMode]):
+        # record if it cannot be combined or is not shared with everybody:
+        if permissions.AccessMode.combined not in modes and principals.AllPrincipal.id not in read_consentees:
+            read_consentees.discard(self.owner.id)  # remove ourselves, as we have consented access
+            if principals.AllPrincipal.id in self.read_consentees:
+                self.read_consentees = read_consentees
+            elif self.read_consentees:
+                common = self.read_consentees & read_consentees
+                if not common:
+                    msg = f'transactions contains data that cannot be combined with data shared with {self.read_consentees}'
+                    if False:  # principals.AllPrincipal.id not in self.initial_read_consentees and access.ddhkey.owner not in self.initial_read_consentees:
+                        # this transaction contains data from previous transaction, must reinit
+                        raise TrxAccessError('call session.reinit(); '+msg)
+                    else:
+                        raise TrxAccessError(msg)
+                else:
+                    self.read_consentees = common
+            else:
+                self.read_consentees = read_consentees  # first set
 
     def add(self, action: Action):
         """ Add action to this transaction """
