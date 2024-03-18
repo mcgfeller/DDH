@@ -174,7 +174,7 @@ def set_new_storage_key(node: node_types.T_Node, transaction_owner: principals.P
 def encrypt_data(transaction_owner: principals.Principal, nodeid: common_ids.PersistId, data: bytes) -> bytes:
     """ Encrypt data going to storage for a node and accessing Principal """
     storage_key = AccessKeyVault.get_storage_key(transaction_owner, nodeid)
-    logger.debug(f'Encrypting {transaction_owner.id=}, {nodeid=} using {storage_key=}')
+    # logger.debug(f'Encrypting {transaction_owner.id=}, {nodeid=} using {storage_key=}')
     cipherdata = storage_key.encrypt(data)
     return cipherdata
 
@@ -182,7 +182,7 @@ def encrypt_data(transaction_owner: principals.Principal, nodeid: common_ids.Per
 def decrypt_data(transaction_owner: principals.Principal, nodeid: common_ids.PersistId, cipherdata: bytes) -> bytes:
     """ Decrypt data coming from storage for a node and accessing Principal """
     storage_key = AccessKeyVault.get_storage_key(transaction_owner, nodeid)
-    logger.debug(f'Decrypting {transaction_owner.id=}, {nodeid=} using {storage_key=}')
+    # logger.debug(f'Decrypting {transaction_owner.id=}, {nodeid=} using {storage_key=}')
     data = storage_key.decrypt(cipherdata)
     return data
 
