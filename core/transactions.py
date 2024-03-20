@@ -22,14 +22,18 @@ class TrxOpenError(errors.DDHerror): ...
 
 
 class TrxExtension(DDHbaseModel):
-    """ Plugable Trx extensions """
-    # _trx: Transaction  # back point to parent trx
+    """ Plugable Trx extension.
+        A subclass of TrxExtension registers itself. It can carry any data and methods,
+        and is carried from previous transactions, but .reinit() is called in this case.
+    """
+    _trx: Transaction | None = None  # back point to parent trx
 
     def __init_subclass__(cls):
         """ Register this class as extensions"""
         Transaction.TrxExtensions.append(cls)
 
     def reinit(self):
+        """ Can be used to modify TrxExt when passed from a previous Trx """
         pass
 
 
@@ -71,10 +75,11 @@ class Transaction(DDHbaseModel):
             n = te_cls.__name__
             ext = self.trx_ext.get(n)
             if ext:
-                # ext._trx = self  # correct backpointer
+                ext._trx = self  # correct backpointer
                 ext.reinit()
             else:
-                self.trx_ext[n] = te_cls()  # create instance
+                self.trx_ext[n] = ext = te_cls()  # create instance
+                ext._trx = self
 
         return
 
