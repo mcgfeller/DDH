@@ -31,6 +31,12 @@ class TrxExtension(DDHbaseModel):
     def __init_subclass__(cls):
         """ Register this class as extensions"""
         Transaction.TrxExtensions.append(cls)
+        cls.class_init(Transaction)
+
+    @classmethod
+    def class_init(cls, trx_class: type[Transaction]):
+        """ Can be overwritten to perform an action once class has been initialized """
+        pass
 
     def reinit(self):
         """ Can be used to modify TrxExt when passed from a previous Trx """

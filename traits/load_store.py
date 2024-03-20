@@ -99,6 +99,13 @@ class ConsenteesChecker(transactions.TrxExtension):
         """
         self.initial_read_consentees = frozenset(self.read_consentees)
 
+    @classmethod
+    def class_init(cls, trx_class: type[transactions.Transaction]):
+        """ For convenience, we let trx.read_consentees refer to the value maintained in our extension.
+            This is badass Python.    
+        """
+        trx_class.read_consentees = property(lambda self: self.trx_ext['ConsenteesChecker'].read_consentees)
+
     def add_read_consentees(self, trx: transactions.Transaction, read_consentees: set[common_ids.PrincipalId], modes: set[permissions.AccessMode]):
         # record if it cannot be combined or is not shared with everybody:
         if permissions.AccessMode.combined not in modes and principals.AllPrincipal.id not in read_consentees:
