@@ -144,7 +144,7 @@ async def test_read_and_write_data(user, user2, no_storage_dapp):
     await test_write_data_with_consent(no_storage_dapp)
     await session.reinit()  # ensure we have a clean slate
     trx = await session.ensure_new_transaction()
-    assert trx.read_consentees == transactions.DefaultReadConsentees
+    assert trx.trx_ext['ConsenteesChecker'].read_consentees == set()
 
     await read("/mgf/org/private/documents/doc1", session)
 
@@ -177,7 +177,7 @@ async def test_read_and_write_data2(user, user2, no_storage_dapp):
     trx = await session.ensure_new_transaction()
 
     await read("/mgf/org/private/documents/doc1", session)
-    assert principals.AllPrincipal.id not in trx.read_consentees, 'we have read object which does not have universal access'
+    assert principals.AllPrincipal.id not in trx.trx_ext['ConsenteesChecker'].read_consentees, 'we have read object which does not have universal access'
 
     # we have grant to read:
     await read("/another/org/private/documents/doc2", session)
@@ -199,6 +199,7 @@ async def test_read_and_write_data2(user, user2, no_storage_dapp):
 
     # even with a new transaction
     await session.ensure_new_transaction()
+    trx.trx_ext['ConsenteesChecker'].read_consentees
     with pytest.raises(transactions.SessionReinitRequired):
         await read("/another3/org/private/documents/doc6", session)
 

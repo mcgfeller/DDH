@@ -9,7 +9,7 @@ import pydantic
 import asyncio
 
 from pydantic.errors import PydanticErrorMixin
-from utils.pydantic_utils import DDHbaseModel
+from utils.pydantic_utils import DDHbaseModel, CV
 
 from core import permissions, errors, principals, common_ids
 
@@ -21,20 +21,27 @@ class SessionReinitRequired(TrxAccessError): ...
 class TrxOpenError(errors.DDHerror): ...
 
 
-DefaultReadConsentees = set()  # by default, nothing is in transaction
+class TrxExtension(DDHbaseModel):
+    """ Plugable Trx extensions """
+    # _trx: Transaction  # back point to parent trx
+
+    def __init_subclass__(cls):
+        """ Register this class as extensions"""
+        Transaction.TrxExtensions.append(cls)
+
+    def reinit(self):
+        pass
 
 
 class Transaction(DDHbaseModel):
+    TrxExtensions: CV[list[type[TrxExtension]]] = []
+
     trxid: common_ids.TrxId
     owner: principals.Principal
     user_token: str | None = None
     accesses: list[permissions.Access] = pydantic.Field(default_factory=list)
     exp: datetime.datetime = datetime.datetime.now()
-
-    # with nothing read, the world has access
-    read_consentees: set[common_ids.PrincipalId] = DefaultReadConsentees
-    # same as read_consentees, but not modified during transaction
-    initial_read_consentees:  set[common_ids.PrincipalId] = DefaultReadConsentees
+    trx_ext: dict[str, TrxExtension] = {}
 
     actions: list[Action] = pydantic.Field(
         default_factory=list, description="list of actions to be performed at commit")
@@ -47,11 +54,6 @@ class Transaction(DDHbaseModel):
     TTL: typing.ClassVar[datetime.timedelta] = datetime.timedelta(
         seconds=120)  # max duration of a transaction in seconds (high for debugging)
 
-    def __init__(self, **kw):
-        super().__init__(**kw)
-        self.read_consentees = self.initial_read_consentees
-        return
-
     @classmethod
     def create(cls, owner: principals.Principal, user_token: str | None = None, **kw) -> Transaction:
         """ Create Trx, and begin it """
@@ -59,8 +61,22 @@ class Transaction(DDHbaseModel):
         if trxid in cls.Transactions:
             raise KeyError(f'duplicate key: {trxid}')
         trx = cls(trxid=trxid, owner=owner, user_token=user_token, **kw)
+        trx.init_extensions()
         trx.begin()
         return trx
+
+    def init_extensions(self):
+        """ ensure all TrxExtensions are initialized and present in .trx_ext """
+        for te_cls in self.TrxExtensions:
+            n = te_cls.__name__
+            ext = self.trx_ext.get(n)
+            if ext:
+                # ext._trx = self  # correct backpointer
+                ext.reinit()
+            else:
+                self.trx_ext[n] = te_cls()  # create instance
+
+        return
 
     @classmethod
     def get(cls, trxid: common_ids.TrxId) -> Transaction:
@@ -154,27 +170,6 @@ class Transaction(DDHbaseModel):
         else:
             access.principal = self.owner
         self.accesses.append(access)
-        return
-
-    def add_read_consentees(self, read_consentees: set[common_ids.PrincipalId], modes: set[permissions.AccessMode]):
-        # record if it cannot be combined or is not shared with everybody:
-        if permissions.AccessMode.combined not in modes and principals.AllPrincipal.id not in read_consentees:
-            read_consentees.discard(self.owner.id)  # remove ourselves, as we have consented access
-            assert principals.AllPrincipal.id not in self.read_consentees
-            if self.read_consentees:
-                common = self.read_consentees & read_consentees
-                if not common:
-                    msg = f'transaction already contains data shared with {self.read_consentees} that cannot be combined with data shared with {read_consentees}'
-                    # already present in initial trx?
-                    if self.initial_read_consentees and self.initial_read_consentees.isdisjoint(read_consentees):
-                        # this transaction contains data from previous transaction, must reinit
-                        raise SessionReinitRequired('call session.reinit(); '+msg)
-                    else:
-                        raise TrxAccessError(msg)
-                else:
-                    self.read_consentees = common
-            else:
-                self.read_consentees = read_consentees  # first set
         return
 
     def add(self, action: Action):

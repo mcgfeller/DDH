@@ -6,7 +6,8 @@ import copy
 import pydantic
 from utils.pydantic_utils import CV
 
-from core import (errors, trait, permissions, keys, nodes, data_nodes, keydirectory, dapp_attrs)
+from core import (errors, trait, permissions, keys, nodes, data_nodes,
+                  keydirectory, dapp_attrs, transactions, common_ids, principals)
 from backend import persistable, keyvault
 
 
@@ -80,9 +81,43 @@ class LoadFromStorage(AccessTransformer):
 
         owner_ids = {o.id for o in data_node.owners} if data_node else set(trstate.access.ddhkey.owners)
         consentee_ids = {c.id for c in consentees}
-        trstate.transaction.add_read_consentees(owner_ids | consentee_ids, trstate.access.modes)
+        trstate.transaction.trx_ext['ConsenteesChecker'].add_read_consentees(trstate.transaction,
+                                                                             owner_ids | consentee_ids, trstate.access.modes)
         trstate.parsed_data = data
 
+        return
+
+
+class ConsenteesChecker(transactions.TrxExtension):
+    read_consentees: set[common_ids.PrincipalId] = set()
+    # same as read_consentees, set by .reinit() and not modified during transaction
+    initial_read_consentees:  frozenset[common_ids.PrincipalId] = frozenset()
+
+    def reinit(self):
+        """ Consentees from previuos trx are recorded as initial, so we can check wether re-init is needed.
+            They remain in trx, so the overall check is easier. 
+        """
+        self.initial_read_consentees = frozenset(self.read_consentees)
+
+    def add_read_consentees(self, trx: transactions.Transaction, read_consentees: set[common_ids.PrincipalId], modes: set[permissions.AccessMode]):
+        # record if it cannot be combined or is not shared with everybody:
+        if permissions.AccessMode.combined not in modes and principals.AllPrincipal.id not in read_consentees:
+            read_consentees.discard(trx.owner.id)  # remove ourselves, as we have consented access
+            assert principals.AllPrincipal.id not in self.read_consentees
+            if self.read_consentees:
+                common = self.read_consentees & read_consentees
+                if not common:
+                    msg = f'transaction already contains data shared with {self.read_consentees} that cannot be combined with data shared with {read_consentees}'
+                    # already present in initial trx?
+                    if self.initial_read_consentees and self.initial_read_consentees.isdisjoint(read_consentees):
+                        # this transaction contains data from previous transaction, must reinit
+                        raise transactions.SessionReinitRequired('call session.reinit(); '+msg)
+                    else:
+                        raise transactions.TrxAccessError(msg)
+                else:
+                    self.read_consentees = common
+            else:
+                self.read_consentees = read_consentees  # first set
         return
 
 

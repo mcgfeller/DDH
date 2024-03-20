@@ -42,7 +42,7 @@ async def test_read_anon_failures(user, user2, no_storage_dapp):
     await test_write_data_with_consent(user, user2, no_storage_dapp)
     await session.reinit()  # ensure we have a clean slate
     trx = await session.ensure_new_transaction()
-    assert trx.read_consentees == transactions.DefaultReadConsentees
+    assert trx.trx_ext['ConsenteesChecker'].read_consentees == set()
 
     ddhkey1 = keys.DDHkey(key="/mgf/org/private/documents/doc10")
     access = permissions.Access(ddhkey=ddhkey1, modes={permissions.AccessMode.read})
@@ -85,7 +85,7 @@ async def check_data_with_mode(user, transaction, migros_key_schema, migros_data
     session = get_session(user)
     await session.reinit()  # ensure we have a clean slate
     trx = await session.ensure_new_transaction()
-    assert trx.read_consentees == transactions.DefaultReadConsentees
+    assert trx.trx_ext['ConsenteesChecker'].read_consentees == set()
 
     k, schema = migros_key_schema
     schema = schema.to_json_schema()

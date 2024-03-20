@@ -41,36 +41,39 @@ class Session(DDHbaseModel):
         assert trx
         return trx
 
-    def create_transaction(self, initial_read_consentees=transactions.DefaultReadConsentees) -> transactions.Transaction:
-        """ create a new transaction. raises transactions.TrxOpenError if transaction exists (abort would make the whole thing async). """
+    def create_transaction(self, initial_trx_ext: dict = {}) -> transactions.Transaction:
+        """ create a new transaction. raises transactions.TrxOpenError if transaction exists (abort would make the whole thing async).
+            TrxExtension dict can be passed from previous Trx. 
+        """
         if self.current_trx:
             raise transactions.TrxOpenError('transaction exists, use session.ensure_new_transaction()')
         else:
             new_trx = transactions.Transaction.create(
-                owner=self.user, user_token=self.token_str, initial_read_consentees=initial_read_consentees)
+                owner=self.user, user_token=self.token_str, trx_ext=initial_trx_ext)
             self.current_trx = new_trx
             return new_trx.use()
 
     async def ensure_new_transaction(self) -> transactions.Transaction:
-        """ abort any existing and create a new transaction.
+        """ abort any existing and create a new transaction. 
+            Passes TrxExtension dict from previous Trx.
             must be awaited, since trx.abort() is async.
         """
         prev_trx = self.current_trx
         if prev_trx:
             # previous transaction in session
-            prev_read_consentees = prev_trx.read_consentees
+            prev_trx_ext = prev_trx.trx_ext
             await prev_trx.abort()
             self.current_trx = None
         else:
-            prev_read_consentees = transactions.DefaultReadConsentees
-        return self.create_transaction(initial_read_consentees=prev_read_consentees)
+            prev_trx_ext = {}
+        return self.create_transaction(initial_trx_ext=prev_trx_ext)
 
     async def reinit(self):
         prev_trx = self.current_trx  # self.trxs_for_user.get(self.user)
         if prev_trx:
             # abort and clean previous transaction in session
             await prev_trx.abort()
-            prev_trx.read_consentees = transactions.DefaultReadConsentees
+            prev_trx.trx_ext = {}
             self.current_trx = None
         return
 
