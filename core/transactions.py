@@ -7,6 +7,7 @@ import time
 import datetime
 import pydantic
 import asyncio
+import weakref
 
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import DDHbaseModel, CV
@@ -26,7 +27,16 @@ class TrxExtension(DDHbaseModel):
         A subclass of TrxExtension registers itself. It can carry any data and methods,
         and is carried from previous transactions, but .reinit() is called in this case.
     """
-    _trx: Transaction | None = None  # back point to parent trx
+    _trx: weakref.ReferenceType[Transaction] | None = None  # back pointer to parent trx
+
+    @property
+    def trx(self) -> Transaction:
+        """ return parent Transaction """
+        assert self._trx is not None
+        t = self._trx()
+        if t is None:
+            raise TrxAccessError('Parent Transaction has expired')
+        return t
 
     def __init_subclass__(cls):
         """ Register this class as extensions"""
@@ -80,12 +90,13 @@ class Transaction(DDHbaseModel):
         for te_cls in self.TrxExtensions:
             n = te_cls.__name__
             ext = self.trx_ext.get(n)
+            w = weakref.ref(self)
             if ext:
-                ext._trx = self  # correct backpointer
+                ext._trx = w  # correct backpointer
                 ext.reinit()
             else:
                 self.trx_ext[n] = ext = te_cls()  # create instance
-                ext._trx = self
+                ext._trx = w
 
         return
 
