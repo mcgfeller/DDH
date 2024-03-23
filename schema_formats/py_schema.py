@@ -113,7 +113,7 @@ class PySchemaReference(schemas.AbstractSchemaReference, PySchemaElement):
         """ Generate  JSON Schema as a reference to the URI.
 
             NOTE #43: As Pydantic 2 cannot include an external $ref, we name them $xref and
-            replace the text here.
+            replace the text in PySchema.to_output().
         """
         schema['properties']['dep'] = {'$xref': model.getURI()}
         return
