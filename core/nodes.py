@@ -112,5 +112,5 @@ class ExecutableNode(node_types.T_ExecutableNode, Node, persistable.NonPersistab
         return s
 
     @abstractmethod
-    def execute(self, req: dapp_attrs.ExecuteRequest):
+    async def execute(self, req: dapp_attrs.ExecuteRequest):
         return {}
