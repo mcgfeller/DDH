@@ -7,7 +7,7 @@ import pydantic
 from utils.pydantic_utils import CV
 
 from core import (errors, trait, permissions, keys, nodes, data_nodes,
-                  keydirectory, dapp_attrs, transactions, common_ids, principals)
+                  keydirectory, dapp_attrs, transactions, common_ids, principals, consentcache)
 from backend import persistable, keyvault
 
 
@@ -193,11 +193,13 @@ class UpdateConsents(AccessTransformer):
             data_node, d_key_split, remainder = await self.get_or_create_dnode(trstate, create=True)
             assert trstate.data_node
         trstate.data_node = typing.cast(data_nodes.DataNode, trstate.data_node)
+        assert trstate.data_node.key
 
         trstate.access.raise_if_not_permitted(trstate.data_node)
 
-        await trstate.data_node.update_consents(trstate.access, trstate.transaction, remainder, trstate.parsed_data)
+        added, removed = await trstate.data_node.update_consents(trstate.access, trstate.transaction, remainder, trstate.parsed_data)
         await trstate.data_node.store(trstate.transaction)
+        await consentcache.ConsentCache.update(trstate.data_node.key, added, removed)
         return
 
 
