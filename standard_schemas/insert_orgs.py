@@ -8,6 +8,7 @@ from schema_formats import py_schema
 
 # org and seq of users allowed to write them.
 orgs: dict[str, tuple[str, ...]] = {
+    'ddh': (principals.RootPrincipal.id,),  # DDH is an org itself
     'migros.ch': ('migros',),
     'coop.ch': ('coop',),
     'sbb.ch': ('sbb',),
