@@ -6,7 +6,7 @@ import copy
 import pydantic
 from utils.pydantic_utils import CV
 
-from core import (errors, trait, permissions, keys, nodes, data_nodes,
+from core import (errors, trait, permissions, keys, nodes, data_nodes, executable_nodes,
                   keydirectory, dapp_attrs, transactions, common_ids, principals, consentcache)
 from backend import persistable, keyvault
 
@@ -144,7 +144,7 @@ class LoadFromDApp(AccessTransformer):
             trstate.access.ddhkey.without_owner(), nodes.NodeSupports.execute, trstate.transaction)
         if e_node:
             e_node = await e_node.ensure_loaded(trstate.transaction)
-            e_node = typing.cast(nodes.ExecutableNode, e_node)
+            e_node = typing.cast(executable_nodes.ExecutableNode, e_node)
             req = dapp_attrs.ExecuteRequest(
                 op=nodes.Ops.get, access=trstate.access, transaction=trstate.transaction, key_split=e_key_split, data=trstate.parsed_data, q=q)
             data = await e_node.execute(req)
@@ -168,7 +168,7 @@ class ValidateToDApp(AccessTransformer):
             trstate.access.ddhkey.without_owner(), nodes.NodeSupports.execute, trstate.transaction)
         if e_node:
             e_node = await e_node.ensure_loaded(trstate.transaction)
-            e_node = typing.cast(nodes.ExecutableNode, e_node)
+            e_node = typing.cast(executable_nodes.ExecutableNode, e_node)
             req = dapp_attrs.ExecuteRequest(
                 op=nodes.Ops.put, access=trstate.access, transaction=trstate.transaction, key_split=e_key_split, data=trstate.parsed_data, q=q)
             data = await e_node.execute(req)

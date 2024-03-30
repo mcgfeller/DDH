@@ -32,7 +32,7 @@ def migros_key_schema(transaction):
     assert s
     for k, schema in s.items():
         # register in Schema Node, so tests can retrieve it:
-        dapp_proxy.DAppProxy.register_schema(k, schema, app.owner, transaction)
+        dapp_proxy.DAppNode.register_schema(k, schema, app.owner, transaction)
     return k, schema
 
 

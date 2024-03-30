@@ -99,18 +99,3 @@ class SchemaNode(node_types.T_SchemaNode,  Node, persistable.NonPersistable):
 
 
 from core import dapp_attrs
-
-
-class ExecutableNode(node_types.T_ExecutableNode, Node, persistable.NonPersistable):
-    """ A node that provides for execution capabilities """
-
-    @property
-    def supports(self) -> set[NodeSupports]:
-        s = {NodeSupports.execute}
-        if self.consents:
-            s.add(NodeSupports.consents)
-        return s
-
-    @abstractmethod
-    async def execute(self, req: dapp_attrs.ExecuteRequest):
-        return {}

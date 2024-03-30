@@ -13,7 +13,7 @@ import pprint
 logger = logging.getLogger(__name__)
 
 # from frontend import sessions
-from core import keys, schemas as m_schemas, nodes, keydirectory, errors, transactions, principals, relationships, schema_network, dapp_attrs
+from core import keys, schemas as m_schemas, nodes, keydirectory, errors, transactions, principals, relationships, schema_network, dapp_attrs, executable_nodes
 from utils.pydantic_utils import DDHbaseModel
 
 
@@ -49,38 +49,9 @@ class DAppProxy(DDHbaseModel):
         snodes = []
         for schemakey, schema in self.schemas.items():
             # print(f'*register_schemas {schemakey=}, {type(schema)=}')
-            snode = self.register_schema(schemakey, schema, self.attrs.owner, transaction)
-
-            #
+            snode = DAppNode.register_schema(schemakey, schema, self.attrs.owner, transaction)
             snodes.append(snode)
         return snodes
-
-    @staticmethod
-    def register_schema(schemakey: keys.DDHkeyVersioned, schema: m_schemas.AbstractSchema, owner: principals.Principal, transaction):
-        """ register a single schema in its Schema Node, creating one if necessary. 
-            staticmethod so it can be called by test fixtures. 
-        """
-        genkey = schemakey.without_variant_version()
-        snode = keydirectory.NodeRegistry[genkey].get(
-            nodes.NodeSupports.schema)  # need exact location, not up the tree
-        # hook into parent schema:
-        parent, split = m_schemas.AbstractSchema.get_parent_schema(transaction, genkey)
-        # inherit transformers:
-        schema.schema_attributes.transformers = parent.schema_attributes.transformers.merge(
-            schema.schema_attributes.transformers)
-
-        if snode:
-            # TODO:#33: Schema Nodes don't need .ensure_loaded now, but should be reinserted once they're async
-            snode = typing.cast(nodes.SchemaNode, snode)
-            snode.add_schema(schema)
-        else:
-            # create snode with our schema:
-            snode = nodes.SchemaNode(owner=owner, consents=m_schemas.AbstractSchema.get_schema_consents())
-            keydirectory.NodeRegistry[genkey] = snode
-            snode.add_schema(schema)
-
-            parent.insert_schema_ref(transaction, genkey, split)
-        return snode
 
     def register_references(self, session, schema_network: schema_network.SchemaNetworkClass):
         """ We register: 
@@ -91,21 +62,8 @@ class DAppProxy(DDHbaseModel):
 
         attrs = self.attrs
         dnode = DAppNode(owner=attrs.owner, dapp=self, consents=m_schemas.AbstractSchema.get_schema_consents())
-        schema_network.add_dapp(attrs)
+        dnode.register_references(attrs, session, schema_network)
 
-        for ref in attrs.references:
-            target = ref.target.ens()
-            if ref.relation == relationships.Relation.provides:
-                target = keys.DDHkeyVersioned0.cast(target)
-                schema_network.add_schema_vv(target.without_variant_version(), target)
-                schema_network.add_edge(target, attrs, type='provided by', weight=attrs.get_weight())
-                # register our node as a provider for (or transformer into) the key:
-                keydirectory.NodeRegistry[ref.target] = dnode
-            elif ref.relation == relationships.Relation.requires:
-                target = keys.DDHkeyRange.cast(target)
-                schema_network.add_schema_range(target)
-                schema_network.add_edge(attrs, target, type='requires')
-        schema_network.valid.invalidate()  # we have modified the network
         return
 
     async def execute(self, req: dapp_attrs.ExecuteRequest):
@@ -155,7 +113,7 @@ class DAppManagerClass(DDHbaseModel):
 DAppManager = DAppManagerClass()
 
 
-class DAppNode(nodes.ExecutableNode):
+class DAppNode(executable_nodes.SchemedExecutableNode):
     """ node managed by a DApp """
     dapp: DAppProxy
 
