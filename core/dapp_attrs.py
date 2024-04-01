@@ -81,42 +81,21 @@ CostToWeight = {
 }
 
 
-class DApp(DAppOrFamily):
-    model_config = pydantic.ConfigDict(extra='allow')    # DApps are free to use their own variables
+class SchemaProvider(DDHbaseModel):
 
-    belongsTo: DAppFamily | None = None
+    id: str | None = None  # principals.DAppId causes Pydantic errors - I don't know why
     references: list[relationships.Reference] = []
     transforms_into: keys.DDHkeyVersioned0 | None = None  # Versioned0 here to avoid errors for incomplete DApps
-    estimatedCosts: EstimatedCosts = EstimatedCosts.free
-    requested_privileges: privileges.DAppPrivileges = privileges.NoPrivileges
-    granted_privileges: privileges.DAppPrivileges = pydantic.Field(
-        default=privileges.NoPrivileges, description="privileges actually granted, cannot be set")
-
-    def __init__(self, *a, **kw):
-        """ Add to family as member """
-        super().__init__(*a, **kw)
-        if self.belongsTo:
-            self.belongsTo.members[self.id] = self
-        self.granted_privileges = self.requested_privileges
 
     def __hash__(self):
         return hash(self.id)
 
     def __eq__(self, other):
-        return (self.id == other.id) if isinstance(other, DApp) else False
+        return (self.id == other.id) if isinstance(other, SchemaProvider) else False
 
     def get_schemas(self) -> dict[keys.DDHkeyVersioned, schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
         return {}
-
-    def get_references(self):
-        """ return references; can be overwritten """
-        return self.references
-
-    def add_reference(self, references: list[relationships.Reference]) -> DApp:
-        """ add a reference and returns self for chaining """
-        self.references.extend(references)
-        return self
 
     def availability_user_dependent(self) -> bool:
         """ is the availability dependent on the user, e.g., for employee DApps.
@@ -131,11 +110,7 @@ class DApp(DAppOrFamily):
 
     def estimated_cost(self) -> float:
         """ return cost estimate or EstimatedCosts.user if it is user-dependent (e.g., memberships) """
-        if self.estimatedCosts == EstimatedCosts.user:
-            cost = 1.0
-        else:
-            cost = CostToWeight[self.estimatedCosts]
-        return cost
+        return 1.0
 
     def cost_for_user(self, principal: principals.Principal) -> float:
         """ return cost of this DApp for a user, for selection purposes only.
@@ -145,6 +120,40 @@ class DApp(DAppOrFamily):
     def get_weight(self) -> float:
         """ get weight based on costs """
         return 1.0 + self.estimated_cost()
+
+
+class DApp(DAppOrFamily, SchemaProvider):
+    model_config = pydantic.ConfigDict(extra='allow')    # DApps are free to use their own variables
+
+    belongsTo: DAppFamily | None = None
+    estimatedCosts: EstimatedCosts = EstimatedCosts.free
+    requested_privileges: privileges.DAppPrivileges = privileges.NoPrivileges
+    granted_privileges: privileges.DAppPrivileges = pydantic.Field(
+        default=privileges.NoPrivileges, description="privileges actually granted, cannot be set")
+
+    def __init__(self, *a, **kw):
+        """ Add to family as member """
+        super().__init__(*a, **kw)
+        if self.belongsTo:
+            self.belongsTo.members[self.id] = self
+        self.granted_privileges = self.requested_privileges
+
+    def get_references(self):
+        """ return references; can be overwritten """
+        return self.references
+
+    def add_reference(self, references: list[relationships.Reference]) -> DApp:
+        """ add a reference and returns self for chaining """
+        self.references.extend(references)
+        return self
+
+    def estimated_cost(self) -> float:
+        """ return cost estimate or EstimatedCosts.user if it is user-dependent (e.g., memberships) """
+        if self.estimatedCosts == EstimatedCosts.user:
+            cost = 1.0
+        else:
+            cost = CostToWeight[self.estimatedCosts]
+        return cost
 
 
 DApp.model_rebuild()
