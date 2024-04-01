@@ -6,10 +6,8 @@ import typing
 
 from backend import persistable
 
-from core import keys, node_types, nodes, keydirectory, relationships, schema_network, dapp_attrs, schemas as m_schemas
+from core import keys, node_types, nodes, keydirectory, relationships, schema_network, dapp_attrs, schemas as m_schemas, principals
 from core.node_types import NodeSupports
-
-from core import dapp_attrs
 
 
 class ExecutableNode(node_types.T_ExecutableNode, nodes.Node, persistable.NonPersistable):
@@ -73,3 +71,20 @@ class SchemedExecutableNode(ExecutableNode):
 
             parent.insert_schema_ref(transaction, genkey, split)
         return snode
+
+
+class InProcessSchemedExecutableNode(SchemedExecutableNode):
+
+    attrs: dapp_attrs.SchemaProvider
+
+    def register(self, session):
+        # from ..core import pillars  # pillars use DAppManager
+        # await proxy.initialize_schemas(session, pillars.Pillars)  # get schemas and register them
+        assert self.key
+        transaction = session.get_or_create_transaction()
+        for k, s in self.get_schemas().items():
+            self.register_schema(k, s, self.owner, transaction)
+        self.register_references(self.attrs, session, m_schemas.SchemaNetwork)
+        keydirectory.NodeRegistry[self.key] = self
+        m_schemas.SchemaNetwork.valid.invalidate()  # finished
+        return
