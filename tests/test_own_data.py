@@ -211,3 +211,10 @@ async def test_read_and_write_data2(user, user2, no_storage_dapp):
     await read("/another3/org/private/documents/doc6", session)
 
     return
+
+
+@pytest.mark.asyncio
+async def test_consent_api(user, user2, no_storage_dapp):
+    session = get_session(user)
+    d = await read("/mgf/org/ddh/consents", session)
+    return
