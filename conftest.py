@@ -6,6 +6,8 @@ import pytest
 import sys
 import pathlib
 
+os.environ['RAISE_IMPORT_ERRORS'] = 'True'
+
 d = str(pathlib.Path(__file__).parent)  # project dir
 if d not in sys.path:
     sys.path.insert(0, d)

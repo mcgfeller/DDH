@@ -1,7 +1,7 @@
 """ Pillars upon which DDH is built """
 from __future__ import annotations
 import typing
-
+import os
 import logging
 
 
@@ -20,6 +20,8 @@ from utils.pydantic_utils import DDHbaseModel
 
 import networkx
 
+RAISE_IMPORT_ERRORS = bool(os.environ.get('RAISE_IMPORT_ERRORS', False))
+
 
 class Executor(DDHbaseModel):
     ...
@@ -30,16 +32,16 @@ class ClearingHouse(DDHbaseModel):
 
 
 def load_schema_formats():
-    import_modules.importAllSubPackages(schema_formats)
+    import_modules.importAllSubPackages(schema_formats, raiseError=RAISE_IMPORT_ERRORS)
 
 
 def load_standard_schemas():
-    import_modules.importAllSubPackages(standard_schemas)
+    import_modules.importAllSubPackages(standard_schemas, raiseError=RAISE_IMPORT_ERRORS)
     schemas.SchemaNetwork.valid.invalidate()  # finished
 
 
 def load_traits():
-    import_modules.importAllSubPackages(traits)
+    import_modules.importAllSubPackages(traits, raiseError=RAISE_IMPORT_ERRORS)
     trait.DefaultTraits.ready = True  # all traits registered themselves
 
 
