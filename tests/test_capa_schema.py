@@ -59,13 +59,24 @@ def get_session(user):
 
 
 @pytest.mark.asyncio
-async def test_read_schema_top(user, transaction, migros_key_schema):
+async def test_read_schema_p(user, transaction, migros_key_schema):
 
     session = get_session(user)
     trx = await session.ensure_new_transaction()
     ddhkey1 = keys.DDHkeyVersioned0('//p:schema::0')
     access = permissions.Access(ddhkey=ddhkey1)
-    await facade.ddh_get(access, session)
+    s = await facade.ddh_get(access, session)
+    return
+
+
+@pytest.mark.asyncio
+async def test_read_schema_org(user, transaction, migros_key_schema):
+    """ Read integrared schema //org: """
+    session = get_session(user)
+    trx = await session.ensure_new_transaction()
+    ddhkey1 = keys.DDHkeyVersioned0('//org:schema::0')
+    access = permissions.Access(ddhkey=ddhkey1)
+    s = await facade.ddh_get(access, session)
     return
 
 
