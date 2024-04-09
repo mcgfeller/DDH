@@ -103,7 +103,8 @@ class PySchemaElement(schemas.AbstractSchemaElement):
             key = key.key
         if isinstance(key, tuple):
             key = '_'.join(key)
-        return pydantic.create_model(key, __base__=cls, **elements)
+        se = pydantic.create_model(key, __base__=cls, **elements)
+        return se
 
 
 class PySchemaReference(schemas.AbstractSchemaReference, PySchemaElement):
