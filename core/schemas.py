@@ -218,10 +218,11 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         Class2SchemaFormat[cls] = cls.format_designator
 
     @property
-    def container(self) -> SchemaContainer:
-        assert self._w_container
-        c = self._w_container()
-        assert c is not None
+    def container(self) -> SchemaContainer | None:
+        if self._w_container:
+            c = self._w_container()
+        else:
+            c = None
         return c
 
     def update_schema_attributes(self):

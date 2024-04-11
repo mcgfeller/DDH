@@ -45,9 +45,11 @@ class PySchemaElement(schemas.AbstractSchemaElement):
             fi = current.model_fields.get(str(segment), None)
             if fi is None:
                 if create_intermediate:
-                    new_current = cls.create_from_elements(segment)
+                    new_current = current.create_from_elements(segment)
                     current._add_fields(**{segment: (new_current, None)})
                     current = new_current
+                    # print(f'create_intermediate, {cls=}, {path=}, {segment=}')
+                    list(current.iter_paths())  # DEBUG TEST
                 else:
                     return None
             else:
