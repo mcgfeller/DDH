@@ -230,6 +230,14 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         """ return key stored in container """
         return c.ddhkey if (c := self.container) else None
 
+    @property
+    def vvkey(self) -> keys.DDHkeyVersioned | None:
+        """ return versioned key """
+        if (k := self.key):
+            return keys.DDHkeyVersioned(k.key, fork=keys.ForkType.schema, variant=self.schema_attributes.variant, version=self.schema_attributes.version)
+        else:
+            return None
+
     def update_schema_attributes(self):
         """ update .schema_attributes based on schema.
             updates .variant and mimetype by default, but can be refined.
