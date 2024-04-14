@@ -23,6 +23,9 @@ def install():
         We don't actually have a schema yet, so we use a dummy schema.
     """
     transaction = sessions.get_system_session().get_or_create_transaction()
+    # hook into parent schema:
+    parent, split = schemas.AbstractSchema.get_parent_schema(transaction, keys.DDHkey('//org:schema'))
+
     for k, owners in orgs.items():
         key = keys.DDHkeyVersioned0('//org/'+k+':schema')
         # convert owners to principals:
@@ -34,9 +37,14 @@ def install():
         # SchemaNode has single owner.
         s_node = nodes.SchemaNode(owner=owners[0], consents=consents)
         keydirectory.NodeRegistry[key] = s_node
+
         # create and add dummy schema:
-        dummy_schema = py_schema.PySchema(schema_element=py_schema.PySchemaElement)
-        s_node.add_schema(dummy_schema)
+        sub_schema = py_schema.PySchema(schema_element=py_schema.PySchemaElement)
+        # inherit transformers:
+        sub_schema.schema_attributes.transformers = parent.schema_attributes.transformers.merge(
+            sub_schema.schema_attributes.transformers)
+        s_node.add_schema(sub_schema)
+
     # transaction.commit()
 
 
