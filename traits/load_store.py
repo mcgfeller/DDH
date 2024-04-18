@@ -77,13 +77,14 @@ class LoadFromStorage(AccessTransformer):
             data_node, d_key_split, remainder = await self.get_or_create_dnode(trstate, condition=nodes.Node.has_consents)
             *d, consentees, msg = trstate.access.raise_if_not_permitted(data_node)
 
-            data = {}
+            data = None  # we'll check this later in VerifyLoaded
 
         owner_ids = {o.id for o in data_node.owners} if data_node else set(trstate.access.ddhkey.owners)
         consentee_ids = {c.id for c in consentees}
         trstate.transaction.trx_ext['ConsenteesChecker'].add_read_consentees(trstate.transaction,
                                                                              owner_ids | consentee_ids, trstate.access.modes)
         trstate.parsed_data = data
+        trstate.access.data_key_split = d_key_split
 
         return
 
@@ -149,6 +150,24 @@ class LoadFromDApp(AccessTransformer):
                 op=nodes.Ops.get, access=trstate.access, transaction=trstate.transaction, key_split=e_key_split, data=trstate.parsed_data, q=q)
             data = await e_node.execute(req)
             trstate.parsed_data = data
+            trstate.access.data_key_split = e_key_split
+        return
+
+
+class VerifyLoaded(AccessTransformer):
+    """ Check if data was loaded by LoadFromStorage or LoadFromDApp.
+        We need this as we cannot know beforehand which Transformer might load data.
+    """
+    phase: CV[trait.Phase] = trait.Phase.load
+    after: str = 'LoadFromDApp'
+    only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.read})
+    # consents and schemas are never loaded through apps
+    only_forks: CV[frozenset[keys.ForkType]] = frozenset({keys.ForkType.data})
+
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
+        if trstate.parsed_data is None:
+            top, remainder = trstate.access.ddhkey.split_at(trstate.d_key_split)
+            raise errors.NotFound(remainder)
         return
 
 
@@ -245,4 +264,4 @@ class SaveToStorage(AccessTransformer):
 
 # Root Tranformers may be overwritten:
 trait.DefaultTraits.RootTransformers += trait.Transformers(
-    LoadFromStorage(may_overwrite=True), LoadFromDApp(may_overwrite=True), ValidateToDApp(may_overwrite=True),  UpdateConsents(), SaveToStorage(may_overwrite=True))
+    LoadFromStorage(may_overwrite=True), LoadFromDApp(may_overwrite=True), VerifyLoaded(may_overwrite=True), ValidateToDApp(may_overwrite=True),  UpdateConsents(), SaveToStorage(may_overwrite=True))

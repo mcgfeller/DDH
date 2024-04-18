@@ -217,6 +217,8 @@ class Access(DDHbaseModel):
     explanation: str | None = None
     schema_key_split: int | None = pydantic.Field(
         default=None, description="Split into DDHKey for schema and path into schema")
+    data_key_split: int | None = pydantic.Field(
+        default=None, description="Split into DDHKey for data and path into data node")
     failed: str | None = None
 
     def __init__(self, *a, **kw):

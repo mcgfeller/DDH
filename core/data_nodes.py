@@ -93,7 +93,8 @@ class DataNode(nodes.Node, persistable.Persistable):
         if op == nodes.Ops.get:
             data = await self.unsplit_data(self.data, transaction)
             if key_split:
-                data = datautils.extract_data(self.data, remainder, raise_error=errors.NotFound)
+                # we tolerate not found here and check in VerifyLoaded transformer:
+                data = datautils.extract_data(self.data, remainder, default=None)
         elif op == nodes.Ops.put:
             assert data is not None
             if key_split:
