@@ -23,7 +23,16 @@ class ConsentQuery(executable_nodes.InProcessSchemedExecutableNode):
 
     async def execute(self, req: dapp_attrs.ExecuteRequest):
         # TODO: #34
-        return {}
+        op = req.access.ddhkey.split_at(req.key_split)[1]
+        match str(op).lower():
+            case 'received':
+                r = 'received'
+            case 'given':
+                r = 'given'
+            case _:
+                raise errors.NotFound(f"Selection {op} not found; must be 'received' or 'given'")
+
+        return r
 
     def get_schemas(self) -> dict[keys.DDHkeyVersioned, schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """

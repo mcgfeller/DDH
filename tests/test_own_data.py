@@ -214,7 +214,23 @@ async def test_read_and_write_data2(user, user2, no_storage_dapp):
 
 
 @pytest.mark.asyncio
-async def test_consent_api(user, user2, no_storage_dapp):
+async def test_read_notfound(user, user2, no_storage_dapp):
     session = get_session(user)
-    d = await read("/mgf/org/ddh/consents", session)
+    await write_with_consent("/mgf/org/private/documents/doc1")
+    with pytest.raises(errors.NotFound):
+        await read("/mgf/org/private/documents/doc99", session)
+    return
+
+
+@pytest.mark.asyncio
+async def test_consent_api_received(user, user2, no_storage_dapp):
+    session = get_session(user)
+    d = await read("/mgf/org/ddh/consents/received", session)
+    return
+
+
+@pytest.mark.asyncio
+async def test_consent_api_given(user, user2, no_storage_dapp):
+    session = get_session(user)
+    d = await read("/mgf/org/ddh/consents/given", session)
     return
