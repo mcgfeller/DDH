@@ -166,7 +166,7 @@ class VerifyLoaded(AccessTransformer):
 
     async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
         if trstate.parsed_data is None:
-            top, remainder = trstate.access.ddhkey.split_at(trstate.d_key_split)
+            top, remainder = trstate.access.ddhkey.split_at(trstate.access.data_key_split)
             raise errors.NotFound(remainder)
         return
 
@@ -240,8 +240,8 @@ class SaveToStorage(AccessTransformer):
             data_node, d_key_split = await keydirectory.NodeRegistry.get_node_async(
                 access.ddhkey, nodes.NodeSupports.data, transaction)
             if not data_node:
-
-                topkey, remainder = access.ddhkey.split_at(2)
+                d_key_split = 2  # top personal node
+                topkey, remainder = access.ddhkey.split_at(d_key_split)
                 # there is no node, create it if owner asks for it:
                 if access.principal.id in topkey.owner:
                     data_node = data_nodes.DataNode(owner=access.principal, key=topkey)
