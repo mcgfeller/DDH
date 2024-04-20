@@ -83,6 +83,7 @@ class DataNode(nodes.Node, persistable.Persistable):
         except KeyError as e:  # there is no entry for the user in keyvault.PrincipalKeyVault, so we cannot load this node
             raise errors.AccessError(f'User {transaction.owner.id} not authorized to load node {id}')
         o = cls.from_compressed(plain)
+        assert o.key.key[0] is keys.DDHkey.Root
         return o
 
     async def execute(self, op: nodes.Ops, access: permissions.Access, transaction: transactions.Transaction, key_split: int, data: dict | None = None, q: str | None = None):

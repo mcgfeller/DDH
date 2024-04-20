@@ -83,7 +83,8 @@ class DDHkey(DDHbaseModel):
         else:
             key = list(key)  # ensure list
 
-        if len(key) > 1 and not key[0]:  # replace root delimiter with root object
+        # replace root delimiter with root object or delimiter with root in list
+        if len(key) > 1 and ((not key[0]) or key[0] == self.Delimiter):
             key[0] = self.Root
 
         if len(key) > 2 and not key[1]:  # replace empty segment in pos 1 with AllKey
@@ -151,6 +152,10 @@ class DDHkey(DDHbaseModel):
 
     def __bool__(self) -> bool:
         return bool(self.key)
+
+    @classmethod
+    def model_validate_json(cls, j):
+        return DDHbaseModel.model_validate_json(j)
 
     @classmethod
     def cast(cls, key: DDHkey) -> typing.Self:
