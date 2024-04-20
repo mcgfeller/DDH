@@ -9,7 +9,7 @@ import pytest
 import json
 from fastapi.encoders import jsonable_encoder
 
-keyvault.clear_vaults()  # need to be independet of other tests
+keyvault.clear_vaults()  # need to be independent of other tests
 
 
 @pytest.fixture(scope="module")

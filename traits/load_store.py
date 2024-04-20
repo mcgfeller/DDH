@@ -246,6 +246,7 @@ class SaveToStorage(AccessTransformer):
                 if access.principal.id in topkey.owner:
                     data_node = data_nodes.DataNode(owner=access.principal, key=topkey)
                     await data_node.store(transaction)  # XXX? # put node into directory
+                    data_node.ensure_in_dir(topkey, transaction)  # XXX in transaction?
                 else:  # not owner, we simply say no access to this path
                     raise errors.AccessError(f'User {access.principal.id} not authorized to write to {topkey}')
             else:
@@ -253,7 +254,7 @@ class SaveToStorage(AccessTransformer):
                 topkey, remainder = access.ddhkey.split_at(d_key_split)
 
             data_node = typing.cast(data_nodes.DataNode, data_node)
-            # TODO: Insert data into data_node
+            # Insert data into data_node:
             await data_node.execute(nodes.Ops.put, access, transaction, d_key_split, trstate.parsed_data)
 
             trstate.data_node = data_node  # TODO NEW NODE!

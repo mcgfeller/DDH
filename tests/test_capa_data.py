@@ -1,6 +1,6 @@
 """ Set up some Test data """
 
-from core import keys, permissions, facade, errors, transactions, principals
+from core import keys, permissions, facade, errors, transactions
 from core import pillars
 from traits import capabilities, anonymization, load_store
 from frontend import user_auth, sessions
@@ -9,7 +9,7 @@ import pytest
 import json
 from fastapi.encoders import jsonable_encoder
 
-keyvault.clear_vaults()  # need to be independet of other tests
+keyvault.clear_vaults()  # need to be independent of other tests
 
 
 @pytest.fixture(scope="module")
@@ -139,8 +139,10 @@ async def test_read_pseudo_migros(user, transaction, migros_key_schema, migros_d
 
 
 @pytest.mark.asyncio
-async def test_read_write_pseudo_migros(user, transaction, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
+async def test_read_write_pseudo_migros(user, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
     """ read pseudonymous whole schema """
+    session = get_session(user)  # get trx corresponding to user
+    transaction = session.get_or_create_transaction()
     modes = {permissions.AccessMode.read, permissions.AccessMode.pseudonym}
     trstate = await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, monkeypatch)
     schema = trstate.nschema  # modified in check_data_with_mode
@@ -151,7 +153,7 @@ async def test_read_write_pseudo_migros(user, transaction, migros_key_schema, mi
     data = json.dumps(jsonable_encoder(data))  # back to json
     modes = {permissions.AccessMode.write, permissions.AccessMode.pseudonym}
     ddhkey = k.ensure_fork(keys.ForkType.data).with_new_owner(eid)
-    access = permissions.Access(ddhkey=ddhkey, principal=user, modes=modes)
+    access = permissions.Access(ddhkey=ddhkey, principal=user, modes=modes, op=permissions.Operation.put)
     access.schema_key_split = 4  # split after the migros.org
     trstate = await schema.apply_transformers(access, transaction, data)  # transformer processing happens here
     data = trstate.parsed_data

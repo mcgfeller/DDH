@@ -9,7 +9,7 @@ import json
 
 def clear_data():
     keydirectory.NodeRegistry._clear({nodes.NodeSupports.data})
-    keyvault.clear_vaults()  # need to be independet of other tests
+    keyvault.clear_vaults()  # need to be independent of other tests
 
 
 clear_data()
