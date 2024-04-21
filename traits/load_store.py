@@ -39,8 +39,8 @@ class AccessTransformer(trait.Transformer):
                 if trstate.access.principal.id in topkey.owner:
                     data_node = data_nodes.DataNode(owner=trstate.access.principal, key=topkey)
                     keyvault.set_new_storage_key(data_node, trstate.access.principal, set(), set())
-                    await data_node.store(trstate.transaction)  #
-                    data_node.ensure_in_dir(data_node.key, trstate.transaction)  # put node into directory
+                    # Add it to transaction:
+                    trstate.transaction.add(persistable.UserDataPersistAction(obj=data_node))
 
                 else:  # not owner, we simply say no access to this path
                     raise errors.AccessError(f'User {trstate.access.principal.id} not authorized to write to {topkey}')
@@ -217,7 +217,7 @@ class UpdateConsents(AccessTransformer):
         trstate.access.raise_if_not_permitted(trstate.data_node)
 
         added, removed = await trstate.data_node.update_consents(trstate.access, trstate.transaction, remainder, trstate.parsed_data)
-        await trstate.data_node.store(trstate.transaction)
+        trstate.transaction.add(persistable.UserDataPersistAction(obj=trstate.data_node, add_to_dir=False))
         await consentcache.ConsentCache.update(trstate.data_node.key, added, removed)
         return
 
@@ -245,8 +245,6 @@ class SaveToStorage(AccessTransformer):
                 # there is no node, create it if owner asks for it:
                 if access.principal.id in topkey.owner:
                     data_node = data_nodes.DataNode(owner=access.principal, key=topkey)
-                    await data_node.store(transaction)  # XXX? # put node into directory
-                    data_node.ensure_in_dir(topkey, transaction)  # XXX in transaction?
                 else:  # not owner, we simply say no access to this path
                     raise errors.AccessError(f'User {access.principal.id} not authorized to write to {topkey}')
             else:
@@ -257,8 +255,7 @@ class SaveToStorage(AccessTransformer):
             # Insert data into data_node:
             await data_node.execute(nodes.Ops.put, access, transaction, d_key_split, trstate.parsed_data)
 
-            trstate.data_node = data_node  # TODO NEW NODE!
-            # Add it to transaction:
+            trstate.data_node = data_node  # new Node, add to transaction
             transaction.add(persistable.UserDataPersistAction(obj=data_node))
         return
 

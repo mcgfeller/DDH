@@ -137,5 +137,14 @@ class SystemDataPersistAction(PersistAction):
 
 
 class UserDataPersistAction(PersistAction):
-    """ Persist User Data, storage DApp is user-specific  """
-    ...
+    """ Persist User Data, storage DApp is user-specific.
+        If add_to_dir is True, ensure node is in directory.
+    """
+    add_to_dir: bool = True
+
+    async def commit(self, transaction):
+        """ store has currently not async support """
+        await self.obj.store(transaction)
+        if self.add_to_dir:
+            self.obj.ensure_in_dir(self.obj.key, transaction)
+        return
