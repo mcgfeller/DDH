@@ -31,6 +31,15 @@ def get_session(user):
     return sessions.Session(token_str='test_session_'+user.id, user=user)
 
 
+async def read(ddhkey: keys.DDHkey | str, session: sessions.Session, modes: set[permissions.AccessMode] = {permissions.AccessMode.read}):
+    if isinstance(ddhkey, str):
+        ddhkey = keys.DDHkey(ddhkey)
+    access = permissions.Access(ddhkey=ddhkey, modes=modes)
+    data, header = await facade.ddh_get(access, session)
+    assert data, 'data must not be empty'
+    return
+
+
 @pytest.mark.asyncio
 async def test_read_anon_failures(user, user2, no_storage_dapp):
     """ Test must failures for anonymous access:
@@ -45,26 +54,21 @@ async def test_read_anon_failures(user, user2, no_storage_dapp):
     assert trx.read_consentees == set()
 
     ddhkey1 = keys.DDHkey(key="/mgf/org/private/documents/doc10")
-    access = permissions.Access(ddhkey=ddhkey1, modes={permissions.AccessMode.read})
-    await facade.ddh_get(access, session)
+    # access = permissions.Access(ddhkey=ddhkey1, modes={permissions.AccessMode.read})
+    # await facade.ddh_get(access, session)
+    await read("/mgf/org/private/documents/doc10", session, modes={permissions.AccessMode.read})
 
     # read anonymous
-    access = permissions.Access(ddhkey=ddhkey1, modes={
-                                permissions.AccessMode.read, permissions.AccessMode.anonymous})
     with pytest.raises(errors.CapabilityMissing):  # private schema does not have this capability
-        await facade.ddh_get(access, session)
+        await read("/mgf/org/private/documents/doc10", session, modes={permissions.AccessMode.read, permissions.AccessMode.anonymous})
 
     # granted only with read anonymous
     ddhkey2 = keys.DDHkey(key="/another/org/private/documents/doc20")
-    access = permissions.Access(ddhkey=ddhkey2, modes={permissions.AccessMode.read})
     with pytest.raises(errors.AccessError):  # we must supply AccessMode.anonymous, so this must raise AccessError
-        await facade.ddh_get(access, session)
-
-    access = permissions.Access(ddhkey=ddhkey2, modes={
-                                permissions.AccessMode.read, permissions.AccessMode.anonymous})
+        await read(ddhkey2, session, modes={permissions.AccessMode.read, })
 
     with pytest.raises(errors.CapabilityMissing):  # private schema does not have this capability
-        await facade.ddh_get(access, session)
+        await read(ddhkey2, session, modes={permissions.AccessMode.read, permissions.AccessMode.anonymous})
     return
 
 

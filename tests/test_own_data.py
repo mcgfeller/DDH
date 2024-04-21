@@ -60,7 +60,9 @@ async def read(ddhkey: keys.DDHkey | str, session: sessions.Session, modes: set[
     if isinstance(ddhkey, str):
         ddhkey = keys.DDHkey(ddhkey)
     access = permissions.Access(ddhkey=ddhkey, modes=modes)
-    return await facade.ddh_get(access, session)
+    data, header = await facade.ddh_get(access, session)
+    assert data, 'data must not be empty'
+    return
 
 
 @pytest.mark.asyncio
