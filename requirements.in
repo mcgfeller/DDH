@@ -18,3 +18,4 @@ numpy
 pandas
 accept_types
 jsonschema[format-nongpl]
+inline-snapshot
