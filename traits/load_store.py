@@ -208,9 +208,14 @@ class UpdateConsents(AccessTransformer):
         # validate new consents first:
         trstate.parsed_data = permissions.Consents.model_validate_json(trstate.orig_data)
 
-        if not trstate.data_node:
+        if trstate.data_node:
+            remainder = trstate.access.ddhkey.split_at(trstate.access.data_key_split)
+        else:
             data_node, d_key_split, remainder = await self.get_or_create_dnode(trstate, create=True)
             assert trstate.data_node
+
+        remainder = remainder.without_variant_version()  # consent is independent of VV
+
         trstate.data_node = typing.cast(data_nodes.DataNode, trstate.data_node)
         assert trstate.data_node.key
 
@@ -218,7 +223,7 @@ class UpdateConsents(AccessTransformer):
 
         added, removed = await trstate.data_node.update_consents(trstate.access, trstate.transaction, remainder, trstate.parsed_data)
         trstate.transaction.add(persistable.UserDataPersistAction(obj=trstate.data_node, add_to_dir=False))
-        await consentcache.ConsentCache.update(trstate.data_node.key, added, removed)
+        await consentcache.ConsentCache.update(trstate.data_node.key.without_variant_version(), added, removed)
         return
 
 

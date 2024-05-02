@@ -106,7 +106,7 @@ class DataNode(nodes.Node, persistable.Persistable):
 
         return data
 
-    async def update_consents(self, access: permissions.Access, transaction: transactions.Transaction, remainder: keys.DDHkey, consents: permissions.Consents) -> tuple[frozenset[permissions.Consent], frozenset[permissions.Consent]]:
+    async def update_consents(self, access: permissions.Access, transaction: transactions.Transaction, remainder: keys.DDHkeyGeneric, consents: permissions.Consents) -> tuple[frozenset[permissions.Consent], frozenset[permissions.Consent]]:
         """ update consents at remainder key.
             Data must be read using previous encryption and rewritten using the new encryption. See 
             section 7.3 "Protection of data at rest and on the move" of the DDH paper.

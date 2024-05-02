@@ -78,8 +78,6 @@ class InProcessSchemedExecutableNode(SchemedExecutableNode):
     attrs: dapp_attrs.SchemaProvider
 
     def register(self, session):
-        # from ..core import pillars  # pillars use DAppManager
-        # await proxy.initialize_schemas(session, pillars.Pillars)  # get schemas and register them
         assert self.key
         transaction = session.get_or_create_transaction()
         for k, s in self.get_schemas().items():
