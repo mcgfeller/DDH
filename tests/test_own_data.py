@@ -56,13 +56,27 @@ async def write_with_consent(ddhkey: keys.DDHkey | str, consented_users: list[pr
     return
 
 
-async def read(ddhkey: keys.DDHkey | str, session: sessions.Session, modes: set[permissions.AccessMode] = {permissions.AccessMode.read}):
+async def write_consents(ddhkey: keys.DDHkey | str, consents: permissions.Consents, no_storage_dapp=None):
+    """ utility to write consents to ddhkey
+    """
+    if isinstance(ddhkey, str):
+        ddhkey = keys.DDHkey(ddhkey)
+    user = user_auth.UserInDB.load(ddhkey.owner)
+    session = get_session(user)
+    ddhkey_c = ddhkey.ensure_fork(keys.ForkType.consents)
+    access = permissions.Access(ddhkey=ddhkey_c, modes={permissions.AccessMode.write})
+    await facade.ddh_put(access, session, consents.model_dump_json())
+    return
+
+
+async def read(ddhkey: keys.DDHkey | str, session: sessions.Session, modes: set[permissions.AccessMode] = {permissions.AccessMode.read}, check_empty: bool = true):
     if isinstance(ddhkey, str):
         ddhkey = keys.DDHkey(ddhkey)
     access = permissions.Access(ddhkey=ddhkey, modes=modes)
     data, header = await facade.ddh_get(access, session)
-    assert data, 'data must not be empty'
-    return
+    if check_empty:
+        assert data, 'data must not be empty'
+    return data
 
 
 @pytest.mark.asyncio
@@ -140,6 +154,23 @@ async def test_write_data_with_consent(no_storage_dapp):
 
 
 @pytest.mark.asyncio
+async def test_withdraw_consent(user, no_storage_dapp):
+    session = get_session(user)
+    d = await read("/mgf/org/ddh/consents/received", session)
+    await write_with_consent("/another3/org/private/documents/doc8", consented_users=['mgf', 'lise', 'laura'], consent_modes={permissions.AccessMode.read, permissions.AccessMode.combined, })
+    # remove write consent from lise and all consent from jeffrey
+
+    consents = permissions.Consents(consents=[
+        permissions.Consent(grantedTo=[user_auth.UserInDB.load('lise')], withModes={permissions.AccessMode.read, }),
+        permissions.Consent(grantedTo=[user_auth.UserInDB.load('mgf')], withModes={
+                            permissions.AccessMode.read, permissions.AccessMode.combined, }),
+    ])
+    await write_consents("/another3/org/private/documents/doc8", consents)
+    d = await read("/mgf/org/ddh/consents/received", session)
+    return
+
+
+@ pytest.mark.asyncio
 async def test_read_and_write_data(user, user2, no_storage_dapp):
     session = get_session(user)
     # first, set up some data:
@@ -168,7 +199,7 @@ async def test_read_and_write_data(user, user2, no_storage_dapp):
     return
 
 
-@pytest.mark.asyncio
+@ pytest.mark.asyncio
 async def test_read_and_write_data2(user, user2, no_storage_dapp):
     session = get_session(user)
     combined_read = {permissions.AccessMode.read, permissions.AccessMode.combined}
@@ -215,7 +246,7 @@ async def test_read_and_write_data2(user, user2, no_storage_dapp):
     return
 
 
-@pytest.mark.asyncio
+@ pytest.mark.asyncio
 async def test_read_notfound(user, user2, no_storage_dapp):
     session = get_session(user)
     await write_with_consent("/mgf/org/private/documents/doc1")
@@ -224,14 +255,14 @@ async def test_read_notfound(user, user2, no_storage_dapp):
     return
 
 
-@pytest.mark.asyncio
+@ pytest.mark.asyncio
 async def test_consent_api_received(user, user2, no_storage_dapp):
     session = get_session(user)
     d = await read("/mgf/org/ddh/consents/received", session)
     return
 
 
-@pytest.mark.asyncio
+@ pytest.mark.asyncio
 async def test_consent_api_given(user, user2, no_storage_dapp):
     session = get_session(user)
     d = await read("/mgf/org/ddh/consents/given", session)

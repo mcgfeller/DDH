@@ -1,4 +1,4 @@
-""" Provisional User and Token management 
+""" Provisional User and Token management
     See https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/
 """
 from __future__ import annotations
@@ -59,6 +59,27 @@ FAKE_USERS_DB = {
         "email": "nobody@swisscom.com",
         "hashed_password": get_password_hash("secret"),
     },
+
+    "lise": {
+        "id": "lise",
+        "name": "User for consent testing",
+        "email": "nobody@swisscom.com",
+        "hashed_password": get_password_hash("secret"),
+    },
+
+    "jeffrey": {
+        "id": "jeffrey",
+        "name": "User for consent testing",
+        "email": "nobody@swisscom.com",
+        "hashed_password": get_password_hash("secret"),
+    },
+
+    "laura": {
+        "id": "laura",
+        "name": "User for consent testing",
+        "email": "nobody@swisscom.com",
+        "hashed_password": get_password_hash("secret"),
+    },
 }
 
 
@@ -74,7 +95,7 @@ class TokenData(DDHbaseModel):
 class UserInDB(users.User):
     hashed_password: str  # type: ignore
 
-    @classmethod
+    @ classmethod
     def load(cls, id) -> UserInDB:
         """ Load user from DB, or raise NotFound """
         u = FAKE_USERS_DB.get(id, None)
@@ -87,7 +108,7 @@ class UserInDB(users.User):
         """ return user only """
         return users.User(**self.model_dump(include=users.User.model_fields.keys()))
 
-    @classmethod
+    @ classmethod
     def load_user(cls, id) -> principals.Principal | UserInDB:
         """ return Principal or UserInDB """
         return principals.CommonPrincipals.get(id) or cls.load(id)
@@ -164,7 +185,7 @@ async def get_current_active_user(current_session: sessions.Session = fastapi.De
 
 async def login_for_access_token(form_data: fastapi.security.OAuth2PasswordRequestForm):
     """ get user from login form, including optional dappid,
-        which provisionally comes from client_id. 
+        which provisionally comes from client_id.
     """
     user = authenticate_user(FAKE_USERS_DB, form_data.username, form_data.password)
     if not user:

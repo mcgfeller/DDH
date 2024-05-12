@@ -6,7 +6,7 @@ import typing
 
 import pydantic
 
-from core import schemas, keys, executable_nodes, principals, keydirectory, errors, permissions, common_ids, dapp_attrs
+from core import schemas, keys, executable_nodes, principals, keydirectory, errors, permissions, common_ids, dapp_attrs, consentcache
 from frontend import sessions
 from schema_formats import py_schema
 
@@ -16,7 +16,7 @@ class Consent(py_schema.PySchemaElement):
 
 
 class Consents(py_schema.PySchemaElement):
-    receipts: list[Consent]
+    consents: list[Consent]
 
 
 class ConsentQuery(executable_nodes.InProcessSchemedExecutableNode):
@@ -26,7 +26,8 @@ class ConsentQuery(executable_nodes.InProcessSchemedExecutableNode):
         op = req.access.ddhkey.split_at(req.key_split)[1]
         match str(op).lower():
             case 'received':
-                r = 'received'
+                c = consentcache.ConsentCache.consents_by_principal.get(req.access.principal.id, {})
+                r = c
             case 'given':
                 r = 'given'
             case _:
