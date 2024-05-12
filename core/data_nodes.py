@@ -106,7 +106,7 @@ class DataNode(nodes.Node, persistable.Persistable):
 
         return data
 
-    async def update_consents(self, access: permissions.Access, transaction: transactions.Transaction, remainder: keys.DDHkeyGeneric, consents: permissions.Consents) -> tuple[frozenset[permissions.Consent], frozenset[permissions.Consent]]:
+    async def update_consents(self, access: permissions.Access, transaction: transactions.Transaction, remainder: keys.DDHkeyGeneric, consents: permissions.Consents) -> tuple[keys.DDHkey | None, frozenset[permissions.Consent], frozenset[permissions.Consent]]:
         """ update consents at remainder key.
             Data must be read using previous encryption and rewritten using the new encryption. See 
             section 7.3 "Protection of data at rest and on the move" of the DDH paper.
@@ -121,6 +121,7 @@ class DataNode(nodes.Node, persistable.Persistable):
             added = consents.consents; removed = frozenset()
             del_principals = set()  # all new, nobody to remove
 
+        key_affected = None
         if added or removed:  # expensive op follows, do only if something has changed
             await self.ensure_loaded(transaction)  # we must ensure data is read
             self.consents = consents  # actually update
@@ -139,10 +140,11 @@ class DataNode(nodes.Node, persistable.Persistable):
 
             # re-encrypt on new node (may be self if there is no remainder)
             await node.store(transaction)
+            key_affected = node.key
             if remainder.key:  # need to write data with below part cut out again, but with changed key
                 await self.store(transaction)  # old node
 
-        return added, removed
+        return key_affected, added, removed
 
     def split_node(self, remainder: keys.DDHkey, consents: permissions.Consents) -> DataNode:
         prev_data = self.data  # need before new key is generated

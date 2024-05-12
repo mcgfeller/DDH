@@ -221,9 +221,10 @@ class UpdateConsents(AccessTransformer):
 
         trstate.access.raise_if_not_permitted(trstate.data_node)
 
-        added, removed = await trstate.data_node.update_consents(trstate.access, trstate.transaction, remainder, trstate.parsed_data)
-        trstate.transaction.add(persistable.UserDataPersistAction(obj=trstate.data_node, add_to_dir=False))
-        await consentcache.ConsentCache.update(trstate.data_node.key.without_variant_version(), added, removed)
+        key_affected, added, removed = await trstate.data_node.update_consents(trstate.access, trstate.transaction, remainder, trstate.parsed_data)
+        if key_affected:
+            trstate.transaction.add(persistable.UserDataPersistAction(obj=trstate.data_node, add_to_dir=False))
+            await consentcache.ConsentCache.update(key_affected.without_variant_version(), added, removed)
         return
 
 
