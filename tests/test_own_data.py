@@ -69,7 +69,7 @@ async def write_consents(ddhkey: keys.DDHkey | str, consents: permissions.Consen
     return
 
 
-async def read(ddhkey: keys.DDHkey | str, session: sessions.Session, modes: set[permissions.AccessMode] = {permissions.AccessMode.read}, check_empty: bool = true):
+async def read(ddhkey: keys.DDHkey | str, session: sessions.Session, modes: set[permissions.AccessMode] = {permissions.AccessMode.read}, check_empty: bool = True):
     if isinstance(ddhkey, str):
         ddhkey = keys.DDHkey(ddhkey)
     access = permissions.Access(ddhkey=ddhkey, modes=modes)
@@ -156,7 +156,8 @@ async def test_write_data_with_consent(no_storage_dapp):
 @pytest.mark.asyncio
 async def test_withdraw_consent(user, no_storage_dapp):
     session = get_session(user)
-    d = await read("/mgf/org/ddh/consents/received", session)
+    d = await read("/mgf/org/ddh/consents/received", session, check_empty=False)
+    assert not d
     await write_with_consent("/another3/org/private/documents/doc8", consented_users=['mgf', 'lise', 'laura'], consent_modes={permissions.AccessMode.read, permissions.AccessMode.combined, })
     # remove write consent from lise and all consent from jeffrey
 
