@@ -6,9 +6,9 @@
 #
 accept-types==0.4.1
     # via -r requirements.in
-annotated-types==0.6.0
+annotated-types==0.7.0
     # via pydantic
-anyio==4.3.0
+anyio==4.4.0
     # via
     #   httpx
     #   starlette
@@ -16,7 +16,7 @@ arrow==1.3.0
     # via isoduration
 asttokens==2.4.1
     # via inline-snapshot
-attrs==23.2.0
+attrs==24.2.0
     # via
     #   glom
     #   jsonschema
@@ -25,7 +25,7 @@ bcrypt==4.0.1
     # via
     #   -r requirements.in
     #   passlib
-black==24.4.2
+black==24.8.0
     # via inline-snapshot
 boltons==24.0.0
     # via
@@ -33,11 +33,11 @@ boltons==24.0.0
     #   glom
 build==1.2.1
     # via pip-tools
-certifi==2024.2.2
+certifi==2024.8.30
     # via
     #   httpcore
     #   httpx
-cffi==1.16.0
+cffi==1.17.1
     # via cryptography
 click==8.1.7
     # via
@@ -50,9 +50,9 @@ colorama==0.4.6
     #   build
     #   click
     #   pytest
-contourpy==1.2.1
+contourpy==1.3.0
     # via matplotlib
-cryptography==42.0.5
+cryptography==43.0.1
     # via -r requirements.in
 cycler==0.12.1
     # via matplotlib
@@ -60,15 +60,15 @@ dnspython==2.6.1
     # via email-validator
 ecdsa==0.19.0
     # via python-jose
-email-validator==2.1.1
+email-validator==2.2.0
     # via pydantic
-executing==2.0.1
+executing==2.1.0
     # via inline-snapshot
 face==20.1.1
     # via glom
-fastapi==0.110.2
+fastapi==0.113.0
     # via -r requirements.in
-fonttools==4.51.0
+fonttools==4.53.1
     # via matplotlib
 fqdn==1.5.1
     # via jsonschema
@@ -80,9 +80,9 @@ h11==0.14.0
     #   uvicorn
 httpcore==1.0.5
     # via httpx
-httpx==0.27.0
+httpx==0.27.2
     # via -r requirements.in
-idna==3.7
+idna==3.8
     # via
     #   anyio
     #   email-validator
@@ -90,31 +90,35 @@ idna==3.7
     #   jsonschema
 iniconfig==2.0.0
     # via pytest
-inline-snapshot==0.8.2
+inline-snapshot==0.12.1
     # via -r requirements.in
 isoduration==20.11.0
     # via jsonschema
-jsonpointer==2.4
+jsonpointer==3.0.0
     # via jsonschema
-jsonschema[format-nongpl]==4.21.1
+jsonschema[format-nongpl]==4.23.0
     # via -r requirements.in
 jsonschema-specifications==2023.12.1
     # via jsonschema
-kiwisolver==1.4.5
+kiwisolver==1.4.7
     # via matplotlib
-matplotlib==3.8.4
+markdown-it-py==3.0.0
+    # via rich
+matplotlib==3.9.2
     # via -r requirements.in
+mdurl==0.1.2
+    # via markdown-it-py
 mypy-extensions==1.0.0
     # via black
 networkx==3.3
     # via -r requirements.in
-numpy==1.26.4
+numpy==2.1.1
     # via
     #   -r requirements.in
     #   contourpy
     #   matplotlib
     #   pandas
-packaging==24.0
+packaging==24.1
     # via
     #   black
     #   build
@@ -126,15 +130,15 @@ passlib[bcrypt]==1.7.4
     # via -r requirements.in
 pathspec==0.12.1
     # via black
-pillow==10.3.0
+pillow==10.4.0
     # via matplotlib
 pip-tools==7.4.1
     # via -r requirements.in
-platformdirs==4.2.1
+platformdirs==4.2.2
     # via black
 pluggy==1.5.0
     # via pytest
-psutil==5.9.8
+psutil==6.0.0
     # via -r requirements.in
 pyasn1==0.6.0
     # via
@@ -144,24 +148,25 @@ pycparser==2.22
     # via cffi
 pycryptodome==3.20.0
     # via python-jose
-pydantic[email]==2.7.1
+pydantic[email]==2.9.0
     # via
     #   -r requirements.in
     #   fastapi
-    #   pydantic
-pydantic-core==2.18.2
+pydantic-core==2.23.2
     # via pydantic
-pyparsing==3.1.2
+pygments==2.18.0
+    # via rich
+pyparsing==3.1.4
     # via matplotlib
-pyproject-hooks==1.0.0
+pyproject-hooks==1.1.0
     # via
     #   build
     #   pip-tools
-pytest==8.2.0
+pytest==8.3.2
     # via
     #   -r requirements.in
     #   pytest-asyncio
-pytest-asyncio==0.23.6
+pytest-asyncio==0.24.0
     # via -r requirements.in
 python-dateutil==2.9.0.post0
     # via
@@ -174,7 +179,7 @@ python-multipart==0.0.9
     # via -r requirements.in
 pytz==2024.1
     # via pandas
-referencing==0.35.0
+referencing==0.35.1
     # via
     #   jsonschema
     #   jsonschema-specifications
@@ -182,7 +187,9 @@ rfc3339-validator==0.1.4
     # via jsonschema
 rfc3986-validator==0.1.1
     # via jsonschema
-rpds-py==0.18.0
+rich==13.8.0
+    # via inline-snapshot
+rpds-py==0.20.0
     # via
     #   jsonschema
     #   referencing
@@ -198,28 +205,31 @@ sniffio==1.3.1
     # via
     #   anyio
     #   httpx
-starlette==0.37.2
+starlette==0.38.4
     # via fastapi
 toml==0.10.2
     # via inline-snapshot
-types-python-dateutil==2.9.0.20240316
+types-python-dateutil==2.9.0.20240906
     # via arrow
 types-toml==0.10.8.20240310
     # via inline-snapshot
-typing-extensions==4.11.0
+typing-extensions==4.12.2
     # via
     #   fastapi
+    #   inline-snapshot
     #   pydantic
     #   pydantic-core
 tzdata==2024.1
-    # via pandas
+    # via
+    #   pandas
+    #   pydantic
 uri-template==1.3.0
     # via jsonschema
-uvicorn==0.29.0
+uvicorn==0.30.6
     # via -r requirements.in
-webcolors==1.13
+webcolors==24.8.0
     # via jsonschema
-wheel==0.43.0
+wheel==0.44.0
     # via pip-tools
 
 # The following packages are considered to be unsafe in a requirements file:
