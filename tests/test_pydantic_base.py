@@ -3,6 +3,7 @@ import pydantic
 import typing
 from fastapi.encoders import jsonable_encoder
 import json
+from core import keys
 
 # This cannot be inline in the funtion, as it needs to be module global
 # WithClassVar = typing.ForwardRef('WithClassVar')  # resolved problem in Pyd1, no longer required in Pyd2
@@ -42,6 +43,8 @@ def test_pydantic_issue_3679_2():
 class Simple(pydantic.BaseModel):
 
     ext_ref: typing.ClassVar[pydantic.AnyUrl] = pydantic.AnyUrl('https://example.com/schema')
+    # #42: String key won't work, key won't be stringed by jsonable_encoder (as it is a model):
+    ext_ref_k: typing.ClassVar[keys.DDHkey] = keys.DDHkey('//org/swisscom.com')
 
     @staticmethod
     def _json_schema_extra(schema: dict[str, typing.Any], model: typing.Type[Simple]) -> None:
