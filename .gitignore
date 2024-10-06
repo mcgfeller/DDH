@@ -10,3 +10,4 @@
 .hypothesis
 log/*.log
 .VSCodeCounter/*
+.coverage
