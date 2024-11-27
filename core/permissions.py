@@ -7,7 +7,7 @@ import enum
 import abc
 
 from pydantic.errors import PydanticErrorMixin
-from utils.pydantic_utils import DDHbaseModel
+from utils.pydantic_utils import DDHbaseModel, utcnow
 from core import errors, principals, node_types
 
 
@@ -211,7 +211,7 @@ class Access(DDHbaseModel):
     principal: principals.Principal | None = None  # will be set once added to a trx
     byDApp:    principals.DAppId | None = None
     modes:     set[AccessMode] = {AccessMode.read}
-    time:      datetime.datetime = pydantic.Field(default_factory=datetime.datetime.utcnow)  # defaults to now
+    time:      datetime.datetime = pydantic.Field(default_factory=utcnow)  # defaults to now
     granted:   bool | None = None
     byConsents: list[Consent] = []
     explanation: str | None = None

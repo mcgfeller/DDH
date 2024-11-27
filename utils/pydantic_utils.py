@@ -93,3 +93,8 @@ def type_from_fi(fi: pydantic.fields.FieldInfo) -> type:
         t = fi.annotation
     assert isinstance(t, type)
     return t
+
+
+def utcnow() -> datetime.datetime:
+    """ factory function to return modern-style UTC timestamp """
+    return datetime.datetime.now(datetime.UTC)

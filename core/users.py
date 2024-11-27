@@ -5,7 +5,7 @@ import pydantic
 import datetime
 import enum
 
-from utils.pydantic_utils import DDHbaseModel
+from utils.pydantic_utils import DDHbaseModel, utcnow
 from . import errors, keys, common_ids, principals
 from backend import system_services as m_system_services
 
@@ -24,7 +24,7 @@ class User(principals.Principal):
     name: str
     email: pydantic.EmailStr | None = None
     created_at: datetime.datetime = pydantic.Field(
-        default_factory=datetime.datetime.utcnow)  # defaults to now
+        default_factory=utcnow)  # defaults to now
     profile: Profile = DefaultProfile
 
 

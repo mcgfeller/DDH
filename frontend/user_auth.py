@@ -11,7 +11,7 @@ import fastapi.security
 import jose
 import jose.jwt
 import passlib.context
-from utils.pydantic_utils import DDHbaseModel
+from utils.pydantic_utils import DDHbaseModel, utcnow
 
 from core import errors, principals, users, keys
 from frontend import sessions
@@ -150,9 +150,9 @@ def authenticate_user(fake_db, userid: str, password: str):
 def create_access_token(data: dict, expires_delta: datetime.timedelta | None = None):
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.datetime.utcnow() + expires_delta
+        expire = utcnow() + expires_delta
     else:
-        expire = datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
+        expire = utcnow() + datetime.timedelta(minutes=15)
     to_encode.update({"exp": expire})
     encoded_jwt = jose.jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
