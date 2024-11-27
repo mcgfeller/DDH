@@ -17,8 +17,7 @@ def httpx_processes(wait: float = 3):
     """ Start the uvicorn server with the FastAPI app on PORT;
         Finalizer terminated started server.
     """
-    processes = start_servers()
-    time.sleep(wait)  # give a bit time to start
+    processes = start_servers(wait=wait)
     yield processes
     # Finalizer:
     processes.stop(pcp.getargs())
@@ -90,9 +89,10 @@ def get_authorized_client(processes, procid, userpwd, tokenserver: str | None = 
     return client
 
 
-def start_servers():
+def start_servers(wait: float = 3):
     """ Start all DDH servers, including DApps """
     pcp.ddh.start(pcp.getargs())
+    time.sleep(wait)  # give a bit time to start
     # Check that no process has crashed:
     a = pcp.getargs()
     a.raise_error = True  # check processes and raise if one isn't running
