@@ -8,8 +8,7 @@ import pydantic
 import datetime
 
 import fastapi.security
-import jose
-import jose.jwt
+import jwt
 import passlib.context
 from utils.pydantic_utils import DDHbaseModel, utcnow
 
@@ -154,7 +153,7 @@ def create_access_token(data: dict, expires_delta: datetime.timedelta | None = N
     else:
         expire = utcnow() + datetime.timedelta(minutes=15)
     to_encode.update({"exp": expire})
-    encoded_jwt = jose.jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 
@@ -165,12 +164,12 @@ async def get_current_session(token: str = fastapi.Depends(oauth2_scheme)):
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jose.jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         userid: str = typing.cast(str, payload.get("sub"))
         if userid is None:
             raise credentials_exception
         token_data = TokenData(id=userid)
-    except jose.JWTError:
+    except jwt.exceptions.PyJWTError:
         raise credentials_exception
     user = get_user(FAKE_USERS_DB, userid=token_data.id)
     if user is None:

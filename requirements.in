@@ -4,7 +4,7 @@ fastapi
 uvicorn
 passlib[bcrypt]
 bcrypt==4.0.1 # see https://foss.heptapod.net/python-libs/passlib/-/issues/190
-python-jose[pycryptodome]
+pyjwt[crypto]
 pydantic[email] >= 2
 pytest
 pytest-asyncio
