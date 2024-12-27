@@ -155,19 +155,39 @@ async def test_write_data_with_consent(no_storage_dapp):
 
 @pytest.mark.asyncio
 async def test_withdraw_consent(user, no_storage_dapp):
+    test_key = keys.DDHkeyGeneric("/another3/org/private/documents/doc8")
     session = get_session(user)
     d = await read("/mgf/org/ddh/consents/received", session, check_empty=False)
-    assert not d
-    await write_with_consent("/another3/org/private/documents/doc8", consented_users=['mgf', 'lise', 'laura'], consent_modes={permissions.AccessMode.read, permissions.AccessMode.combined, })
-    # remove write consent from lise and all consent from jeffrey
+    assert test_key not in d, f'user {user.id} must not have any received consents on key {test_key}'
 
+    # grant read and combined consent to mgf, lise, and laura:
+    consent_modes = {permissions.AccessMode.read, permissions.AccessMode.combined, }
+    await write_with_consent(test_key, consented_users=['mgf', 'lise', 'laura'], consent_modes=consent_modes)
+
+    # set new consents that remove write consent from lise and all consent from jeffrey
     consents = permissions.Consents(consents=[
         permissions.Consent(grantedTo=[user_auth.UserInDB.load('lise')], withModes={permissions.AccessMode.read, }),
         permissions.Consent(grantedTo=[user_auth.UserInDB.load('mgf')], withModes={
                             permissions.AccessMode.read, permissions.AccessMode.combined, }),
     ])
-    await write_consents("/another3/org/private/documents/doc8", consents)
+    await write_consents(test_key, consents)
+
+    # check mgf still has consent_modes access:
     d = await read("/mgf/org/ddh/consents/received", session)
+    assert d[test_key] == consent_modes
+
+    # read consent node:
+    c = await read(test_key.ensure_fork(keys.ForkType.consents), session)
+
+    # get consent node for lise:
+    session_lise = get_session(user_auth.UserInDB.load('lise'))
+    d = await read("/lise/org/ddh/consents/received", session_lise)
+    assert d[test_key] == {permissions.AccessMode.read, }
+
+    # get consent node for laura:
+    session_laura = get_session(user_auth.UserInDB.load('laura'))
+    d = await read("/laura/org/ddh/consents/received", session_laura)
+    assert not d.get(test_key)  # may be absent or empty set
     return
 
 
