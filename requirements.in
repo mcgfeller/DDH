@@ -9,7 +9,7 @@ pydantic[email] >= 2
 pytest
 pytest-asyncio
 pytest-cov
-httpx
+httpx<0.28 # https://github.com/encode/httpx/issues/3433
 glom
 networkx
 psutil
