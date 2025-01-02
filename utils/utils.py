@@ -87,6 +87,12 @@ def anyin(a, b):
     return True in [x in b for x in a]
 
 
+def filter_prefix(prefix: typing.Sequence, seq: typing.Sequence[typing.Sequence]) -> tuple[typing.Sequence, ...]:
+    """ return sub-sequence of seq that matches prefix, including prefix if present in seq. """
+    n = len(prefix)
+    return tuple([x for x in seq if x[:n] == prefix and len(x) >= n])
+
+
 def raise_if_error(exception):
     """ raise exception unless None. Would be nice if Python did it that way. """
     if exception:

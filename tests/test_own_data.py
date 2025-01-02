@@ -285,6 +285,6 @@ async def test_consent_api_received(user, user2, no_storage_dapp):
 
 @ pytest.mark.asyncio
 async def test_consent_api_given(user, user2, no_storage_dapp):
-    session = get_session(user)
-    d = await read("/mgf/org/ddh/consents/given", session)
+    session = get_session(user2)
+    d = await read("/another/org/ddh/consents/given", session)
     return

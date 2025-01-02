@@ -11,12 +11,13 @@ from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import DDHbaseModel
 
 from . import nodes, keys, transactions
+from utils import utils
 from backend import persistable
 
 
 class _NodeRegistry:
-    """ Preliminary holder of nodes 
-        Note that Nodes are held per NodeSupports, duplicating them as required 
+    """ Preliminary holder of nodes
+        Note that Nodes are held per NodeSupports, duplicating them as required
         for easy lookup by NodeSupports.
 
         A proper realization could use a PatriciaTrie.
@@ -47,7 +48,7 @@ class _NodeRegistry:
 
     def check_and_set(self, key: keys.DDHkey, node: nodes.NodeOrProxy) -> bool:
         """ Conditional store, do nothing if already stored under some support.
-            Return True if newly inserted. 
+            Return True if newly inserted.
         """
         if (inserted := key not in self.nodes_by_key):
             self.__setitem__(key, node)
@@ -59,7 +60,7 @@ class _NodeRegistry:
     def get_next_proxy(self, key: keys.DDHkey | None, support: nodes.NodeSupports) -> typing.Iterator[typing.Tuple[nodes.NodeOrProxy, int]]:
         """ Generator getting next node walking up the tree from key.
             Also indicates at which point the keys.DDHkey is to be split so the first part is the
-            path leading to the Node, the 2nd the rest. 
+            path leading to the Node, the 2nd the rest.
             """
         split = len(key.key)  # where to split: counting backwards from the end.
         while key:
@@ -80,8 +81,8 @@ class _NodeRegistry:
     def get_node(self, key: keys.DDHkey, support: nodes.NodeSupports, transaction: transactions.Transaction,
                  condition: typing.Callable | None = None) -> typing.Tuple[nodes.Node | None, int]:
         """ get a node that supports support, walking up the tree.
-            ProxyNodes are loaded. 
-            If the Node doesn't meet condition, the search goes up the tree looking for a Node. 
+            ProxyNodes are loaded.
+            If the Node doesn't meet condition, the search goes up the tree looking for a Node.
 
 
             TODO:#33: Eventually, all calls must be async.
@@ -105,8 +106,8 @@ class _NodeRegistry:
     async def get_node_async(self, key: keys.DDHkey, support: nodes.NodeSupports, transaction: transactions.Transaction,
                              condition: typing.Callable | None = None) -> typing.Tuple[nodes.Node | None, int]:
         """ get a node that supports support, walking up the tree.
-            ProxyNodes are loaded. 
-            If the Node doesn't meet condition, the search goes up the tree looking for a Node. 
+            ProxyNodes are loaded.
+            If the Node doesn't meet condition, the search goes up the tree looking for a Node.
         """
         nop, split = self.get_proxy(key, support)
         if nop:
@@ -149,6 +150,14 @@ class _NodeRegistry:
             if not cnode:  # means that upper nodes don't have consent
                 cnode = node
         return cnode
+
+    def get_keys_with_prefix(self, prefix: keys.DDHkey) -> tuple[tuple, ...]:
+        """ get all keys that match prefix, as a tuple of key tuples; serves as input to get_nodes_from_keys """
+        return utils.filter_prefix(prefix.key, self.nodes_by_key.keys())
+
+    async def get_nodes_from_tuple_keys(self, node_keys: typing.Sequence[typing.Sequence], support: nodes.NodeSupports, transaction: transactions.Transaction) -> list[nodes.Node]:
+        """ for all keys (as tuples from .get_keys_with_prefix()) that have support, load and return their nodes. """
+        return [await node_proxy.ensure_loaded(transaction) for nk in node_keys if (node_proxy := self.nodes_by_key[nk].get(support.value, None))]
 
 
 NodeRegistry = _NodeRegistry()
