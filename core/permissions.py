@@ -8,7 +8,7 @@ import abc
 
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import DDHbaseModel, utcnow
-from core import errors, principals, node_types
+from core import errors, principals, node_types, common_ids
 
 
 @enum.unique
@@ -64,9 +64,15 @@ AccessMode.RequiredModes = {AccessMode.anonymous: None, AccessMode.pseudonym: No
 class Consent(DDHbaseModel):
     """ Consent to access a resource denoted by DDHkey.
     """
-    grantedTo: list[principals.Principal]
+    grantedTo: list[principals.Principal | common_ids.PrincipalId]  # will be converted to Principal in validator
     withApps: set[principals.DAppId] = set()
     withModes: set[AccessMode] = {AccessMode.read}
+
+    @pydantic.field_validator('grantedTo', mode='after')
+    def to_principal(v):
+        """ convert str value to Principal """
+        v = [principals.Principal(id=p) if isinstance(p, str) else p for p in v]
+        return v
 
     def check(self, access: Access, _principal_checked=False) -> tuple[bool, str]:
         """ check access and return boolean and text explaining why it's not ok.

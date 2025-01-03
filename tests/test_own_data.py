@@ -5,6 +5,7 @@ from frontend import user_auth, sessions
 from backend import keyvault
 import pytest
 import json
+from fastapi.encoders import jsonable_encoder
 
 
 def clear_data():
@@ -74,6 +75,7 @@ async def read(ddhkey: keys.DDHkey | str, session: sessions.Session, modes: set[
         ddhkey = keys.DDHkey(ddhkey)
     access = permissions.Access(ddhkey=ddhkey, modes=modes)
     data, header = await facade.ddh_get(access, session)
+    j = jsonable_encoder(data)  # result must be jsonable
     if check_empty:
         assert data, 'data must not be empty'
     return data
@@ -154,7 +156,7 @@ async def test_write_data_with_consent(no_storage_dapp):
 
 
 @pytest.mark.asyncio
-async def test_withdraw_consent(user, no_storage_dapp):
+async def test_withdraw_consent(user, user3, no_storage_dapp):
     test_key = keys.DDHkeyGeneric("/another3/org/private/documents/doc8")
     session = get_session(user)
     d = await read("/mgf/org/ddh/consents/received", session, check_empty=False)
@@ -172,9 +174,13 @@ async def test_withdraw_consent(user, no_storage_dapp):
     ])
     await write_consents(test_key, consents)
 
+    # read back consents given:
+    session_another3 = get_session(user_auth.UserInDB.load(test_key.owner))
+    d = await read("/another3/org/ddh/consents/given", session_another3)
+
     # check mgf still has consent_modes access:
     d = await read("/mgf/org/ddh/consents/received", session)
-    assert d[test_key] == consent_modes
+    assert d.by_key[str(test_key)].consents[0].withModes == consent_modes
 
     # read consent node:
     c = await read(test_key.ensure_fork(keys.ForkType.consents), session)
@@ -182,12 +188,13 @@ async def test_withdraw_consent(user, no_storage_dapp):
     # get consent node for lise:
     session_lise = get_session(user_auth.UserInDB.load('lise'))
     d = await read("/lise/org/ddh/consents/received", session_lise)
-    assert d[test_key] == {permissions.AccessMode.read, }
+    assert d.by_key[str(test_key)].consents[0].withModes == {permissions.AccessMode.read, }
 
     # get consent node for laura:
     session_laura = get_session(user_auth.UserInDB.load('laura'))
     d = await read("/laura/org/ddh/consents/received", session_laura)
-    assert not d.get(test_key)  # may be absent or empty set
+    c = d.by_key.get(str(test_key))
+    assert (not c) or (not c.consents[0].withModes)   # may be absent or empty set
     return
 
 

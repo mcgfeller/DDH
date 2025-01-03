@@ -34,6 +34,15 @@ def user1(httpx_processes):
 
 
 @pytest.fixture(scope="session")
+def user_lise(httpx_processes):
+    client = get_authorized_client(httpx_processes, 'api', {'username': 'lise', 'password': 'secret'})
+    yield client
+    # Finalizer:
+    client.close()
+    return
+
+
+@pytest.fixture(scope="session")
 def user1_sub(httpx_processes):
     client = get_authorized_client(httpx_processes, 'subscription', {'username': 'mgf', 'password': 'secret'})
     yield client
