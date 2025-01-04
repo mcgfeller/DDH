@@ -28,20 +28,23 @@ class Grants(py_schema.PySchemaElement):
 class ConsentQuery(executable_nodes.InProcessSchemedExecutableNode):
 
     async def execute(self, req: dapp_attrs.ExecuteRequest) -> Grants:
-        # TODO: #34
-        # consents_by_principal: dict[common_ids.PrincipalId, dict[keys.DDHkeyGeneric, set[permissions.AccessMode]]]
+        """ obtain given and received consents and return them as a Grants object, which combines
+            the key and its consents. 
+        """
+
         op = req.access.ddhkey.split_at(req.key_split)[1]
+        principal = req.access.principal
+        assert principal
+
         match str(op).lower():
             case 'received':
-                cs = consentcache.ConsentCache.consents_by_principal.get(req.access.principal.id, {})
-                grants = []
-                for k, c in cs.items():
-                    consents = permissions.Consent.single(grantedTo=[req.access.principal], withModes=c)
-                    grants.append(Grant(ddhkey=str(k), consents=consents))
+                # We use the ConsentCache and convert to a list of Grant objects:
+                grants = [Grant(ddhkey=str(k), consents=c)
+                          for k, c in consentcache.ConsentCache.as_consents_for(principal).items()]
 
             case 'given':
                 # we get all keys descending from the owner key:
-                owner_key = keys.DDHkey(req.access.principal.id).ensure_rooted()
+                owner_key = keys.DDHkey(principal.id).ensure_rooted()
                 node_keys = keydirectory.NodeRegistry.get_keys_with_prefix(owner_key)
                 # get the consent nodes, and consents
                 grants = []
