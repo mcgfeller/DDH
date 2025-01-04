@@ -44,7 +44,8 @@ class _ConsentCache:
                         self.consents_by_principal.pop(p.id, None)  # remove empty
         for c in added:
             for p in c.grantedTo:
-                self.consents_by_principal.setdefault(p.id, {})[ddhkey] = c.withModes
+                self.consents_by_principal.setdefault(
+                    p.id, {})[ddhkey] = c.withModes.copy()  # withModes must not be shared
         return
 
     def as_consents_for(self, principal: principals.Principal) -> dict[keys.DDHkeyGeneric, permissions.Consents]:

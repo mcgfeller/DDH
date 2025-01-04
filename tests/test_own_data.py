@@ -166,7 +166,7 @@ async def test_withdraw_consent(user, user3, no_storage_dapp):
     consent_modes = {permissions.AccessMode.read, permissions.AccessMode.combined, }
     await write_with_consent(test_key, consented_users=['mgf', 'lise', 'laura'], consent_modes=consent_modes)
 
-    # set new consents that remove write consent from lise and all consent from jeffrey
+    # set new consents that remove write consent from lise and all consent from laura:
     consents = permissions.Consents(consents=[
         permissions.Consent(grantedTo=[user_auth.UserInDB.load('lise')], withModes={permissions.AccessMode.read, }),
         permissions.Consent(grantedTo=[user_auth.UserInDB.load('mgf')], withModes={
