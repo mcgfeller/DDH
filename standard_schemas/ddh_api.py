@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import datetime
 import typing
+import functools
 
 import pydantic
 
@@ -20,8 +21,9 @@ class Grant(py_schema.PySchemaElement):
 class Grants(py_schema.PySchemaElement):
     grants: list[Grant] = []
 
-    @property
-    def by_key(self):
+    @pydantic.computed_field(repr=False)
+    @functools.cached_property
+    def by_key(self) -> dict[str, permissions.Consents]:
         return {g.ddhkey: g.consents for g in self.grants}
 
 
