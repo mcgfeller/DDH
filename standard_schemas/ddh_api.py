@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import datetime
 import typing
-import functools
 
 import pydantic
 
@@ -13,18 +12,9 @@ from frontend import sessions
 from schema_formats import py_schema
 
 
-class Grant(py_schema.PySchemaElement):
-    ddhkey: str
-    consents: permissions.Consents
-
-
 class Grants(py_schema.PySchemaElement):
-    grants: list[Grant] = []
-
-    @pydantic.computed_field(repr=False)
-    @functools.cached_property
-    def by_key(self) -> dict[str, permissions.Consents]:
-        return {g.ddhkey: g.consents for g in self.grants}
+    """ Grants (with Schema) """
+    grants: dict[str, permissions.Consents] = {}
 
 
 class ConsentQuery(executable_nodes.InProcessSchemedExecutableNode):
@@ -40,20 +30,16 @@ class ConsentQuery(executable_nodes.InProcessSchemedExecutableNode):
 
         match str(op).lower():
             case 'received':
-                # We use the ConsentCache and convert to a list of Grant objects:
-                grants = [Grant(ddhkey=str(k), consents=c)
-                          for k, c in consentcache.ConsentCache.as_consents_for(principal).items()]
+                # We use the ConsentCache and convert to a dict:
+                grants = {str(k): c for k, c in consentcache.ConsentCache.as_consents_for(principal).items()}
 
             case 'given':
                 # we get all keys descending from the owner key:
                 owner_key = keys.DDHkey(principal.id).ensure_rooted()
                 node_keys = keydirectory.NodeRegistry.get_keys_with_prefix(owner_key)
                 # get the consent nodes, and consents
-                grants = []
-                for cnode in await keydirectory.NodeRegistry.get_nodes_from_tuple_keys(node_keys, nodes.NodeSupports.consents, req.transaction):
-                    assert cnode.consents
-                    assert cnode.key
-                    grants.append(Grant(ddhkey=str(cnode.key), consents=cnode.consents))
+                grants = {str(cnode.key): cnode.consents for cnode in await
+                          keydirectory.NodeRegistry.get_nodes_from_tuple_keys(node_keys, nodes.NodeSupports.consents, req.transaction)}
 
             case _:
                 raise errors.NotFound(f"Selection {op} not found; must be 'received' or 'given'")

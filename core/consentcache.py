@@ -48,9 +48,9 @@ class _ConsentCache:
         return
 
     def as_consents_for(self, principal: principals.Principal) -> dict[keys.DDHkeyGeneric, permissions.Consents]:
-        """ Return Consents received by a Principal, as Consents object """
+        """ Return Consents received by a Principal, as Consents object. Omit empty modes """
         cs = self.consents_by_principal.get(principal.id, {})
-        consents = {k: permissions.Consent.single(grantedTo=[principal], withModes=c) for k, c in cs.items()}
+        consents = {k: permissions.Consent.single(grantedTo=[principal], withModes=c) for k, c in cs.items() if c}
         return consents
 
 

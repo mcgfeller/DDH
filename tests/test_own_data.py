@@ -180,7 +180,7 @@ async def test_withdraw_consent(user, user3, no_storage_dapp):
 
     # check mgf still has consent_modes access:
     d = await read("/mgf/org/ddh/consents/received", session)
-    assert d.by_key[str(test_key)].consents[0].withModes == consent_modes
+    assert d.grants[str(test_key)].consents[0].withModes == consent_modes
 
     # read consent node:
     c = await read(test_key.ensure_fork(keys.ForkType.consents), session)
@@ -188,13 +188,12 @@ async def test_withdraw_consent(user, user3, no_storage_dapp):
     # get consent node for lise:
     session_lise = get_session(user_auth.UserInDB.load('lise'))
     d = await read("/lise/org/ddh/consents/received", session_lise)
-    assert d.by_key[str(test_key)].consents[0].withModes == {permissions.AccessMode.read, }
+    assert d.grants[str(test_key)].consents[0].withModes == {permissions.AccessMode.read, }
 
     # get consent node for laura:
     session_laura = get_session(user_auth.UserInDB.load('laura'))
     d = await read("/laura/org/ddh/consents/received", session_laura)
-    c = d.by_key.get(str(test_key))
-    assert (not c) or (not c.consents[0].withModes)   # may be absent or empty set
+    assert not d.grants.get(str(test_key))  # must be absent, because consent withdrawn
     return
 
 
