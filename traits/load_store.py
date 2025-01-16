@@ -115,7 +115,8 @@ class ConsenteesChecker(transactions.TrxExtension):
             if self.read_consentees:
                 common = self.read_consentees & read_consentees
                 if not common:
-                    msg = f'transaction already contains data shared with {self.read_consentees} that cannot be combined with data shared with {read_consentees}'
+                    msg = f'transaction already contains data shared with {
+                        self.read_consentees} that cannot be combined with data shared with {read_consentees}'
                     # already present in initial trx?
                     if self.initial_read_consentees and self.initial_read_consentees.isdisjoint(read_consentees):
                         # this transaction contains data from previous transaction, must reinit
@@ -225,6 +226,7 @@ class UpdateConsents(AccessTransformer):
         if key_affected:
             trstate.transaction.add(persistable.UserDataPersistAction(obj=trstate.data_node, add_to_dir=False))
             await consentcache.ConsentCache.update(key_affected.without_variant_version(), added, removed)
+            # TODO: Add entry to pseudonym map
         return
 
 
