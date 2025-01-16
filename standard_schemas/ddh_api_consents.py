@@ -1,4 +1,5 @@
-""" Schemas /org/ddh, providing an API against principaled information about DDH itself """
+""" Schemas //org/ddh/consents, providing an API against principaled information about DDH itself: Consents
+"""
 from __future__ import annotations
 
 import datetime
@@ -7,7 +8,7 @@ import typing
 import pydantic
 
 from core import schemas, keys, executable_nodes, principals, keydirectory, errors, permissions, common_ids, dapp_attrs, consentcache, nodes
-from utils import utils
+from utils import utils, queues
 from frontend import sessions
 from schema_formats import py_schema
 
@@ -54,7 +55,6 @@ class ConsentQuery(executable_nodes.InProcessSchemedExecutableNode):
 def install():
     session = sessions.get_system_session()
     transaction = session.get_or_create_transaction()
-    # Consents.insert_as_schema(transaction, keys.DDHkeyGeneric('//org/ddh/consents'))
     attrs = dapp_attrs.SchemaProvider(references=[])
     cq = ConsentQuery(owner=principals.RootPrincipal, attrs=attrs, key=keys.DDHkeyVersioned0('//org/ddh/consents'))
     cq.register(session)
