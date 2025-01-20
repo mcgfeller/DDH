@@ -13,10 +13,10 @@ from frontend import sessions
 from schema_formats import py_schema
 
 
-class Grants(py_schema.PySchemaElement):
+class Subscriptions(py_schema.PySchemaElement):
     # TODO
     """ Grants (with Schema) """
-    grants: dict[str, permissions.Consents] = {}
+    subscribe: dict[str, permissions.Consents] = {}
 
 
 class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
@@ -29,6 +29,7 @@ class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
         op = req.access.ddhkey.split_at(req.key_split)[1]
         principal = req.access.principal
         assert principal
+        print(f'{req.access=}')
 
         match str(op).lower():
             case 'subscribe':  # TOOD:#35
@@ -44,7 +45,7 @@ class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
 
     def get_schemas(self) -> dict[keys.DDHkeyVersioned, schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
-        return {self.key: Grants.to_schema()}  # TOOD:#35
+        return {self.key: Subscriptions.to_schema()}  # TOOD:#35
 
 
 def install():
