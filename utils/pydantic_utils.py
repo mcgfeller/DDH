@@ -91,7 +91,8 @@ def type_from_fi(fi: pydantic.fields.FieldInfo) -> type:
         t = t[0]
     else:  # no container, must be class
         t = fi.annotation
-    assert isinstance(t, type)
+    if not isinstance(t, type):  # for debugging
+        assert isinstance(t, type)
     return t
 
 

@@ -57,6 +57,11 @@ class NotFound(DDHerror):
     http_status = 404
 
 
+class MethodNotAllowed(DDHerror):
+    """ This key does not support this method. """
+    http_status = 405
+
+
 class NotSelectable(DDHerror):
     """ This key cannot be selected because resource has no supported substructure. """
     http_status = 406

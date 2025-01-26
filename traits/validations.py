@@ -77,6 +77,7 @@ class SchemaExpandReferences(SchemaValidation):
 
 class SchemaMustValidate(SchemaValidation):
     """ This schema must be validated """
+
     async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, includes_owner: bool = False, **kw):
         # TODO
         return
