@@ -2,6 +2,7 @@
 
 import pytest
 from core import keys, permissions
+import json
 
 
 @pytest.fixture(scope='module')
@@ -16,12 +17,17 @@ def put_consents(user1):
     return d
 
 
-def test_events_subscribe(user1):
+def test_events_subscriptions(user1):
     """ subscribe for events 
         TODO:#35
     """
-    j = {}
-    r = user1.put('/ddh/mgf/org/ddh/events/subscribe', json=j)
+    j = {'subscriptions': [{'key': '/mgf:consents'}]}
+    # j = [{'key': '/mgf:consents'}]
+    r = user1.put('/ddh/mgf/org/ddh/events/subscriptions', json=json.dumps(j))
+    r.raise_for_status()
+    d = r.json()
+
+    r = user1.get('/ddh/mgf/org/ddh/events/subscriptions')
     r.raise_for_status()
     d = r.json()
     return
