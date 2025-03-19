@@ -38,11 +38,10 @@ def install():
         s_node = nodes.SchemaNode(owner=owners[0], consents=consents)
         keydirectory.NodeRegistry[key] = s_node
 
-        # create and add dummy schema:
-        sub_schema = py_schema.PySchema(schema_element=py_schema.PySchemaElement)
-        # inherit transformers:
-        sub_schema.schema_attributes.transformers = parent.schema_attributes.transformers.merge(
-            sub_schema.schema_attributes.transformers)
+        # create and add dummy schema and inherit transformers:
+        sub_schema = py_schema.PySchema.create_empty(key)
+        sub_schema.inherit_transformers(parent)
+
         s_node.add_schema(sub_schema)
 
     # transaction.commit()

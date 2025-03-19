@@ -84,7 +84,7 @@ CostToWeight = {
 class SchemaProvider(DDHbaseModel):
 
     id: str | None = None  # principals.DAppId causes Pydantic errors - I don't know why
-    references: list[relationships.Reference] = []
+    references: list[relationships.Reference] = pydantic.Field(default_factory=list)
     transforms_into: keys.DDHkeyVersioned0 | None = None  # Versioned0 here to avoid errors for incomplete DApps
 
     def __hash__(self):

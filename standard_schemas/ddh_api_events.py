@@ -61,6 +61,7 @@ class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
         principal = req.access.principal
         assert principal
         print(f'{req.access=}, {req.op=}')
+        return 'wait'
 
     def get_schemas(self) -> dict[keys.DDHkeyVersioned, schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
@@ -70,15 +71,15 @@ class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
 def install():
     session = sessions.get_system_session()
     transaction = session.get_or_create_transaction()
-    attrs = dapp_attrs.SchemaProvider(references=[])
+    attrs = dapp_attrs.SchemaProvider()
     csub = EventSubscription(owner=principals.RootPrincipal, attrs=attrs,
                              key=keys.DDHkeyVersioned0('//org/ddh/events/subscriptions'))
     csub.register(session)
 
-    # attrs = dapp_attrs.SchemaProvider(references=[])
-    # cquery = EventQuery(owner=principals.RootPrincipal, attrs=attrs,
-    #                     key=keys.DDHkeyVersioned0('//org/ddh/events/wait'))
-    # cquery.register(session)
+    attrs = dapp_attrs.SchemaProvider()
+    cquery = EventQuery(owner=principals.RootPrincipal, attrs=attrs,
+                        key=keys.DDHkeyVersioned0('//org/ddh/events/wait'))
+    cquery.register(session)
 
 
 install()

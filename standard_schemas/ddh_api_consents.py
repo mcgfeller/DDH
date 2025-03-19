@@ -55,7 +55,7 @@ class ConsentQuery(executable_nodes.InProcessSchemedExecutableNode):
 def install():
     session = sessions.get_system_session()
     transaction = session.get_or_create_transaction()
-    attrs = dapp_attrs.SchemaProvider(references=[])
+    attrs = dapp_attrs.SchemaProvider()
     cq = ConsentQuery(owner=principals.RootPrincipal, attrs=attrs, key=keys.DDHkeyVersioned0('//org/ddh/consents'))
     cq.register(session)
 

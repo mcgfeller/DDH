@@ -20,6 +20,7 @@ class PySchemaElement(schemas.AbstractSchemaElement):
     @classmethod
     def iter_paths(cls, pk=()) -> typing.Generator[tuple[keys.DDHkey, type[PySchemaElement]], None, None]:
         """ recursive descent through schema yielding (key,schema_element) """
+        # print(f'iter_paths {cls.__name__} {pk=}')
         yield (keys.DDHkey(pk), cls)  # yield ourselves first
         for k, fi in cls.model_fields.items():
             assert isinstance(fi, pydantic.fields.FieldInfo)
@@ -105,6 +106,9 @@ class PySchemaElement(schemas.AbstractSchemaElement):
             key = key.key
         if isinstance(key, tuple):
             key = '_'.join(key)
+        elif isinstance(key, str):
+            key = key.replace('/', '_')
+        # se = pydantic.create_model(key, __base__=PySchemaElement, **elements)
         se = pydantic.create_model(key, __base__=cls, **elements)
         return se
 
@@ -141,6 +145,13 @@ class PySchema(schemas.AbstractSchema):
     mimetypes: typing.ClassVar[schemas.MimeTypes] = schemas.MimeTypes(
         of_schema=['application/openapi', 'application/json'], of_data=['application/json'])
 
+    @pydantic.field_validator('schema_element', mode='after')
+    @classmethod
+    def not_root_class(cls, value) -> typing.Type[PySchemaElement]:
+        if value is PySchemaElement:
+            raise ValueError('schema_element must be a proper subclass of PySchemaElement')
+        return value
+
     def __getitem__(self, key: keys.DDHkey, default=None, create_intermediate: bool = False) -> type[PySchemaElement] | None:
         se = self.schema_element.descend_path(key, create_intermediate=create_intermediate)
         return default if se is None else se
@@ -158,6 +169,11 @@ class PySchema(schemas.AbstractSchema):
     @classmethod
     def from_str(cls, schema_str: str, schema_attributes: schemas.SchemaAttributes) -> PySchema:
         raise NotImplementedError('PySchema cannot be created from string')
+
+    @classmethod
+    def create_empty(cls, ddhkey: keys.DDHkeyVersioned0 | str = 'dummy') -> typing.Self:
+        """ create empty schema """
+        return cls(schema_element=PySchemaElement.create_from_elements(key=ddhkey))
 
     def to_json_schema(self):
         """ Make a JSON Schema from this Schema """

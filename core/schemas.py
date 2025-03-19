@@ -185,7 +185,7 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         super().__init__(*a, **kw)
         self.update_schema_attributes()
 
-    @ abc.abstractmethod
+    @abc.abstractmethod
     def __getitem__(self, key: keys.DDHkey, default=None, create_intermediate: bool = False) -> type[AbstractSchemaElement] | None:
         """ get Schema element at remainder key (within Schema only)
             create_intermediate is used to obtain parent and is used by .__setitem__()
@@ -201,18 +201,18 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         parent._add_fields(**{str(key[-1]): (value, None)})
         return parent
 
-    @ abc.abstractmethod
+    @abc.abstractmethod
     def __iter__(self) -> typing.Iterator[tuple[keys.DDHkey, AbstractSchemaElement]]:
         ...
 
-    @ classmethod
+    @classmethod
     def get_reference_class(cls) -> type[AbstractSchemaReference]:
         """ get class of concrete AbstractSchemaReference associated with this concrete Schema.
             Return AbstractSchemaReference unless refined.
         """
         return AbstractSchemaReference
 
-    @ classmethod
+    @classmethod
     def __init_subclass__(cls):
         SchemaFormat2Class[cls.format_designator] = cls
         Class2SchemaFormat[cls] = cls.format_designator
@@ -237,6 +237,11 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
             return keys.DDHkeyVersioned(k.key, fork=keys.ForkType.schema, variant=self.schema_attributes.variant, version=self.schema_attributes.version)
         else:
             return None
+
+    def inherit_transformers(self, parent: AbstractSchema):
+        """ inherit transformers from parent """
+        self.schema_attributes.transformers = parent.schema_attributes.transformers.merge(
+            self.schema_attributes.transformers)
 
     def update_schema_attributes(self):
         """ update .schema_attributes based on schema.
@@ -334,7 +339,7 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         """ return the Python type of a path, field """
         raise errors.SubClass
 
-    @ property
+    @property
     def format(self) -> SchemaFormat:
         """ Schema format based on class """
         return Class2SchemaFormat[self.__class__]
@@ -343,8 +348,8 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         """ Make a JSON Schema from this Schema """
         raise NotImplemented('conversion to JSON schema not supported')
 
-    @ classmethod
-    @ abc.abstractmethod
+    @classmethod
+    @abc.abstractmethod
     def from_str(cls, schema_str: str, schema_attributes: SchemaAttributes) -> AbstractSchema:
         ...
 
@@ -360,7 +365,7 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
             raise NotImplementedError(
                 f'output format {format} not supported for {self.__class__.__name__}')
 
-    @ abc.abstractmethod
+    @abc.abstractmethod
     def to_output(self) -> str:
         """ native output representation """
         ...
@@ -368,7 +373,7 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
     def _add_fields(self, fields: dict):
         raise NotImplementedError('Field adding not supported in this schema')
 
-    @ staticmethod
+    @staticmethod
     def get_schema_consents() -> permissions.Consents:
         """ Schema world read access consents """
         return permissions.Consents(consents=[permissions.Consent(grantedTo=[principals.AllPrincipal], withModes={permissions.AccessMode.read})])
@@ -386,7 +391,7 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         self.__setitem__(remainder, schemaref, create_intermediate=True)
         return schemaref
 
-    @ staticmethod
+    @staticmethod
     def get_parent_schema(transaction, ddhkey: keys.DDHkey) -> tuple[AbstractSchema, int]:
         """ get parent scheme of scheme at ddhkey, return [parent,split] """
         parent, key, split, node = SchemaContainer.get_node_schema_key(ddhkey.up(), transaction)
@@ -394,7 +399,7 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
             raise errors.NotFound(f'No parent for {ddhkey}')
         return parent, split
 
-    @ classmethod
+    @classmethod
     def create_schema(cls, s: str, format: SchemaFormat, sa: dict) -> AbstractSchema:
         """ Create Schema from a string repr, used by API to instantiate JsonSchema from DApps """
         sat = SchemaAttributes(**sa)
@@ -412,18 +417,18 @@ Class2SchemaFormat = {}
 class AbstractSchemaReference(AbstractSchemaElement):
     ddhkey: typing.ClassVar[str]
 
-    @ classmethod
-    @ abc.abstractmethod
+    @classmethod
+    @abc.abstractmethod
     def create_from_key(cls, ddhkey: keys.DDHkeyRange, name: str | None = None) -> typing.Type[AbstractSchemaReference]:
         raise errors.SubClass
 
-    @ classmethod
-    @ abc.abstractmethod
+    @classmethod
+    @abc.abstractmethod
     def get_target(cls) -> keys.DDHkeyRange:
         """ get target key """
         raise errors.SubClass
 
-    @ classmethod
+    @classmethod
     def getURI(cls) -> pydantic.AnyUrl:
         return typing.cast(pydantic.AnyUrl, str(cls.get_target()))
 
@@ -468,12 +473,12 @@ class SchemaContainer(DDHbaseModel):
         """ get a specific schema """
         return self.schemas_by_variant.get(variant, {}).get(version)
 
-    @ property
+    @property
     def default_schema(self):
         """ return default variant and latest version """
         return self.get()
 
-    @ staticmethod
+    @staticmethod
     def get_node_schema_key(ddhkey: keys.DDHkey, transaction, default: bool = False) -> tuple[AbstractSchema, keys.DDHkey, int, nodes.SchemaNode]:
         """ for a ddhkey, get the node, then get its schema and the fully qualified key with the schema variant
             and version, and the split separting the schema and the key into the schema.
