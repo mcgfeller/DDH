@@ -16,7 +16,7 @@ from schema_formats import py_schema
 class SubscribableEvent(py_schema.PySchemaElement):
     """ Event on a single DDHkey. Potential for extension to kind of event and update specifics
     """
-    key: str  # keys.DDHkeyGeneric # TODO: try model pre-validation for key
+    key: keys.DDHkeyGeneric
 
 
 class Subscriptions(py_schema.PySchemaElement):

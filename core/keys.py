@@ -119,6 +119,18 @@ class DDHkey(DDHbaseModel):
         super().__init__(key=key, fork=fork, variant=variant, version=version)  # type:ignore
         return
 
+    @pydantic.model_validator(mode='before')
+    @classmethod
+    def init_key(cls, key: typing.Any) -> dict:
+        """ If a key is present in JSON in a FastAPI put/post request, FastAPI complains despite .__init__() 
+            converts it to a key. So we need to convert it to a key and then pass it a dictionary before validation.
+            Note that this creates only little overhead, as .__init__() is normally called first, and then this becomes basically
+            an instance check only. 
+        """
+        if isinstance(key, str):
+            key = cls(key).model_dump()
+        return key
+
     @property
     def specifiers(self) -> tuple[ForkType, VariantType, versions.Version | versions.VersionConstraint]:
         return (self.fork, self.variant, self.version)

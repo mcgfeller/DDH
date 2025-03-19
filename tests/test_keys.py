@@ -4,6 +4,8 @@ import pytest
 
 def test_paths():
     ddhkey1 = keys.DDHkey(key='norooted')
+    ddhkey1n = keys.DDHkey('norooted')
+    assert ddhkey1 == ddhkey1n
     ddhkey2 = keys.DDHkey(key='norooted/subkey')
     assert ddhkey1 == ddhkey2.up()
 
