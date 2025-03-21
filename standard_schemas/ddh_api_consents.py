@@ -8,8 +8,9 @@ import typing
 import pydantic
 
 from core import schemas, keys, executable_nodes, principals, keydirectory, errors, permissions, common_ids, dapp_attrs, consentcache, nodes
-from utils import utils, queues
+from utils import utils
 from frontend import sessions
+from backend import queues
 from schema_formats import py_schema
 
 
