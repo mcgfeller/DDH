@@ -140,7 +140,10 @@ class DataNode(nodes.Node, persistable.Persistable):
 
             # re-encrypt on new node (may be self if there is no remainder)
             await node.store(transaction)
-            key_affected = node.key
+            # key is node key, but never consents fork, and without variant and version:
+            assert node.key
+            key_affected = node.key.for_consent_grants()
+
             if remainder.key:  # need to write data with below part cut out again, but with changed key
                 await self.store(transaction)  # old node
 

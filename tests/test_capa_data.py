@@ -193,12 +193,12 @@ async def test_write_data_with_consent(user, user2, no_storage_dapp):
     # grant anonymous read access to user1
     consents = permissions.Consent.single(grantedTo=[user], withModes={
                                           permissions.AccessMode.read, permissions.AccessMode.anonymous})
-    ddhkey2f = ddhkey2.ensure_fork(keys.ForkType.consents)
-    access = permissions.Access(ddhkey=ddhkey2f, modes={permissions.AccessMode.write})
+    ddhkey2_c = ddhkey2.ensure_fork(keys.ForkType.consents)
+    access = permissions.Access(ddhkey=ddhkey2_c, modes={permissions.AccessMode.write})
     await facade.ddh_put(access, session2, consents.model_dump_json())
 
     # TODO: We need to put a schema here that supports the Anonymous capability:
-    ddhkey2s = ddhkey2.ensure_fork(keys.ForkType.schema)
+    ddhkey2_s = ddhkey2.ensure_fork(keys.ForkType.schema)
 
     ddhkey3 = keys.DDHkey(key="/another/org/private/documents/doc30")
     access = permissions.Access(ddhkey=ddhkey3, modes={permissions.AccessMode.write})

@@ -22,7 +22,6 @@ def test_events_subscriptions(user1):
         TODO:#35
     """
     j = {'subscriptions': [{'key': '/mgf:consents'}]}
-    # j = [{'key': '/mgf:consents'}]
     r = user1.put('/ddh/mgf/org/ddh/events/subscriptions', json=json.dumps(j))
     r.raise_for_status()
     d = r.json()

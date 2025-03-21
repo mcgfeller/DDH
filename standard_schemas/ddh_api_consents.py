@@ -40,8 +40,8 @@ class ConsentQuery(executable_nodes.InProcessSchemedExecutableNode):
                 owner_key = keys.DDHkey(principal.id).ensure_rooted()
                 node_keys = keydirectory.NodeRegistry.get_keys_with_prefix(owner_key)
                 # get the consent nodes, and consents
-                grants = {str(cnode.key): cnode.consents for cnode in await
-                          keydirectory.NodeRegistry.get_nodes_from_tuple_keys(node_keys, nodes.NodeSupports.consents, req.transaction)}
+                cnodes = await keydirectory.NodeRegistry.get_nodes_from_tuple_keys(node_keys, nodes.NodeSupports.consents, req.transaction)
+                grants = {str(cnode.key.for_consent_grants()): cnode.consents for cnode in cnodes}
 
             case _:
                 raise errors.NotFound(f"Selection {op} not found; must be 'received' or 'given'")

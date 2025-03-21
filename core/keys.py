@@ -252,6 +252,13 @@ class DDHkey(DDHbaseModel):
             k = DDHkeyGeneric(self.key, fork=self.fork, variant=DefaultVariant, version=versions.Unspecified)
         return k
 
+    def for_consent_grants(self) -> DDHkeyGeneric:
+        """ return key for the consent grants, i.e., not a consent fork, and without versions and variants """
+        if self.fork is ForkType.consents:
+            return DDHkeyGeneric(key=self.key)
+        else:
+            return self.without_variant_version()
+
     @property
     def owner(self) -> common_ids.PrincipalId:
         """ return owner as string """
