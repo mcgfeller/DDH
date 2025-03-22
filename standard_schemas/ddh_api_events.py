@@ -24,8 +24,11 @@ class Subscriptions(py_schema.PySchemaElement):
     """ Subscriptions """
     subscriptions: list[SubscribableEvent]
 
-    async def register(self):
+    async def register(self, req: dapp_attrs.ExecuteRequest):
         """ register all subscriptions """
+        principal = req.access.principal
+        # TODO: Clear subscriptions for principal
+
         for sub in self.subscriptions:
             topic = queues.Topic.update_topic(sub.key)
             print(f'Subscriptions: registering {topic=}')
@@ -49,7 +52,7 @@ class EventSubscription(executable_nodes.InProcessSchemedExecutableNode):
                 return req.data
             case nodes.Ops.put:
                 assert isinstance(req.data, Subscriptions)
-                await req.data.register()
+                await req.data.register(req)
                 return req.data
             case _:
                 raise errors.MethodNotAllowed()
