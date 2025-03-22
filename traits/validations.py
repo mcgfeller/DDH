@@ -123,8 +123,11 @@ class MustValidate(DataValidation):
         except Exception as e:
             raise errors.ValidationError(e)
 
-        if isinstance(trstate.parsed_data, DDHbaseModel):  # for PySchemas, we have a model, not a dict
-            trstate.parsed_data = trstate.parsed_data.model_dump()  # make dict
+        # TODO:
+        # QUESTION: This is questionable, if we pass the model between processes, do we need a dict, or
+        # will this be ok in the transfer process?
+        # if isinstance(trstate.parsed_data, DDHbaseModel):  # for PySchemas, we have a model, not a dict
+        #     trstate.parsed_data = trstate.parsed_data.model_dump()  # make dict
 
         return
 

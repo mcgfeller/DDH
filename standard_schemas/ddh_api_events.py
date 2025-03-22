@@ -24,12 +24,19 @@ class Subscriptions(py_schema.PySchemaElement):
     """ Subscriptions """
     subscriptions: list[SubscribableEvent]
 
+    async def register(self):
+        """ register all subscriptions """
+        for sub in self.subscriptions:
+            topic = queues.Topic.update_topic(sub.key)
+            print(f'Subscriptions: registering {topic=}')
+            # await queues.PubSubQueue.listen(topic)
+        return
+
 
 class EventSubscription(executable_nodes.InProcessSchemedExecutableNode):
 
     async def execute(self, req: dapp_attrs.ExecuteRequest):
-        """ obtain given and received consents and return them as a Grants object, which combines
-            the key and its consents. 
+        """ put and get subscriptions for Events.  
         """
 
         op = req.access.ddhkey.split_at(req.key_split)[1]
@@ -39,8 +46,10 @@ class EventSubscription(executable_nodes.InProcessSchemedExecutableNode):
 
         match req.op:
             case nodes.Ops.get:
-                return 'subscriptions'
+                return req.data
             case nodes.Ops.put:
+                assert isinstance(req.data, Subscriptions)
+                await req.data.register()
                 return req.data
             case _:
                 raise errors.MethodNotAllowed()

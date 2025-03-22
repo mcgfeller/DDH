@@ -21,7 +21,8 @@ def test_events_subscriptions(user1):
     """ subscribe for events 
         TODO:#35
     """
-    j = {'subscriptions': [{'key': '/mgf:consents'}]}
+    j = {'subscriptions': [{'key': '/mgf:consents'}, {'key': '/mgf/org/private/documents'},
+                           {'key': '/mgf/p/living/shopping/receipts'}]}
     r = user1.put('/ddh/mgf/org/ddh/events/subscriptions', json=json.dumps(j))
     r.raise_for_status()
     d = r.json()

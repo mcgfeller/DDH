@@ -189,5 +189,5 @@ class ExecuteRequest(DDHbaseModel):
     access: permissions.Access
     transaction: transactions.Transaction
     key_split: int | None = None
-    data: dict | None = None
+    data: dict | pydantic.BaseModel | None = None
     q: str | None = None
