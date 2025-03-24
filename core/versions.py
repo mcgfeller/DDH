@@ -46,6 +46,14 @@ class Version(DDHbaseModel, typing.Hashable):
         super().__init__(**kw)
         return
 
+    @pydantic.model_validator(mode='after')
+    def is_unspecified(self):
+        """ ensure unspecified versions are the singleton """
+        if not self.vtup:
+            return Unspecified
+        else:
+            return self
+
     @classmethod
     def make_with_default(cls, v: str | None) -> Version:
         return cls(v) if v and not v == 'unspecified' else Unspecified
@@ -82,12 +90,16 @@ class _UnspecifiedVersion(Version):
         return
 
     def __eq__(self, other):
-        """ only equal to unspecified """
+        """ only equal to unspecified (all unspecified version share the singleton) """
         return isinstance(other, _UnspecifiedVersion)
 
     def __hash__(self):
         """ hash (not inherited) is hash of empty tuple """
         return hash(())
+
+    @pydantic.model_validator(mode='after')
+    def is_unspecified(self):  # avoid recursion
+        return self
 
 
 Unspecified = _UnspecifiedVersion(alias='unspecified')
