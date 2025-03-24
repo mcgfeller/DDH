@@ -118,3 +118,43 @@ def test_new_owner():
     assert ddhkey1.with_new_owner('lise') == keys.DDHkey("/lise/p/living/shopping/receipts")
     ddhkey2 = keys.DDHkey("//p/living/shopping/receipts")
     assert ddhkey1.with_new_owner('mgf') == keys.DDHkey("/mgf/p/living/shopping/receipts")
+
+
+test_keys = [
+    keys.DDHkey('norooted'),
+    keys.DDHkey('norooted/subkey'),
+    keys.DDHkey(key='/u1,u2/subkey'),
+    keys.DDHkey("/mgf/p/living/shopping/receipts"),
+    keys.DDHkey("/mgf/p/living/shopping/receipts::PySchema"),
+    keys.DDHkey(key='norooted/subkey:schema:spec:1.0'),
+    keys.DDHkeyGeneric("/mgf/p/living/shopping/receipts"),
+    keys.DDHkeyVersioned(key='norooted/subkey:schema:spec:1.0'),
+    keys.DDHkeyRange(key="//org/ubs.com/switzerland/customer/account:::>1"),
+]
+
+# id must not contain ':'!
+all_test_keys = pytest.mark.parametrize('key', test_keys, ids=lambda key: str(key).replace(':', '_'))
+
+
+@all_test_keys
+def test_roundtrip_dict(key):
+    cls = key.__class__
+    d = key.model_dump()
+    rkey = cls.model_validate(d)
+    assert key == rkey, 'mismatch: key -> dict -> validate == key'
+
+
+@all_test_keys
+def test_roundtrip_json(key):
+    cls = key.__class__
+    j = key.model_dump_json()
+    rkey = cls.model_validate_json(j)
+    assert key == rkey, 'mismatch: key -> json -> validate_json  == key'
+
+
+@all_test_keys
+def test_roundtrip_str(key):
+    cls = key.__class__
+    s = str(key)
+    rkey = cls(s)
+    assert key == rkey, 'mismatch: key -> str -> cls()  == key'
