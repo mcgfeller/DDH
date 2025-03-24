@@ -122,10 +122,10 @@ class DDHkey(DDHbaseModel):
     @pydantic.model_validator(mode='before')
     @classmethod
     def init_key(cls, key: typing.Any) -> dict:
-        """ If a key is present in JSON in a FastAPI put/post request, FastAPI complains despite .__init__() 
+        """ If a key is present in JSON in a FastAPI put/post request, FastAPI complains despite .__init__()
             converts it to a key. So we need to convert it to a key and then pass it a dictionary before validation.
             Note that this creates only little overhead, as .__init__() is normally called first, and then this becomes basically
-            an instance check only. 
+            an instance check only.
         """
         if isinstance(key, str):
             key = cls(key).model_dump()
@@ -164,10 +164,6 @@ class DDHkey(DDHbaseModel):
 
     def __bool__(self) -> bool:
         return bool(self.key)
-
-    @classmethod
-    def model_validate_json(cls, j):
-        return DDHbaseModel.model_validate_json(j)
 
     @classmethod
     def cast(cls, key: DDHkey) -> typing.Self:

@@ -40,19 +40,10 @@ class Version(DDHbaseModel, typing.Hashable):
             vtup = tuple(v)
         else:
             vtup = tuple(kw.get('vtup', ()))
-        # if not vtup:
-        #     raise ValueError('Empty version')
+
         kw['vtup'] = vtup[:self.Maxparts]
         super().__init__(**kw)
         return
-
-    @pydantic.model_validator(mode='after')
-    def is_unspecified(self):
-        """ ensure unspecified versions are the singleton """
-        if not self.vtup:
-            return Unspecified
-        else:
-            return self
 
     @classmethod
     def make_with_default(cls, v: str | None) -> Version:
@@ -90,16 +81,21 @@ class _UnspecifiedVersion(Version):
         return
 
     def __eq__(self, other):
-        """ only equal to unspecified (all unspecified version share the singleton) """
-        return isinstance(other, _UnspecifiedVersion)
+        """ equal to unspecified or empty tuple.
+            Unfortunaltey, we cannot enfore all unspecified versions to be the singleton Unspecified,
+            as a pydantic model validator must return self, and not another object (it would work, but
+            it issues a warning).
+        """
+        if isinstance(other, _UnspecifiedVersion):
+            return True
+        elif isinstance(other, Version):
+            return not other.vtup
+        else:
+            return False
 
     def __hash__(self):
         """ hash (not inherited) is hash of empty tuple """
         return hash(())
-
-    @pydantic.model_validator(mode='after')
-    def is_unspecified(self):  # avoid recursion
-        return self
 
 
 Unspecified = _UnspecifiedVersion(alias='unspecified')
