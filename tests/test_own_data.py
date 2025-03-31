@@ -1,11 +1,14 @@
 """ Set up some Test data """
-from core import keys, permissions, facade, errors, transactions, principals, keydirectory, nodes
-from core import pillars
-from frontend import user_auth, sessions
-from backend import keyvault
-import pytest
+import asyncio
 import json
+
+import pytest
 from fastapi.encoders import jsonable_encoder
+
+from backend import keyvault
+from core import (errors, facade, keydirectory, keys, nodes, permissions,
+                  pillars, principals, transactions)
+from frontend import sessions, user_auth
 
 
 def clear_data():
@@ -197,7 +200,7 @@ async def test_withdraw_consent(user, user3, no_storage_dapp):
     return
 
 
-@ pytest.mark.asyncio
+@pytest.mark.asyncio
 async def test_read_and_write_data(user, user2, no_storage_dapp):
     session = get_session(user)
     # first, set up some data:
@@ -226,7 +229,7 @@ async def test_read_and_write_data(user, user2, no_storage_dapp):
     return
 
 
-@ pytest.mark.asyncio
+@pytest.mark.asyncio
 async def test_read_and_write_data2(user, user2, no_storage_dapp):
     session = get_session(user)
     combined_read = {permissions.AccessMode.read, permissions.AccessMode.combined}
@@ -273,7 +276,7 @@ async def test_read_and_write_data2(user, user2, no_storage_dapp):
     return
 
 
-@ pytest.mark.asyncio
+@pytest.mark.asyncio
 async def test_read_notfound(user, user2, no_storage_dapp):
     session = get_session(user)
     await write_with_consent("/mgf/org/private/documents/doc1")
@@ -282,15 +285,47 @@ async def test_read_notfound(user, user2, no_storage_dapp):
     return
 
 
-@ pytest.mark.asyncio
+@pytest.mark.asyncio
 async def test_consent_api_received(user, user2, no_storage_dapp):
     session = get_session(user)
     d = await read("/mgf/org/ddh/consents/received", session)
     return
 
 
-@ pytest.mark.asyncio
+@pytest.mark.asyncio
 async def test_consent_api_given(user, user2, no_storage_dapp):
     session = get_session(user2)
     d = await read("/another/org/ddh/consents/given", session)
+    return
+
+
+async def give_lise_consents(no_storage_dapp):
+    """ Give consent on top key /mgf to lise """
+    consents = permissions.Consents(consents=[permissions.Consent(grantedTo=['lise'])])
+    r = await write_consents("/mgf", consents, no_storage_dapp)
+    return r
+
+
+@pytest.mark.asyncio
+async def test_event_subscribe(user, no_storage_dapp):
+    session = get_session(user)
+    ddhkey = keys.DDHkey('/mgf/org/ddh/events/subscriptions')
+    j = {'subscriptions': [{'key': '/mgf:consents'}, {'key': '/mgf/org/private/documents'},
+                           {'key': '/mgf/p/living/shopping/receipts'}]}
+
+    data = json.dumps(j)
+    access = permissions.Access(ddhkey=ddhkey, modes={permissions.AccessMode.write})
+    await facade.ddh_put(access, session, data)
+
+    d = await read(ddhkey, session)
+    return
+
+
+@pytest.mark.asyncio
+async def test_event_wait(user, no_storage_dapp):
+    session = get_session(user)
+    ddhkey = keys.DDHkey('/mgf/org/ddh/events/wait/mgf/org/private/documents')
+    # wait for events on this key:
+    async with asyncio.timeout(5):
+        d = await read(ddhkey, session)
     return

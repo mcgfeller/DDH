@@ -33,11 +33,12 @@ def test_events_subscriptions(user1):
     return
 
 
+@pytest.mark.xfail
 def test_events_wait(user1):
     """ read next event
         TODO:#35
     """
-    r = user1.get('/ddh/mgf/org/ddh/events/wait')
+    r = user1.get('/ddh/mgf/org/ddh/events/wait/mgf/org/private/documents?nowait=True', timeout=2)
     r.raise_for_status()
     d = r.json()
     return
