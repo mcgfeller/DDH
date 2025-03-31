@@ -19,6 +19,22 @@ class SubscribableEvent(py_schema.PySchemaElement):
     """
     key: keys.DDHkeyGeneric
 
+    def get_topic(self) -> queues.Topic | None:
+        """ get a topic for key.
+            Topics key is the next subscriptable schema
+        """
+        schema = ...  # next subscriptable schema
+        s_key = self.key
+        topic = queues.Topic('change_event:'+str(s_key))
+        return topic
+
+
+class Event(py_schema.PySchemaElement):
+    """ Event on a single DDHkey. 
+    """
+    key: keys.DDHkey
+    timestamp: datetime.datetime
+
 
 class Subscriptions(py_schema.PySchemaElement):
     """ Subscriptions """
@@ -30,9 +46,10 @@ class Subscriptions(py_schema.PySchemaElement):
         # TODO: Clear subscriptions for principal
 
         for sub in self.subscriptions:
-            topic = queues.Topic.update_topic(sub.key)
-            print(f'Subscriptions: registering {topic=}')
-            # await queues.PubSubQueue.listen(topic)
+            topic = sub.get_topic()
+            if topic:
+                print(f'Subscriptions: registering {topic=}')
+                await queues.PubSubQueue.subscribe(topic)
         return
 
 
@@ -65,16 +82,19 @@ class EventSubscription(executable_nodes.InProcessSchemedExecutableNode):
 
 class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
 
-    async def execute(self, req: dapp_attrs.ExecuteRequest):
+    async def execute(self, req: dapp_attrs.ExecuteRequest) -> list[Event]:
         """ obtain given and received consents and return them as a Grants object, which combines
             the key and its consents. 
         """
 
         op = req.access.ddhkey.split_at(req.key_split)[1]
         principal = req.access.principal
+        wait_on_key = op.ensure_rooted()
         assert principal
         print(f'{req.access=}, {req.op=}')
-        return 'wait'
+        topic = queues.Topic.update_topic(wait_on_key)
+        r = await queues.PubSubQueue.listen(topic)
+        return r
 
     def get_schemas(self) -> dict[keys.DDHkeyVersioned, schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """

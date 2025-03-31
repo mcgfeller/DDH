@@ -48,22 +48,31 @@ class _PubSubQueue(Queue):
     """ Global Pub/Sub Queue:
         Emulate by creating a Queue for each topic. 
     """
-    _topics: dict[Topic, Queue] = {}
+    _subscriptions: dict[Topic, Queue] = {}
 
-    def _get_queue(self, topic: Topic) -> Queue:
-        q = self._topics.get(topic)
+    def _get_queue(self, topic: Topic, raise_error=False) -> Queue | None:
+        q = self._subscriptions.get(topic, None)
+        if raise_error and not q:
+            raise ValueError('must subscribe to topic {topic}')
+        return q
+
+    async def subscribe(self, topic: Topic) -> Queue:
+        q = self._get_queue(topic)
         if not q:
-            self._topics[topic] = q = Queue()
+            self._subscriptions[topic] = q = Queue()
         return q
 
     async def listen(self, topic: Topic):
-        return await self._get_queue(topic).get()
+        return await self._get_queue(topic, raise_error=True).get(topic)
 
     async def listen_upto(self, topic: Topic,  many=1):
-        return self._get_queue(topic).get_upto(many=many)
+        return self._get_queue(topic, raise_error=True).get_upto(many=many)
 
     async def publish(self, topic: Topic, event):
-        return await self._get_queue(topic).put(event)
+        q = self._get_queue(topic)
+        if q:
+            return await q.put(event)
+        else: return None  # do nothing
 
 
 PubSubQueue = _PubSubQueue()  # the global PUB/SUB Queue
