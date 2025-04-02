@@ -93,9 +93,9 @@ class SchemaAttributes(DDHbaseModel):
     variant: SchemaVariant | None = pydantic.Field(
         default=None, description='Name of the variant, in case of multiple schemas in the same space, e.g., ISO-20022 and Swift MT')
     variant_usage: SchemaVariantUsage = pydantic.Field(
-        SchemaVariantUsage.recommended, description="How this variant is used.")
+        default=SchemaVariantUsage.recommended, description="How this variant is used.")
     version: versions.Version = pydantic.Field(
-        versions.Version(0), description="The version of this schema instance")
+        default=versions.Version(0), description="The version of this schema instance")
     requires: Requires | None = None
     mimetypes: MimeTypes | None = None
     references: dict[str, keys.DDHkeyRange] = {}  # TODO:#17 key should be DDHkey
@@ -103,6 +103,8 @@ class SchemaAttributes(DDHbaseModel):
                                                                     description="Sensitivities by Sensitivity, schema key, set of fields. We cannot use DDHKey for schema key, as the dict is not jsonable.")
     transformers: trait.Transformers = pydantic.Field(
         default=trait.NoTransformers, description="Transformers are applied according to access.modes")
+    subscribable: bool = pydantic.Field(
+        default=False, description="Schema is subscribable, i.e., it can be used for an event subscription.")
 
     def add_reference(self, path: keys.DDHkey, reference: AbstractSchemaReference):
         # print(f'SchemaAttributes.add_reference {path=}, {reference=}')
@@ -144,8 +146,10 @@ class AbstractSchemaElement(DDHbaseModel, abc.ABC):
                 s.schema_attributes.transformers)
         snode = nodes.SchemaNode(owner=principals.RootPrincipal,
                                  consents=AbstractSchema.get_schema_consents())
-        keydirectory.NodeRegistry[ddhkey] = snode  # sets snode.key
+        snode.key = ddhkey  # set key in node
         snode.add_schema(s)
+        keydirectory.NodeRegistry[ddhkey] = snode
+
         # now create reference
         vv = keys.DDHkeyVersioned0(ddhkey, variant=s.schema_attributes.variant, version=s.schema_attributes.version)
         schemaref = s.get_reference_class().create_from_key(ddhkey=vv.to_range())
@@ -444,6 +448,8 @@ class SchemaContainer(DDHbaseModel):
                              dict[versions.Version, AbstractSchema]] = {}
     upgraders: dict[SchemaVariant, versions.Upgraders] = {}
 
+    subscribable: bool = False  # is this a subscribable schema?
+
     ddhkey: keys.DDHkey | None = pydantic.Field(
         default=None, description="Schema key, for debugging, when Schema is put to Node")
 
@@ -465,6 +471,8 @@ class SchemaContainer(DDHbaseModel):
 
         if sa.variant_usage == SchemaVariantUsage.recommended:  # latest recommended schema becomes default
             self.schemas_by_variant[''] = sbv
+            # default vv determines subscribable:
+            self.subscribable = sbv[versions.Unspecified].schema_attributes.subscribable
         SchemaNetwork.add_schema(key, schema.schema_attributes)
         schema._w_container = weakref.ref(self)  # keep a ref to the container
         return schema

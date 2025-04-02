@@ -92,7 +92,9 @@ class SchemaNode(node_types.T_SchemaNode,  Node, persistable.NonPersistable):
 
     @property
     def supports(self) -> set[NodeSupports]:
-        s = {NodeSupports.schema}
+        s = {NodeSupports.schema, }
+        if self.container.subscribable:
+            s.add(NodeSupports.subscribable)
         if self.consents:
             s.add(NodeSupports.consents)
         return s

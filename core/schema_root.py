@@ -29,6 +29,7 @@ def register_schema() -> nodes.SchemaNode:
                                      consents=schemas.AbstractSchema.get_schema_consents())
         keydirectory.NodeRegistry[root] = root_node
         schema.schema_attributes.transformers = trait.DefaultTraits.RootTransformers  # set transformers on root
+        schema.schema_attributes.subscribable = False  # root is not directly subscribable
         root_node.add_schema(schema)
         inherit_attributes(schema, transaction)
         schemas.SchemaNetwork.valid.invalidate()  # finished
@@ -99,6 +100,12 @@ def descend_schema(tree: list, schema_attributes: dict, parents=()) -> type[sche
         # we need to replace the PySchemaElement by a full Schema and a PySchemaReference to it
         dkey = keys.DDHkeyGeneric(('', '')+key[2:], fork=keys.ForkType.schema)  # 'root' is '' in key
         se = se.store_as_schema(dkey, sa)
+
+    # if not (sa := schema_attributes.get(key)):  # SchemaAttributes here?
+    #     sa = schemas.SchemaAttributes(transformers=trait.DefaultTraits.RootTransformers, subscribable=True)
+    # # we need to replace the PySchemaElement by a full Schema and a PySchemaReference to it
+    # dkey = keys.DDHkeyGeneric(('', '')+key[2:], fork=keys.ForkType.schema)  # 'root' is '' in key
+    # se = se.store_as_schema(dkey, sa)
     return se
 
 

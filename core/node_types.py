@@ -21,6 +21,7 @@ class NodeSupports(str, enum.Enum):
     data = 'data'
     execute = 'execute'
     consents = 'consents'
+    subscribable = 'subscribable'
 
     def __repr__(self): return self.value
 

@@ -19,13 +19,19 @@ class SubscribableEvent(py_schema.PySchemaElement):
     """
     key: keys.DDHkeyGeneric
 
-    def get_topic(self) -> queues.Topic | None:
+    def get_topic(self, transaction) -> queues.Topic | None:
         """ get a topic for key.
-            Topics key is the next subscriptable schema
+            Topics key is the next subscribable schema
         """
-        schema = ...  # next subscriptable schema
-        s_key = self.key
-        topic = queues.Topic('change_event:'+str(s_key))
+        schema = ...  # next subscribable schema
+        s_key = self.key.ens()
+        schema, s_split = keydirectory.NodeRegistry.get_node(s_key, nodes.NodeSupports.subscribable, transaction)
+        if schema:
+            s_key, remainder = s_key.split_at(s_split)
+            e_key = s_key.ensure_fork(self.key.fork)
+            topic = queues.Topic('change_event:'+str(e_key))
+        else:
+            topic = None
         return topic
 
 
@@ -46,7 +52,7 @@ class Subscriptions(py_schema.PySchemaElement):
         # TODO: Clear subscriptions for principal
 
         for sub in self.subscriptions:
-            topic = sub.get_topic()
+            topic = sub.get_topic(req.transaction)
             if topic:
                 print(f'Subscriptions: registering {topic=}')
                 await queues.PubSubQueue.subscribe(topic)
