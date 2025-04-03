@@ -117,20 +117,12 @@ class SchemaAttributes(DDHbaseModel):
             self.sensitivities.setdefault(s, {}).setdefault(str(path), set()).add(field)
         return
 
-    def merge(self, other: typing.Self) -> typing.Self:
-        """ Merge another SchemaAttributes into this one and return new SchemaAttributes.
+    def inherit_from(self, parent: typing.Self) -> typing.Self:
+        """ Merge another SchemaAttributes into this one.
         """
-        new = self.model_copy()
-        new.variant = other.variant or self.variant
-        new.variant_usage = other.variant_usage
-        new.version = other.version or self.version
-        new.requires = other.requires or self.requires
-        new.mimetypes = other.mimetypes or self.mimetypes
-        new.subscribable = other.subscribable
-        new.sensitivities.update(other.sensitivities)
-        new.references = other.references
-        new.transformers = self.transformers.merge(other.transformers)
-        return new
+        self.version = parent.version if self.version == 0 else self.version
+        self.transformers = parent.transformers.merge(self.transformers)
+        return self
 
 
 class AbstractSchemaElement(DDHbaseModel, abc.ABC):

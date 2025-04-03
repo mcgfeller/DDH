@@ -82,7 +82,7 @@ def build_root_schemas():
 
     schema_element = descend_schema(treetop)
     root = py_schema.PySchema(schema_element=schema_element)
-    root.schema_attributes.transformers = treetop[0].schema_attributes.transformers  # transformers are declared here
+    root.schema_attributes.inherit_from(treetop[0].schema_attributes)  # transformers are declared here
     assert root.to_output()  # test schema generation
 
     return root
@@ -110,7 +110,7 @@ def inherit_attributes(top: schemas.AbstractSchema, transaction):
         subkey = keys.DDHkey(ref).ens()
         subschema, *d = schemas.SchemaContainer.get_node_schema_key(subkey, transaction)
         assert subschema is not top, 'schema must not reference itself'
-        subschema.schema_attributes = top.schema_attributes.merge(subschema.schema_attributes)
+        subschema.schema_attributes.inherit_from(top.schema_attributes)
         inherit_attributes(subschema, transaction)
     return
 
