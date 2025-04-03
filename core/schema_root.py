@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def register_schema() -> nodes.SchemaNode:
-    """ Register root schema at root node. 
+    """ Register root schema at root node.
         This is preliminary, as the schema is hard-coded.
     """
     assert trait.DefaultTraits.ready, 'traits must be loaded first'
@@ -25,12 +25,10 @@ def register_schema() -> nodes.SchemaNode:
     if not root_node:
         schema = build_root_schemas()  # obtain static schema
         # for now, give schema read access to everybody
-        root_node = nodes.SchemaNode(owner=principals.RootPrincipal,
+        root_node = nodes.SchemaNode(owner=principals.RootPrincipal, key=root,
                                      consents=schemas.AbstractSchema.get_schema_consents())
-        keydirectory.NodeRegistry[root] = root_node
-        schema.schema_attributes.transformers = trait.DefaultTraits.RootTransformers  # set transformers on root
-        schema.schema_attributes.subscribable = False  # root is not directly subscribable
         root_node.add_schema(schema)
+        keydirectory.NodeRegistry[root] = root_node
         inherit_attributes(schema, transaction)
         schemas.SchemaNetwork.valid.invalidate()  # finished
         logger.info('AbstractSchema Root built')
@@ -38,74 +36,69 @@ def register_schema() -> nodes.SchemaNode:
     return root_node
 
 
+class TN:
+    """ Auxilliary TreeNode, used to build schema tree (only used here) """
+
+    def __init__(self, name: str, sa: schemas.SchemaAttributes | None = None, subscribable: bool = False):
+        self.name = name
+        self.schema_attributes = sa or schemas.SchemaAttributes(subscribable=subscribable)
+
+
 def build_root_schemas():
     """ build top of schema tree """
-    treetop = ['root',
-               ['',  # no owner
-                ['org',  # organizational tree, next level are org domains
-                 ['private',  # for the user him/herself
-                  ['documents']  # this is DocSave RIP
+    treetop = [TN('root', schemas.SchemaAttributes(transformers=trait.DefaultTraits.RootTransformers)),
+               [TN(''),  # no owner
+                [TN('org'),  # organizational tree, next level are org domains
+                 [TN('private'),  # for the user him/herself
+                  # this is DocSave RIP - cancel validation
+                  [TN('documents', schemas.SchemaAttributes(subscribable=True, transformers=trait.DefaultTraits.NoValidation))]
                   ],
                  ],
-                   ['p',  # personal tree, next level are data models
-                    ['family'],
-                    ['employment',
-                     ['salary',
-                      ['statements']
+                   [TN('p'),  # personal tree, next level are data models
+                    [TN('family')],
+                    [TN('employment'),
+                     [TN('salary'),
+                      [TN('statements', sa=schemas.SchemaAttributes(requires=schemas.Requires.specific, subscribable=True))]
                       ],
                      ],
-                    ['education'],
-                    ['health'],
-                    ['living',
-                     ['shopping',
-                      ['receipts']
+                    [TN('education')],
+                    [TN('health', schemas.SchemaAttributes(transformers=trait.DefaultTraits.HighestPrivacyTransformers))],
+                    [TN('living'),
+                     [TN('shopping', subscribable=True),
+                      [TN('receipts')]
                       ],
                      ],
-                    ['finance',
-                     ['tax',
-                      ['declaration']
+                    [TN('finance', sa=schemas.SchemaAttributes(transformers=trait.DefaultTraits.HighPrivacyTransformers)),
+                     [TN('tax', subscribable=True),
+                      [TN('declaration')]
                       ],
-                     ['holdings',
-                      ['portfolio']
+                     [TN('holdings', subscribable=True),
+                      [TN('portfolio', sa=schemas.SchemaAttributes(requires=schemas.Requires.specific))]
                       ],
                      ],
                     ],
                 ]
                ]
 
-    # elements with SchemaAttributes:
-
-    attributes = {
-        ('root', '', 'p', 'employment', 'salary', 'statements'): schemas.SchemaAttributes(requires=schemas.Requires.specific),
-        ('root', '', 'p', 'finance', 'holdings', 'portfolio'): schemas.SchemaAttributes(requires=schemas.Requires.specific),
-        ('root', '', 'p', 'health'): schemas.SchemaAttributes(transformers=trait.DefaultTraits.HighestPrivacyTransformers),
-        ('root', '', 'p', 'finance'): schemas.SchemaAttributes(transformers=trait.DefaultTraits.HighPrivacyTransformers),
-        # cancel validation
-        ('root', '', 'org', 'private', 'documents'): schemas.SchemaAttributes(transformers=trait.DefaultTraits.NoValidation),
-    }
-    schema_element = descend_schema(treetop, attributes)
+    schema_element = descend_schema(treetop)
     root = py_schema.PySchema(schema_element=schema_element)
+    root.schema_attributes.transformers = treetop[0].schema_attributes.transformers  # root schema attributes
     assert root.to_output()  # test schema generation
 
     return root
 
 
-def descend_schema(tree: list, schema_attributes: dict, parents=()) -> type[schemas.AbstractSchemaElement]:
+def descend_schema(tree: list, parents=()) -> type[schemas.AbstractSchemaElement]:
     """ Descent on our tree representation, returning model """
-    key = parents+(tree[0],)  # new key, from parents down
-    elements = {t[0]: (descend_schema(t, schema_attributes, parents=key), None)
+    key = parents+(tree[0].name,)  # new key, from parents down
+    elements = {t[0].name: (descend_schema(t, parents=key), None)
                 for t in tree[1:]}  # descend on subtree, build dict of {head_name  : subtree}
     se = py_schema.PySchemaElement.create_from_elements(key, **elements)  # create a model with subtree elements
-    if sa := schema_attributes.get(key):  # SchemaAttributes here?
-        # we need to replace the PySchemaElement by a full Schema and a PySchemaReference to it
-        dkey = keys.DDHkeyGeneric(('', '')+key[2:], fork=keys.ForkType.schema)  # 'root' is '' in key
-        se = se.store_as_schema(dkey, sa)
 
-    # if not (sa := schema_attributes.get(key)):  # SchemaAttributes here?
-    #     sa = schemas.SchemaAttributes(transformers=trait.DefaultTraits.RootTransformers, subscribable=True)
-    # # we need to replace the PySchemaElement by a full Schema and a PySchemaReference to it
-    # dkey = keys.DDHkeyGeneric(('', '')+key[2:], fork=keys.ForkType.schema)  # 'root' is '' in key
-    # se = se.store_as_schema(dkey, sa)
+    if parents and tree[0].name:  # not root and not empty level (=owner level)
+        # we need to replace the PySchemaElement by a full Schema and a PySchemaReference to it, so we can set SchemaAttributes
+        dkey = keys.DDHkeyGeneric(('', '')+key[2:], fork=keys.ForkType.schema)  # 'root' is '' in key
+        se = se.store_as_schema(dkey, tree[0].schema_attributes)
     return se
 
 

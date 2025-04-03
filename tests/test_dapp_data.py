@@ -136,7 +136,7 @@ def test_p_schema_ref(user1):
     r = user1.get('/ddh//p:schema')
     r.raise_for_status()
     t = r.text
-    assert '"$ref":"//p/employment/salary/statements::PySchema' in t, 'reference not in json schema'
+    assert '"$ref":"//p/employment::PySchema' in t, 'reference not in json schema'
     return
 
 

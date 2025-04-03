@@ -21,7 +21,7 @@ class NodeSupports(str, enum.Enum):
     data = 'data'
     execute = 'execute'
     consents = 'consents'
-    subscribable = 'subscribable'
+    subscribable = 'subscribable'  # a schema for which events are subscribable (must also support schema)
 
     def __repr__(self): return self.value
 
