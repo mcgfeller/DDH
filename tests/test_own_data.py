@@ -297,35 +297,3 @@ async def test_consent_api_given(user, user2, no_storage_dapp):
     session = get_session(user2)
     d = await read("/another/org/ddh/consents/given", session)
     return
-
-
-async def give_lise_consents(no_storage_dapp):
-    """ Give consent on top key /mgf to lise """
-    consents = permissions.Consents(consents=[permissions.Consent(grantedTo=['lise'])])
-    r = await write_consents("/mgf", consents, no_storage_dapp)
-    return r
-
-
-@pytest.mark.asyncio
-async def test_event_subscribe(user, no_storage_dapp):
-    session = get_session(user)
-    ddhkey = keys.DDHkey('/mgf/org/ddh/events/subscriptions')
-    j = {'subscriptions': [{'key': '/mgf:consents'}, {'key': '/mgf/org/private/documents'},
-                           {'key': '/mgf/p/living/shopping/receipts'}]}
-
-    data = json.dumps(j)
-    access = permissions.Access(ddhkey=ddhkey, modes={permissions.AccessMode.write})
-    await facade.ddh_put(access, session, data)
-
-    d = await read(ddhkey, session)
-    return
-
-
-@pytest.mark.asyncio
-async def test_event_wait(user, no_storage_dapp):
-    session = get_session(user)
-    ddhkey = keys.DDHkey('/mgf/org/ddh/events/wait/mgf/org/private/documents')
-    # wait for events on this key:
-    async with asyncio.timeout(5):
-        d = await read(ddhkey, session)
-    return
