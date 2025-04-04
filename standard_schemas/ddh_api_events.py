@@ -7,44 +7,16 @@ import typing
 
 import pydantic
 
-from core import schemas, keys, executable_nodes, principals, keydirectory, errors, permissions, common_ids, dapp_attrs, nodes
+from core import schemas, keys, executable_nodes, principals, errors, permissions, common_ids, dapp_attrs, nodes, events
 from utils import utils
 from frontend import sessions
 from backend import queues
 from schema_formats import py_schema
 
 
-class SubscribableEvent(py_schema.PySchemaElement):
-    """ Event on a single DDHkey. Potential for extension to kind of event and update specifics
-    """
-    key: keys.DDHkeyGeneric
-
-    def get_topic(self, transaction) -> queues.Topic | None:
-        """ get a topic for key.
-            Topics key is the next subscribable schema
-        """
-        schema = ...  # next subscribable schema
-        s_key = self.key.ens()
-        schema, s_split = keydirectory.NodeRegistry.get_node(s_key, nodes.NodeSupports.subscribable, transaction)
-        if schema:
-            s_key, remainder = s_key.split_at(s_split)
-            e_key = s_key.ensure_fork(self.key.fork)
-            topic = queues.Topic('change_event:'+str(e_key))
-        else:
-            topic = None
-        return topic
-
-
-class Event(py_schema.PySchemaElement):
-    """ Event on a single DDHkey. 
-    """
-    key: keys.DDHkey
-    timestamp: datetime.datetime
-
-
 class Subscriptions(py_schema.PySchemaElement):
     """ Subscriptions """
-    subscriptions: list[SubscribableEvent]
+    subscriptions: list[events.SubscribableEvent]
 
     async def register(self, req: dapp_attrs.ExecuteRequest):
         """ register all subscriptions """
@@ -88,7 +60,7 @@ class EventSubscription(executable_nodes.InProcessSchemedExecutableNode):
 
 class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
 
-    async def execute(self, req: dapp_attrs.ExecuteRequest) -> list[Event]:
+    async def execute(self, req: dapp_attrs.ExecuteRequest) -> list[events.SubscribableEvent]:
         """ obtain given and received consents and return them as a Grants object, which combines
             the key and its consents. 
         """
