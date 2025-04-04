@@ -30,7 +30,15 @@ class SubscribableEvent(DDHbaseModel):
             topic = None
         return topic
 
+    async def publish(self, transaction) -> None:
+        """ publish the event to the topic """
+        topic = self.get_topic(transaction)
+        if topic:
+            await queues.PubSubQueue.publish(topic, self.model_dump_json())
+        return
+
 
 class UpdateEvent(SubscribableEvent):
+    key: keys.DDHkey
 
     timestamp: datetime.datetime = pydantic.Field(default_factory=datetime.datetime.now)

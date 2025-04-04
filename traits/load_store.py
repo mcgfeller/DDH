@@ -6,7 +6,7 @@ import copy
 import pydantic
 from utils.pydantic_utils import CV
 
-from core import (errors, trait, permissions, keys, nodes, data_nodes, executable_nodes,
+from core import (errors, trait, permissions, keys, nodes, data_nodes, executable_nodes, events,
                   keydirectory, dapp_attrs, transactions, common_ids, principals, consentcache)
 from backend import persistable, keyvault
 
@@ -268,6 +268,20 @@ class SaveToStorage(AccessTransformer):
         return
 
 
+class PublishEvent(AccessTransformer):
+    """ Publish a change event """
+    phase: CV[trait.Phase] = trait.Phase.store
+    after: str = 'SaveToStorage'
+    only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.write})
+    only_forks: CV[frozenset[keys.ForkType]] = frozenset({keys.ForkType.data, keys.ForkType.consents})
+
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
+        print('publish event for', trstate.access.ddhkey)
+        ev = events.UpdateEvent(key=trstate.access.ddhkey)
+        await ev.publish(trstate.transaction)
+        return
+
+
 # Root Tranformers may be overwritten:
 trait.DefaultTraits.RootTransformers += trait.Transformers(
-    LoadFromStorage(may_overwrite=True), LoadFromDApp(may_overwrite=True), VerifyLoaded(may_overwrite=True), ValidateToDApp(may_overwrite=True),  UpdateConsents(), SaveToStorage(may_overwrite=True))
+    LoadFromStorage(may_overwrite=True), LoadFromDApp(may_overwrite=True), VerifyLoaded(may_overwrite=True), ValidateToDApp(may_overwrite=True),  UpdateConsents(), SaveToStorage(may_overwrite=True), PublishEvent(may_overwrite=True),)

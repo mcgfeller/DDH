@@ -63,12 +63,12 @@ class _PubSubQueue(Queue):
         return q
 
     async def listen(self, topic: Topic):
-        return await self._get_queue(topic, raise_error=True).get(topic)
+        return await self._get_queue(topic, raise_error=True).get()
 
     async def listen_upto(self, topic: Topic,  many=1):
         return self._get_queue(topic, raise_error=True).get_upto(many=many)
 
-    async def publish(self, topic: Topic, event):
+    async def publish(self, topic: Topic, event, transaction=None) -> None:
         q = self._get_queue(topic)
         if q:
             return await q.put(event)
