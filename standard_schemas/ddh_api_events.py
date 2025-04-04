@@ -70,8 +70,14 @@ class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
         wait_on_key = op.ensure_rooted()
         assert principal
         print(f'{req.access=}, {req.op=}')
-        topic = queues.Topic.update_topic(wait_on_key)
-        r = await queues.PubSubQueue.listen(topic)
+        sub_ev = events.UpdateEvent(key=wait_on_key)  # TODO: #35: do not construct object, just get topic from key
+        topic = sub_ev.get_topic(req.transaction)
+        if topic:
+            print(f'EventQuery: waiting on {topic=}')
+            r = await queues.PubSubQueue.listen(topic)
+        else:
+            raise errors.NotFound(f'No topic for {wait_on_key=}')
+
         return r
 
     def get_schemas(self) -> dict[keys.DDHkeyVersioned, schemas.AbstractSchema]:

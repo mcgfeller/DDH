@@ -44,6 +44,7 @@ async def test_event_subscribe(user, no_storage_dapp):
 
 @pytest.mark.asyncio
 async def test_event_wait(user, no_storage_dapp):
+    await test_event_subscribe(user, no_storage_dapp)
     session = test_own_data.get_session(user)
     ddhkey = keys.DDHkey('/mgf/org/ddh/events/wait/mgf/org/private/documents')
     # wait for events on this key:
