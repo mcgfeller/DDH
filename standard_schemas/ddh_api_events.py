@@ -7,7 +7,7 @@ import typing
 
 import pydantic
 
-from core import schemas, keys, executable_nodes, principals, errors, permissions, common_ids, dapp_attrs, nodes, events
+from core import schemas, keys, executable_nodes, principals, errors, permissions, common_ids, dapp_attrs, nodes, events, keydirectory
 from utils import utils
 from frontend import sessions
 from backend import queues
@@ -29,6 +29,11 @@ class Subscriptions(py_schema.PySchemaElement):
                 print(f'Subscriptions: registering {topic=}')
                 await queues.PubSubQueue.subscribe(topic)
         return
+
+    def __contains__(self, ddhkey: keys.DDHkeyGeneric) -> bool:
+        """ check if ddhkey is in subscriptions """
+
+        return any(sub.key == ddhkey for sub in self.subscriptions)
 
 
 class EventSubscription(executable_nodes.InProcessSchemedExecutableNode):
@@ -69,7 +74,22 @@ class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
         principal = req.access.principal
         wait_on_key = op.ensure_rooted()
         assert principal
-        print(f'{req.access=}, {req.op=}')
+        # we need to retrieve the principal's subscription:
+        subscriptions = None
+        subs_key = keys.DDHkey('//org/ddh/events/subscriptions').with_new_owner(principal.id)
+        subs_node, split = await keydirectory.NodeRegistry.get_node_async(subs_key, nodes.NodeSupports.data, req.transaction)
+        if subs_node:
+            subs_node = await subs_node.ensure_loaded(req.transaction)
+            data = subs_node.data.get('org', {}).get('ddh', {}).get('events', {}).get('subscriptions', {})
+            if data:
+                subscriptions = Subscriptions.model_validate(subs_node.data['org']['ddh']['events']['subscriptions'])
+        if not subscriptions:
+            raise errors.NotFound(f'No subscription for {wait_on_key=}')
+
+        # check if user is subscribed to this key:
+        if not wait_on_key in subscriptions:
+            raise errors.NotFound(f'No subscription for {wait_on_key=}')
+
         sub_ev = events.UpdateEvent(key=wait_on_key)  # TODO: #35: do not construct object, just get topic from key
         topic = sub_ev.get_topic(req.transaction)
         if topic:

@@ -46,6 +46,8 @@ async def test_event_subscribe(user, no_storage_dapp):
 async def test_event_wait(user, no_storage_dapp):
     await test_event_subscribe(user, no_storage_dapp)
     session = test_own_data.get_session(user)
+    # write something to create an event:
+    await test_own_data.write_with_consent("/mgf/org/private/documents/doc1")
     ddhkey = keys.DDHkey('/mgf/org/ddh/events/wait/mgf/org/private/documents')
     # wait for events on this key:
     async with asyncio.timeout(5):
