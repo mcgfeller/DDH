@@ -24,7 +24,7 @@ class SubscribableEvent(DDHbaseModel):
         schema, s_split = keydirectory.NodeRegistry.get_node(s_key, nodes.NodeSupports.subscribable, transaction)
         if schema:
             s_key, remainder = s_key.split_at(s_split)
-            e_key = s_key.ensure_fork(self.key.fork)
+            e_key = s_key.ensure_fork(self.key.fork).without_variant_version()  # publish generic key
             topic = queues.Topic('change_event:'+str(e_key))
         else:
             topic = None

@@ -53,3 +53,15 @@ async def test_event_wait(user, no_storage_dapp):
     async with asyncio.timeout(5):
         d = await test_own_data.read(ddhkey, session)
     return
+
+
+@pytest.mark.asyncio
+async def test_event_wait_nosubscribed(user, no_storage_dapp):
+    await test_event_subscribe(user, no_storage_dapp)
+    session = test_own_data.get_session(user)
+    ddhkey = keys.DDHkey('/mgf/org/ddh/events/wait/mgf/p/living')  # not subscribed to this key
+    with pytest.raises(errors.NotFound):
+        async with asyncio.timeout(5):  # just in case to avoid hangs
+            d = await test_own_data.read(ddhkey, session)
+
+    return
