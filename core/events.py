@@ -19,12 +19,17 @@ class SubscribableEvent(DDHbaseModel):
 
     def get_topic(self, transaction) -> queues.Topic | None:
         """ get a topic for key.
-            Topics key is the next subscribable schema
+            Topic key is the next subscribable schema
         """
         return self.keyy2topic(self.key, transaction)
 
     @classmethod
     def keyy2topic(cls, key: keys.DDHkeyGeneric, transaction) -> queues.Topic | None:
+        """ get a topic for key.
+            Topic key is the next subscribable schema
+
+            TODO #35: This needs a cache
+        """
         s_key = key.ens()
         schema, s_split = keydirectory.NodeRegistry.get_node(s_key, nodes.NodeSupports.subscribable, transaction)
         if schema:
