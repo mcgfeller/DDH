@@ -31,7 +31,7 @@ async def give_lise_consents(no_storage_dapp):
 async def test_event_subscribe(user, no_storage_dapp):
     session = test_own_data.get_session(user)
     ddhkey = keys.DDHkey('/mgf/org/ddh/events/subscriptions')
-    j = {'subscriptions': [{'key': '/mgf:consents'}, {'key': '/mgf/org/private/documents'},
+    j = {'subscriptions': [{'key': '/mgf/org/ddh/consents/received'}, {'key': '/mgf/org/private/documents'},
                            {'key': '/mgf/p/living/shopping/receipts'}]}
 
     data = json.dumps(j)

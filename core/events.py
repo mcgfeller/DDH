@@ -5,16 +5,17 @@ from __future__ import annotations
 import datetime
 import pydantic
 
-from core import keys, keydirectory, nodes
+from core import keys, keydirectory, nodes, common_ids
 from utils import utils
 from backend import queues
-from utils.pydantic_utils import DDHbaseModel
+from utils.pydantic_utils import DDHbaseModel, CV
 
 
 class SubscribableEvent(DDHbaseModel):
     """ Event on a single DDHkey. Potential for extension to kind of event and update specifics
     """
     key: keys.DDHkeyGeneric
+    topic_prefix: CV[str] = 'update'
 
     def get_topic(self, transaction) -> queues.Topic | None:
         """ get a topic for key.
@@ -25,7 +26,7 @@ class SubscribableEvent(DDHbaseModel):
         if schema:
             s_key, remainder = s_key.split_at(s_split)
             e_key = s_key.ensure_fork(self.key.fork).without_variant_version()  # publish generic key
-            topic = queues.Topic('change_event:'+str(e_key))
+            topic = queues.Topic(self.topic_prefix+':'+str(e_key))
         else:
             topic = None
         return topic
@@ -39,6 +40,16 @@ class SubscribableEvent(DDHbaseModel):
 
 
 class UpdateEvent(SubscribableEvent):
+
     key: keys.DDHkey
 
     timestamp: datetime.datetime = pydantic.Field(default_factory=datetime.datetime.now)
+
+
+class ConsentEvent(UpdateEvent):
+    grants_added: set[keys.DDHkeyGeneric]
+
+    @classmethod
+    def for_principal(cls, principal: common_ids.PrincipalId, grants_added: set[keys.DDHkeyGeneric]):
+        key = keys.DDHkeyGeneric('//org/ddh/consents/received/').with_new_owner(principal)
+        return cls(key=key, grants_added=grants_added)
