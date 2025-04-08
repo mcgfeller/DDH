@@ -90,8 +90,8 @@ class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
         if not wait_on_key in subscriptions:
             raise errors.NotFound(f'No subscription for {wait_on_key=}')
 
-        sub_ev = events.UpdateEvent(key=wait_on_key)  # TODO: #35: do not construct object, just get topic from key
-        topic = sub_ev.get_topic(req.transaction)
+        topic = events.UpdateEvent.keyy2topic(wait_on_key, req.transaction)
+
         if topic:
             print(f'EventQuery: waiting on {topic=}')
             r = await queues.PubSubQueue.listen(topic)

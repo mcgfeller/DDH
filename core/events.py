@@ -21,12 +21,16 @@ class SubscribableEvent(DDHbaseModel):
         """ get a topic for key.
             Topics key is the next subscribable schema
         """
-        s_key = self.key.ens()
+        return self.keyy2topic(self.key, transaction)
+
+    @classmethod
+    def keyy2topic(cls, key: keys.DDHkeyGeneric, transaction) -> queues.Topic | None:
+        s_key = key.ens()
         schema, s_split = keydirectory.NodeRegistry.get_node(s_key, nodes.NodeSupports.subscribable, transaction)
         if schema:
             s_key, remainder = s_key.split_at(s_split)
-            e_key = s_key.ensure_fork(self.key.fork).without_variant_version()  # publish generic key
-            topic = queues.Topic(self.topic_prefix+':'+str(e_key))
+            e_key = s_key.ensure_fork(key.fork).without_variant_version()  # publish generic key
+            topic = queues.Topic(cls.topic_prefix+':'+str(e_key))
         else:
             topic = None
         return topic
