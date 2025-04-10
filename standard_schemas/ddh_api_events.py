@@ -75,14 +75,7 @@ class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
         wait_on_key = op.ensure_rooted()
         assert principal
         # we need to retrieve the principal's subscription:
-        subscriptions = None
-        subs_key = keys.DDHkey('//org/ddh/events/subscriptions').with_new_owner(principal.id)
-        subs_node, split = await keydirectory.NodeRegistry.get_node_async(subs_key, nodes.NodeSupports.data, req.transaction)
-        if subs_node:
-            subs_node = await subs_node.ensure_loaded(req.transaction)
-            data = subs_node.data.get('org', {}).get('ddh', {}).get('events', {}).get('subscriptions', {})
-            if data:
-                subscriptions = Subscriptions.model_validate(subs_node.data['org']['ddh']['events']['subscriptions'])
+        subscriptions = await self.get_subscriptions(req)
         if not subscriptions:
             raise errors.NotFound(f'No subscription for {wait_on_key=}')
 
@@ -103,6 +96,19 @@ class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
     def get_schemas(self) -> dict[keys.DDHkeyVersioned, schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
         return {self.key: Subscriptions.to_schema()}  # TOOD:#35
+
+    async def get_subscriptions(self, req) -> Subscriptions | None:
+        """ return subscriptions for this principal """
+        subscriptions = None
+        subs_key = keys.DDHkey('//org/ddh/events/subscriptions').with_new_owner(req.access.principal.id)
+        subs_node, split = await keydirectory.NodeRegistry.get_node_async(subs_key, nodes.NodeSupports.data, req.transaction)
+        if subs_node:
+            subs_node = await subs_node.ensure_loaded(req.transaction)
+            data = subs_node.data.get('org', {}).get('ddh', {}).get('events', {}).get('subscriptions', {})
+            if data:
+                subscriptions = Subscriptions.model_validate(subs_node.data['org']['ddh']['events']['subscriptions'])
+
+        return subscriptions
 
 
 def install():
