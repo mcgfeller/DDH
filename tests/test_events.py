@@ -32,7 +32,8 @@ async def test_event_subscribe(user, no_storage_dapp):
     session = test_own_data.get_session(user)
     ddhkey = keys.DDHkey('/mgf/org/ddh/events/subscriptions')
     j = {'subscriptions': [{'key': '/mgf/org/ddh/consents/received'}, {'key': '/mgf/org/private/documents'},
-                           {'key': '/mgf/p/living/shopping/receipts'}]}
+                           {'key': '/mgf/p/living/shopping/receipts'},
+                           {'key': '/lise/org/private/documents'}]}
 
     data = json.dumps(j)
     access = permissions.Access(ddhkey=ddhkey, modes={permissions.AccessMode.write})
@@ -63,5 +64,18 @@ async def test_event_wait_nosubscribed(user, no_storage_dapp):
     with pytest.raises(errors.NotFound):
         async with asyncio.timeout(5):  # just in case to avoid hangs
             d = await test_own_data.read(ddhkey, session)
+    return
+
+
+@pytest.mark.asyncio
+async def test_event_wait_noaccess(user, no_storage_dapp):
+    await test_event_subscribe(user, no_storage_dapp)
+    # write something to create an event:
+    await test_own_data.write_with_consent("/lise/org/private/documents/doc1")
+    session = test_own_data.get_session(user)
+    ddhkey = keys.DDHkey('/mgf/org/ddh/events/wait/lise/org/private/documents')  # no access to this key
+    async with asyncio.timeout(5):  # just in case to avoid hangs
+        d = await test_own_data.read(ddhkey, session, check_empty=False)
+    assert not d, 'returned data must be empty, because we lack access'
 
     return

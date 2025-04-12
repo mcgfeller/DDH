@@ -114,7 +114,9 @@ class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
         return subscriptions
 
     async def check_access(self, ev, req) -> bool:
-        return True
+        access = permissions.Access(ddhkey=ev.key, principal=req.access.principal)
+        ok, *dummy = access.permitted(None, owner=None)
+        return ok
 
 
 def install():
