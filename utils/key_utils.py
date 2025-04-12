@@ -10,3 +10,11 @@ class LookupByKey(dict):
         """ return the most specific (=longest) (key,value), or default """
         return next(((s, v) for s in ddhkey.longest_segments()
                      if (v := self.get(s)) is not None), (ddhkey, default))
+
+
+def nested_get_key(data: dict, key: keys.DDHkey | tuple) -> typing.Any:
+    """ get elements of nested dict according to key (full key or tuple)  """
+    key = key.key if isinstance(key, keys.DDHkey) else tuple(key)
+    for k in key:
+        data = data.get(k, {})
+    return data

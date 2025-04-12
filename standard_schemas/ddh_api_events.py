@@ -8,7 +8,7 @@ import typing
 import pydantic
 
 from core import schemas, keys, executable_nodes, principals, errors, permissions, common_ids, dapp_attrs, nodes, events, keydirectory
-from utils import utils
+from utils import utils, key_utils
 from frontend import sessions
 from backend import queues
 from schema_formats import py_schema
@@ -84,14 +84,17 @@ class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
             raise errors.NotFound(f'No subscription for {wait_on_key=}')
 
         topic = events.UpdateEvent.keyy2topic(wait_on_key, req.transaction)
-
+        evs = []
         if topic:
             print(f'EventQuery: waiting on {topic=}')
-            r = await queues.PubSubQueue.listen(topic)
+            async for ev in await queues.PubSubQueue.listen_upto(topic):
+                ev = events.UpdateEvent.model_validate_json(ev)
+                if await self.check_access(ev, req):
+                    evs.append(ev)
         else:
             raise errors.NotFound(f'No topic for {wait_on_key=}')
 
-        return r
+        return evs
 
     def get_schemas(self) -> dict[keys.DDHkeyVersioned, schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
@@ -104,11 +107,14 @@ class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
         subs_node, split = await keydirectory.NodeRegistry.get_node_async(subs_key, nodes.NodeSupports.data, req.transaction)
         if subs_node:
             subs_node = await subs_node.ensure_loaded(req.transaction)
-            data = subs_node.data.get('org', {}).get('ddh', {}).get('events', {}).get('subscriptions', {})
+            data = key_utils.nested_get_key(subs_node.data, subs_key.key[2:])
             if data:
-                subscriptions = Subscriptions.model_validate(subs_node.data['org']['ddh']['events']['subscriptions'])
+                subscriptions = Subscriptions.model_validate(data)
 
         return subscriptions
+
+    async def check_access(self, ev, req) -> bool:
+        return True
 
 
 def install():
