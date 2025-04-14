@@ -115,7 +115,13 @@ class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
 
     async def check_access(self, ev, req) -> bool:
         access = permissions.Access(ddhkey=ev.key, principal=req.access.principal)
-        ok, *dummy = access.permitted(None, owner=None)
+        # we need to get the consent node:
+        try:
+            consent_node, c_key_split = await keydirectory.NodeRegistry.get_node_async(ev.key, nodes.NodeSupports.consents, req.transaction)
+        # we have no access to the consent node; decide without the node (no access decision)
+        except errors.AccessError:
+            consent_node = None
+        ok, *dummy = access.permitted(consent_node, owner=None)
         return ok
 
 

@@ -34,7 +34,7 @@ class AccessTransformer(trait.Transformer):
             topkey, remainder = trstate.access.ddhkey.split_at(d_key_split)
         else:
             topkey, remainder = trstate.access.ddhkey.split_at(2)
-            # there is no node, create it if owner asks for it:
+            # there is no top node, create it if owner asks for it:
             if create:
                 if trstate.access.principal.id in topkey.owner:
                     data_node = data_nodes.DataNode(owner=trstate.access.principal, key=topkey)
