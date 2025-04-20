@@ -53,13 +53,12 @@ async def get_data(
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     accept: list[str] | None = fastapi.Header(default=None),
     modes: set[permissions.AccessMode] = fastapi.Query({permissions.AccessMode.read}),
-    q: str = fastapi.Query(None, alias="item-query"),
 ):
 
     access = permissions.Access(op=permissions.Operation.get, ddhkey=keys.DDHkey(
         docpath), principal=session.user, modes=modes, byDApp=session.dappid)
     try:
-        d, headers = await facade.ddh_get(access, session, q, accept)
+        d, headers = await facade.ddh_get(access, session, request.query_params, accept)
     except errors.DDHerror as e:
         raise e.to_http()
 
@@ -78,15 +77,15 @@ async def put_data(
     docpath: str = fastapi.Path(..., title="The ddh key of the data to put"),
     session: sessions.Session = fastapi.Depends(user_auth.get_current_session),
     modes: set[permissions.AccessMode] = fastapi.Query({permissions.AccessMode.write}),
+    # for doc only - parameter is passed through QueryParams:
     includes_owner: bool = fastapi.Query(
         default=False, description="if set, the body must contain an outer enclosure with the owner id."),
-    q: str = fastapi.Query(None, alias="item-query"),
 ):
     access = permissions.Access(op=permissions.Operation.put, ddhkey=keys.DDHkey(
         docpath), principal=session.user, modes=modes, byDApp=session.dappid)
     # data = await request.body()
     try:
-        d, headers = await facade.ddh_put(access, session, data, q, content_type=content_type, includes_owner=includes_owner)
+        d, headers = await facade.ddh_put(access, session, data,  request.query_params, content_type=content_type)
     except errors.DDHerror as e:
         raise e.to_http()
 

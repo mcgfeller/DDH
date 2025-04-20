@@ -15,7 +15,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-async def ddh_get(access: permissions.Access, session: sessions.Session, q: str | None = None, accept_header: list[str] | None = None) -> tuple[typing.Any, dict]:
+async def ddh_get(access: permissions.Access, session: sessions.Session, raw_query_params: typing.Mapping | None = None, accept_header: list[str] | None = None) -> tuple[typing.Any, dict]:
     """ Service utility to retrieve data and return it in the desired format.
         Returns None if no data found.
 
@@ -42,23 +42,23 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, q: str 
                     schema_element = schema.__getitem__(remainder)
                     if schema_element:
                         schema = schema_element.to_schema()
-                        trstate = await schema.apply_transformers_to_schema(access, transaction, None)
+                        trstate = await schema.apply_transformers_to_schema(access, transaction, None, raw_query_params)
                         data = trstate.nschema.to_format(schemas.SchemaFormat.json)
 
             case keys.ForkType.consents:
                 access.ddhkey.raise_if_no_owner()
-                trstate = await schema.apply_transformers(access, transaction, None)
+                trstate = await schema.apply_transformers(access, transaction, None, raw_query_params)
                 data = trstate.parsed_data
 
             case keys.ForkType.data:
                 access.ddhkey.raise_if_no_owner()
-                trstate = await schema.apply_transformers(access, transaction, None)
+                trstate = await schema.apply_transformers(access, transaction, None, raw_query_params)
                 data = trstate.parsed_data
 
     return data, headers
 
 
-async def ddh_put(access: permissions.Access, session: sessions.Session, data: pydantic.Json, q: str | None = None, content_type: str = '*/*', includes_owner: bool = False) -> tuple[typing.Any, dict]:
+async def ddh_put(access: permissions.Access, session: sessions.Session, data: pydantic.Json, raw_query_params: typing.Mapping | None = None, content_type: str = '*/*') -> tuple[typing.Any, dict]:
     """ Service utility to store data.
 
     """
@@ -80,7 +80,7 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
             case keys.ForkType.schema:
                 access.raise_if_not_permitted(schema_node)
                 new_schema = typing.cast(schemas.AbstractSchema, data)
-                trstate = await schema.apply_transformers_to_schema(access, transaction, new_schema)
+                trstate = await schema.apply_transformers_to_schema(access, transaction, new_schema, raw_query_params)
                 data = trstate.parsed_data
 
             case keys.ForkType.consents | keys.ForkType.data:
@@ -90,11 +90,11 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                 match access.ddhkey.fork:
                     case keys.ForkType.consents:
                         # We need a data node, even for consents, as it carries the consents:
-                        trstate = await schema.apply_transformers(access, transaction, data)
+                        trstate = await schema.apply_transformers(access, transaction, data, raw_query_params)
                         data = trstate.parsed_data
 
                     case keys.ForkType.data:
-                        trstate = await schema.apply_transformers(access, transaction, data, includes_owner=includes_owner)
+                        trstate = await schema.apply_transformers(access, transaction, data, raw_query_params)
                         data = trstate.parsed_data
 
     return data, headers

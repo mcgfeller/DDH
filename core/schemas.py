@@ -105,6 +105,8 @@ class SchemaAttributes(DDHbaseModel):
         default=trait.NoTransformers, description="Transformers are applied according to access.modes")
     subscribable: bool = pydantic.Field(
         default=False, description="Schema is subscribable, i.e., it can be used for an event subscription.")
+    query_params_class: str = pydantic.Field(
+        default=trait.QueryParams.registered_name(), description='Name of the QueryParams validator class')
 
     def add_reference(self, path: keys.DDHkey, reference: AbstractSchemaReference):
         # print(f'SchemaAttributes.add_reference {path=}, {reference=}')
@@ -123,6 +125,10 @@ class SchemaAttributes(DDHbaseModel):
         self.version = parent.version if self.version == 0 else self.version
         self.transformers = parent.transformers.merge(self.transformers)
         return self
+
+    def register_query_params(self, query_params_class: type[trait.QueryParams]):
+        """ register the Query Params Class so it is used to validate Query Parameters when operating on this Schema """
+        self.query_params_class = query_params_class.registered_name()
 
 
 class AbstractSchemaElement(DDHbaseModel, abc.ABC):
@@ -163,7 +169,7 @@ class AbstractSchemaElement(DDHbaseModel, abc.ABC):
         return schemaref
 
     @classmethod
-    def resolve(cls, remainder: keys.DDHkey, principal: principals.Principal, q) -> dict:
+    def resolve(cls, remainder: keys.DDHkey, principal: principals.Principal, query_params) -> dict:
         """ resolve on all subschemas, returning data.
             If schema provides data at its level, refine .resolve() and
             call super().resolve()
@@ -285,16 +291,18 @@ class AbstractSchema(DDHbaseModel, abc.ABC, typing.Iterable):
         """ validate - called by validations.MustValidate """
         return data
 
-    async def apply_transformers(self, access: permissions.Access, transaction, data, **kw) -> trait.TransformerState:
+    async def apply_transformers(self, access: permissions.Access, transaction, data, raw_query_params, **kw) -> trait.TransformerState:
         """ Apply Transformers in sequence, doing loading, validation, capabilities... """
-        trstate = trait.TransformerState(schema=self, orig_data=data, access=access, transaction=transaction)
+        trstate = trait.TransformerState(schema=self, orig_data=data, access=access,
+                                         transaction=transaction, raw_query_params=raw_query_params)
         await self.schema_attributes.transformers.apply(trstate, **kw)
         return trstate
 
-    async def apply_transformers_to_schema(self, access: permissions.Access, transaction, data, **kw) -> trait.TransformerState:
+    async def apply_transformers_to_schema(self, access: permissions.Access, transaction, data, raw_query_params, **kw) -> trait.TransformerState:
         """ Lik .apply_transformers(), but to schema itself  """
         schema = self
-        trstate = trait.TransformerState(schema=schema, orig_data=schema, access=access, transaction=transaction)
+        trstate = trait.TransformerState(schema=schema, orig_data=schema, access=access,
+                                         transaction=transaction, raw_query_params=raw_query_params)
         await self.schema_attributes.transformers.apply(trstate, **kw)
         return trstate
 

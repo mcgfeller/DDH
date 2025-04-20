@@ -261,6 +261,52 @@ class Traits(DDHbaseModel):
 schemas.AbstractSchema = typing.ForwardRef('schemas.AbstractSchema')
 
 
+class QueryParams(DDHbaseModel):
+    """ QueryParams holder and validator:
+
+        QueryParams are parsed from raw_query_params (a mapping provided in FastAPI request.query_params).
+        It can be subclassed for specific schemas (use SchemaAttributes.register_query_params()),
+        which allows full validation of schema-specific query parameters. 
+
+        As a downside, any explicitly passed parameter, such as modes, includes_owner, must be included here to 
+        avoid validation errors (we don't want to set extra='ignore', as this would not catch mispelled and malicious parameters).
+
+        The validation itself happens in traits.begin_end.QueryParamTransformer, and are passed around in trstate.query_params. 
+    """
+
+    model_config = pydantic.ConfigDict(extra='forbid', frozen=True)  # make hashable
+
+    _RegisteredClasses: CV[dict[str, type]] = {}
+
+    # default fields:
+    includes_owner: bool = pydantic.Field(
+        default=False, description="if set, the body must contain an outer enclosure with the owner id.")
+    modes: set[str] | str = pydantic.Field(
+        default=set(), description="This parameter is passed explicitly and duplicated here to avoid validation errors.")
+
+    @classmethod
+    def __pydantic_init_subclass__(cls, **kwargs) -> None:
+        """ Pydantic variante to register """
+        cls._RegisteredClasses[cls.registered_name()] = cls
+        return super().__pydantic_init_subclass__(**kwargs)
+
+    @classmethod
+    def registered_name(cls) -> str:
+        """ The name we use """
+        return cls.__module__+'.'+cls.__qualname__
+
+    @classmethod
+    def get_class(cls, name: str) -> type[QueryParams]:
+        cl = cls._RegisteredClasses.get(name)
+        if not cl:
+            raise KeyError(f'{name} not registered as QueryParams class')
+        return cl
+
+
+# register superclass - init_subclass is not called for superclass:
+QueryParams.__pydantic_init_subclass__()
+
+
 class TransformerState(DDHbaseModel):
     """ keeps the state during the Transformers chain application """
     nschema: schemas.AbstractSchema = pydantic.Field(alias='schema')
@@ -270,6 +316,8 @@ class TransformerState(DDHbaseModel):
     parsed_data: dict | None = None
     data_node: node_types.T_Node | None = None
     schema_node: node_types.T_SchemaNode | None = None
+    raw_query_params: dict | None
+    query_params: QueryParams = QueryParams()  # overwritten from raw_query_params in begin_end.QueryParamTransformer
 
 
 class Transformers(Traits):

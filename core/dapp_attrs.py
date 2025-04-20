@@ -7,7 +7,7 @@ import pydantic
 import httpx
 
 
-from core import keys, schemas, policies, principals, relationships, common_ids, versions, permissions, transactions
+from core import keys, schemas, policies, principals, relationships, common_ids, versions, permissions, transactions, trait
 from traits import privileges
 from utils.pydantic_utils import DDHbaseModel
 from pydantic import ConfigDict
@@ -185,9 +185,10 @@ class RunningDApp(DDHbaseModel):
 
 class ExecuteRequest(DDHbaseModel):
     """ This is the execution request passed between micro services """
+
     op: typing.Any = None  # nodes.Ops
     access: permissions.Access
     transaction: transactions.Transaction
     key_split: int | None = None
     data: dict | pydantic.BaseModel | None = None
-    q: str | None = None
+    query_params: trait.QueryParams

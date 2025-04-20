@@ -106,7 +106,7 @@ async def check_data_with_mode(user, transaction, migros_key_schema, migros_data
     access = permissions.Access(ddhkey=k.ensure_fork(keys.ForkType.data), modes=modes)
     cumulus = migros_data[user.id]['cumulus']
     access.schema_key_split = 4  # split after the migros.org
-    trstate = await schema.apply_transformers(access, trx, None)  # transformer processing happens here
+    trstate = await schema.apply_transformers(access, trx, None, {})  # transformer processing happens here
     data = trstate.parsed_data
     assert user.id not in data, 'eid must be anonymized'
     assert len(data) == 1, 'one user only'
@@ -159,7 +159,7 @@ async def test_read_write_pseudo_migros(user, migros_key_schema, migros_data, mo
     ddhkey = k.ensure_fork(keys.ForkType.data).with_new_owner(eid)
     access = permissions.Access(ddhkey=ddhkey, principal=user, modes=modes, op=permissions.Operation.put)
     access.schema_key_split = 4  # split after the migros.org
-    trstate = await schema.apply_transformers(access, transaction, data)  # transformer processing happens here
+    trstate = await schema.apply_transformers(access, transaction, data, {})  # transformer processing happens here
     data = trstate.parsed_data
     return
 

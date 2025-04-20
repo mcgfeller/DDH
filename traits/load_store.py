@@ -61,7 +61,6 @@ class LoadFromStorage(AccessTransformer):
 
         for_consents = trstate.access.ddhkey.fork == keys.ForkType.consents
         data_node, d_key_split, remainder = await self.get_or_create_dnode(trstate, create=for_consents)
-        q = None
 
         if data_node:
             if trstate.access.ddhkey.fork == keys.ForkType.consents:
@@ -71,7 +70,7 @@ class LoadFromStorage(AccessTransformer):
                 data = consents.model_dump()
             else:
                 *d, consentees, msg = trstate.access.raise_if_not_permitted(data_node)
-                data = await data_node.execute(nodes.Ops.get, trstate.access, trstate.transaction, d_key_split, None, q)
+                data = await data_node.execute(nodes.Ops.get, trstate.access, trstate.transaction, d_key_split, None, trstate.query_params)
             trstate.data_node = data_node
         else:  # we have no data_node, but need a consent node to check whether we can read here:
             data_node, d_key_split, remainder = await self.get_or_create_dnode(trstate, condition=nodes.Node.has_consents)
@@ -141,14 +140,14 @@ class LoadFromDApp(AccessTransformer):
     only_forks: CV[frozenset[keys.ForkType]] = frozenset({keys.ForkType.data})
 
     async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
-        q = None
+        query_params = None
         e_node, e_key_split = await keydirectory.NodeRegistry.get_node_async(
             trstate.access.ddhkey.without_owner(), nodes.NodeSupports.execute, trstate.transaction)
         if e_node:
             e_node = await e_node.ensure_loaded(trstate.transaction)
             e_node = typing.cast(executable_nodes.ExecutableNode, e_node)
             req = dapp_attrs.ExecuteRequest(
-                op=nodes.Ops.get, access=trstate.access, transaction=trstate.transaction, key_split=e_key_split, data=trstate.parsed_data, q=q)
+                op=nodes.Ops.get, access=trstate.access, transaction=trstate.transaction, key_split=e_key_split, data=trstate.parsed_data, query_params=trstate.query_params)
             data = await e_node.execute(req)
             trstate.parsed_data = data
             trstate.access.data_key_split = e_key_split
@@ -183,14 +182,14 @@ class ValidateToDApp(AccessTransformer):
 
     async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
         # Call DApp
-        q = None
+        query_params = None
         e_node, e_key_split = await keydirectory.NodeRegistry.get_node_async(
             trstate.access.ddhkey.without_owner(), nodes.NodeSupports.execute, trstate.transaction)
         if e_node:
             e_node = await e_node.ensure_loaded(trstate.transaction)
             e_node = typing.cast(executable_nodes.ExecutableNode, e_node)
             req = dapp_attrs.ExecuteRequest(
-                op=nodes.Ops.put, access=trstate.access, transaction=trstate.transaction, key_split=e_key_split, data=trstate.parsed_data, q=q)
+                op=nodes.Ops.put, access=trstate.access, transaction=trstate.transaction, key_split=e_key_split, data=trstate.parsed_data, query_params=trstate.query_params)
             data = await e_node.execute(req)
 
             if data is not None:

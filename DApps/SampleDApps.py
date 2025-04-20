@@ -6,12 +6,13 @@ import typing
 
 import fastapi
 import fastapi.security
-import typing
 import pydantic
-from core import (common_ids, dapp_attrs, keys, nodes, permissions, principals, users,
-                  relationships, schemas, transactions, versions)
-from schema_formats import py_schema
+
+from core import (common_ids, dapp_attrs, keys, nodes, permissions, principals,
+                  relationships, schemas, transactions, users, versions)
 from frontend import fastapi_dapp
+from schema_formats import py_schema
+
 app = fastapi.FastAPI(lifespan=fastapi_dapp.lifespan)  # TODO: Workaround #41
 app.include_router(fastapi_dapp.router)
 
@@ -39,7 +40,7 @@ class SampleDApps(dapp_attrs.DApp):
         """ Obtain initial schema for DApp """
         return {self.schemakey: py_schema.PySchema(schema_element=py_schema.PySchemaElement.create_from_elements('DummySchema'))}
 
-    def execute(self, op: nodes.Ops, access: permissions.Access, transaction: transactions.Transaction, key_split: int, data: dict | None = None, q: str | None = None):
+    def execute(self, op: nodes.Ops, access: permissions.Access, transaction: transactions.Transaction, key_split: int, data: dict | None = None, query_params: typing.Mapping | None = None):
         """ obtain data by recursing to schema """
         if op == nodes.Ops.get:
             here, selection = access.ddhkey.split_at(key_split)
@@ -194,8 +195,9 @@ fastapi_dapp.get_apps = get_apps
 fastapi_dapp.get_dapp_container = get_dapp_container
 
 if __name__ == "__main__":  # Debugging
-    import uvicorn
     import os
+
+    import uvicorn
     port = 9001
     os.environ['port'] = str(port)
     uvicorn.run(app, host="0.0.0.0", port=port)

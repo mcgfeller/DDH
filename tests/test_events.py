@@ -52,7 +52,7 @@ async def test_event_wait(user, no_storage_dapp):
     ddhkey = keys.DDHkey('/mgf/org/ddh/events/wait/mgf/org/private/documents')
     # wait for events on this key:
     async with asyncio.timeout(5):
-        d = await test_own_data.read(ddhkey, session)
+        d = await test_own_data.read(ddhkey, session, raw_query_params={'nowait': True})
     return
 
 

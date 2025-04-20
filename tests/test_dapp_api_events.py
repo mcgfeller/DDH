@@ -47,3 +47,14 @@ def test_events_wait(user1):
     r.raise_for_status()
     d = r.json()
     return
+
+
+def test_events_wait_bad_param(user1):
+    """ Test with non-registered and invalid query param """
+    # non-registered:
+    r = user1.get('/ddh/mgf/org/ddh/events/wait/mgf/org/private/documents?badparam=True', timeout=2)
+    assert r.status_code == 422
+    # invalid value:
+    r = user1.get('/ddh/mgf/org/ddh/events/wait/mgf/org/private/documents?nowait=42', timeout=2)
+    assert r.status_code == 422
+    return

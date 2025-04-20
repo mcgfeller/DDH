@@ -73,11 +73,11 @@ async def write_consents(ddhkey: keys.DDHkey | str, consents: permissions.Consen
     return
 
 
-async def read(ddhkey: keys.DDHkey | str, session: sessions.Session, modes: set[permissions.AccessMode] = {permissions.AccessMode.read}, check_empty: bool = True):
+async def read(ddhkey: keys.DDHkey | str, session: sessions.Session, modes: set[permissions.AccessMode] = {permissions.AccessMode.read}, check_empty: bool = True, raw_query_params: dict = {}):
     if isinstance(ddhkey, str):
         ddhkey = keys.DDHkey(ddhkey)
     access = permissions.Access(ddhkey=ddhkey, modes=modes)
-    data, header = await facade.ddh_get(access, session)
+    data, header = await facade.ddh_get(access, session, raw_query_params=raw_query_params)
     j = jsonable_encoder(data)  # result must be jsonable
     if check_empty:
         assert data, 'data must not be empty'

@@ -7,11 +7,13 @@ import typing
 
 import pydantic
 
-from core import schemas, keys, executable_nodes, principals, errors, permissions, common_ids, dapp_attrs, nodes, events, keydirectory
-from utils import utils, key_utils
-from frontend import sessions
 from backend import queues
+from core import (common_ids, dapp_attrs, errors, events, executable_nodes,
+                  keydirectory, keys, nodes, permissions, principals, schemas,
+                  trait)
+from frontend import sessions
 from schema_formats import py_schema
+from utils import key_utils, utils
 
 
 class Subscriptions(py_schema.PySchemaElement):
@@ -63,6 +65,11 @@ class EventSubscription(executable_nodes.InProcessSchemedExecutableNode):
         return {self.key: Subscriptions.to_schema()}
 
 
+class EventQueryParams(trait.QueryParams):
+    """ TODO:#35: Additional Query Parameters for EventQuery """
+    nowait: bool = False
+
+
 class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
 
     async def execute(self, req: dapp_attrs.ExecuteRequest) -> list[events.SubscribableEvent]:
@@ -73,6 +80,7 @@ class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
         op = req.access.ddhkey.split_at(req.key_split)[1]
         principal = req.access.principal
         wait_on_key = op.ensure_rooted()
+        print(f'{req.access=}, {req.op=}, {req.query_params=}')
         assert principal
         # we need to retrieve the principal's subscription:
         subscriptions = await self.get_subscriptions(req)
@@ -98,7 +106,10 @@ class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
 
     def get_schemas(self) -> dict[keys.DDHkeyVersioned, schemas.AbstractSchema]:
         """ Obtain initial schema for DApp """
-        return {self.key: Subscriptions.to_schema()}  # TOOD:#35
+        schema = Subscriptions.to_schema()  # TOOD:#35 - own schema?
+        # register our EventQueryParams:
+        schema.schema_attributes.register_query_params(EventQueryParams)
+        return {self.key: schema}
 
     async def get_subscriptions(self, req) -> Subscriptions | None:
         """ return subscriptions for this principal """

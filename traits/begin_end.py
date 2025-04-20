@@ -54,7 +54,30 @@ class AbortTransformer(BracketTransformer):
         return
 
 
+class QueryParamTransformer(BracketTransformer):
+    """ Validate QueryParams, as specified in trait.QueryParams """
+    phase: CV[trait.Phase] = trait.Phase.first
+
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
+        """ Obtain QueryParamCls according to schema_attributes.query_params_class,
+            then parse trstate.raw_query_params into trstate.query_params.
+        """
+        classname = trstate.nschema.schema_attributes.query_params_class
+        QueryParamCls = trait.QueryParams.get_class(classname)
+        if trstate.raw_query_params:
+            try:
+                params = QueryParamCls.model_validate(trstate.raw_query_params)
+            except pydantic.ValidationError as e:
+                raise errors.ValidationError(e)
+        else:  # default
+            params = QueryParamCls()
+        print(f'QueryParamTransformer: {classname=}, {params=}')
+        trstate.query_params = params
+
+        return
+
+
 # Root Tranformers may not be overwritten:
 trait.DefaultTraits.RootTransformers += trait.Transformers(
-    BeginTransformer(may_overwrite=False), FinalTransformer(may_overwrite=False))
+    BeginTransformer(may_overwrite=False), QueryParamTransformer(may_overwrite=False), FinalTransformer(may_overwrite=False))
 trait.DefaultTraits._AbortTransformer = trait.Transformers(AbortTransformer())

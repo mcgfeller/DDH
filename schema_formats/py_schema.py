@@ -71,7 +71,7 @@ class PySchemaElement(schemas.AbstractSchemaElement):
         return current
 
     @classmethod
-    def resolve(cls, remainder, principal, q) -> dict:
+    def resolve(cls, remainder, principal, query_params) -> dict:
         """ resolve on all subschemas, returning data.
             If schema provides data at its level, refine .resolve() and
             call super().resolve()
@@ -81,7 +81,7 @@ class PySchemaElement(schemas.AbstractSchemaElement):
             assert isinstance(fi, pydantic.fields.FieldInfo)
             sub_elem = pydantic_utils.type_from_fi(fi)
             if issubclass(sub_elem, PySchemaElement):
-                d[k] = sub_elem.resolve(remainder[:-1], principal, q)  # then descend
+                d[k] = sub_elem.resolve(remainder[:-1], principal, query_params)  # then descend
         return d
 
     @classmethod

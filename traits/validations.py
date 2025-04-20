@@ -70,7 +70,7 @@ class SchemaExpandReferences(SchemaValidation):
     only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({
         permissions.AccessMode.read, permissions.AccessMode.write})  # check on reads
 
-    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, includes_owner: bool = False, **kw):
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
         trstate.nschema = trstate.nschema.expand_references()
         return
 
@@ -78,7 +78,7 @@ class SchemaExpandReferences(SchemaValidation):
 class SchemaMustValidate(SchemaValidation):
     """ This schema must be validated """
 
-    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, includes_owner: bool = False, **kw):
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
         # TODO
         return
 
@@ -88,7 +88,7 @@ class ParseData(DataValidation):
 
     phase: CV[trait.Phase] = trait.Phase.parse
 
-    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, includes_owner: bool = False, **kw):
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
         try:
             trstate.parsed_data = trstate.nschema.parse(trstate.orig_data)
         except Exception as e:
@@ -99,12 +99,12 @@ class ParseData(DataValidation):
 class MustValidate(DataValidation):
     """ Data must be validated """
 
-    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, includes_owner: bool = False, **kw):
+    async def apply(self,  traits: trait.Traits, trstate: trait.TransformerState, **kw):
         owners = trstate.access.original_ddhkey.owners  # original, in case of Pseudonymized
         if len(owners) != 1:
             raise errors.NotSelectable(f"Cannot have multiple owners in key: {','.join(owners)}")
         assert isinstance(trstate.parsed_data, dict)
-        if includes_owner:
+        if trstate.query_params.includes_owner:
             if len(trstate.parsed_data) > 1:
                 raise errors.NotSelectable('Cannot have multiple owners in data')
             else:

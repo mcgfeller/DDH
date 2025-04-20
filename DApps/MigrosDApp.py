@@ -63,14 +63,14 @@ class MigrosDApp(dapp_attrs.DApp):
                 if req.access.ddhkey.without_owner().without_variant_version() == self.transforms_into.without_variant_version():
                     d = self.get_and_transform(req)
                 else:  # key we provide, call schema descent to resolve:
-                    d = self.get_data(selection, req.access, req.q)
+                    d = self.get_data(selection, req.access, req.query_params)
             case nodes.Ops.put:
                 d = req.data  # don't do anything at the moment
             case _:
                 raise ValueError(f'Unsupported {req.op=}')
         return d
 
-    def get_data(self, selection: keys.DDHkey, access: permissions.Access, q):
+    def get_data(self, selection: keys.DDHkey, access: permissions.Access, query_params):
         top = MigrosSchema.descend_path(selection)
         if not top:
             raise errors.NotFound(f'Key not found: {selection}').to_http()
@@ -79,14 +79,14 @@ class MigrosDApp(dapp_attrs.DApp):
         principals = user_auth.get_principals(access.ddhkey.owner)
         res = {}
         for principal in principals:  # resolve per principal
-            res[principal.id] = top.resolve(remainder, principal, q)
+            res[principal.id] = top.resolve(remainder, principal, query_params)
         return res
 
     def get_and_transform(self, req: dapp_attrs.ExecuteRequest):
         """ obtain data by transforming key, then executing, then transforming result """
         here, selection = req.access.ddhkey.split_at(req.key_split)
         selection2 = keys.DDHkey(('receipts',))  # insert selection
-        d = self.get_data(selection2, req.access, req.q)  # obtain org-format data
+        d = self.get_data(selection2, req.access, req.query_params)  # obtain org-format data
         principal = list(d.keys())[0]
         # transform with glom: into list of dicts, whereas item key becomes buyer:
         spec = {
@@ -128,12 +128,12 @@ class Receipt(py_schema.PySchemaElement):
     Produkt: ProduktDetail | None = None
 
     @classmethod
-    def resolve(cls, remainder, principal, q) -> dict:
-        data = cls.get_cumulus_json(principal, q)
+    def resolve(cls, remainder, principal, query_params) -> dict:
+        data = cls.get_cumulus_json(principal, query_params)
         return data
 
     @classmethod
-    def get_cumulus_json(cls, principal, q):
+    def get_cumulus_json(cls, principal, query_params):
         """ This is extremly fake to retrieve data for my principal """
         if principal.id == 'mgf':
             df = pandas.read_csv(r"C:\Projects\DDH\DApps\test_data_migros.csv",
@@ -150,10 +150,10 @@ class MigrosSchema(py_schema.PySchemaElement):
     receipts: list[Receipt] = []
 
     @classmethod
-    def resolve(cls, remainder, principal, q) -> dict:
-        # print(f'{cls}.resolve({remainder=}, {principal=}, {q=})')
+    def resolve(cls, remainder, principal, query_params) -> dict:
+        # print(f'{cls}.resolve({remainder=}, {principal=}, {query_params=})')
         if principal.id == 'mgf':  # we only have data for this guy here
-            d = super().resolve(remainder, principal, q)  # descend on all objects
+            d = super().resolve(remainder, principal, query_params)  # descend on all objects
             d['cumulus'] = 423
         else:
             d = {}

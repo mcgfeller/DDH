@@ -4,7 +4,7 @@ from __future__ import annotations
 import typing
 
 
-from . import permissions, transactions, errors, keydirectory, users, common_ids, nodes, keys, dapp_proxy, storage_resource, principals
+from . import permissions, transactions, errors, keydirectory, users, common_ids, nodes, keys, dapp_proxy, storage_resource, principals, trait
 from utils import datautils
 from backend import persistable, system_services, storage, keyvault
 
@@ -86,7 +86,7 @@ class DataNode(nodes.Node, persistable.Persistable):
         assert o.key.key[0] is keys.DDHkey.Root
         return o
 
-    async def execute(self, op: nodes.Ops, access: permissions.Access, transaction: transactions.Transaction, key_split: int, data: dict | None = None, q: str | None = None):
+    async def execute(self, op: nodes.Ops, access: permissions.Access, transaction: transactions.Transaction, key_split: int, data: dict | None = None, query_params: trait.QueryParams | None = None):
         if key_split:
             top, remainder = access.ddhkey.split_at(key_split)
             if self.format != persistable.DataFormat.dict:

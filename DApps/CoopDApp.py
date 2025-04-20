@@ -53,7 +53,7 @@ class CoopDApp(dapp_attrs.DApp):
             if req.access.ddhkey.without_owner() == self.transforms_into:
                 d = self.get_and_transform(req)
             else:  # key we provide, call schema descent to resolve:
-                d = self._ddhschema.get_data(selection, req.access, req.q)
+                d = self._ddhschema.get_data(selection, req.access, req.query_params)
         else:
             raise ValueError(f'Unsupported {req.op=}')
         return d
@@ -70,7 +70,7 @@ class CoopSchema(py_schema.PySchemaElement):
     receipts: list[py_schema.PySchemaReference.create_from_key(
         keys.DDHkeyRange('//p/living/shopping/receipts:::>=0'))] = []
 
-    # def get_data(self, selection: keys.DDHkey, access: permissions.Access, q):
+    # def get_data(self, selection: keys.DDHkey, access: permissions.Access, query_params):
     #     return None
 
 
