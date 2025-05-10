@@ -16,6 +16,7 @@ import pprint
 import time
 import logging
 
+from utils import fastapi_utils
 
 OnWindows = sys.platform == 'win32'
 
@@ -85,6 +86,14 @@ class Controllable(pydantic.BaseModel):
         proc = self.getprocess()
         return {'status': '?', 'pid': proc.pid if proc else '?', 'detail': "This process doesn't provide health information"}
 
+    def is_healthy(self, args) -> bool:
+        """ Check whether process is healthy by external means """
+        h = self.health(args)
+        ok = h.get('status', '?').lower() in ('ok', '?')
+        if not ok:
+            logger.error(f'Process {self} is running but not healthy: {h}')
+        return ok
+
     def check(self, args, _initial=True):
         """ bring the program up if it's not running and healthy """
         check_again = False
@@ -108,6 +117,13 @@ class Controllable(pydantic.BaseModel):
                 check_again = True
         if check_again and _initial:
             self.check(args, _initial=False)
+        return proc
+
+    def start_wait(self, args, wait: int = 2, max_delay: int = 10, maxrounds: int = 5):
+        """ start and wait for process to be healthy """
+        self.start(args)
+        fastapi_utils.retry(self.is_healthy, args, exceptions=(httpx.HTTPError,),
+                            initial_delay=wait, max_delay=max_delay, maxrounds=maxrounds, logger=logger)
         return
 
 
@@ -139,6 +155,20 @@ class ProcessGroup(Controllable):
     def check(self, args):
         return [process.check(args) for process in self.processes]
 
+    def start_wait(self, args, initial_delay: int = 2, max_delay: int = 10, maxrounds: int = 7):
+        """ start and wait for process group to be healthy
+            We start complete group first, then wait for all processes to be healthy.
+            This is necessary if a process depends on another process to be healthy.
+            It doesn't introduce additional delays, because each process is checked without a delay after the preceding one
+            is healthy.
+        """
+        [process.start(args) for process in self.processes]
+        # wait for all processes to be healthy
+        for process in self.processes:
+            fastapi_utils.retry(process.is_healthy, args, exceptions=(httpx.HTTPError,),
+                                initial_delay=initial_delay, max_delay=max_delay, maxrounds=maxrounds, logger=logger)
+        return
+
 
 class Runnable(Controllable):
     """ Process that is runnable on OS """
@@ -150,7 +180,7 @@ class Runnable(Controllable):
         cmd, add_env, param = self._startcmd()
         env.update(add_env)
         logger.info(
-            f"Starting {self} with {' '.join(cmd)} and serverparam={env.get('SERVER_TYPE','*default*')}")
+            f"Starting {self} with {' '.join(cmd)} and serverparam={env.get('SERVER_TYPE', '*default*')}")
         if OnWindows:
             # Open windows minimized to avoid taking away focus from editor:
             si = subprocess.STARTUPINFO()
