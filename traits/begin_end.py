@@ -71,7 +71,7 @@ class QueryParamTransformer(BracketTransformer):
                 raise errors.ValidationError(e)
         else:  # default
             params = QueryParamCls()
-        print(f'QueryParamTransformer: {classname=}, {params=}')
+        # print(f'QueryParamTransformer: {classname=}, {params=}')
         trstate.query_params = params
 
         return
