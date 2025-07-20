@@ -67,6 +67,7 @@ class Consent(DDHbaseModel):
     grantedTo: list[principals.Principal | common_ids.PrincipalId]  # will be converted to Principal in validator
     withApps: set[principals.DAppId] = set()
     withModes: set[AccessMode] = {AccessMode.read}
+    withinDates: DateRestriction | None = None
 
     @pydantic.field_validator('grantedTo', mode='after')
     def to_principal(v):
@@ -87,6 +88,12 @@ class Consent(DDHbaseModel):
                     return False, f'Consent not granted to DApp {access.byDApp}'
             else:
                 return False, f'Consent granted to DApps; need an DApp id to access'
+
+        if self.withinDates:
+            ok, txt = self.withinDates.check(access.time)
+            access.consent_expiry = self.withinDates.end  # Record consent expiry date
+            if not ok:
+                return False, txt
 
         ok, txt = AccessMode.check(access.modes, self.withModes)
         if not ok:
@@ -112,6 +119,37 @@ class Consent(DDHbaseModel):
     def single(cls, *a, **kw) -> Consents:
         """ Create Consents from arguments of Consent; for lazy typers """
         return Consents(consents=[cls(*a, **kw)])
+
+
+class DateRestriction(DDHbaseModel):
+    """ Date range within which the consent is valid. Can be given as begin (default now) to end range, or 
+        begin and days.
+    """
+    begin: datetime.datetime = pydantic.Field(default_factory=utcnow)
+    end: datetime.datetime | None = None
+    days: typing.Annotated[int, pydantic.Field(gt=0, le=366)] | None = None
+
+    @pydantic.model_validator(mode='after')
+    def set_end(self) -> typing.Self:
+        """ Set end date from days, raise error if neither end nor days or both and and days are specified. """
+        if self.end is None:
+            if self.days is not None:
+                self.end = self.begin + datetime.timedelta(days=self.days)
+                self.days = None  # Pydantic does call this validator twice, so avoid 2nd check causing errors
+            else:
+                raise ValueError('either end or days is required')
+        elif self.days is not None:
+            raise ValueError('end and days cannot be both supplied')
+
+        return self
+
+    def check(self, access_date: datetime.datetime) -> tuple[bool, str]:
+        if access_date < self.begin:
+            return False, f'Access must not be before {self.begin}'
+        assert self.end
+        if access_date > self.end:
+            return False, f'Access must not be after {self.end}'
+        return True, f'Access expires at {self.end}'
 
 
 class Consents(DDHbaseModel):
@@ -217,10 +255,11 @@ class Access(DDHbaseModel):
     principal: principals.Principal | None = None  # will be set once added to a trx
     byDApp:    principals.DAppId | None = None
     modes:     set[AccessMode] = {AccessMode.read}
-    time:      datetime.datetime = pydantic.Field(default_factory=utcnow)  # defaults to now
+    time:      datetime.datetime | None = None  # Time is set in __init__ to protect from supplying fake time
     granted:   bool | None = None
     byConsents: list[Consent] = []
     explanation: str | None = None
+    consent_expiry: datetime.datetime | None = None
     schema_key_split: int | None = pydantic.Field(
         default=None, description="Split into DDHKey for schema and path into schema")
     data_key_split: int | None = pydantic.Field(
@@ -230,6 +269,7 @@ class Access(DDHbaseModel):
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
         self.original_ddhkey = self.ddhkey = self.ddhkey.ensure_rooted()
+        self.time = utcnow()  # always set time
 
     def include_mode(self, mode: AccessMode):
         """ ensure that mode is included in access modes """

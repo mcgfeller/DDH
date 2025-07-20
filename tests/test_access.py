@@ -1,6 +1,8 @@
+import datetime
 from core import keys, nodes, permissions, schemas, keydirectory, users
 from backend import persistable
-from . import test_dapp_data
+from tests import test_dapp_data
+from utils.pydantic_utils import utcnow
 import pytest
 from schema_formats import py_schema
 
@@ -46,6 +48,34 @@ def test_basic_access():
     assert not access.permitted(node_c)[0]  # write not granted to user2
 
     access = permissions.Access(ddhkey=ddhkey, principal=user3)  # read granted to user2
+    assert not access.permitted(node_c)[0]
+
+    return
+
+
+def test_timed_access():
+    """ Test permissions of a nodes, with timed grant to another user
+    """
+
+    user1 = users.User(id='1', name='martin', email='martin.gfeller@swisscom.com')
+    user2 = users.User(id='2', name='roman', email='roman.stoessel@swisscom.com')
+
+    for_days: int = 2
+    node_c = DummyNode(consents=permissions.Consents(
+        consents=[permissions.Consent(grantedTo=[user2], withinDates=permissions.DateRestriction(days=for_days))]), owner=user1)
+    ddhkey = keys.DDHkey(key='/root')
+    keydirectory.NodeRegistry[ddhkey] = node_c
+
+    access = permissions.Access(ddhkey=ddhkey, principal=user2)  # read granted to user2
+    assert access.permitted(node_c)[0]
+
+    access.time = utcnow()+datetime.timedelta(days=for_days, hours=-1)  # still ok
+    assert access.permitted(node_c)[0]
+
+    access.time = utcnow()+datetime.timedelta(days=for_days, hours=1)  # too late
+    assert not access.permitted(node_c)[0]
+
+    access.time = utcnow()+datetime.timedelta(hours=-1)  # too early
     assert not access.permitted(node_c)[0]
 
     return
@@ -134,7 +164,8 @@ test_params = [
 
 
 @pytest.mark.parametrize('ok,obj,user,modes,comment',
-                         test_params, ids=[f"Obj {d[1]}: {d[4].strip().replace(' ','-')}" if d[4] else None for d in test_params])  # use comment as test id
+                         # use comment as test id
+                         test_params, ids=[f"Obj {d[1]}: {d[4].strip().replace(' ', '-')}" if d[4] else None for d in test_params])
 def test_access_modes(ddhkey_setup, users7, ok, obj, user, modes, comment):
 
     ddhkey = ddhkey_setup[obj]
