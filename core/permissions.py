@@ -102,7 +102,7 @@ class Consent(DDHbaseModel):
         return True, 'Granted by Consent; '+txt
 
     def __hash__(self):
-        """ make consents hashable """
+        """ make Consents hashable """
         return hash(self._as_tuple())
 
     def __eq__(self, other):
@@ -112,8 +112,8 @@ class Consent(DDHbaseModel):
             return False
 
     def _as_tuple(self):
-        """ return hashable tuple """
-        return (tuple(self.grantedTo), frozenset(self.withApps), frozenset(self.withModes))
+        """ return hashable tuple with all attributes that are distinct """
+        return (tuple(self.grantedTo), frozenset(self.withApps), frozenset(self.withModes), self.withinDates.as_tuple() if self.withinDates else None)
 
     @classmethod
     def single(cls, *a, **kw) -> Consents:
@@ -150,6 +150,9 @@ class DateRestriction(DDHbaseModel):
         if access_date > self.end:
             return False, f'Access must not be after {self.end}'
         return True, f'Access expires at {self.end}'
+
+    def as_tuple(self) -> tuple[datetime.datetime]:
+        return (self.begin, self.end)  # type:ignore
 
 
 class Consents(DDHbaseModel):

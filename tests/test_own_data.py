@@ -1,6 +1,7 @@
 """ Set up some Test data """
 import asyncio
 import json
+import typing
 
 import pytest
 from fastapi.encoders import jsonable_encoder
@@ -38,7 +39,7 @@ def get_session(user):
     return sessions.Session(token_str='test_session_'+user.id, user=user)
 
 
-async def write_with_consent(ddhkey: keys.DDHkey | str, consented_users: list[principals.Principal | str] = [], consent_modes: set[permissions.AccessMode] = {permissions.AccessMode.read}, no_storage_dapp=None):
+async def write_with_consent(ddhkey: keys.DDHkey | str, consented_users: list[principals.Principal | str] = [], consent_modes: set[permissions.AccessMode] = {permissions.AccessMode.read}, consent_days: int | None = None, no_storage_dapp=None):
     """ utility to write a document to ddhkey, with optional consent grant
         session user is derived from key owner.
         keys and consented_users may be passed as str.
@@ -53,7 +54,9 @@ async def write_with_consent(ddhkey: keys.DDHkey | str, consented_users: list[pr
     if consented_users:
         consented_users = [user_auth.UserInDB.load(c) if isinstance(c, str) else c for c in consented_users]
         # grant read access to consented_users
-        consents = permissions.Consent.single(grantedTo=consented_users, withModes=consent_modes)
+        date_restriction = permissions.DateRestriction(days=consent_days) if consent_days else None
+        consents = permissions.Consent.single(
+            grantedTo=consented_users, withModes=consent_modes, withinDates=date_restriction)
         ddhkey_c = ddhkey.ensure_fork(keys.ForkType.consents)
         access = permissions.Access(ddhkey=ddhkey_c, modes={permissions.AccessMode.write})
         await facade.ddh_put(access, session, consents.model_dump_json())
@@ -73,7 +76,7 @@ async def write_consents(ddhkey: keys.DDHkey | str, consents: permissions.Consen
     return
 
 
-async def read(ddhkey: keys.DDHkey | str, session: sessions.Session, modes: set[permissions.AccessMode] = {permissions.AccessMode.read}, check_empty: bool = True, raw_query_params: dict = {}):
+async def read(ddhkey: keys.DDHkey | str, session: sessions.Session, modes: set[permissions.AccessMode] = {permissions.AccessMode.read}, check_empty: bool = True, raw_query_params: dict = {}) -> tuple[typing.Any, dict]:
     if isinstance(ddhkey, str):
         ddhkey = keys.DDHkey(ddhkey)
     access = permissions.Access(ddhkey=ddhkey, modes=modes)
@@ -81,7 +84,7 @@ async def read(ddhkey: keys.DDHkey | str, session: sessions.Session, modes: set[
     j = jsonable_encoder(data)  # result must be jsonable
     if check_empty:
         assert data, 'data must not be empty'
-    return data
+    return data, header
 
 
 @pytest.mark.asyncio
@@ -159,10 +162,19 @@ async def test_write_data_with_consent(no_storage_dapp):
 
 
 @pytest.mark.asyncio
+async def test_read_timed_consent(user, user3, no_storage_dapp):
+    await write_with_consent("/another3/org/private/documents/doc7", consented_users=['mgf'], consent_days=2)
+    session = get_session(user)
+    d, header = await read("/another3/org/private/documents/doc7", session)
+    assert 'Expires' in header
+    return
+
+
+@pytest.mark.asyncio
 async def test_withdraw_consent(user, user3, no_storage_dapp):
     test_key = keys.DDHkeyGeneric("/another3/org/private/documents/doc8")
     session = get_session(user)
-    d = await read("/mgf/org/ddh/consents/received", session, check_empty=False)
+    d, h = await read("/mgf/org/ddh/consents/received", session, check_empty=False)
     assert test_key not in d, f'user {user.id} must not have any received consents on key {test_key}'
 
     # grant read and combined consent to mgf, lise, and laura:
@@ -179,23 +191,23 @@ async def test_withdraw_consent(user, user3, no_storage_dapp):
 
     # read back consents given:
     session_another3 = get_session(user_auth.UserInDB.load(test_key.owner))
-    d = await read("/another3/org/ddh/consents/given", session_another3)
+    d, h = await read("/another3/org/ddh/consents/given", session_another3)
 
     # check mgf still has consent_modes access:
-    d = await read("/mgf/org/ddh/consents/received", session)
+    d, h = await read("/mgf/org/ddh/consents/received", session)
     assert d.grants[str(test_key)].consents[0].withModes == consent_modes
 
     # read consent node:
-    c = await read(test_key.ensure_fork(keys.ForkType.consents), session)
+    c, h = await read(test_key.ensure_fork(keys.ForkType.consents), session)
 
     # get consent node for lise:
     session_lise = get_session(user_auth.UserInDB.load('lise'))
-    d = await read("/lise/org/ddh/consents/received", session_lise)
+    d, h = await read("/lise/org/ddh/consents/received", session_lise)
     assert d.grants[str(test_key)].consents[0].withModes == {permissions.AccessMode.read, }
 
     # get consent node for laura:
     session_laura = get_session(user_auth.UserInDB.load('laura'))
-    d = await read("/laura/org/ddh/consents/received", session_laura)
+    d, h = await read("/laura/org/ddh/consents/received", session_laura)
     assert not d.grants.get(str(test_key))  # must be absent, because consent withdrawn
     return
 
@@ -288,12 +300,12 @@ async def test_read_notfound(user, user2, no_storage_dapp):
 @pytest.mark.asyncio
 async def test_consent_api_received(user, user2, no_storage_dapp):
     session = get_session(user)
-    d = await read("/mgf/org/ddh/consents/received", session)
+    d, h = await read("/mgf/org/ddh/consents/received", session)
     return
 
 
 @pytest.mark.asyncio
 async def test_consent_api_given(user, user2, no_storage_dapp):
     session = get_session(user2)
-    d = await read("/another/org/ddh/consents/given", session)
+    d, h = await read("/another/org/ddh/consents/given", session)
     return

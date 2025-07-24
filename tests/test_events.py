@@ -39,7 +39,7 @@ async def test_event_subscribe(user, no_storage_dapp):
     access = permissions.Access(ddhkey=ddhkey, modes={permissions.AccessMode.write})
     await facade.ddh_put(access, session, data)
 
-    d = await test_own_data.read(ddhkey, session)
+    d, h = await test_own_data.read(ddhkey, session)
     return
 
 
@@ -52,7 +52,7 @@ async def test_event_wait(user, no_storage_dapp):
     ddhkey = keys.DDHkey('/mgf/org/ddh/events/wait/mgf/org/private/documents')
     # wait for events on this key:
     async with asyncio.timeout(5):
-        d = await test_own_data.read(ddhkey, session, raw_query_params={'nowait': True})
+        d, h = await test_own_data.read(ddhkey, session, raw_query_params={'nowait': True})
     return
 
 
@@ -63,7 +63,7 @@ async def test_event_wait_nosubscribed(user, no_storage_dapp):
     ddhkey = keys.DDHkey('/mgf/org/ddh/events/wait/mgf/p/living')  # not subscribed to this key
     with pytest.raises(errors.NotFound):
         async with asyncio.timeout(5):  # just in case to avoid hangs
-            d = await test_own_data.read(ddhkey, session)
+            d, h = await test_own_data.read(ddhkey, session)
     return
 
 
@@ -75,7 +75,7 @@ async def test_event_wait_noaccess(user, no_storage_dapp):
     session = test_own_data.get_session(user)
     ddhkey = keys.DDHkey('/mgf/org/ddh/events/wait/lise/org/private/documents')  # no access to this key
     async with asyncio.timeout(5):  # just in case to avoid hangs
-        d = await test_own_data.read(ddhkey, session, check_empty=False)
+        d, h = await test_own_data.read(ddhkey, session, check_empty=False)
     assert not d, 'returned data must be empty, because we lack access'
 
     return

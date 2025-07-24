@@ -4,6 +4,7 @@ from __future__ import annotations
 import pydantic
 import typing
 import accept_types
+import email.utils
 
 
 from . import permissions, keys, schemas, errors
@@ -54,6 +55,10 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, raw_que
                 access.ddhkey.raise_if_no_owner()
                 trstate = await schema.apply_transformers(access, transaction, None, raw_query_params)
                 data = trstate.parsed_data
+
+        if access.consent_expiry:
+            headers['Expires'] = email.utils.format_datetime(
+                access.consent_expiry, usegmt=True)  # RFC 5322 Section 3.3 format
 
     return data, headers
 
