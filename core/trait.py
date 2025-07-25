@@ -318,6 +318,8 @@ class TransformerState(DDHbaseModel):
     schema_node: node_types.T_SchemaNode | None = None
     raw_query_params: dict | None
     query_params: QueryParams = QueryParams()  # overwritten from raw_query_params in begin_end.QueryParamTransformer
+    response_headers: dict = pydantic.Field(
+        default_factory=dict, description='Contents will be merged into response header')
 
 
 class Transformers(Traits):
