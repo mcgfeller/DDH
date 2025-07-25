@@ -132,7 +132,10 @@ class DateRestriction(DDHbaseModel):
 
     @pydantic.model_validator(mode='after')
     def set_end(self) -> typing.Self:
-        """ Set end date from days, raise error if neither end nor days or both and and days are specified. """
+        """ Set end date from days, raise error if neither end nor days or both and and days are specified.
+
+            Pydantic issue https://github.com/pydantic/pydantic/issues/12085: Validator is called twice
+        """
         if self.end is None:
             if self.days is not None:
                 self.end = self.begin + datetime.timedelta(days=self.days)
