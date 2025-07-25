@@ -10,6 +10,7 @@ COUNTER: int = 0
 
 class Simple(pydantic.BaseModel):
     """ The most simple model, no attribute required (but fails in realistic situations as well)"""
+    model_config = pydantic.ConfigDict(revalidate_instances='never')
 
     @pydantic.model_validator(mode='after')
     def not_much(self) -> typing.Self:
@@ -20,6 +21,7 @@ class Simple(pydantic.BaseModel):
 
 
 class Composed(pydantic.BaseModel):
+    model_config = pydantic.ConfigDict(revalidate_instances='never')
     simple: Simple
 
 
