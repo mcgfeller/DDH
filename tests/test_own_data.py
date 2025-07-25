@@ -1,5 +1,6 @@
 """ Set up some Test data """
 import asyncio
+import datetime
 import json
 import typing
 
@@ -7,6 +8,7 @@ import pytest
 from fastapi.encoders import jsonable_encoder
 
 from backend import keyvault
+from utils.pydantic_utils import utcnow
 from core import (errors, facade, keydirectory, keys, nodes, permissions,
                   pillars, principals, transactions)
 from frontend import sessions, user_auth
@@ -163,10 +165,17 @@ async def test_write_data_with_consent(no_storage_dapp):
 
 @pytest.mark.asyncio
 async def test_read_timed_consent(user, user3, no_storage_dapp):
-    await write_with_consent("/another3/org/private/documents/doc7", consented_users=['mgf'], consent_days=2)
+    test_key = keys.DDHkeyGeneric("/another3/org/private/documents/doc7")
+    await write_with_consent(test_key, consented_users=['mgf'], consent_days=2)
     session = get_session(user)
-    d, header = await read("/another3/org/private/documents/doc7", session)
+    d, header = await read(test_key, session)
     assert 'Expires' in header
+
+    # read with patched access.time in the future:
+    access = permissions.Access(ddhkey=test_key)
+    access.time = utcnow() + datetime.timedelta(days=5)  # in the future
+    with pytest.raises(errors.AccessError, match='must be before'):
+        data, header = await facade.ddh_get(access, session)
     return
 
 

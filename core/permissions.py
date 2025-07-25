@@ -148,7 +148,7 @@ class DateRestriction(DDHbaseModel):
             return False, f'Access must not be before {self.begin}'
         assert self.end
         if access_date > self.end:
-            return False, f'Access must not be after {self.end}'
+            return False, f'Access must be before {self.end}'
         return True, f'Access expires at {self.end}'
 
     def as_tuple(self) -> tuple[datetime.datetime]:
