@@ -57,4 +57,4 @@ This is both the API from the outside to read DDH data and the API that Data App
 Each DataApp is implemented as its own service
 
 
-Copyright 2020-2022 by Martin Gfeller, Swissoom (Switzerland) Ltd.
+Copyright 2020-2025 by Martin Gfeller, Swisscom (Switzerland) Ltd.
