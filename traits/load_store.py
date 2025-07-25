@@ -86,6 +86,7 @@ class LoadFromStorage(AccessTransformer):
         trstate.parsed_data = data
         trstate.access.data_key_split = d_key_split
 
+        trstate.response_headers['X-Consent-Message'] = msg
         if trstate.access.consent_expiry:  # record consent expiry in heeader, if any
             trstate.response_headers['Expires'] = email.utils.format_datetime(
                 trstate.access.consent_expiry, usegmt=True)  # RFC 5322 Section 3.3 format

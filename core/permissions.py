@@ -89,15 +89,16 @@ class Consent(DDHbaseModel):
             else:
                 return False, f'Consent granted to DApps; need an DApp id to access'
 
-        if self.withinDates:
-            ok, txt = self.withinDates.check(access.time)
-            access.consent_expiry = self.withinDates.end  # Record consent expiry date
-            if not ok:
-                return False, txt
-
         ok, txt = AccessMode.check(access.modes, self.withModes)
         if not ok:
             return False, txt
+
+        if self.withinDates:
+            ok, txt2 = self.withinDates.check(access.time)
+            txt += ', '+txt2
+            access.consent_expiry = self.withinDates.end  # Record consent expiry date
+            if not ok:
+                return False, txt2
 
         return True, 'Granted by Consent; '+txt
 
