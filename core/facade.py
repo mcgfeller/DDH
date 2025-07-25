@@ -43,6 +43,8 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, raw_que
                         schema = schema_element.to_schema()
                         trstate = await schema.apply_transformers_to_schema(access, transaction, None, raw_query_params)
                         data = trstate.nschema.to_format(schemas.SchemaFormat.json)
+                    else:
+                        trstate = None
 
             case keys.ForkType.consents:
                 access.ddhkey.raise_if_no_owner()
@@ -54,7 +56,8 @@ async def ddh_get(access: permissions.Access, session: sessions.Session, raw_que
                 trstate = await schema.apply_transformers(access, transaction, None, raw_query_params)
                 data = trstate.parsed_data
 
-        headers.update(trstate.response_headers)
+        if trstate:
+            headers.update(trstate.response_headers)
 
     return data, headers
 
