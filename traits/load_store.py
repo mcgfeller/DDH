@@ -4,6 +4,7 @@ from __future__ import annotations
 import typing
 import copy
 import pydantic
+import email.utils
 from utils.pydantic_utils import CV
 
 from core import (errors, trait, permissions, keys, nodes, data_nodes, executable_nodes, events,
@@ -84,6 +85,10 @@ class LoadFromStorage(AccessTransformer):
                                                                              owner_ids | consentee_ids, trstate.access.modes)
         trstate.parsed_data = data
         trstate.access.data_key_split = d_key_split
+
+        if trstate.access.consent_expiry:  # record consent expiry in heeader, if any
+            trstate.response_headers['Expires'] = email.utils.format_datetime(
+                trstate.access.consent_expiry, usegmt=True)  # RFC 5322 Section 3.3 format
 
         return
 

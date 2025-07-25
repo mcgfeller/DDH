@@ -144,6 +144,7 @@ class DateRestriction(DDHbaseModel):
         return self
 
     def check(self, access_date: datetime.datetime) -> tuple[bool, str]:
+        assert access_date.tzinfo is not None, 'access.time must not be naive datetime'
         if access_date < self.begin:
             return False, f'Access must not be before {self.begin}'
         assert self.end
