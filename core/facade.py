@@ -101,6 +101,8 @@ async def ddh_put(access: permissions.Access, session: sessions.Session, data: p
                         trstate = await schema.apply_transformers(access, transaction, data, raw_query_params)
                         data = trstate.parsed_data
 
+        if trstate:
+            headers.update(trstate.response_headers)
     return data, headers
 
 
