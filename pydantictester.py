@@ -3,6 +3,9 @@ import pydantic
 import datetime
 import typing
 import enum
+import json
+import pydantic_core
+from fastapi.encoders import jsonable_encoder
 
 
 class Model1(pydantic.BaseModel):
@@ -27,3 +30,15 @@ def build():
 
 def test():
     ModelCollection.model_json_schema()
+
+
+class ModelRef(pydantic.BaseModel):
+    class Config:
+        json_schema_extra = {
+            "$ref": pydantic.AnyUrl("file:///schema.json#/$defs/ModelType")
+        }
+
+
+schema: dict = ModelRef.model_json_schema()
+print(json.dumps(pydantic_core.to_jsonable_python(schema, serialize_unknown=True)))
+print(json.dumps(jsonable_encoder(schema)))
