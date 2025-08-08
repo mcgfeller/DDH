@@ -14,6 +14,12 @@ from . import nodes, keys, transactions, common_ids, permissions, common_ids, pr
 from backend import persistable
 
 
+class ConsentCacheEntry(DDHbaseModel):
+    """ Entry for one DDHkey in ConsentCache """
+
+    modes: set[permissions.AccessMode]
+
+
 class _ConsentCache:
     """ Cache maping consent to key with modes.
 
@@ -21,7 +27,7 @@ class _ConsentCache:
                 and we don't want to leak this information.
     """
 
-    consents_by_principal: dict[common_ids.PrincipalId, dict[keys.DDHkeyGeneric, set[permissions.AccessMode]]]
+    consents_by_principal: dict[common_ids.PrincipalId, dict[keys.DDHkeyGeneric, ConsentCacheEntry]]
 
     def __init__(self):
         self.consents_by_principal = {}
@@ -40,22 +46,23 @@ class _ConsentCache:
             for p in c.grantedTo:
                 if (g := self.consents_by_principal.get(p.id, None)):
                     if (s := g.get(ddhkey)):
-                        s -= c.withModes  # discard modes
-                        if not s:
+                        s.modes -= c.withModes  # discard modes
+                        if not s.modes:
                             g.pop(ddhkey)  # remove empty
                     if not g:
                         self.consents_by_principal.pop(p.id, None)  # remove empty
         for c in added:
             for p in c.grantedTo:
                 modes = c.withModes.copy()  # withModes must not be shared
-                self.consents_by_principal.setdefault(p.id, {})[ddhkey] = modes
+                self.consents_by_principal.setdefault(p.id, {})[ddhkey] = ConsentCacheEntry(modes=modes)
                 newkeys.setdefault(p.id, {})[ddhkey] = modes
         return newkeys
 
     def as_consents_for(self, principal: principals.Principal) -> dict[keys.DDHkeyGeneric, permissions.Consents]:
         """ Return Consents received by a Principal, as Consents object. Omit empty modes """
         cs = self.consents_by_principal.get(principal.id, {})
-        consents = {k: permissions.Consent.single(grantedTo=[principal], withModes=c) for k, c in cs.items() if c}
+        consents = {k: permissions.Consent.single(
+            grantedTo=[principal], withModes=c.modes) for k, c in cs.items() if c}
         return consents
 
 
