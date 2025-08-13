@@ -37,8 +37,8 @@ class _ConsentCache:
         self.consents_by_principal.clear()
         return
 
-    async def update(self, ddhkey: keys.DDHkeyGeneric, added: frozenset[permissions.Consent], removed: frozenset[permissions.Consent]) -> dict[common_ids.PrincipalId, dict[keys.DDHkeyGeneric, set[permissions.AccessMode]]]:
-        """ Update the cache with added and removed consents. Return {prinicpal: {key: modes}} for added keys only
+    def update(self, ddhkey: keys.DDHkeyGeneric, added: typing.Iterable[permissions.Consent], removed: typing.Iterable[permissions.Consent]) -> dict[common_ids.PrincipalId, dict[keys.DDHkeyGeneric, set[permissions.AccessMode]]]:
+        """ Update the cache with added and removed consents. Return {prinicpal: {key: modes}} for added keys only.
         """
         # remove first, removal is more involved than adding
         newkeys = {}

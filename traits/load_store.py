@@ -230,12 +230,13 @@ class UpdateConsents(AccessTransformer):
         key_affected, added, removed = await trstate.data_node.update_consents(trstate.access, trstate.transaction, remainder, trstate.parsed_data)
         if key_affected:
             trstate.transaction.add(persistable.UserDataPersistAction(obj=trstate.data_node, add_to_dir=False))
-            newgrants = await consentcache.ConsentCache.update(key_affected, added, removed)
+
+            newgrants = consentcache.ConsentCache.update(key_affected, added, removed)
+
             # publish event for new consents:
             for principal, grants_added in newgrants.items():
                 ev = events.ConsentEvent.for_principal(principal=principal, grants_added=set(grants_added))
                 await ev.publish(trstate.transaction)
-            # TODO: Add entry to pseudonym map
         return
 
 

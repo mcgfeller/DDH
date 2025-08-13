@@ -214,6 +214,15 @@ class MultiOwnerConsents(DDHbaseModel):
     """
     consents_by_owner: dict[principals.Principal, Consents]
 
+    @pydantic.computed_field
+    @property
+    def consents(self) -> list[Consent]:
+        """ Present consents as they where a list """
+        allconsents = []
+        for cs in self.consents_by_owner.values():
+            allconsents.extend(cs.consents)
+        return allconsents
+
     def check(self, owners: typing.Iterable[principals.Principal], access: Access) -> tuple[bool, list[Consent], str]:
         """ Check consents by all owner, only if all owners consent, we can go ahead.
         """
