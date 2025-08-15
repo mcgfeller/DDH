@@ -40,6 +40,24 @@ async def read(ddhkey: keys.DDHkey | str, session: sessions.Session, modes: set[
     return
 
 
+async def grant_consents(ddhkey: keys.DDHkey | str, consents: permissions.Consents, no_storage_dapp=None):
+    """ utility to grant consents to ddhkey
+    """
+    if isinstance(ddhkey, str):
+        ddhkey = keys.DDHkey(ddhkey)
+    user = user_auth.UserInDB.load(ddhkey.owner)
+    session = get_session(user)
+    ddhkey_c = ddhkey.ensure_fork(keys.ForkType.consents)
+    access = permissions.Access(ddhkey=ddhkey_c, modes={permissions.AccessMode.write})
+    await facade.ddh_put(access, session, consents.model_dump_json())
+    return
+
+
+async def grant_consents_to_migros(migros_key_schema, user2, user, modes: set[permissions.AccessMode] = {permissions.AccessMode.read, permissions.AccessMode.anonymous}, no_storage_dapp=None):
+    ddhkey = migros_key_schema[0].ensure_fork(keys.ForkType.data).with_new_owner(user.id)
+    await grant_consents(ddhkey, permissions.Consent.single(grantedTo=[user2], withModes=modes))
+
+
 @pytest.mark.asyncio
 async def test_read_anon_failures(user, user2, no_storage_dapp):
     """ Test expected failures for anonymous access:
@@ -125,7 +143,7 @@ async def test_read_anon_migros(user, transaction, migros_key_schema, migros_dat
 
 
 @pytest.mark.asyncio
-async def test_read_anon_migros_without_grant(user3, transaction, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
+async def test_read_anon_migros_without_grant(user3, user, transaction, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
     """ read anonymous whole schema, no grant given to user3 """
     modes = {permissions.AccessMode.read, permissions.AccessMode.anonymous}
     with pytest.raises(errors.AccessError):
@@ -134,9 +152,11 @@ async def test_read_anon_migros_without_grant(user3, transaction, migros_key_sch
 
 
 @pytest.mark.asyncio
-async def test_read_anon_migros_with_grant(user2, transaction, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
+async def test_read_anon_migros_with_grant(user2, user, transaction, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
     """ read anonymous whole schema, with grant given to user2  """
-    # TODO: Give Grant to user2
+    # Give Grant to user2:
+    await grant_consents_to_migros(migros_key_schema, user2, user)
+    # now we can read
     modes = {permissions.AccessMode.read, permissions.AccessMode.anonymous}
     await check_data_with_mode(user2, transaction, migros_key_schema, migros_data, modes, monkeypatch)
     return
@@ -159,8 +179,9 @@ async def test_read_pseudo_migros(user, transaction, migros_key_schema, migros_d
 @pytest.mark.asyncio
 async def test_read_pseudo_migros_with_grant(user2, user, transaction, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
     """ read pseudonymous whole schema by user2 """
-    # TODO: Give Grant to user2
     modes = {permissions.AccessMode.read, permissions.AccessMode.pseudonym}
+    # Give Grant to user2:
+    await grant_consents_to_migros(migros_key_schema, user2, user, modes=modes)
     trstate = await check_data_with_mode(user2, transaction, migros_key_schema, migros_data, modes, monkeypatch)
     eid = list(trstate.parsed_data.keys())[0]
     pm = await anonymization.PseudonymMap.load(eid, user2, transaction)  # retrieve it
