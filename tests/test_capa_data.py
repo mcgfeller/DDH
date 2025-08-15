@@ -72,17 +72,12 @@ async def test_read_anon_failures(user, user2, no_storage_dapp):
 
 async def check_data_with_mode(access_user, transaction, migros_key_schema, migros_data, modes, monkeypatch, remainder=None) -> transactions.Transaction:
 
-    async def monkey_apply0(*a, **kw):
-        """ load_store.LoadFromStorage """
-        return None
-
     async def monkey_apply1(*a, **kw):
-        """ load_store.LoadFromDApp """
+        """ load_store.LoadFromDApp, load from memory """
         a[2].parsed_data = m_data
         return
     data_user_id = 'mgf'
 
-    monkeypatch.setattr(load_store.LoadFromStorage, 'apply', monkey_apply0)
     monkeypatch.setattr(load_store.LoadFromDApp, 'apply', monkey_apply1)
 
     session = get_session(access_user)
@@ -102,9 +97,11 @@ async def check_data_with_mode(access_user, transaction, migros_key_schema, migr
     # data is obtained from DApp via JSON, so convert to JSON and load again
     m_data = json.loads(json.dumps(jsonable_encoder(m_data)))
     # read anonymous
-    access = permissions.Access(ddhkey=k.ensure_fork(keys.ForkType.data), modes=modes)
+    ddhkey = k.ensure_fork(keys.ForkType.data).with_new_owner(data_user_id)
+    access = permissions.Access(ddhkey=ddhkey, modes=modes)
     cumulus = migros_data[data_user_id]['cumulus']
     access.schema_key_split = 4  # split after the migros.org
+    trx.add_and_validate(access)
     trstate = await schema.apply_transformers(access, trx, None, {})  # transformer processing happens here
     data = trstate.parsed_data
     assert data_user_id not in data, 'eid must be anonymized'
@@ -120,7 +117,7 @@ async def check_data_with_mode(access_user, transaction, migros_key_schema, migr
 
 
 @pytest.mark.asyncio
-async def test_read_anon_migros(user, transaction, migros_key_schema, migros_data, monkeypatch):
+async def test_read_anon_migros(user, transaction, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
     """ read anonymous whole schema """
     modes = {permissions.AccessMode.read, permissions.AccessMode.anonymous}
     await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, monkeypatch)
@@ -128,7 +125,7 @@ async def test_read_anon_migros(user, transaction, migros_key_schema, migros_dat
 
 
 @pytest.mark.asyncio
-async def test_read_anon_migros_with_grant(user2, user3, transaction, migros_key_schema, migros_data, monkeypatch):
+async def test_read_anon_migros_with_grant(user2, user3, transaction, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
     """ read anonymous whole schema """
     # BUG: Access is not checked - must fail as grant is not given!
     modes = {permissions.AccessMode.read, permissions.AccessMode.anonymous}
@@ -188,7 +185,7 @@ async def test_read_write_pseudo_migros(user, migros_key_schema, migros_data, mo
 
 
 @pytest.mark.asyncio
-async def test_read_anon_migros_rec(user, transaction, migros_key_schema, migros_data, monkeypatch):
+async def test_read_anon_migros_rec(user, transaction, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
     """ read anononymous within schema """
     modes = {permissions.AccessMode.read, permissions.AccessMode.anonymous}
     await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, monkeypatch, remainder='receipts')
