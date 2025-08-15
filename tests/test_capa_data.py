@@ -125,9 +125,18 @@ async def test_read_anon_migros(user, transaction, migros_key_schema, migros_dat
 
 
 @pytest.mark.asyncio
-async def test_read_anon_migros_with_grant(user2, user3, transaction, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
-    """ read anonymous whole schema """
-    # BUG: Access is not checked - must fail as grant is not given!
+async def test_read_anon_migros_without_grant(user3, transaction, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
+    """ read anonymous whole schema, no grant given to user3 """
+    modes = {permissions.AccessMode.read, permissions.AccessMode.anonymous}
+    with pytest.raises(errors.AccessError):
+        await check_data_with_mode(user3, transaction, migros_key_schema, migros_data, modes, monkeypatch)
+    return
+
+
+@pytest.mark.asyncio
+async def test_read_anon_migros_with_grant(user2, transaction, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
+    """ read anonymous whole schema, with grant given to user2  """
+    # TODO: Give Grant to user2
     modes = {permissions.AccessMode.read, permissions.AccessMode.anonymous}
     await check_data_with_mode(user2, transaction, migros_key_schema, migros_data, modes, monkeypatch)
     return
@@ -150,7 +159,7 @@ async def test_read_pseudo_migros(user, transaction, migros_key_schema, migros_d
 @pytest.mark.asyncio
 async def test_read_pseudo_migros_with_grant(user2, user, transaction, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
     """ read pseudonymous whole schema by user2 """
-    # BUG: Access is not checked - must fail as grant is not given!
+    # TODO: Give Grant to user2
     modes = {permissions.AccessMode.read, permissions.AccessMode.pseudonym}
     trstate = await check_data_with_mode(user2, transaction, migros_key_schema, migros_data, modes, monkeypatch)
     eid = list(trstate.parsed_data.keys())[0]
