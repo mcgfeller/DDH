@@ -5,10 +5,11 @@ from __future__ import annotations
 import pydantic
 import datetime
 import typing
+import secrets
 
 
 from pydantic.errors import PydanticErrorMixin
-from utils.pydantic_utils import DDHbaseModel
+from utils.pydantic_utils import DDHbaseModel, CV, utcnow
 
 from . import nodes, keys, transactions, common_ids, permissions, common_ids, principals
 from backend import persistable
@@ -18,6 +19,25 @@ class ConsentCacheEntry(DDHbaseModel):
     """ Entry for one DDHkey in ConsentCache """
 
     modes: set[permissions.AccessMode]
+    _secrets: dict[str, str] = {}  # secrets per principal id
+    _expiration: datetime.datetime | None = None  # expiration of the secret
+
+    # Time to live - longer pseudonymous, to give a chance to reply:
+    TTL_anon: CV[datetime.timedelta] = datetime.timedelta(hours=3)
+    TTL_pseudo: CV[datetime.timedelta] = datetime.timedelta(days=10)
+
+    def get_secret(self, principal_id: str) -> str:
+        """ get a secret key for a principal. 
+            Use it unless it has expired, or create a new one. 
+        """
+        now = utcnow()
+        if (not self._secrets) or now > self._expiration:
+            ttl = self.TTL_pseudo if permissions.AccessMode.pseudonym in self.modes else self.TTL_anon
+            self._expiration = now + ttl
+            self._secrets = {}
+        if not (s := self._secrets.get(principal_id)):
+            s = self._secrets[principal_id] = secrets.token_urlsafe(10)
+        return s
 
 
 class _ConsentCache:

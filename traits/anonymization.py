@@ -10,7 +10,7 @@ import datetime
 import pydantic
 from utils.pydantic_utils import DDHbaseModel, CV, tuple_key_to_str, str_to_tuple_key
 
-from core import (errors, keys, versions, permissions, schemas, transactions, trait, common_ids)
+from core import (errors, keys, versions, permissions, schemas, transactions, trait, common_ids, consentcache)
 from backend import persistable
 from . import capabilities
 
@@ -22,21 +22,28 @@ class Anonymize(capabilities.DataCapability):
 
     async def apply(self, traits: trait.Traits, trstate: trait.TransformerState, **kw: dict):
         assert trstate.parsed_data is not None and len(trstate.parsed_data) > 0
+        cc = consentcache.ConsentCache.consents_by_principal.get(trstate.access.principal.id)
+
         cache = {}
         trstate.parsed_data = self.transform(trstate.nschema, trstate.access,
-                                             trstate.transaction, trstate.parsed_data, cache)
+                                             trstate.transaction, trstate.parsed_data, cc, cache)
 
-    def transform(self, schema, access, transaction, data_by_principal: dict, cache: dict) -> dict:
+    def transform(self, schema, access, transaction, data_by_principal: dict, cc: dict | None, cache: dict) -> dict:
         """ Apply self.transform_value to sensitivities in schema, keeping
             cache of mapped values, so same value always get's transformed into same
             value.
         """
         # selection is the path remaining after dispatching of the e_node:
-        selection = str(access.ddhkey.without_variant_version().remainder(access.schema_key_split))
+        ddhkey = access.ddhkey.without_variant_version()
+        selection = str(ddhkey.remainder(access.schema_key_split))
 
         new_data_by_principal = {}  # new data, since keys (=principals) are different
         for principal_id, data in data_by_principal.items():  # data may have multiple principals
             # transform principal_id first:
+            if cc:
+                cce = cc.get(ddhkey)
+                if cce:
+                    cache[('', '', principal_id)] = cce.get_secret(principal_id)
             principal_id = self.transform_value(
                 principal_id, '', '', str, schemas.Sensitivity.eid, access, transaction, cache)
             for sensitivity, path_fields in schema.schema_attributes.sensitivities.items():
@@ -84,12 +91,13 @@ class Pseudonymize(Anonymize):
     async def apply(self, traits: trait.Traits, trstate: trait.TransformerState, **kw: dict):
         assert trstate.parsed_data is not None and len(trstate.parsed_data) > 0
         cache = {}
-        for pid in trstate.parsed_data.keys():
-            tid = trstate.transaction.trxid+'_'+secrets.token_urlsafe(max(10, len(pid)))
-            cache[('', '', pid)] = tid
+        cc = consentcache.ConsentCache.consents_by_principal.get(trstate.access.principal.id)
+        # for pid in trstate.parsed_data.keys():
+        #     tid = trstate.transaction.trxid+'_'+secrets.token_urlsafe(max(10, len(pid)))
+        #     cache[('', '', pid)] = tid
 
         trstate.parsed_data = self.transform(trstate.nschema, trstate.access,
-                                             trstate.transaction,  trstate.parsed_data, cache)
+                                             trstate.transaction,  trstate.parsed_data, cc, cache)
         # the cache was filled during the transform - save it per principal:
         for tid, data in trstate.parsed_data.items():
             pm = PseudonymMap(id=typing.cast(common_ids.PersistId, tid), cache=cache)
