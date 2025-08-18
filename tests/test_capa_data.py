@@ -37,7 +37,7 @@ async def read(ddhkey: keys.DDHkey | str, session: sessions.Session, modes: set[
     access = permissions.Access(ddhkey=ddhkey, modes=modes)
     data, header = await facade.ddh_get(access, session)
     assert data, 'data must not be empty'
-    return
+    return data, header
 
 
 async def grant_consents(ddhkey: keys.DDHkey | str, consents: permissions.Consents, no_storage_dapp=None):
@@ -151,11 +151,31 @@ async def test_read_anon_migros_without_grant(user3, user, transaction, migros_k
     return
 
 
+def anon_key(key: keys.DDHkey, grants) -> list[keys.DDHkey]:
+    """ return a list of  data keys with anonymized owner to fetch key
+        grants isreturned by /{user2.id}/org/ddh/consents/received
+    """
+    match_key = key.without_variant_version().ensure_fork(keys.ForkType.data)
+    matched = []
+    for g in grants.grants.keys():
+        k = keys.DDHkey(g)
+        if k.without_owner() == match_key:
+            matched.append(match_key.with_new_owner(k.owner))
+    return matched
+
+
 @pytest.mark.asyncio
 async def test_read_anon_migros_with_grant(user2, user, transaction, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
     """ read anonymous whole schema, with grant given to user2  """
     # Give Grant to user2:
     await grant_consents_to_migros(migros_key_schema, user2, user)
+    # get grants received:
+    session = get_session(user2)  # get trx corresponding to user
+    transaction = session.get_or_create_transaction()
+    d, h = await read(f"/{user2.id}/org/ddh/consents/received", session)
+    key = anon_key(migros_key_schema[0], d)
+    assert len(key) == 1
+
     # now we can read
     modes = {permissions.AccessMode.read, permissions.AccessMode.anonymous}
     await check_data_with_mode(user2, transaction, migros_key_schema, migros_data, modes, monkeypatch)
@@ -193,12 +213,15 @@ async def test_read_pseudo_migros_with_grant(user2, user, transaction, migros_ke
 
 
 @pytest.mark.asyncio
-async def test_read_write_pseudo_migros(user, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
+async def test_read_write_pseudo_migros(user2, user, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
     """ read pseudonymous whole schema """
-    session = get_session(user)  # get trx corresponding to user
+    modes = {permissions.AccessMode.read, permissions.AccessMode.write, permissions.AccessMode.pseudonym}
+    # Give Grant to user2:
+    await grant_consents_to_migros(migros_key_schema, user2, user, modes=modes)
+    session = get_session(user2)  # get trx corresponding to user
     transaction = session.get_or_create_transaction()
     modes = {permissions.AccessMode.read, permissions.AccessMode.pseudonym}
-    trstate = await check_data_with_mode(user, transaction, migros_key_schema, migros_data, modes, monkeypatch)
+    trstate = await check_data_with_mode(user2, transaction, migros_key_schema, migros_data, modes, monkeypatch)
     schema = trstate.nschema  # modified in check_data_with_mode
     k = migros_key_schema[0]
     eid = list(trstate.parsed_data.keys())[0]
@@ -207,7 +230,7 @@ async def test_read_write_pseudo_migros(user, migros_key_schema, migros_data, mo
     data = json.dumps(jsonable_encoder(data))  # back to json
     modes = {permissions.AccessMode.write, permissions.AccessMode.pseudonym}
     ddhkey = k.ensure_fork(keys.ForkType.data).with_new_owner(eid)
-    access = permissions.Access(ddhkey=ddhkey, principal=user, modes=modes, op=permissions.Operation.put)
+    access = permissions.Access(ddhkey=ddhkey, principal=user2, modes=modes, op=permissions.Operation.put)
     access.schema_key_split = 4  # split after the migros.org
     trstate = await schema.apply_transformers(access, transaction, data, {})  # transformer processing happens here
     data = trstate.parsed_data

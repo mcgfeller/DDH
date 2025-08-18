@@ -140,10 +140,10 @@ class DePseudonymize(capabilities.DataCapability):
     supports_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.pseudonym})
     only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.write})
     phase: CV[trait.Phase] = trait.Phase.pre_store  # after validation
-    after: str = 'ValidateToDApp'  # we don't reveil identity to DApp
+    after: str = 'ValidateToDApp'  # we don't reveal identity to DApp
 
     async def apply(self, traits: trait.Traits, trstate: trait.TransformerState, **kw: dict):
-        eid = trstate.access.original_ddhkey.owner  # this is the pseudo-owner uder which the map is stored
+        eid = trstate.access.original_ddhkey.owner  # this is the pseudo-owner under which the map is stored
         try:
             pm = await PseudonymMap.load(eid, trstate.access.principal, trstate.transaction)  # retrieve it
         except KeyError:

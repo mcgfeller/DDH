@@ -26,7 +26,7 @@ class ConsentCacheEntry(DDHbaseModel):
     TTL_anon: CV[datetime.timedelta] = datetime.timedelta(hours=3)
     TTL_pseudo: CV[datetime.timedelta] = datetime.timedelta(days=10)
 
-    def get_secret(self, principal_id: str) -> str:
+    def get_secret(self, principal_id: str) -> common_ids.PrincipalId:
         """ get a secret key for a principal. 
             Use it unless it has expired, or create a new one. 
         """
@@ -38,6 +38,16 @@ class ConsentCacheEntry(DDHbaseModel):
         if not (s := self._secrets.get(principal_id)):
             s = self._secrets[principal_id] = secrets.token_urlsafe(10)
         return s
+
+    @property
+    def is_anon(self) -> bool:
+        return any(mode in self.modes for mode in (permissions.AccessMode.pseudonym, permissions.AccessMode.anonymous))
+
+    def anon_key(self, key: keys.DDHkey) -> keys.DDHkey:
+        """ if grant is anonymized, return anonymized key, else unchanged key """
+        if self.is_anon:
+            key = key.with_new_owner(self.get_secret(key.owner))
+        return key
 
 
 class _ConsentCache:
@@ -74,8 +84,10 @@ class _ConsentCache:
         for c in added:
             for p in c.grantedTo:
                 modes = c.withModes.copy()  # withModes must not be shared
-                self.consents_by_principal.setdefault(p.id, {})[ddhkey] = ConsentCacheEntry(modes=modes)
-                newkeys.setdefault(p.id, {})[ddhkey] = modes
+                cce = ConsentCacheEntry(modes=modes)
+                a_key = cce.anon_key(ddhkey)
+                self.consents_by_principal.setdefault(p.id, {})[a_key] = cce
+                newkeys.setdefault(p.id, {})[a_key] = modes
         return newkeys
 
     def as_consents_for(self, principal: principals.Principal) -> dict[keys.DDHkeyGeneric, permissions.Consents]:
