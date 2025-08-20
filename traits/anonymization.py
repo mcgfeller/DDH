@@ -15,6 +15,22 @@ from backend import persistable
 from . import capabilities
 
 
+class AnonLookup(capabilities.DataCapability):
+    """ Lookup of an anonymized owner id in a key, replace by true key  """
+
+    supports_modes: CV[frozenset[permissions.AccessMode]] = frozenset(
+        {permissions.AccessMode.anonymous, permissions.AccessMode.pseudonym})
+    only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.read})
+    phase: CV[trait.Phase] = trait.Phase.first  # before load
+    after: str = 'BeginTransformer'
+
+    async def apply(self, traits: trait.Traits, trstate: trait.TransformerState, **kw: dict):
+
+        trstate.access.ddhkey = consentcache.ConsentCache.get_real_key(
+            trstate.access.principal, trstate.access.original_ddhkey)
+        return
+
+
 class Anonymize(capabilities.DataCapability):
     supports_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.anonymous})
     only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.read})

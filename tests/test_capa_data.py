@@ -88,7 +88,7 @@ async def test_read_anon_failures(user, user2, no_storage_dapp):
     return
 
 
-async def check_data_with_mode(access_user, transaction, migros_key_schema, migros_data, modes, monkeypatch, remainder=None) -> transactions.Transaction:
+async def check_data_with_mode(access_user, transaction, migros_key_schema, migros_data, modes, monkeypatch, anon_owner_id: str = None, remainder=None) -> transactions.Transaction:
 
     async def monkey_apply1(*a, **kw):
         """ load_store.LoadFromDApp, load from memory """
@@ -115,7 +115,8 @@ async def check_data_with_mode(access_user, transaction, migros_key_schema, migr
     # data is obtained from DApp via JSON, so convert to JSON and load again
     m_data = json.loads(json.dumps(jsonable_encoder(m_data)))
     # read anonymous
-    ddhkey = k.ensure_fork(keys.ForkType.data).with_new_owner(data_user_id)
+    anon_owner_id = anon_owner_id or data_user_id
+    ddhkey = k.ensure_fork(keys.ForkType.data).with_new_owner(anon_owner_id)
     access = permissions.Access(ddhkey=ddhkey, modes=modes)
     cumulus = migros_data[data_user_id]['cumulus']
     access.schema_key_split = 4  # split after the migros.org
@@ -164,6 +165,13 @@ def anon_key(key: keys.DDHkey, grants) -> list[keys.DDHkey]:
     return matched
 
 
+async def get_grants_received(user, migros_key_schema, session) -> keys.DDHkey:
+    d, h = await read(f"/{user.id}/org/ddh/consents/received", session)
+    key = anon_key(migros_key_schema[0], d)
+    # assert len(key) == 1
+    return key[0]
+
+
 @pytest.mark.asyncio
 async def test_read_anon_migros_with_grant(user2, user, transaction, migros_key_schema, migros_data, monkeypatch, no_storage_dapp):
     """ read anonymous whole schema, with grant given to user2  """
@@ -172,13 +180,10 @@ async def test_read_anon_migros_with_grant(user2, user, transaction, migros_key_
     # get grants received:
     session = get_session(user2)  # get trx corresponding to user
     transaction = session.get_or_create_transaction()
-    d, h = await read(f"/{user2.id}/org/ddh/consents/received", session)
-    key = anon_key(migros_key_schema[0], d)
-    assert len(key) == 1
-
+    key = await get_grants_received(user2, migros_key_schema, session)
     # now we can read
     modes = {permissions.AccessMode.read, permissions.AccessMode.anonymous}
-    await check_data_with_mode(user2, transaction, migros_key_schema, migros_data, modes, monkeypatch)
+    await check_data_with_mode(user2, transaction, migros_key_schema, migros_data, modes, monkeypatch, anon_owner_id=key.owner)
     return
 
 
@@ -202,7 +207,12 @@ async def test_read_pseudo_migros_with_grant(user2, user, transaction, migros_ke
     modes = {permissions.AccessMode.read, permissions.AccessMode.pseudonym}
     # Give Grant to user2:
     await grant_consents_to_migros(migros_key_schema, user2, user, modes=modes)
-    trstate = await check_data_with_mode(user2, transaction, migros_key_schema, migros_data, modes, monkeypatch)
+    # get grants received:
+    session = get_session(user2)  # get trx corresponding to user
+    transaction = session.get_or_create_transaction()
+    key = await get_grants_received(user2, migros_key_schema, session)
+
+    trstate = await check_data_with_mode(user2, transaction, migros_key_schema, migros_data, modes, monkeypatch, anon_owner_id=key.owner)
     eid = list(trstate.parsed_data.keys())[0]
     pm = await anonymization.PseudonymMap.load(eid, user2, transaction)  # retrieve it
     assert isinstance(pm, anonymization.PseudonymMap)
@@ -220,8 +230,10 @@ async def test_read_write_pseudo_migros(user2, user, migros_key_schema, migros_d
     await grant_consents_to_migros(migros_key_schema, user2, user, modes=modes)
     session = get_session(user2)  # get trx corresponding to user
     transaction = session.get_or_create_transaction()
+    key = await get_grants_received(user2, migros_key_schema, session)
+
     modes = {permissions.AccessMode.read, permissions.AccessMode.pseudonym}
-    trstate = await check_data_with_mode(user2, transaction, migros_key_schema, migros_data, modes, monkeypatch)
+    trstate = await check_data_with_mode(user2, transaction, migros_key_schema, migros_data, modes, monkeypatch, anon_owner_id=key.owner)
     schema = trstate.nschema  # modified in check_data_with_mode
     k = migros_key_schema[0]
     eid = list(trstate.parsed_data.keys())[0]

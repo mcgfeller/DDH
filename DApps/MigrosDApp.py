@@ -42,7 +42,7 @@ class MigrosDApp(dapp_attrs.DApp):
         """ Obtain initial schema for DApp 
             We supply a schema at a current version and and old version 0.1 for testing purposes. 
         """
-        caps = trait.Transformers(anonymization.Anonymize(), anonymization.Pseudonymize(),
+        caps = trait.Transformers(anonymization.AnonLookup(), anonymization.Anonymize(), anonymization.Pseudonymize(),
                                   anonymization.DePseudonymize())
         sa = schemas.SchemaAttributes(version=self.version, transformers=caps)
         sa_prev = schemas.SchemaAttributes(version=versions.Version('0.1'), transformers=caps)

@@ -11,7 +11,7 @@ import secrets
 from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import DDHbaseModel, CV, utcnow
 
-from . import nodes, keys, transactions, common_ids, permissions, common_ids, principals
+from . import nodes, keys, transactions, common_ids, permissions, common_ids, principals, errors
 from backend import persistable
 
 
@@ -19,24 +19,30 @@ class ConsentCacheEntry(DDHbaseModel):
     """ Entry for one DDHkey in ConsentCache """
 
     modes: set[permissions.AccessMode]
-    _secrets: dict[str, str] = {}  # secrets per principal id
+    _by_principal: dict[common_ids.PrincipalId, common_ids.PrincipalId] = {}  # secrets per principal id
+    _by_secret: dict[common_ids.PrincipalId, common_ids.PrincipalId] = {}  # principal id by secret
     _expiration: datetime.datetime | None = None  # expiration of the secret
 
     # Time to live - longer pseudonymous, to give a chance to reply:
     TTL_anon: CV[datetime.timedelta] = datetime.timedelta(hours=3)
     TTL_pseudo: CV[datetime.timedelta] = datetime.timedelta(days=10)
+    ID_prefix: CV[str] = '_A_'
+    ID_len: CV[int] = 10
 
-    def get_secret(self, principal_id: str) -> common_ids.PrincipalId:
+    def get_secret(self, principal_id: common_ids.PrincipalId) -> common_ids.PrincipalId:
         """ get a secret key for a principal. 
             Use it unless it has expired, or create a new one. 
         """
         now = utcnow()
-        if (not self._secrets) or now > self._expiration:
+        if (not self._by_principal) or now > self._expiration:
             ttl = self.TTL_pseudo if permissions.AccessMode.pseudonym in self.modes else self.TTL_anon
             self._expiration = now + ttl
-            self._secrets = {}
-        if not (s := self._secrets.get(principal_id)):
-            s = self._secrets[principal_id] = secrets.token_urlsafe(10)
+            self._by_principal = {}
+            self._by_secret = {}
+        if not (s := self._by_principal.get(principal_id)):
+            s = self._by_principal[principal_id] = common_ids.PrincipalId(
+                self.ID_prefix + secrets.token_urlsafe(self.ID_len))
+            self._by_secret[s] = principal_id
         return s
 
     @property
@@ -96,6 +102,27 @@ class _ConsentCache:
         consents = {k: permissions.Consent.single(
             grantedTo=[principal], withModes=c.modes) for k, c in cs.items() if c}
         return consents
+
+    def get_real_key(self, trx_owner: principals.Principal, orig_key: keys.DDHkey) -> keys.DDHkey:
+        """ replace the anon principle in the orig_key by the true princple, looking up in ConsentCache for 
+            trx_owner. We allow real key owner if it matches the trx owner. 
+        """
+        if trx_owner.id == orig_key.owner:  # owner itself asks for their data.
+            key = orig_key
+        else:
+            cc = self.consents_by_principal.get(trx_owner.id)
+            if not cc:
+                raise errors.AccessError(
+                    f'Anonymous key invalid: {orig_key}; nothing consented to {trx_owner.id}')
+            gkey = orig_key.without_variant_version()
+            if not (cce := cc.get(gkey)):
+                raise errors.AccessError(
+                    f'Anonymous key invalid: {orig_key}; key not consented.')
+            if not (real_owner := cce._by_secret.get(orig_key.owner)):
+                raise errors.AccessError(
+                    f'Anonymous key expired: {orig_key}')
+            key = orig_key.with_new_owner(real_owner)
+        return key
 
 
 ConsentCache = _ConsentCache()
