@@ -183,7 +183,9 @@ async def test_read_anon_migros_with_grant(user2, user, transaction, migros_key_
     key = await get_grants_received(user2, migros_key_schema, session)
     # now we can read
     modes = {permissions.AccessMode.read, permissions.AccessMode.anonymous}
-    await check_data_with_mode(user2, transaction, migros_key_schema, migros_data, modes, monkeypatch, anon_owner_id=key.owner)
+    trstate = await check_data_with_mode(user2, transaction, migros_key_schema, migros_data, modes, monkeypatch, anon_owner_id=key.owner)
+    eid = list(trstate.parsed_data.keys())[0]
+    assert eid == key.owner
     return
 
 
@@ -214,6 +216,7 @@ async def test_read_pseudo_migros_with_grant(user2, user, transaction, migros_ke
 
     trstate = await check_data_with_mode(user2, transaction, migros_key_schema, migros_data, modes, monkeypatch, anon_owner_id=key.owner)
     eid = list(trstate.parsed_data.keys())[0]
+    assert eid == key.owner
     pm = await anonymization.PseudonymMap.load(eid, user2, transaction)  # retrieve it
     assert isinstance(pm, anonymization.PseudonymMap)
     assert isinstance(pm.inverted_cache, dict)
@@ -237,6 +240,7 @@ async def test_read_write_pseudo_migros(user2, user, migros_key_schema, migros_d
     schema = trstate.nschema  # modified in check_data_with_mode
     k = migros_key_schema[0]
     eid = list(trstate.parsed_data.keys())[0]
+    assert eid == key.owner
 
     data = trstate.parsed_data[eid]  # without owner for writing
     data = json.dumps(jsonable_encoder(data))  # back to json

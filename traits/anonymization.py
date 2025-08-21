@@ -49,8 +49,9 @@ class Anonymize(capabilities.DataCapability):
             cache of mapped values, so same value always get's transformed into same
             value.
         """
+        # we need the original anon owner key, as the ConsentCache is stored under the anon owner key
+        ddhkey = access.original_ddhkey.without_variant_version()
         # selection is the path remaining after dispatching of the e_node:
-        ddhkey = access.ddhkey.without_variant_version()
         selection = str(ddhkey.remainder(access.schema_key_split))
 
         new_data_by_principal = {}  # new data, since keys (=principals) are different
@@ -58,7 +59,7 @@ class Anonymize(capabilities.DataCapability):
             # transform principal_id first:
             if cc:
                 cce = cc.get(ddhkey)
-                if cce:
+                if cce:  # make it know to cache, so we use same id as in the key:
                     cache[('', '', principal_id)] = cce.get_secret(principal_id)
             principal_id = self.transform_value(
                 principal_id, '', '', str, schemas.Sensitivity.eid, access, transaction, cache)
