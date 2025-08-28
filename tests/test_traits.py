@@ -33,9 +33,9 @@ def test_orderings_after():
 def test_select():
     """ test that Transformers are selected """
     t1 = trait.Transformers(validations.MustHaveSensitivites(),
-                            validations.LatestVersion(), anonymization.Pseudonymize(), anonymization.DePseudonymize(), validations.MustValidate())
+                            validations.LatestVersion(), anonymization.AnonLookup(), anonymization.Pseudonymize(), anonymization.DePseudonymize(), validations.MustValidate())
     s1r = t1.select_for_apply({permissions.AccessMode.read, permissions.AccessMode.pseudonym}, keys.ForkType.data)
-    assert len(s1r) == 1
+    assert len(s1r) == 2
     s1w = t1.select_for_apply({permissions.AccessMode.write, permissions.AccessMode.pseudonym}, keys.ForkType.data)
     assert len(s1w) == 3
     s1sw = t1.select_for_apply({permissions.AccessMode.write, permissions.AccessMode.pseudonym}, keys.ForkType.schema)
