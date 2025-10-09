@@ -1,7 +1,7 @@
 
 """ Cache mapping consent principals to keys. Used to provide consents API for looking up to what keys a principal has access to.
 """
-from __future__ import annotations
+
 import pydantic
 import datetime
 import typing

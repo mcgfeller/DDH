@@ -1,6 +1,6 @@
 """ DDH abstract storage
 """
-from __future__ import annotations
+
 import zlib
 import enum
 

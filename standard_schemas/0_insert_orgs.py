@@ -1,6 +1,6 @@
 """ Insert .org keys and owners, so owners have permissions to insert schemas.
 """
-from __future__ import annotations
+
 
 from core import schemas, keys, nodes, principals, keydirectory, errors, permissions
 from frontend import sessions

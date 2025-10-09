@@ -2,7 +2,7 @@
     This is the center of all crypto operations involving keys. Keys should not "leave" this module. 
     It implements the section 7.3 "Protection of data at rest and on the move" of the DDH paper.
 """
-from __future__ import annotations
+
 
 import logging
 import typing

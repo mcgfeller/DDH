@@ -1,7 +1,7 @@
 """ Provisional User and Token management
     See https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/
 """
-from __future__ import annotations
+
 import fastapi
 import typing
 import pydantic
@@ -94,7 +94,7 @@ class TokenData(DDHbaseModel):
 class UserInDB(users.User):
     hashed_password: str  # type: ignore
 
-    @ classmethod
+    @classmethod
     def load(cls, id) -> UserInDB:
         """ Load user from DB, or raise NotFound """
         u = FAKE_USERS_DB.get(id, None)
@@ -107,7 +107,7 @@ class UserInDB(users.User):
         """ return user only """
         return users.User(**self.model_dump(include=users.User.model_fields.keys()))
 
-    @ classmethod
+    @classmethod
     def load_user(cls, id) -> principals.Principal | UserInDB:
         """ return Principal or UserInDB """
         return principals.CommonPrincipals.get(id) or cls.load(id)

@@ -1,6 +1,6 @@
 """ Events, for which an API to subscribe exits.
 """
-from __future__ import annotations
+
 
 import datetime
 import pydantic

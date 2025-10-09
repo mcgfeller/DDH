@@ -1,7 +1,7 @@
 """ StorageResoure with DApp as an executor.
     Also provides in-memory storage resource for testing. 
 """
-from __future__ import annotations
+
 
 import pydantic.json
 import logging

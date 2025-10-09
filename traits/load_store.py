@@ -1,5 +1,5 @@
 """ Executable Schema Transformers """
-from __future__ import annotations
+
 
 import typing
 import copy

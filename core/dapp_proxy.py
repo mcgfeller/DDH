@@ -1,5 +1,5 @@
 """ Proxy representing DApps in runner  """
-from __future__ import annotations
+
 import enum
 import typing
 import pydantic

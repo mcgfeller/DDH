@@ -1,6 +1,5 @@
 """ Test Issue #17 """
 
-from __future__ import annotations
 
 import typing
 import pydantic

@@ -2,7 +2,7 @@
     The goal would be a unique and secure identification of the client's container process,
     but I currently don't know how to do this. Could I tap into a TLS identifier?
 """
-from __future__ import annotations
+
 import typing
 import pydantic
 from utils.pydantic_utils import DDHbaseModel

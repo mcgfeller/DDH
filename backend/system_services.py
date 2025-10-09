@@ -1,6 +1,5 @@
 """ System Services, invocation of DApps providing a system service """
 
-from __future__ import annotations
 
 import enum
 

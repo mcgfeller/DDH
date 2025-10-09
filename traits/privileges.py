@@ -1,5 +1,5 @@
 """ Parametrized Privileges, e.g., for DApps """
-from __future__ import annotations
+
 
 import enum
 import typing

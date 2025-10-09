@@ -1,6 +1,6 @@
 """ Pydantic utilities and superclasses """
 
-from __future__ import annotations
+
 import pydantic
 import typing
 import datetime

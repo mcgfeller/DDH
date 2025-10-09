@@ -1,6 +1,6 @@
 """ Tests for dynamic manipulation of Pydantic classes """
 
-from __future__ import annotations
+
 import pydantic
 import typing
 import datetime

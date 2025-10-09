@@ -1,5 +1,5 @@
 """ Python internal Schema Format using Pydantic """
-from __future__ import annotations
+
 import typing
 import types
 import pydantic

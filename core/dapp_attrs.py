@@ -1,5 +1,5 @@
 """ DApps definition, both for Python based DApps and for runner.  """
-from __future__ import annotations
+
 from abc import abstractmethod
 import enum
 import typing

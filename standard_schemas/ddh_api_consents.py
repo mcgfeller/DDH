@@ -1,6 +1,6 @@
 """ Schemas //org/ddh/consents, providing an API against principaled information about DDH itself: Consents
 """
-from __future__ import annotations
+
 
 import datetime
 import typing

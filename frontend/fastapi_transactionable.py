@@ -1,6 +1,5 @@
 """ FastAPI microservice router providing transaction services """
 
-from __future__ import annotations
 
 import fastapi
 

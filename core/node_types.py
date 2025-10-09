@@ -1,5 +1,5 @@
 """ Types only Node, to avoid circular imports """
-from __future__ import annotations
+
 import enum
 import pydantic
 

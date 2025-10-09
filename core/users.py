@@ -1,6 +1,6 @@
 """ Users """
 
-from __future__ import annotations
+
 import pydantic
 import datetime
 import enum

@@ -1,6 +1,5 @@
 """ DApp skeleton to run a DApp as a FastAPI microservice """
 
-from __future__ import annotations
 
 import fastapi
 import fastapi.security

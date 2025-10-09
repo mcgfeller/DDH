@@ -1,6 +1,6 @@
 """ Recommender System, used in the Market to recommend Data Apps """
 
-from __future__ import annotations
+
 from re import sub
 import typing
 import logging

@@ -1,5 +1,5 @@
 """ Pillars upon which DDH is built """
-from __future__ import annotations
+
 import typing
 import os
 import logging

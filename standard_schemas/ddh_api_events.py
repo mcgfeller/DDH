@@ -1,6 +1,6 @@
 """ Schemas //org/ddh/events, providing an API against principaled information about DDH itself: Events
 """
-from __future__ import annotations
+
 
 import datetime
 import typing

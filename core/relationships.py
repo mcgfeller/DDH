@@ -1,6 +1,6 @@
 """ Relationship to AbstractSchema elements """
 
-from __future__ import annotations
+
 import typing
 import pydantic
 import enum

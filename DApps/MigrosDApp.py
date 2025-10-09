@@ -1,5 +1,5 @@
 """ Example DApp - fake Migros Cumulus data _ V2 MICRO SERVICE """
-from __future__ import annotations
+
 
 import datetime
 import typing

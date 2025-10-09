@@ -1,7 +1,7 @@
 """ transaction API
 """
 
-from __future__ import annotations
+
 import typing
 import time
 import datetime

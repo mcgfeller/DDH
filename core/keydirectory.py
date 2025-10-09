@@ -1,6 +1,6 @@
 
 """ Directory mapping keys to nodes """
-from __future__ import annotations
+
 from abc import abstractmethod
 import pydantic
 import datetime

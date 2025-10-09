@@ -1,7 +1,6 @@
 """ Record Audit events, with AuditPersistAction """
 
 
-from __future__ import annotations
 import typing
 
 

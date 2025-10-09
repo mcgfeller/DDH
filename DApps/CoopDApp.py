@@ -1,5 +1,5 @@
 """ Example DApp - fake Coop Supercard data """
-from __future__ import annotations
+
 
 import datetime
 import typing

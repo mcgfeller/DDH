@@ -154,7 +154,7 @@ async def test_read_anon_migros_without_grant(user3, user, transaction, migros_k
 
 def anon_key(key: keys.DDHkey, grants) -> list[keys.DDHkey]:
     """ return a list of  data keys with anonymized owner to fetch key
-        grants isreturned by /{user2.id}/org/ddh/consents/received
+        grants returned by /{user2.id}/org/ddh/consents/received
     """
     match_key = key.without_variant_version().ensure_fork(keys.ForkType.data)
     matched = []

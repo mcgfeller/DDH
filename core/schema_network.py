@@ -1,5 +1,5 @@
 """ The Network of AbstractSchema Relationsships """
-from __future__ import annotations
+
 import typing
 import logging
 
@@ -113,7 +113,7 @@ class SchemaNetworkClass():
         except Exception as e:
             raise errors.DDHerror(f'Layouting error: {e}; choose another layout').to_http()
 
-        labels = {node: f"{attrs.get('id','-unknown-')}" for node, attrs in G.nodes.items()}  # short id for nodes
+        labels = {node: f"{attrs.get('id', '-unknown-')}" for node, attrs in G.nodes.items()}  # short id for nodes
         colors = [self.NodeColors.get(attrs.get('type', '-unknown-'), 'black') for attrs in G.nodes.values()]
         networkx.draw_networkx(G, pos=pos, with_labels=True,
                                labels=labels, node_color=colors, font_size=size_f)
