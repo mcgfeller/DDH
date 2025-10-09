@@ -3,7 +3,7 @@
 import typing
 import enum
 import secrets
-import zlib
+from compression import zstd
 import pydantic
 
 
@@ -76,11 +76,11 @@ class Persistable(SupportsLoading):
         return
 
     def to_compressed(self) -> bytes:
-        return zlib.compress(self.to_json().encode(), level=-1)
+        return zstd.compress(self.to_json().encode(), level=-1)
 
     @classmethod
     def from_compressed(cls, data: bytes):
-        return cls.from_json(zlib.decompress(data).decode())
+        return cls.from_json(zstd.decompress(data).decode())
 
     def to_json(self) -> str:
         return self.model_dump_json()
