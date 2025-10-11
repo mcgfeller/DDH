@@ -64,7 +64,7 @@ executing==2.2.1
     # via inline-snapshot
 face==24.0.0
     # via glom
-fastapi==0.118.2
+fastapi==0.118.3
     # via -r requirements.in
 fonttools==4.60.1
     # via matplotlib
@@ -184,7 +184,7 @@ rfc3986-validator==0.1.1
     # via jsonschema
 rfc3987-syntax==1.1.0
     # via jsonschema
-rich==14.1.0
+rich==14.2.0
     # via inline-snapshot
 rpds-py==0.27.1
     # via
