@@ -49,15 +49,18 @@ class ConsentQuery(executable_nodes.InProcessSchemedExecutableNode):
         return r
 
     def get_schemas(self) -> dict[keys.DDHkeyVersioned, schemas.AbstractSchema]:
-        """ Obtain initial schema for DApp """
-        return {self.key: Grants.to_schema()}
+        """ Obtain initial schema for DApp, mark it is subscribable """
+        s = Grants.to_schema()
+        s.schema_attributes.subscribable = True
+        return {self.key: s}
 
 
 def install():
     session = sessions.get_system_session()
     transaction = session.get_or_create_transaction()
     attrs = dapp_attrs.SchemaProvider()
-    cq = ConsentQuery(owner=principals.RootPrincipal, attrs=attrs, key=keys.DDHkeyVersioned0('//org/ddh/consents'))
+    cq = ConsentQuery(owner=principals.RootPrincipal, attrs=attrs,
+                      key=keys.DDHkeyVersioned0('//org/ddh/consents'), subscribable=True)
     cq.register(session)
 
 

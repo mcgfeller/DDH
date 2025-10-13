@@ -28,6 +28,20 @@ class ExecutableNode(node_types.T_ExecutableNode, nodes.Node, persistable.NonPer
 class SchemedExecutableNode(ExecutableNode):
     """ Node that is executable and provides a Schema """
 
+    subscribable: bool = False  # is this node providing a subscribable schema?
+
+    @property
+    def supports(self) -> set[NodeSupports]:
+        """ Note that this is NOT a SchemaNode, and does not support .schema. The schema must be registered
+            separately, under  a schema key. 
+        """
+        s = {NodeSupports.execute, }
+        if self.subscribable:
+            s.add(NodeSupports.subscribable)
+        if self.consents:
+            s.add(NodeSupports.consents)
+        return s
+
     def register_references(self, attrs, session, schema_network: schema_network.SchemaNetworkClass):
         schema_network.add_dapp(attrs)
 
@@ -81,7 +95,7 @@ class InProcessSchemedExecutableNode(SchemedExecutableNode):
         assert self.key
         transaction = session.get_or_create_transaction()
         for k, s in self.get_schemas().items():
-            self.register_schema(k, s, self.owner, transaction)
+            snode = self.register_schema(k, s, self.owner, transaction)
         self.register_references(self.attrs, session, m_schemas.SchemaNetwork)
         keydirectory.NodeRegistry[self.key] = self
         m_schemas.SchemaNetwork.valid.invalidate()  # finished

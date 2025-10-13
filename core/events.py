@@ -51,6 +51,7 @@ class SubscribableEvent(DDHbaseModel):
 class UpdateEvent(SubscribableEvent):
 
     key: keys.DDHkey
+    grants_added: set[keys.DDHkeyGeneric] | None = None  # we need to add this, as we don't return subclasses
 
     timestamp: datetime.datetime = pydantic.Field(default_factory=datetime.datetime.now)
 

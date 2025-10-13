@@ -14,6 +14,7 @@ from core import (common_ids, dapp_attrs, errors, events, executable_nodes,
 from frontend import sessions
 from schema_formats import py_schema
 from utils import key_utils, utils
+from utils.pydantic_utils import CV
 
 
 class Subscriptions(py_schema.PySchemaElement):
@@ -72,6 +73,8 @@ class EventQueryParams(trait.QueryParams):
 
 class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
 
+    MaxEvents: CV[int] = 100
+
     async def execute(self, req: dapp_attrs.ExecuteRequest) -> list[events.SubscribableEvent]:
         """ obtain given and received consents and return them as a Grants object, which combines
             the key and its consents. 
@@ -95,7 +98,7 @@ class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
         evs = []
         if topic:
             print(f'EventQuery: waiting on {topic=}')
-            async for ev in await queues.PubSubQueue.listen_upto(topic):
+            async for ev in await queues.PubSubQueue.listen_upto(topic, many=self.MaxEvents):
                 ev = events.UpdateEvent.model_validate_json(ev)
                 if await self.check_access(ev, req):
                     evs.append(ev)
