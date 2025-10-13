@@ -2,9 +2,9 @@
 
 import typing
 import enum
-import pydantic.json
+import pydantic
 
-from pydantic.errors import PydanticErrorMixin
+# from pydantic.errors import PydanticErrorMixin
 from utils.pydantic_utils import DDHbaseModel
 from core import common_ids, versions, errors
 
