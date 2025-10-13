@@ -3,7 +3,9 @@
 
 
 import datetime
+import typing
 import pydantic
+import pydantic_core
 
 from core import keys, keydirectory, nodes, common_ids
 from utils import utils
@@ -12,10 +14,35 @@ from utils.pydantic_utils import DDHbaseModel, CV
 
 
 class SubscribableEvent(DDHbaseModel):
-    """ Event on a single DDHkey. Potential for extension to kind of event and update specifics
+    """ Event on a single DDHkey. Potential for extension to kind of event and update specifics. 
+        Records subclass in json, so can be recreated from json. 
     """
     key: keys.DDHkeyGeneric
     topic_prefix: CV[str] = 'update'
+    _EventClasses: CV[dict[str, type[SubscribableEvent]]] = {}
+    event_class: str | None = None
+
+    @classmethod
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        SubscribableEvent._EventClasses[cls.__name__] = cls
+
+    @classmethod
+    def get_class_name(cls) -> str:
+        return cls.__name__
+
+    def __init__(self, *a, **kw):
+        """ Ensure .event_class records name of concrete class, so we can JSON object and back. """
+        if 'event_class' not in kw:
+            kw['event_class'] = self.__class__.__name__
+        super().__init__(*a, **kw)
+
+    @classmethod
+    def create_from_json(cls, j: str) -> SubscribableEvent:
+        """ Recreate JSON'ed object in correct class, based on .event_class attribute """
+        ev = pydantic_core.from_json(j)  # get dict from string
+        cls = cls._EventClasses.get(ev['event_class'], cls)
+        return cls.model_validate(ev)
 
     def get_topic(self, transaction) -> queues.Topic | None:
         """ get a topic for key.
@@ -51,8 +78,6 @@ class SubscribableEvent(DDHbaseModel):
 class UpdateEvent(SubscribableEvent):
 
     key: keys.DDHkey
-    grants_added: set[keys.DDHkeyGeneric] | None = None  # we need to add this, as we don't return subclasses
-
     timestamp: datetime.datetime = pydantic.Field(default_factory=datetime.datetime.now)
 
 

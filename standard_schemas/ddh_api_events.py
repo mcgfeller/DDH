@@ -98,8 +98,8 @@ class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
         evs = []
         if topic:
             print(f'EventQuery: waiting on {topic=}')
-            async for ev in await queues.PubSubQueue.listen_upto(topic, many=self.MaxEvents):
-                ev = events.UpdateEvent.model_validate_json(ev)
+            async for jev in await queues.PubSubQueue.listen_upto(topic, many=self.MaxEvents):
+                ev = events.SubscribableEvent.create_from_json(jev)
                 if await self.check_access(ev, req):
                     evs.append(ev)
         else:
