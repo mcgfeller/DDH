@@ -97,6 +97,7 @@ async def test_event_wait_consent_received(user, user_lise, user_another, no_sto
     # wait for events on this key:
     async with asyncio.timeout(5):
         d, h = await test_own_data.read(ddhkey, session_lise, raw_query_params={'nowait': True})
+    assert len(d) >= 3
     for ev in d:
         for key in ev.grants_added:
             if key.key[-1] in ('doc1a', 'doc1p'):
@@ -128,6 +129,7 @@ async def test_event_wait_noaccess(user, no_storage_dapp):
     ddhkey = keys.DDHkey('/mgf/org/ddh/events/wait/another/org/private/documents')  # no access to this key
     async with asyncio.timeout(5):  # just in case to avoid hangs
         d, h = await test_own_data.read(ddhkey, session, check_empty=False)
-    assert not [ev for ev in d if ev.key.owner == 'another'], 'returned data must be empty, because we lack access'
+    assert not [ev for ev in d if ev.key.owner ==
+                'another'], 'returned data for user=another must be empty, because we lack access'
 
     return
