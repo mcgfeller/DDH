@@ -7,7 +7,7 @@ import typing
 import pydantic
 import pydantic_core
 
-from core import keys, keydirectory, nodes, common_ids
+from core import keys, keydirectory, nodes, common_ids, errors, permissions, dapp_attrs
 from utils import utils
 from backend import queues
 from utils.pydantic_utils import DDHbaseModel, CV
@@ -74,11 +74,28 @@ class SubscribableEvent(DDHbaseModel):
             await queues.PubSubQueue.publish(topic, self.model_dump_json())
         return
 
+    async def check_access(self, req: dapp_attrs.ExecuteRequest) -> bool:
+        """ decide whether this event can be viewed by req """
+        raise errors.SubClass
+
 
 class UpdateEvent(SubscribableEvent):
 
     key: keys.DDHkey
     timestamp: datetime.datetime = pydantic.Field(default_factory=datetime.datetime.now)
+
+    async def check_access(self, req: dapp_attrs.ExecuteRequest) -> bool:
+        """ We need to get the consent node and determine whether access is permitted. """
+        access = permissions.Access(ddhkey=self.key, principal=req.access.principal)
+        # we need to get the consent node:
+        try:
+            consent_node, c_key_split = await keydirectory.NodeRegistry.get_node_async(self.key, nodes.NodeSupports.consents, req.transaction)
+
+        except errors.AccessError:
+            # we have no access to the consent node; decide without the node (no access decision)
+            consent_node = None
+        ok, *dummy = access.permitted(consent_node, owner=None)
+        return ok
 
 
 class ConsentEvent(UpdateEvent):
@@ -88,3 +105,12 @@ class ConsentEvent(UpdateEvent):
     def for_principal(cls, principal: common_ids.PrincipalId, grants_added: set[keys.DDHkeyGeneric]):
         key = keys.DDHkeyGeneric('//org/ddh/consents/received/').with_new_owner(principal)
         return cls(key=key, grants_added=grants_added)
+
+    async def check_access(self, req: dapp_attrs.ExecuteRequest) -> bool:
+        """ This is simple, we don't have to check contents, but only whether the requested key owner
+            matches the requestor. 
+
+            ConsentEvent is only created for the key, so we don't have to check the node access for the keys in grants_added.
+        """
+        ok = self.key.owner == req.access.principal.id
+        return ok

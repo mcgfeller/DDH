@@ -25,6 +25,11 @@ def user_lise():
     return user_auth.UserInDB.load('lise')
 
 
+@pytest.fixture(scope="module")
+def user_another():
+    return user_auth.UserInDB.load('another')
+
+
 async def give_lise_consents(no_storage_dapp):
     """ Give consent on top key /mgf to lise """
     consents = permissions.Consents(consents=[permissions.Consent(grantedTo=['lise'])])
@@ -79,19 +84,27 @@ async def subscribe_consents(user, no_storage_dapp):
 
 
 @pytest.mark.asyncio
-async def test_event_wait_consent_received(user, user_lise, no_storage_dapp):
+async def test_event_wait_consent_received(user, user_lise, user_another, no_storage_dapp):
     session_lise = test_own_data.get_session(user_lise)
     await subscribe_consents(user_lise, no_storage_dapp)
     # mgf writes consent to create an event:
     await test_own_data.write_with_consent(f"/{user.id}/org/private/documents/doc1", [user_lise])
     await test_own_data.write_with_consent(f"/{user.id}/org/private/documents/doc1a", [user_lise], consent_modes={permissions.AccessMode.read, permissions.AccessMode.anonymous, })
     await test_own_data.write_with_consent(f"/{user.id}/org/private/documents/doc1p", [user_lise], consent_modes={permissions.AccessMode.read, permissions.AccessMode.pseudonym, })
-
+    await test_own_data.write_with_consent(f"/{user.id}/org/private/documents/doc1no", [user_another])
     # now read as lise:
     ddhkey = keys.DDHkey(f'/{user_lise.id}/org/ddh/events/wait/{user_lise.id}/org/ddh/consents/received')
     # wait for events on this key:
     async with asyncio.timeout(5):
         d, h = await test_own_data.read(ddhkey, session_lise, raw_query_params={'nowait': True})
+    for ev in d:
+        for key in ev.grants_added:
+            if key.key[-1] in ('doc1a', 'doc1p'):
+                assert key.owner != user.id
+            elif key.key[-1] in ('doc1no', ):
+                assert False, 'not granted to this user, must not see'
+            else:
+                assert key.owner == user.id
     return
 
 

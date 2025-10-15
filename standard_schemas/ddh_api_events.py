@@ -100,7 +100,7 @@ class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
             print(f'EventQuery: waiting on {topic=}')
             async for jev in await queues.PubSubQueue.listen_upto(topic, many=self.MaxEvents):
                 ev = events.SubscribableEvent.create_from_json(jev)
-                if await self.check_access(ev, req):
+                if await ev.check_access(req):  # only return if requestor has access
                     evs.append(ev)
         else:
             raise errors.NotFound(f'No topic for {wait_on_key=}')
@@ -126,18 +126,6 @@ class EventQuery(executable_nodes.InProcessSchemedExecutableNode):
                 subscriptions = Subscriptions.model_validate(data)
 
         return subscriptions
-
-    async def check_access(self, ev, req) -> bool:
-        access = permissions.Access(ddhkey=ev.key, principal=req.access.principal)
-        # we need to get the consent node:
-        try:
-            consent_node, c_key_split = await keydirectory.NodeRegistry.get_node_async(ev.key, nodes.NodeSupports.consents, req.transaction)
-
-        except errors.AccessError:
-            # we have no access to the consent node; decide without the node (no access decision)
-            consent_node = None
-        ok, *dummy = access.permitted(consent_node, owner=None)
-        return ok
 
 
 def install():
