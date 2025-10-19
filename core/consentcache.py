@@ -104,7 +104,7 @@ class _ConsentCache:
         return consents
 
     def get_real_key(self, trx_owner: principals.Principal, orig_key: keys.DDHkey) -> keys.DDHkey:
-        """ replace the anon principle in the orig_key by the true princple, looking up in ConsentCache for 
+        """ replace the anon principle in the orig_key by the true principle, looking up in ConsentCache for 
             trx_owner. We allow real key owner if it matches the trx owner. 
         """
         if trx_owner.id == orig_key.owner:  # owner itself asks for their data.

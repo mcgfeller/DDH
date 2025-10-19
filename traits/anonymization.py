@@ -16,7 +16,10 @@ from . import capabilities
 
 
 class AnonLookup(capabilities.DataCapability):
-    """ Lookup of an anonymized owner id in a key, replace by true key  """
+    """ Lookup of an anonymized owner id in a key, replace by true key.
+        This auxilliary capabilibty doesn't need to be declared and is automatically added by .additional_traits()
+        by Anonymize and Pseudonymize.
+    """
 
     supports_modes: CV[frozenset[permissions.AccessMode]] = frozenset(
         {permissions.AccessMode.anonymous, permissions.AccessMode.pseudonym})
@@ -129,7 +132,7 @@ class Pseudonymize(Anonymize):
 
 
 class PseudonymMap(persistable.Persistable):
-
+    """ This is the saved map persisted by the tid key """
     cache: dict
     inverted_cache: dict | None = None  # for writing
 
@@ -157,7 +160,10 @@ class PseudonymMap(persistable.Persistable):
 
 
 class DePseudonymize(capabilities.DataCapability):
-    """ Revert the pseudonymization based on the stored map """
+    """ Revert the pseudonymization based on the stored map 
+        This auxilliary capabilibty doesn't need to be declared and is automatically added by .additional_traits()
+        by Pseudonymize.
+    """
 
     supports_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.pseudonym})
     only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.write})
