@@ -52,3 +52,14 @@ def test_add():
     assert validations.LatestVersion in t1
     assert anonymization.Pseudonymize in t1
     assert validations.MustValidate in t1
+
+
+def test_expand_traits():
+    """ Test that compilation adds a missing trait AnonLookup and keeps already present trait DePseudonymize  """
+    depseudo = anonymization.DePseudonymize()
+    t1 = trait.Transformers(validations.LatestVersion(), anonymization.Pseudonymize(), depseudo)
+    assert len(t1.traits) == 3
+    t1.ensure_compiled(None)  # type: ignore
+    assert len(t1.traits) == 4
+    assert 'AnonLookup' in t1._by_classname
+    assert t1._by_classname['DePseudonymize'] is depseudo  # existing, must not be re-added
