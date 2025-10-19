@@ -36,6 +36,10 @@ class Anonymize(capabilities.DataCapability):
     only_modes: CV[frozenset[permissions.AccessMode]] = frozenset({permissions.AccessMode.read})
     phase: CV[trait.Phase] = trait.Phase.post_load
 
+    def additional_traits(self):
+        """ We need lookup to resolve anonymous keys """
+        return [AnonLookup()]
+
     async def apply(self, traits: trait.Traits, trstate: trait.TransformerState, **kw: dict):
         assert trstate.parsed_data is not None and len(trstate.parsed_data) > 0
         cc = consentcache.ConsentCache.consents_by_principal.get(trstate.access.principal.id)
@@ -105,13 +109,14 @@ class Anonymize(capabilities.DataCapability):
 class Pseudonymize(Anonymize):
     supports_modes: CV[frozenset[permissions.AccessMode]] = {permissions.AccessMode.pseudonym}
 
+    def additional_traits(self):
+        """ We need lookup and DePseudonymize to restore data """
+        return [AnonLookup(), DePseudonymize()]
+
     async def apply(self, traits: trait.Traits, trstate: trait.TransformerState, **kw: dict):
         assert trstate.parsed_data is not None and len(trstate.parsed_data) > 0
         cache = {}
         cc = consentcache.ConsentCache.consents_by_principal.get(trstate.access.principal.id)
-        # for pid in trstate.parsed_data.keys():
-        #     tid = trstate.transaction.trxid+'_'+secrets.token_urlsafe(max(10, len(pid)))
-        #     cache[('', '', pid)] = tid
 
         trstate.parsed_data = self.transform(trstate.nschema, trstate.access,
                                              trstate.transaction,  trstate.parsed_data, cc, cache)

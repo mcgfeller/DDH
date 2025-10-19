@@ -21,6 +21,7 @@
 import enum
 import graphlib
 import typing
+import threading
 
 
 import pydantic
@@ -28,6 +29,8 @@ from utils.pydantic_utils import DDHbaseModel, CV
 from utils import utils
 
 from . import errors, schemas, permissions, transactions, keys, node_types
+
+SingleThreaded = threading.RLock()
 
 
 @enum.unique
@@ -118,6 +121,26 @@ class Trait(DDHbaseModel, typing.Hashable):
         else:  # all other case are equal
             return self
 
+    def compile(self, traits: Traits, trstate: TransformerState):
+        """ Compile this trait, possibly modifying the composite traits this is a part of """
+        self.expand_traits(traits, trstate)
+        return
+
+    def additional_traits(self) -> list[Trait]:
+        """ return additional traits required, called during compile phase """
+        return []
+
+    def expand_traits(self, traits: Traits, trstate: TransformerState):
+        """ Add traits not yet present, but returned by .additional_traits().
+            It usually sufficces to overwrite .additional_traits(), not this method. 
+        """
+        add = [t for t in self.additional_traits() if t not in traits.traits]  # not present
+        if add:
+            before = traits._compiled  # we don't need recompilation because of this
+            traits += add  # in place merging, sets .compiled flag
+            traits._compiled = before
+        return
+
 
 class Transformer(Trait):
     supports_modes: CV[frozenset[permissions.AccessMode]]   # supports_modes is a mandatory class variable
@@ -164,6 +187,7 @@ class Traits(DDHbaseModel):
     """
     traits: frozenset[Trait] = frozenset()
     _by_classname: dict[str, Trait] = {}  # lookup by class name
+    _compiled: bool = False
 
     def __init__(self, *a, **kw):
         if a:  # shortcut to allow Trait as args
@@ -247,6 +271,7 @@ class Traits(DDHbaseModel):
         new_traits = self.__add__(trait)
         for k in ('traits', '_by_classname',):  # this is a Pydantic class, private attribute is now shown
             setattr(self, k, getattr(new_traits, k))
+        self._compiled = False
         return self
 
     def not_cancelled(self) -> typing.Self:
@@ -256,6 +281,23 @@ class Traits(DDHbaseModel):
             return self.__class__(*traits)
         else:
             return self
+
+    def ensure_compiled(self, trstate: TransformerState):
+        """ Ensure traits are compiled before use; ._compiled controls this. 
+            Ensure that this is only done once, currently globally (could be per class).
+        """
+        if not self._compiled:  # optimistic, without lock
+            with SingleThreaded:
+                if not self._compiled:  # check again under lock
+                    self._compiled = True  # prevent recursions
+                    self.compile(trstate)
+        return
+
+    def compile(self, trstate: TransformerState):
+        """ Call .compile() on each trait, passing self so compilation can add traits. """
+        for trait in self.traits:
+            trait.compile(self, trstate)
+        return
 
 
 schemas.AbstractSchema = typing.ForwardRef('schemas.AbstractSchema')
@@ -327,6 +369,7 @@ class Transformers(Traits):
     async def apply(self,  trstate: TransformerState, subclass: type[Transformer] | None = None, **kw):
         """ apply traits of subclass in turn """
         access = trstate.access
+        self.ensure_compiled(trstate)
         traits = self.select_for_apply(access.modes, access.ddhkey.fork, subclass)
         traits = self.sorted(traits, access.modes)
         trait = None  # just for error handling
