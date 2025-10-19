@@ -135,8 +135,8 @@ class Receipt(py_schema.PySchemaElement):
     def get_cumulus_json(cls, principal, query_params):
         """ This is extremly fake to retrieve data for my principal """
         if principal.id == 'mgf':
-            df = pandas.read_csv(r"DApps/test_data_migros.csv",
-                                 parse_dates=[['Datum', 'Zeit']], date_format="%d-%m-%y %H:%M:%S")
+            df = pandas.read_csv(r"DApps/test_data_migros.csv")
+            df['Datum_Zeit'] = pandas.to_datetime(df.pop('Datum')+' '+df.pop('Zeit'), format='%d-%m-%y %H:%M:%S')
             d = df.to_dict(orient='records')
         else:
             d = {}
