@@ -6,13 +6,15 @@
 #
 accept-types==0.4.1
     # via -r requirements.in
+annotated-doc==0.0.4
+    # via fastapi
 annotated-types==0.7.0
     # via pydantic
 anyio==4.11.0
     # via
     #   httpx
     #   starlette
-arrow==1.3.0
+arrow==1.4.0
     # via isoduration
 asttokens==3.0.0
     # via inline-snapshot
@@ -31,7 +33,7 @@ boltons==25.0.0
     #   glom
 build==1.3.0
     # via pip-tools
-certifi==2025.10.5
+certifi==2025.11.12
     # via
     #   httpcore
     #   httpx
@@ -48,9 +50,9 @@ colorama==0.4.6
     #   pytest
 contourpy==1.3.3
     # via matplotlib
-coverage[toml]==7.10.7
+coverage[toml]==7.11.3
     # via pytest-cov
-cryptography==46.0.2
+cryptography==46.0.3
     # via
     #   -r requirements.in
     #   pyjwt
@@ -64,7 +66,7 @@ executing==2.2.1
     # via inline-snapshot
 face==24.0.0
     # via glom
-fastapi==0.118.3
+fastapi==0.121.1
     # via -r requirements.in
 fonttools==4.60.1
     # via matplotlib
@@ -80,15 +82,15 @@ httpcore==1.0.9
     # via httpx
 httpx==0.27.2
     # via -r requirements.in
-idna==3.10
+idna==3.11
     # via
     #   anyio
     #   email-validator
     #   httpx
     #   jsonschema
-iniconfig==2.1.0
+iniconfig==2.3.0
     # via pytest
-inline-snapshot==0.29.3
+inline-snapshot==0.31.1
     # via -r requirements.in
 isoduration==20.11.0
     # via jsonschema
@@ -100,7 +102,7 @@ jsonschema-specifications==2025.9.1
     # via jsonschema
 kiwisolver==1.4.9
     # via matplotlib
-lark==1.3.0
+lark==1.3.1
     # via rfc3987-syntax
 markdown-it-py==4.0.0
     # via rich
@@ -110,7 +112,7 @@ mdurl==0.1.2
     # via markdown-it-py
 networkx==3.5
     # via -r requirements.in
-numpy==2.3.3
+numpy==2.3.4
     # via
     #   -r requirements.in
     #   contourpy
@@ -125,7 +127,7 @@ pandas==2.3.3
     # via -r requirements.in
 passlib[bcrypt]==1.7.4
     # via -r requirements.in
-pillow==11.3.0
+pillow==12.0.0
     # via matplotlib
 pip-tools==7.5.1
     # via -r requirements.in
@@ -133,15 +135,15 @@ pluggy==1.6.0
     # via
     #   pytest
     #   pytest-cov
-psutil==7.1.0
+psutil==7.1.3
     # via -r requirements.in
 pycparser==2.23
     # via cffi
-pydantic[email]==2.12.0
+pydantic[email]==2.12.4
     # via
     #   -r requirements.in
     #   fastapi
-pydantic-core==2.41.1
+pydantic-core==2.41.5
     # via pydantic
 pygments==2.19.2
     # via
@@ -155,13 +157,13 @@ pyproject-hooks==1.2.0
     # via
     #   build
     #   pip-tools
-pytest==8.4.2
+pytest==9.0.0
     # via
     #   -r requirements.in
     #   inline-snapshot
     #   pytest-asyncio
     #   pytest-cov
-pytest-asyncio==1.2.0
+pytest-asyncio==1.3.0
     # via -r requirements.in
 pytest-cov==7.0.0
     # via -r requirements.in
@@ -174,7 +176,7 @@ python-multipart==0.0.20
     # via -r requirements.in
 pytz==2025.2
     # via pandas
-referencing==0.36.2
+referencing==0.37.0
     # via
     #   jsonschema
     #   jsonschema-specifications
@@ -186,7 +188,7 @@ rfc3987-syntax==1.1.0
     # via jsonschema
 rich==14.2.0
     # via inline-snapshot
-rpds-py==0.27.1
+rpds-py==0.28.0
     # via
     #   jsonschema
     #   referencing
@@ -198,10 +200,8 @@ sniffio==1.3.1
     # via
     #   anyio
     #   httpx
-starlette==0.48.0
+starlette==0.49.3
     # via fastapi
-types-python-dateutil==2.9.0.20251008
-    # via arrow
 typing-extensions==4.15.0
     # via
     #   fastapi
@@ -211,12 +211,14 @@ typing-extensions==4.15.0
 typing-inspection==0.4.2
     # via pydantic
 tzdata==2025.2
-    # via pandas
+    # via
+    #   arrow
+    #   pandas
 uri-template==1.3.0
     # via jsonschema
-uvicorn==0.37.0
+uvicorn==0.38.0
     # via -r requirements.in
-webcolors==24.11.1
+webcolors==25.10.0
     # via jsonschema
 wheel==0.45.1
     # via pip-tools
