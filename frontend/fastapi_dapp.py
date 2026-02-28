@@ -23,7 +23,7 @@ async def lifespan(app: fastapi.APIRouter):
     d = dapp_attrs.RunningDApp(id=a.id, dapp_version=a.version,
                                schema_version=versions.Version('0.0'), location=location)
     await asyncio.sleep(1)  # wait till manager is ready
-    await CLIENT.post('connect', data=d.model_dump_json(), headers={'Content-Type': 'application/json'})
+    await CLIENT.post('connect', content=d.model_dump_json(), headers={'Content-Type': 'application/json'})
     yield
     print('lifespan startup', app)
     return
