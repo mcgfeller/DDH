@@ -33,7 +33,7 @@ boltons==25.0.0
     #   glom
 build==1.4.0
     # via pip-tools
-certifi==2026.1.4
+certifi==2026.2.25
     # via
     #   httpcore
     #   httpx
@@ -66,7 +66,7 @@ executing==2.2.1
     # via inline-snapshot
 face==26.0.0
     # via glom
-fastapi==0.129.2
+fastapi==0.134.0
     # via -r requirements.in
 fonttools==4.61.1
     # via matplotlib
@@ -90,7 +90,7 @@ idna==3.11
     #   jsonschema
 iniconfig==2.3.0
     # via pytest
-inline-snapshot==0.32.2
+inline-snapshot==0.32.3
     # via -r requirements.in
 isoduration==20.11.0
     # via jsonschema

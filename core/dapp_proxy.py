@@ -68,7 +68,7 @@ class DAppProxy(DDHbaseModel):
 
     async def execute(self, req: dapp_attrs.ExecuteRequest):
         """ forward execution request to DApp microservice """
-        resp = await self.running.client.post('execute', data=req.model_dump_json())
+        resp = await self.running.client.post('execute', data=req.model_dump_json(), headers={'Content-Type': 'application/json'})
         errors.DAppError.raise_from_response(resp)  # Pass error response to caller
         return resp.json()
 
