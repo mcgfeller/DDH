@@ -4,7 +4,7 @@ from abc import abstractmethod
 import enum
 import typing
 import pydantic
-import httpx
+import httpx2
 
 
 from core import keys, schemas, policies, principals, relationships, common_ids, versions, permissions, transactions, trait
@@ -168,18 +168,18 @@ class RunningDApp(DDHbaseModel):
     schema_version: versions.Version  # TODO: Use: Comparison to decide whether to update schema?
     location: pydantic.AnyHttpUrl
     # = pydantic.Field(default=None, exclude=True)  # private and not json-able
-    _client: httpx.AsyncClient | None = None
+    _client: httpx2.AsyncClient | None = None
 
     def init_client(self):
         """ Ensure client is not Nonr"""
         # if self.client is None:
-        #     self.client = httpx.AsyncClient(base_url=self.location)
+        #     self.client = httpx2.AsyncClient(base_url=self.location)
         return
 
     @property
-    def client(self) -> httpx.AsyncClient:
+    def client(self) -> httpx2.AsyncClient:
         if self._client is None:
-            self._client = httpx.AsyncClient(base_url=str(self.location))
+            self._client = httpx2.AsyncClient(base_url=str(self.location))
         return self._client
 
 

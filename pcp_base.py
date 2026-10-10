@@ -5,7 +5,7 @@ import abc
 import pydantic
 import argparse
 import psutil
-import httpx as httpx
+import httpx2
 import typing
 import subprocess
 import pathlib
@@ -25,8 +25,8 @@ sys.path.append(str(PARENTDIR))  # put our parent dir on path
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(name)s:%(levelname)s: %(message)s')
 logger = logging.getLogger('pcp')
-logging.getLogger('httpx').setLevel(logging.INFO)
-logging.getLogger('httpcore').setLevel(logging.INFO)
+logging.getLogger('httpx22').setLevel(logging.INFO)
+logging.getLogger('httpcore2').setLevel(logging.INFO)
 
 SubclassError = NotImplementedError('must be implemented in subclass')
 NotAvailableError = NotImplementedError('action not available')
@@ -122,7 +122,7 @@ class Controllable(pydantic.BaseModel):
     def start_wait(self, args, wait: int = 2, max_delay: int = 10, maxrounds: int = 5):
         """ start and wait for process to be healthy """
         self.start(args)
-        fastapi_utils.retry(self.is_healthy, args, exceptions=(httpx.HTTPError,),
+        fastapi_utils.retry(self.is_healthy, args, exceptions=(httpx2.HTTPError,),
                             initial_delay=wait, max_delay=max_delay, maxrounds=maxrounds, logger=logger)
         return
 
@@ -165,7 +165,7 @@ class ProcessGroup(Controllable):
         [process.start(args) for process in self.processes]
         # wait for all processes to be healthy
         for process in self.processes:
-            fastapi_utils.retry(process.is_healthy, args, exceptions=(httpx.HTTPError,),
+            fastapi_utils.retry(process.is_healthy, args, exceptions=(httpx2.HTTPError,),
                                 initial_delay=initial_delay, max_delay=max_delay, maxrounds=maxrounds, logger=logger)
         return
 
@@ -240,6 +240,7 @@ class Runnable(Controllable):
 class AsgiProcess(Runnable):
     """ Process running an ASGI server
         Currently, uvicorn is our ASGI server.
+        # TODO: Getting our environment must be more dynamic
     """
     uvicorn_exe: str = r".venv-1\scripts\uvicorn" if OnWindows else r'.venv/scripts/uvicorn'
     app: str
@@ -266,7 +267,7 @@ class AsgiProcess(Runnable):
             url += '?appid='+str(appid)
         h = {}
         try:
-            r = httpx.get(url)
+            r = httpx2.get(url)
             h = r.json()
             if not 'pid' in h:
                 h['pid'] = proc.pid if proc else '?'

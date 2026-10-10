@@ -1,6 +1,6 @@
 """ Test get and putting data, against schema """
 import pytest
-import httpx
+import httpx2
 import copy
 
 
@@ -73,5 +73,5 @@ def test_get_and_putdata_pseudonym(user1):
     r.raise_for_status()
     data = r.json()
     eid = list(data.keys())[0]
-    r = user1.put(f'/ddh/{eid}/org/migros.ch?modes=pseudonym', json=data, params={'includes_owner': True})
+    r = user1.put(f'/ddh/{eid}/org/migros.ch', json=data, params={'includes_owner': True,'modes':'pseudonym'})
     r.raise_for_status()

@@ -88,7 +88,7 @@ async def from_subscribed(session, dapps: typing.Iterable[dapp_attrs.DAppOrFamil
     """ all reachable Data Apps from subscribed Data Apps, with cost of reach """
     dappids = [str(d.id) for d in dapps if isinstance(d, dapp_attrs.DAppOrFamily)]
     if dappids:
-        r = await fastapi_utils.submit1_asynch(session, 'http://localhost:8001', '/graph/from/'+'+'.join(dappids)+'?details=True')
+        r = await fastapi_utils.submit1_asynch(session, 'http://localhost:8001', '/graph/from/'+'+'.join(dappids),params={'details':True})
         reachable = sum(r, [])
     else:
         reachable = []
@@ -111,7 +111,7 @@ async def add_costs(session, sris: list[SearchResultItem], subscribed: typing.It
 
     """
     dappids = [sri.da.id for sri in sris]
-    to_r = await fastapi_utils.submit1_asynch(session, 'http://localhost:8001', '/graph/to/'+'+'.join(dappids)+'?include_weights=True')
+    to_r = await fastapi_utils.submit1_asynch(session, 'http://localhost:8001', '/graph/to/'+'+'.join(dappids),params={'include_weights':True})
 
     for sri, (requires, calculated, weights) in zip(sris, to_r):
         # print(f'add_costs: {sri=}, {requires=}, {calculated=}, {weights=}')

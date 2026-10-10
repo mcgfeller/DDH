@@ -8,7 +8,7 @@ import typing
 import pydantic
 import datetime
 import enum
-import httpx
+import httpx2
 
 
 from core import dapp_attrs, pillars

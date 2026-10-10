@@ -3,7 +3,7 @@
 
 import fastapi
 import fastapi.security
-import httpx
+import httpx2
 import os
 import asyncio
 import contextlib
@@ -33,8 +33,8 @@ router = fastapi.APIRouter(lifespan=lifespan)
 
 from frontend import user_auth  # provisional user management
 
-# transport = httpx.HTTPTransport(retries=2)
-CLIENT = httpx.AsyncClient(timeout=15, base_url='http://localhost:8001')  # TODO: Configure or determine URL
+# transport = httpx2.HTTPTransport(retries=2)
+CLIENT = httpx2.AsyncClient(timeout=15, base_url='http://localhost:8001')  # TODO: Configure or determine URL
 
 
 def get_apps() -> tuple[dapp_attrs.DApp, ...]:

@@ -74,6 +74,7 @@ class DAppProxy(DDHbaseModel):
 
     async def send_url(self, urlpath, verb='get', jwt=None, headers={}, **kw):
         """ forward execution request to DApp microservice """
+        assert not ('?' in urlpath and kw.get('params')),'httpx2 does not merge url params with kw params argument (httpx2 issue #3433)'
         if jwt:
             headers['Authorization'] = 'Bearer '+jwt
         # print(f'*send_url {headers=}, {urlpath=}, {kw=}')

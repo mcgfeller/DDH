@@ -5,18 +5,19 @@ import time
 import asyncio
 import collections.abc
 
-import httpx
+import httpx2
 import fastapi
 from frontend import sessions
 
 
 async def submit1_asynch(session: sessions.Session, base_url, url, params: dict = {}):
-    """ Submit one request using httpx, with a given base_url and url.
+    """ Submit one request using httpx2, with a given base_url and url.
         Copy the Authorization header from the session. 
         Return the json result. 
     """
+    assert not ('?' in url and params),'httpx2 does not merge url params with params argument (httpx2 issue #3433)'
     headers = {'Authorization': 'Bearer '+session.token_str}
-    async with httpx.AsyncClient(base_url=base_url, headers=headers) as client:
+    async with httpx2.AsyncClient(base_url=base_url, headers=headers) as client:
         j = await client.get(url, params=params)
     if j.is_error:
         try:
@@ -29,7 +30,7 @@ async def submit1_asynch(session: sessions.Session, base_url, url, params: dict 
         return d
 
 
-def retry(fn: typing.Callable, *a, exceptions: tuple[type[Exception], ...] = (httpx.HTTPError,),
+def retry(fn: typing.Callable, *a, exceptions: tuple[type[Exception], ...] = (httpx2.HTTPError,),
           initial_delay: int = 10, max_delay: int = 900, maxrounds: int = 10000,
           logger: logging.Logger | None = None,
           alerter: typing.Callable[[str, str]] | None = None, alert_tag: str = 'retry', alert_each: int = 5):
@@ -61,7 +62,7 @@ def retry(fn: typing.Callable, *a, exceptions: tuple[type[Exception], ...] = (ht
         raise exception
 
 
-async def aretry(fn: typing.Callable[...,  collections.abc.Coroutine], *a, exceptions: tuple[type[Exception], ...] = (httpx.HTTPError,),
+async def aretry(fn: typing.Callable[...,  collections.abc.Coroutine], *a, exceptions: tuple[type[Exception], ...] = (httpx2.HTTPError,),
                  initial_delay: int = 10, max_delay: int = 900, maxrounds: int = 10000,
                  logger: logging.Logger | None = None,
                  alerter: typing.Callable | None = None, alert_tag: str = 'retry', alert_each: int = 5):
