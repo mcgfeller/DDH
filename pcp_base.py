@@ -5,7 +5,7 @@ import abc
 import pydantic
 import argparse
 import psutil
-import httpx
+import httpx as httpx
 import typing
 import subprocess
 import pathlib
@@ -241,7 +241,7 @@ class AsgiProcess(Runnable):
     """ Process running an ASGI server
         Currently, uvicorn is our ASGI server.
     """
-    uvicorn_exe: str = r".venv\scripts\uvicorn" if OnWindows else r'.venv/scripts/uvicorn'
+    uvicorn_exe: str = r".venv-1\scripts\uvicorn" if OnWindows else r'.venv/scripts/uvicorn'
     app: str
     port: int
 
