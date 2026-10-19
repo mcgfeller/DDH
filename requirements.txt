@@ -57,9 +57,9 @@ executing==2.3.0
     # via inline-snapshot
 face==26.0.1
     # via glom
-fastapi==0.143.0
+fastapi==0.148.0
     # via -r requirements.in
-fonttools==4.66.1
+fonttools==4.67.0
     # via matplotlib
 fqdn==1.6.0
     # via jsonschema
@@ -69,9 +69,9 @@ h11==0.16.0
     # via
     #   httpcore2
     #   uvicorn
-httpcore2==2.13.1
+httpcore2==2.14.0
     # via httpx2
-httpx2==2.13.1
+httpx2==2.14.0
     # via -r requirements.in
 idna==3.20
     # via
@@ -81,11 +81,11 @@ idna==3.20
     #   jsonschema
 iniconfig==2.3.1
     # via pytest
-inline-snapshot==0.36.0
+inline-snapshot==0.36.1
     # via -r requirements.in
 isoduration==20.11.0
     # via jsonschema
-jsonpointer==3.2.0
+jsonpointer==3.4
     # via jsonschema
 jsonschema[format-nongpl]==4.26.0
     # via -r requirements.in
@@ -103,7 +103,7 @@ mdurl==0.1.2
     # via markdown-it-py
 networkx==3.7
     # via -r requirements.in
-numpy==2.5.3
+numpy==2.5.4
     # via
     #   -r requirements.in
     #   contourpy
@@ -121,13 +121,13 @@ pandas==3.0.6
     # via -r requirements.in
 passlib[bcrypt]==1.7.4
     # via -r requirements.in
-pillow==12.3.0
+pillow==13.0.0
     # via matplotlib
 pip==26.2.1
     # via pip-tools
 pip-tools==7.6.2
     # via -r requirements.in
-pluggy==1.6.0
+pluggy==1.7.0
     # via
     #   pytest
     #   pytest-cov
@@ -135,11 +135,11 @@ psutil==7.2.2
     # via -r requirements.in
 pycparser==3.11
     # via cffi
-pydantic[email]==2.14.0
+pydantic[email]==2.14.1
     # via
     #   -r requirements.in
     #   fastapi
-pydantic-core==2.50.0
+pydantic-core==2.50.1
     # via pydantic
 pygments==2.21.0
     # via
@@ -192,9 +192,9 @@ six==1.17.0
     # via
     #   python-dateutil
     #   rfc3339-validator
-starlette==1.7.0
+starlette==1.9.0
     # via fastapi
-truststore==0.10.4
+truststore==0.10.5
     # via
     #   httpcore2
     #   httpx2
