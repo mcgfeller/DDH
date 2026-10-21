@@ -57,7 +57,7 @@ executing==2.3.0
     # via inline-snapshot
 face==26.0.1
     # via glom
-fastapi==0.148.0
+fastapi==0.156.4
     # via -r requirements.in
 fonttools==4.67.0
     # via matplotlib
@@ -69,9 +69,9 @@ h11==0.16.0
     # via
     #   httpcore2
     #   uvicorn
-httpcore2==2.14.0
+httpcore2==2.15.1
     # via httpx2
-httpx2==2.14.0
+httpx2==2.15.1
     # via -r requirements.in
 idna==3.20
     # via
@@ -123,7 +123,7 @@ passlib[bcrypt]==1.7.4
     # via -r requirements.in
 pillow==13.0.0
     # via matplotlib
-pip==26.2.1
+pip==26.2.2
     # via pip-tools
 pip-tools==7.6.2
     # via -r requirements.in
@@ -186,7 +186,7 @@ rpds-py==2026.9.1
     # via
     #   jsonschema
     #   referencing
-setuptools==84.0.0
+setuptools==84.2.1
     # via pip-tools
 six==1.17.0
     # via
