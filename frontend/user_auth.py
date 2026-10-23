@@ -2,19 +2,19 @@
     See https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/
 """
 
-import fastapi
-import typing
-import pydantic
 import datetime
+import functools
+import typing
 
+import fastapi
 import fastapi.security
 import jwt
 import passlib.context
-from utils.pydantic_utils import DDHbaseModel, utcnow
+import pydantic
 
-from core import errors, principals, users, keys
+from core import errors, keys, principals, users
 from frontend import sessions
-
+from utils.pydantic_utils import DDHbaseModel, utcnow
 
 oauth2_scheme = fastapi.security.OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = passlib.context.CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -25,8 +25,8 @@ SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-
 def get_password_hash(password):
+    """ Note: Although this is time consuming, it should not be cached, as this would enlarge attack surface. """
     return pwd_context.hash(password)
 
 
